@@ -2,9 +2,18 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-23 — 승인된 작업의 자동 commit·push 정책
+
+관련 커밋: 이 항목을 추가한 커밋 (`git log --oneline -- docs/CHANGELOG.md`로 확인).
+
+- 사용자 승인 개발·문서 작업은 관련 검사와 문서 갱신 후 해당 작업만 staging하고 의미 있는 단위로 commit한 뒤 origin/main에 자동 push하도록 AGENTS.md를 변경했습니다.
+- 기존 미커밋 변경과 다른 작업은 제외하며, 검사 실패·충돌·원격 이력 불일치·push 실패 시 중단·보고하도록 했습니다.
+- force push, reset --hard, 기존 이력 변경, 브랜치 삭제와 기존 Docker·Zabbix·Cloudflare 운영 변경은 별도 승인 대상으로 유지했습니다.
+- 검증 범위는 문서 링크, Git diff 공백 검사, 정책 요구사항 및 staging 범위 확인입니다. 게임 실행 시험은 없으며 로드맵 단계와 기술 선택은 변경하지 않았습니다.
+
 ## 2026-10-23 — 공식 문서 관리 체계
 
-관련 커밋: 이 항목을 추가한 커밋 (`git log -1 -- docs/CHANGELOG.md`로 확인). 자체 해시를 본문에 고정해 재커밋하지 않습니다. 아래 과거 기록은 확인된 기존 커밋을 명시합니다.
+관련 커밋: `74e33ef` — `docs: establish official project status roadmap and changelog`.
 
 - PROJECT_STATUS·ROADMAP·CHANGELOG를 추가하고 공식 기록의 역할을 구분했습니다.
 - ChatGPT는 기획·아키텍처·결과 검토, Codex는 구현·테스트·승인 범위의 인프라 작업을 담당하도록 문서 관리 규칙을 추가했습니다.

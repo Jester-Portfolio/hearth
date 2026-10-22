@@ -57,5 +57,17 @@ The project includes:
 - Manage confirmed design changes through ADRs. Preserve comparison and feasibility documents, and mark adopted or superseded decisions clearly. Architecture approval is not implementation validation or operational approval.
 - Never mark unfinished work complete or untested functionality verified. Distinguish design, implementation, execution tests, and deployment; report partial checks and unverified items explicitly.
 - If documentation and actual code conflict, inspect the evidence and report the discrepancy before deciding which record to update. Do not silently treat a proposal as implemented behavior.
-- Include related documentation and code changes in the same commit by default, excluding unrelated files and unnecessary documentation edits. Commit and push only when instructed by the user or within an existing approved scope; a commit request does not imply permission to push.
+- Include related documentation and code changes in the same commit by default, excluding unrelated files and unnecessary documentation edits. Follow the Git Work Policy below for user-approved development and documentation work.
 - Never change existing Docker, Zabbix, or Cloudflare environments without approval. Documentation and roadmap entries do not authorize installation, service execution, or operational changes.
+
+## Git Work Policy
+
+- User approval of development or documentation work authorizes automatically committing and pushing the completed work without a separate confirmation. Explicit task-specific instructions to defer or omit commits or pushes take precedence.
+- At task start, inspect the branch, working tree, and staging area, and record pre-existing uncommitted changes. Do not include pre-existing changes or files from other tasks without explicit authorization. If changes overlap and cannot be safely separated, stop and report.
+- Before committing, complete relevant tests and verify the final changes. Update PROJECT_STATUS and ROADMAP when facts, progress, or next steps changed, and record major changes in CHANGELOG. Do not claim untested functionality is verified.
+- Stage only files or hunks belonging to the approved task. Inspect the staged diff and create commits in meaningful units with clear messages.
+- Fetch origin and check the current branch and its relationship to origin/main before committing and again before pushing. Automatically push verified task commits to origin/main only when the branch is main and its history extends the latest origin/main without unrelated unpublished commits. If these conditions are not met, stop and report instead of switching branches, merging, or rebasing automatically.
+- If tests fail, conflicts occur, the remote branch does not match the expected history, or a push fails, stop the commit/push workflow and report the evidence and remaining work. Do not bypass failed checks or force a push.
+- Force pushes, reset --hard, rewriting existing commit history (including amend or rebase), and branch deletion always require separate explicit approval.
+- Git commit/push authorization does not authorize operational changes. Changes to existing Docker, Zabbix, or Cloudflare environments still require separate explicit approval.
+- At completion, briefly report commit hashes, push results, and test results, including partial checks or anything unverified.
