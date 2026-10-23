@@ -2,9 +2,17 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
-## 2026-10-23 — 최소 빌드 도구 사전 확인과 Stable API 다운로드
+## 2026-10-23 — Java 25·Gradle 9.1.0 최소 플러그인 빌드 성공
 
 관련 커밋: 이 항목을 추가한 커밋 (`git log -1 -- docs/stack-build-verification.md`로 확인).
+
+- 사용자 승인으로 공식 Temurin JDK 25.0.5+8-LTS와 Gradle 9.1.0을 공식 SHA-256 검증 후 사용자 전용·임시 경로에 준비했습니다. 시스템 Java·전역 환경·기존 서비스는 변경하지 않았습니다.
+- /tmp의 기존 Kotlin DSL·Java 25 toolchain·고정 Paper API `26.2.build.134-stable` 설정으로 의존성 해결·compileJava·jar를 성공했습니다.
+- 생성 JAR의 메인 클래스·major 69·plugin.yml 원본 일치·API 미포함을 확인하고 현황·로드맵·검증 기록을 갱신했습니다. 서버 로딩·런타임 시험·실제 게임 소스 추가는 하지 않았습니다.
+
+## 2026-10-23 — 최소 빌드 도구 사전 확인과 Stable API 다운로드
+
+관련 커밋: `1231166724d0e26aee38c9c5f87807f841bd2cb3` — `docs: record Paper stable API checks and missing build tools`.
 
 - Java·javac·Gradle 부재를 확인하고 임의 설치하지 않았습니다. compileJava·jar·결과 JAR 검사는 미실행으로 남깁니다.
 - 공식 Maven의 `26.2.build.134-stable` POM·module·API JAR을 /tmp에 다운로드하고 좌표·JVM 메타데이터·ZIP·크기·SHA-256을 확인했습니다. 전체 전이 의존성 해결이나 컴파일 성공은 아닙니다.
