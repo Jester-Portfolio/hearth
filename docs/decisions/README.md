@@ -7,6 +7,7 @@
 | [ADR-0001: 스토리 월드 B안 채택](0001-story-world-multiworld.md) | 승인·기술 미정 항목은 ADR-0002로 갱신 | 단일 서버 프로세스의 진행별 독립 월드, 공통 AI의 접근 격리, A안 확장 경계 |
 | [ADR-0002: 기술 스택과 월드 운영 정책](0002-stack-and-world-policies.md) | 승인 | 기술 스택, 템플릿·콘텐츠·진행 분리, 보호·채집 정책 |
 | [ADR-0003: 성능 우선 인벤토리 저장과 수동 장애 대응](0003-inventory-performance-and-recovery.md) | 승인 | 월드 상자·PostgreSQL 개인 인벤토리, 기본 안전성·비용 제한·수동 조정 |
+| [ADR-0004: 공동체·퀘스트·장별 따라잡기와 스킵](0004-community-quests-and-chapter-skip.md) | 승인·미구현 | 공유 진행·개인 퀘스트·접속자 전원 조건·고정 분기·장별 스킵 |
 
 각 기록에는 다음 내용을 포함합니다.
 

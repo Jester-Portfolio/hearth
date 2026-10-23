@@ -1,5 +1,7 @@
 # 스토리 월드 독립 진행 구조 비교
 
+> 후속 정책: [ADR-0004](decisions/0004-community-quests-and-chapter-skip.md)가 코옵을 공동체로 정의했습니다. 아래 파티 가입·탈퇴·파티장·분할·병합은 당시 비교 후보이며 현재 구현 요구가 아닙니다. 게임 내 탈퇴는 구현하지 않고 가입·관리자 변경은 미정입니다. B안 구조·기술 검토 이력은 보존합니다.
+
 > 후속 결정 (2026-10-23): [ADR-0002](decisions/0002-stack-and-world-policies.md)로 Paper 26.2·Java 25·Gradle·PostgreSQL·단일 JAR·Docker Compose 및 월드 정책이 확정됐습니다. 아래 기술 미정·후보 표현과 API 근거는 2026-10-22 당시 검토 기록으로 보존합니다. 현재 결정은 ADR을 따르며 채택 버전에서의 실행·호환성 검증은 여전히 미완료입니다.
 
 

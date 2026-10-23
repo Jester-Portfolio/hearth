@@ -2,6 +2,12 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-23 — 공동체 코옵·스토리 퀘스트·장별 스킵 정책
+
+- [ADR-0004](decisions/0004-community-quests-and-chapter-skip.md)에 사용자 확정 공동체·개인 진행·접속자 전원 조건·분기 고정·장별 따라잡기/스킵을 기록했습니다.
+- S3의 party_id/party_member·탈퇴/분할/병합 후보 충돌을 정리하고 대체 물리 스키마·가입·보상·접속자 변동·분기 의사결정·과거 재현은 미정으로 유지했습니다. C1~C9 후속 시험 명세는 미실행이며 S3는 진행 중입니다.
+- 근거: 작업 시작 커밋 `8e22d169a67c32c9da3bfd90bdf8b6785fcb3234`와 사용자 확정 지시. 이 항목의 결과 커밋은 `git log -- docs/decisions/0004-community-quests-and-chapter-skip.md`로 확인합니다. 게임 구현·서비스 실행·운영 변경은 하지 않았습니다.
+
 ## 2026-10-23 — 30초 자동 저장과 경제 거래 즉시 저장 정책 확정
 
 관련 커밋: 이 항목을 추가한 커밋 (`git log -1 -- docs/decisions/0003-inventory-performance-and-recovery.md`로 확인). 기준: `55f9c8e521b1546534dec4d384726fbfaad4ae10`.

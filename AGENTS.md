@@ -13,7 +13,7 @@ The project includes:
 
 ## Confirmed Stack and World Policies
 
-- Follow [ADR-0001](docs/decisions/0001-story-world-multiworld.md), [ADR-0002](docs/decisions/0002-stack-and-world-policies.md), and [ADR-0003](docs/decisions/0003-inventory-performance-and-recovery.md). These are design approvals, not implementation validation or operational approval.
+- Follow [ADR-0001](docs/decisions/0001-story-world-multiworld.md), [ADR-0002](docs/decisions/0002-stack-and-world-policies.md), [ADR-0003](docs/decisions/0003-inventory-performance-and-recovery.md), and [ADR-0004](docs/decisions/0004-community-quests-and-chapter-skip.md). These are design approvals, not implementation validation or operational approval.
 - Use Paper 26.2, Java 25, Gradle, PostgreSQL, a single plugin JAR with internal feature modules, Docker Compose, and existing Zabbix monitoring. Target vanilla Minecraft Java Edition clients, minimize separate client mods, and provide a server resource pack when needed. AI service technologies remain undecided.
 - Run story progress worlds in one Paper process. Clone versioned, prebuilt spatial templates; add templates over time and preserve existing player worlds and progress. Save and unload inactive worlds, restoring them on reconnect.
 - Keep NPC placement, dialogue, and quest definitions in separate content data. Store player progress, quests, NPC relationships, and story branches in PostgreSQL with per-world logical isolation. Separate story and economy inventories and progress.
@@ -82,3 +82,10 @@ The project includes:
 - Force pushes, reset --hard, rewriting existing commit history (including amend or rebase), and branch deletion always require separate explicit approval.
 - Git commit/push authorization does not authorize operational changes. Changes to existing Docker, Zabbix, or Cloudflare environments still require separate explicit approval.
 - At completion, briefly report commit hashes, push results, and test results, including partial checks or anything unverified.
+
+## Community and Story Quest Policy
+
+- Follow ADR-0004: co-op uses a Community sharing one story_run_id, world and major outcomes. Do not implement an in-game party leave system or carry forward party leader/split/merge proposals as requirements. Joining and administrator membership changes remain undecided.
+- Keep personal inventory, quest completion and reward records separate by Community and player. Important Community quests require every currently online member to meet conditions; offline members are excluded. Roster changes during progression remain undecided.
+- Preserve fixed Community branches and world/NPC state during personal catch-up, assistance and per-chapter skips. Skip main and required roadside quests of the selected previously progressed chapter, satisfying personal next-chapter prerequisites; do not assume optional side quests are bulk skipped.
+- Do not decide skip/helper rewards, joining procedure, roster-change behavior, branch decision mechanism, or past-scene instance/cutscene/NPC implementation without approval. Physical replacement schemas remain proposals.
