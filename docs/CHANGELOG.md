@@ -2,6 +2,14 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-23 — 최소 빌드 도구 사전 확인과 Stable API 다운로드
+
+관련 커밋: 이 항목을 추가한 커밋 (`git log -1 -- docs/stack-build-verification.md`로 확인).
+
+- Java·javac·Gradle 부재를 확인하고 임의 설치하지 않았습니다. compileJava·jar·결과 JAR 검사는 미실행으로 남깁니다.
+- 공식 Maven의 `26.2.build.134-stable` POM·module·API JAR을 /tmp에 다운로드하고 좌표·JVM 메타데이터·ZIP·크기·SHA-256을 확인했습니다. 전체 전이 의존성 해결이나 컴파일 성공은 아닙니다.
+- /tmp에 Java 25 toolchain·Kotlin DSL·compileOnly 최소 프로젝트를 준비하고 [부분 검증 기록](stack-build-verification.md), 현황·로드맵을 갱신했습니다. 서버 실행·게임 기능 추가·운영 변경은 없습니다.
+
 ## 2026-10-23 — 기술 스택과 월드 운영 정책 확정
 
 관련 커밋: 이 항목을 추가한 커밋 (`git log --oneline -- docs/CHANGELOG.md`로 확인).

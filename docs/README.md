@@ -3,6 +3,7 @@
 | 문서 | 역할 |
 | --- | --- |
 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | 현재 단계·완료 근거·환경·미결정 및 미검증 항목 |
+| [stack-build-verification.md](stack-build-verification.md) | 도구 사전 확인·Stable API 다운로드 증거와 실제 빌드 미실행 사유 |
 | [ROADMAP.md](ROADMAP.md) | 단계별 상태·목표·완료 조건·선행 조건 |
 | [CHANGELOG.md](CHANGELOG.md) | Git 기록에 근거한 주요 변경 이력 |
 | [architecture.md](architecture.md) | B안 채택 구조, 시스템 경계, 데이터 분리와 미정 항목 |
