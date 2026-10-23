@@ -11,6 +11,7 @@
 | [story-world-architecture.md](story-world-architecture.md) | B안 채택 근거를 포함한 세 구조 비교와 남은 검증 항목 |
 | [story-world-feasibility.md](story-world-feasibility.md) | B안 다중 월드의 구현 경로, 데이터 격리와 기술적 제약 검토 |
 | [ADR-0001](decisions/0001-story-world-multiworld.md) | 승인된 B안 채택 결정과 영향·미결정 사항 |
+| [ADR-0003](decisions/0003-inventory-performance-and-recovery.md) | 성능 우선 아이템 저장·정상 동작 안전성·관리자 수동 장애 대응 |
 | [decisions/README.md](decisions/README.md) | 주요 기술·설계 결정의 기록 규칙 |
 | [스토리 월드](../minecraft/story/README.md) | 스토리 월드의 목적과 설계 범위 |
 | [경제 월드](../minecraft/economy/README.md) | 경제 월드의 목적과 설계 범위 |

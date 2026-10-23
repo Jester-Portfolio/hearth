@@ -13,12 +13,14 @@ The project includes:
 
 ## Confirmed Stack and World Policies
 
-- Follow [ADR-0001](docs/decisions/0001-story-world-multiworld.md) and [ADR-0002](docs/decisions/0002-stack-and-world-policies.md). These are design approvals, not implementation validation or operational approval.
+- Follow [ADR-0001](docs/decisions/0001-story-world-multiworld.md), [ADR-0002](docs/decisions/0002-stack-and-world-policies.md), and [ADR-0003](docs/decisions/0003-inventory-performance-and-recovery.md). These are design approvals, not implementation validation or operational approval.
 - Use Paper 26.2, Java 25, Gradle, PostgreSQL, a single plugin JAR with internal feature modules, Docker Compose, and existing Zabbix monitoring. Target vanilla Minecraft Java Edition clients, minimize separate client mods, and provide a server resource pack when needed. AI service technologies remain undecided.
 - Run story progress worlds in one Paper process. Clone versioned, prebuilt spatial templates; add templates over time and preserve existing player worlds and progress. Save and unload inactive worlds, restoring them on reconnect.
 - Keep NPC placement, dialogue, and quest definitions in separate content data. Store player progress, quests, NPC relationships, and story branches in PostgreSQL with per-world logical isolation. Separate story and economy inventories and progress.
 - Protect story worlds by default; allow building and terrain changes only in designated areas. Protect designated cities and shared facilities in economy worlds while allowing more freedom elsewhere. Center major resource supply in both modes on dedicated gathering instances; treat building terrain changes and gathering as separate policies.
 - Do not assume decisions on economy process separation, gathering instance creation/reset/regeneration, AI implementation, applying new terrain/buildings to existing worlds, or detailed content/game systems. Preserve common AI progress isolation and future A-option placement separation.
+
+- Prioritize server performance and smooth play over complex automatic item recovery. Keep ordinary chests/warehouses in Minecraft world files and player inventories primarily in PostgreSQL. Prevent normal-play duplication/loss through basic concurrency and save ordering; do not require a DB transaction or synchronous disk flush for every item movement. Complex escrow storage, costly checkpoints, and fully automatic recovery are optional, not required. Add safeguards only when simple and low-cost; omit them if load or latency is high. Allow administrators to handle some unexpected-crash item loss/duplication using logs and backups; retain minimal error records and intervention procedures. Never promise automatic lossless recovery or duplication prevention in all circumstances.
 
 ## Development
 - Prefer simple, maintainable solutions.

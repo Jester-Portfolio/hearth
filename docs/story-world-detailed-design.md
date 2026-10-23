@@ -1,19 +1,19 @@
 # 스토리 월드 S3 상세 설계 초안
 
 - 작성·확인일: 2026-10-23. 기준 커밋: `fc438a86d56205c3a60038ce8b8a922a072ccbff`.
-- 상태: **S3 진행 중 / 제안**. ADR-0001·0002의 확정 사항을 구체화하는 후보안이며 신규 정책 승인이 아닙니다. 스키마·상태 전이·복구 절차는 미구현·미검증입니다.
+- 상태: **S3 진행 중 / 제안**. ADR-0001·0002의 확정 사항을 구체화하는 후보안이며 신규 정책 승인이 아닙니다. 스키마·상태 전이·복구 절차는 미구현·미검증입니다. 인벤토리·아이템 저장과 장애 대응의 확정 정책은 [ADR-0003](decisions/0003-inventory-performance-and-recovery.md)을 우선합니다.
 - 선행 결과: [S2 빌드/API 검토](stack-build-verification.md). S2 완료는 구현 경로·위험·시험 기준 정리까지이며 런타임 동작 보증이 아닙니다.
 
 ## 1. 확정 경계와 모듈 책임 후보
 
-[ADR-0001](decisions/0001-story-world-multiworld.md)의 단일 프로세스 B안, [ADR-0002](decisions/0002-stack-and-world-policies.md)의 Paper 26.2·Java 25·Gradle·단일 JAR 내부 모듈·PostgreSQL·템플릿/콘텐츠 분리·보호/채집 원칙을 유지합니다. 아래부터 확정 원칙을 제외한 구체 모델은 제안입니다.
+[ADR-0001](decisions/0001-story-world-multiworld.md)의 단일 프로세스 B안, [ADR-0002](decisions/0002-stack-and-world-policies.md)의 Paper 26.2·Java 25·Gradle·단일 JAR 내부 모듈·PostgreSQL·템플릿/콘텐츠 분리·보호/채집 원칙을 유지합니다. [ADR-0003](decisions/0003-inventory-performance-and-recovery.md)에 따라 서버 성능과 원활한 플레이를 복잡한 자동 복구보다 우선합니다. 일반 상자·창고는 월드 파일, 플레이어 인벤토리는 PostgreSQL 중심으로 관리합니다. 아래부터 확정 원칙을 제외한 구체 모델은 제안입니다.
 
 | 내부 책임 후보 | 소유할 상태·행위 |
 | --- | --- |
 | 진행·참가자 | run_id, 멤버십·권한, 세션별 현재 컨텍스트 |
 | 월드 수명주기 | 템플릿 복제·배치 매핑·로드·저장·언로드·복구 상태 |
 | 콘텐츠 | 불변 템플릿/콘텐츠 버전 참조와 정의 ID 해석 |
-| 영속 상태 | PostgreSQL 트랜잭션·진행별 DAO·스냅샷·체크포인트 |
+| 영속 상태 | 진행별 DAO·개인 상태의 배치 저장·오류 기록. 고비용 체크포인트는 기본 범위 밖 |
 | 보호·인벤토리 | 행위별 구역 판정·상태 전환 차단·개인 상태 적용 |
 | AI 연결 경계 | 인증된 진행·플레이어 범위의 읽기 DTO 제공. AI 구현 기술은 미정 |
 
@@ -56,17 +56,17 @@
 | 전이 | 사전 조건·처리 | 실패 시 후보 처리 |
 | --- | --- | --- |
 | PROVISIONING → OFFLINE | 복제·manifest·매핑 완료 | FAILED로 격리, 기존 원본·다른 진행 보존 |
-| OFFLINE → LOADING | 참가 권한, 호환 버전, 체크포인트 일치, 단일 소유권 획득 | RECOVERY_REQUIRED; 임의로 새 빈 월드 생성 금지 |
+| OFFLINE → LOADING | 참가 권한, 호환 버전, 저장 오류 여부·단일 소유권 확인 | RECOVERY_REQUIRED; 임의로 새 빈 월드 생성 금지 |
 | LOADING → READY | Paper 로드·DB·NPC·보호 초기화 완료 | 입장 차단, 이미 로드한 월드 정리 여부 확인 |
 | READY → ACTIVE | 현재 세대에 속한 입장 예약·이동·개인 상태 복원 완료 | 이동 실패면 예약 해제 또는 원래 위치 복원 |
 | ACTIVE → IDLE | 참가자·입장 중 요청 0, 마지막 퇴장 처리 완료 | 입장 예약이 생기면 ACTIVE 유지 |
 | IDLE → QUIESCING | 유휴 대기 만료, 새 입장 예약 차단, 상태 변경·작업 정지 | 재접속은 대기시킴. 유휴 시간 수치는 미정 |
 | QUIESCING → SAVING | 비행 중 DB·보상 작업 정리, 사용자·월드 작업 스냅샷 | 타임아웃이면 ERROR_HOLD, 언로드하지 않음 |
-| SAVING → UNLOADING | 아래 일관된 저장/체크포인트 준비 완료 | DB/파일 실패 시 ERROR_HOLD, 입장·변경 차단 |
+| SAVING → UNLOADING | 개인/진행 DB 저장 순서 확인과 일반 월드 저장; 전체 복사·일체형 체크포인트 불필요 | DB/파일 실패 시 ERROR_HOLD, 입장·변경 차단 |
 | UNLOADING → OFFLINE | 안전한 호출 시점의 unloadWorld 성공 확인, 참조·티켓 해제 | false·예외면 실제 로드 상태 유지, 재시도 판단 |
-| 임의 상태 → RECOVERY_REQUIRED | 장애·저장 세대 불일치·소유권 불명 | 데이터 보존, 자동 입장 금지, 검증된 복구 절차 사용 |
+| 임의 상태 → RECOVERY_REQUIRED | 손상·저장 결과 불명·소유권 불명 | 해당 범위 데이터 보존·접근 제한·오류 기록 후 관리자 확인. 정상적인 저장 시점 차이만으로 전체 서버 차단 금지 |
 
-메인 스레드에서 실행하더라도 월드 틱 중 로드·언로드는 피해야 합니다. `isTickingWorlds()` 검사와 다음 안전한 스케줄 시점으로 미루는 처리가 필요하며 정확한 시점은 런타임 검증 대상입니다. `World.save(true)`의 writer 대기 비용도 측정해야 합니다. 저장 실패를 무시하거나 성공하지 않은 언로드를 OFFLINE으로 기록하지 않습니다.
+메인 스레드에서 실행하더라도 월드 틱 중 로드·언로드는 피해야 합니다. `isTickingWorlds()` 검사와 다음 안전한 스케줄 시점으로 미루는 처리가 필요하며 정확한 시점은 런타임 검증 대상입니다. 월드 저장 방식·writer 대기는 언로드 경계의 필요성과 지연을 검토하며 매 아이템 이동마다 동기 flush를 하지 않습니다. 저장 실패를 무시하거나 성공하지 않은 언로드를 OFFLINE으로 기록하지 않습니다.
 
 접속: 플레이어의 허용 진행 선택 → run 입장 예약·session_epoch 갱신 → 필요한 월드 로드에 합류 → DB 개인 상태 로드 → 서버 스레드에서 인벤토리·위치 적용과 이동 → 성공 확인 후 조작 허용 후보입니다. 초기 스폰/로그인 단계에서 안전한 대기 공간 또는 접속 지연이 가능한지는 S4 검증 과제입니다. 초기 스폰이 타 진행 데이터를 노출하지 않아야 합니다.
 
@@ -81,24 +81,24 @@ SQL·DB 서버 실행은 하지 않았습니다. 아래는 물리 DDL이 아닌 
 | 테이블 후보 | 핵심 열·키·제약 |
 | --- | --- |
 | progress_scope | scope_id UUID PK, mode(story/economy), 상태. UNIQUE(scope_id,mode) |
-| story_run | run_id UUID PK=scope_id FK, party_id nullable, content_id/version, state, revision bigint, committed_checkpoint_id nullable. scope mode=story는 검증/복합 FK로 강제 |
+| story_run | run_id UUID PK=scope_id FK, party_id nullable, content_id/version, state, revision bigint, last_saved_at. scope mode=story는 검증/복합 FK로 강제 |
 | party_member | PK(run_id,player_uuid), role, membership_state, membership_version. run FK; 파티 변경은 row version으로 경쟁 감지 |
 | world_instance | world_id UUID PK, run_id FK, logical_role, template_id/version, physical_uuid, world_key, directory_ref, server_id, placement_epoch, state. UNIQUE(run_id,world_id), 물리 배치 충돌 제약 |
 | player_progress | PK(run_id,player_uuid), revision, last_world_id, 위치·체력·XP·개인 변수. FK(run_id,player_uuid)→party_member; FK(run_id,last_world_id)→world_instance |
 | quest_progress | PK(run_id,owner_kind,owner_id,quest_id), content_version, stage, variables jsonb, revision. run 소유는 owner_id=run_id, 개인 소유는 참가자 ID. 소유 유형 검증 필요 |
 | npc_relation | PK(run_id,player_uuid,npc_definition_id), 관계 값·revision. 참가자 복합 FK |
 | story_branch / npc_state | PK(run_id,definition_id), 선택·생존/활동 상태·revision·content_version. run 공통 상태 |
-| inventory_snapshot | PK(scope_id,player_uuid), revision, payload bytea, format_version, minecraft_data_version, checksum, checkpoint_id. 플레이어별이며 파티 공유 상자가 아님 |
-| transfer_operation | operation_id UUID PK, player_uuid, source_scope, target_scope, session_epoch, 단계, source_revision, 대상 snapshot revision. 세션당 미완료 전환 하나 |
-| reward_ledger | PK(run_id,quest_id,completion_sequence,player_uuid), operation_id UNIQUE, 지급 단계. DB 지급 기록만으로 실제 아이템 exactly-once 보장하지 않음 |
-| checkpoint / checkpoint_player | checkpoint_id PK와 run_id·generation·manifest hash·단계; checkpoint_player PK(checkpoint_id,player_uuid), snapshot revision. checkpoint별 DB 상태 snapshot/이력 필요 |
+| inventory_snapshot | PK(scope_id,player_uuid), revision, payload bytea, format_version, minecraft_data_version, checksum, saved_at. 배치 저장용 현재 상태이며 무손실 복원 이력이 아님 |
+| transfer 상태 | 기본은 세션 내 단일 전환·source/target scope와 revision 검사. 영속 상세 journal은 단순하고 비용이 낮을 때만 선택 검토 |
+| reward marker | 정상 요청 중복 억제용 run/quest/회차/player 키 후보. 경량 완료 표식은 검토하되 모든 아이템 이동의 거래 원장은 요구하지 않음 |
+| 선택 확장 | checkpoint/checkpoint_player·거래 보관함·전체 이동 원장은 기본 스키마에서 제외. 필요·성능을 별도 검토 |
 | lifecycle_operation | operation_id PK, run_id/world_id, 종류·전이 전후 상태·epoch·단계·오류. 재시작 복구용 journal |
 
 외래 키는 run_id를 함께 포함해 다른 진행의 월드·참가자를 가리키지 못하게 하는 후보입니다. 예: player_progress의 `(run_id,last_world_id)`는 world_instance의 동일 복합 키만 참조합니다. 단순 world_id FK와 애플리케이션 필터만으로 이 교차 참조를 맡기지 않습니다. [PostgreSQL 제약 문서](https://www.postgresql.org/docs/current/ddl-constraints.html)를 근거로 검토했으며 제약 간 정확한 DDL·마이그레이션은 미시험입니다.
 
 jsonb는 유동적인 콘텐츠 변수에만 사용하고 run·소유자·버전·참조 무결성은 구조화된 열과 제약으로 유지하는 후보입니다. owner_kind별 FK가 복잡하면 quest_progress를 run_quest와 player_quest로 분리하는 대안이 있습니다. 단일 테이블/분리 테이블 선택은 제안 상태입니다.
 
-월드 파일은 블록·청크·컨테이너·엔티티의 물리 상태를 소유합니다. PostgreSQL은 진행·관계·분기·참가자·개인 상태·작업 이력을 소유합니다. 엔티티는 논리 NPC ID를 서버 매핑으로 연결하고 DB의 npc_state에서 재구성하되 중복 생성·삭제 판정은 검증합니다. vanilla playerdata와 DB가 인벤토리를 동시에 독립적인 정본으로 저장하지 않도록 DB snapshot을 정본 후보로 두고 서버 파일의 초기 로드 상태를 안전한 입장 절차에서 교체하는 설계를 검토합니다. 구현 라이브러리와 이벤트 순서는 미정입니다.
+월드 파일은 블록·청크·컨테이너·엔티티의 물리 상태를 소유합니다. PostgreSQL은 진행·관계·분기·참가자·개인 상태·작업 이력을 소유합니다. 엔티티는 논리 NPC ID를 서버 매핑으로 연결하고 DB의 npc_state에서 재구성하되 중복 생성·삭제 판정은 검증합니다. vanilla playerdata와 DB가 인벤토리를 동시에 독립적인 정본으로 저장하지 않도록 플레이어 인벤토리를 PostgreSQL 중심으로 관리한다는 확정 원칙 아래 DB snapshot을 읽기 기준으로 두고 서버 파일의 초기 로드 상태를 안전한 입장 절차에서 교체하는 설계를 검토합니다. 구현 라이브러리와 이벤트 순서는 미정입니다.
 
 진행 유출 방지: 모든 DAO는 서버에서 검증된 scope 컨텍스트를 필수로 받으며 UUID만으로 조회하지 않습니다. 캐시·작업·AI 조회 키에 mode/scope_id와 필요 시 player_uuid·epoch를 넣습니다. RLS는 보조 후보이며 전용 역할·풀 연결 컨텍스트 초기화까지 시험하기 전 격리 보장으로 쓰지 않습니다. 서버 명령·콘텐츠 스크립트·관리 도구도 같은 경계를 통과해야 합니다.
 
@@ -106,35 +106,45 @@ jsonb는 유동적인 콘텐츠 변수에만 사용하고 run·소유자·버전
 
 코옵은 같은 run·퀘스트 공통 단계·월드 변화를 공유하지만 각자의 개인 목표·인벤토리·관계를 따로 저장합니다. 싱글 초대는 기존 run에 참가 관계 추가 후보이며 새 월드 복제와 같지 않습니다. 중간 합류의 과거 보상·탈퇴자 자산·파티장 부재·분할/병합·중복 진행 참여는 **정책 제안/미정**입니다. 구성 변경만으로 진행을 합치거나 덮어쓰지 않습니다.
 
-스토리 scope와 경제 scope 인벤토리는 독립 snapshot입니다. 전환 후보는 조작 잠금 → source snapshot DB 확정·전환 PREPARED → target snapshot 로드·이동·적용 → 세션 소유권과 전환 APPLIED 확정 → 조작 해제입니다. 서버 스레드 적용과 DB commit 사이 장애는 자동 원자적이지 않습니다. PREPARED/APPLYING 중 장애 시 source·target을 동시에 활성화하지 않고 복구 검증 전 잠급니다. 아이템 드롭·상자·거래 등 외부 효과가 있었다면 snapshot 복원만으로 되돌리지 않습니다.
+스토리 scope와 경제 scope 인벤토리는 독립 snapshot입니다. 일반 상자·창고 내용은 월드 파일이 소유하며 PostgreSQL에 매 이동을 복제하지 않습니다. 엔더 상자·커서·열린 GUI 등 개인 상태의 정확한 범위와 저장 포맷은 상세 설계 대상으로 남깁니다.
 
-보상은 ledger·인벤토리 revision을 하나의 DB 트랜잭션으로 갱신하고 그 revision을 서버에 적용하는 후보입니다. 이미 지급된 아이템의 외부 사용까지 자동 exactly-once라고 주장하지 않습니다. 테스트에서 중복·유실이 남으면 지급·전환 흐름을 재설계합니다. ItemStack 바이트에는 포맷·Minecraft 버전·체크섬을 붙이고 다운그레이드·손상·알 수 없는 포맷은 비우지 않고 복원을 차단합니다. storage·armor·offhand·ender chest·선택 슬롯·cursor/열린 GUI 처리 범위를 명시해야 합니다.
+정상 플레이의 기본 저장 후보:
 
-## 7. 저장·비정상 종료 복구 후보
+1. 서버 스레드에서 정상 아이템 이동을 처리하고 개인 상태를 dirty로 표시합니다. 클릭마다 DB 트랜잭션·동기 디스크 flush·전체 아이템 로그를 만들지 않습니다.
+2. 정한 주기에 dirty 상태를 캡처해 불변 DTO로 넘기고 비동기 배치 저장합니다. 플레이어/scope별 저장 순서를 직렬화하거나 revision 조건으로 오래된 완료가 최신 상태를 덮지 못하게 합니다. 빠른 변경은 모아서 저장하되 아직 저장되지 않은 dirty revision을 성공 처리하지 않습니다.
+3. 진행 전환은 동일 세션에서 하나씩 처리합니다. GUI·커서를 안정화하고 source 저장 성공 확인 → target 상태 적용·이동 → 컨텍스트 전환 순서를 후보로 둡니다. 필요한 동안 해당 플레이어만 짧게 조작을 제한하며 메인 스레드에서 DB/future 응답을 기다리지 않습니다.
+4. source 저장 실패나 target 상태 손상은 해당 플레이어의 전환을 중단하고 오류를 남깁니다. 실패한 저장을 성공으로 표시하거나 빈 상태로 덮어쓰지 않습니다. 재시도는 한도·간격을 두고 무한 대기·무한 재시도·전체 서버 정지로 확장하지 않습니다.
+5. 퇴장·유휴 언로드·정상 종료 때 미완료 저장을 정리하되 한도와 실패 처리 정책을 정합니다. 저장 주기·최대 대기·배치 크기는 성능 측정 후 결정합니다.
 
-**월드 파일과 DB는 분산 트랜잭션이 아니며 일반 저장만으로 무손실을 보장하지 않습니다.** 두 데이터의 마지막 일관된 지점과 허용 유실 시간(RPO)·복구 시간(RTO)은 미정입니다. 주기 DB snapshot만 저장해 최신 월드 파일에 덮어씌우는 복구는 금지하는 후보입니다.
+정상 보상 요청은 완료 표식·요청 키 같은 경량 수단으로 중복을 억제하는 후보입니다. 보상마다 고급 escrow·분산 트랜잭션·전용 아이템 원장을 요구하지 않습니다. 정상 경로의 재현 가능한 중복·유실은 기본 동시성·저장 순서를 수정합니다. 예기치 못한 종료 중 보상·상자·드롭의 불일치는 아래 수동 대응 범위입니다.
 
-체크포인트 후보 절차:
+ItemStack 바이트에 포맷·Minecraft 버전·체크섬을 두는 경량 안전장치를 검토할 수 있습니다. 손상·미지원 포맷을 빈 데이터로 덮어쓰지 않으며, 자동 변환/무손실 복원은 보장하지 않습니다. 추가 안전장치는 단순하고 성능 영향이 작은 경우에만 채택하고 부하·지연이 크면 제외합니다.
 
-1. run 작업·입장을 QUIESCING으로 잠그고 미완료 이동·보상·DB 작업을 정리합니다. 늦은 결과는 epoch로 거부합니다.
-2. checkpoint generation을 PREPARING으로 기록하고, 서버 스레드에서 개인·퀘스트·NPC 상태 DTO를 캡처합니다. DB live row와 별개로 이 generation을 복원할 수 있는 snapshot/버전 이력을 저장합니다.
-3. 월드 저장 flush·정상 언로드를 수행하고 해당 시점부터 더 쓰지 않는 파일 묶음을 확보합니다. 대용량 복사는 I/O 작업에서 수행합니다. 로드 중 파일의 단순 복사를 일관된 백업으로 간주하지 않습니다. 실제 순서·엔티티 flush·디렉터리 내구성은 검증 대상입니다.
-4. 월드 파일·NPC/DB 상태·개인 snapshot의 generation과 체크섬을 manifest로 연결합니다. 파일 fsync/원자적 이름 전환과 DB COMMITTED 표식을 어떻게 조정할지 구현 설계가 필요합니다. 공개 완료 전 일관성 검사가 실패하면 이전 정상 checkpoint를 보존합니다.
-5. DB에 checkpoint COMMITTED와 run의 마지막 정상 세대를 갱신합니다. 월드가 이미 언로드됐으면 OFFLINE, 다시 로드할 경우 입장 전에 같은 세대를 확인합니다.
+## 7. 성능 우선 저장·수동 장애 대응
 
-빈번한 유휴 저장마다 전체 복사하는 비용이 클 수 있으므로 일상 저장과 복구용 checkpoint 주기를 분리하는 대안이 있습니다. 그 경우 정상 저장은 성공해도 최신 checkpoint 이후 유실 위험이 남습니다. 증분 snapshot·스토리지 선택·주기는 **제안**이며 측정 없이 채택하지 않습니다.
+**확정 우선순위: 서버 성능과 원활한 플레이 > 복잡한 자동 장애 복구.** 월드 파일과 PostgreSQL은 서로 다른 시점에 저장될 수 있습니다. 정상 플레이의 기본 중복·유실 예방은 유지하지만 비정상 종료 때 일부 아이템 유실·복사가 생길 수 있음을 수용합니다. 자동 무손실 복구나 모든 상황의 아이템 복사 방지를 보장하지 않습니다.
 
-| 장애 지점 | 후보 복구 동작 |
+일상 경로는 Minecraft 일반 월드 저장과 플레이어 DB 배치 저장을 사용합니다. 유휴 저장·언로드마다 전체 월드 복사·파일/DB 동시 세대 확정·fsync 묶음·checkpoint 테이블을 요구하지 않습니다. 복잡한 거래 보관 시스템, 고비용 체크포인트·완전 자동 복구는 필수 범위에서 제외했습니다. 이전 초안의 일체형 checkpoint 절차는 ADR-0003으로 기본 후보에서 철회했으며 이전 Git 기록으로 확인할 수 있습니다.
+
+백업 자체와 승인된 유지보수·A안 이전의 사전 보존/롤백 계획은 유지합니다. 백업의 주기·보존·비용은 별도 설계하며 정상 클릭 처리와 연결하지 않습니다. 가용 백업도 DB·월드 시점이 다를 수 있어 자동 일치·정전 내구성을 가정하지 않습니다.
+
+### 최소 오류 기록 후보
+
+저장 실패·재시도 한도 초과·손상 payload·모호한 전환/지급·비정상 종료 감지를 기록합니다. 최소 필드는 시간, 오류 유형, scope/run/world/player 식별자, 세션/요청 ID(있는 경우), 저장 revision·마지막 성공 시각, 처리 단계·오류 요약·조치 결과입니다. 아이템 관련 정보는 이미 확인 가능한 요약만 남기며 모든 이동·payload 전체를 동기 로그로 저장하지 않습니다. 같은 오류는 집계·빈도 제한하고 불필요한 개인 정보·인증 정보는 기록하지 않습니다. 보존·회전·권한은 미정입니다.
+
+### 관리자 대응 후보
+
+| 상황 | 기본 처리·관리자 조치 |
 | --- | --- |
-| 템플릿 복제 중 종료 | 미완료 manifest·operation 확인, staging 접근 차단. 기존 원본/진행을 삭제하지 않고 재시도 여부 판정 |
-| DB 저장 실패·타임아웃 | 조작·입장을 잠그고 미완료 작업 기록. 재시도는 operation_id로 멱등 처리; 디스크의 성공만으로 저장 완료 선언 금지 |
-| 월드 저장·언로드 실패 | 실제 로드 상태와 journal 대조, ERROR_HOLD. 최신 DB만 되돌리거나 프로세스를 강제 종료하지 않음 |
-| 파일 준비 후 DB commit 전 종료 | PREPARING 후보를 자동 정상으로 채택하지 않고 manifest·DB snapshot과 대조; 불일치하면 이전 정상 세대 복원 검토 |
-| commit 결과가 모호한 연결 종료 | 같은 operation/generation의 DB 최종 상태 조회 후 재시도; 무조건 중복 commit/보상 금지 |
-| 서버 비정상 종료 | dirty 상태 감지 → RECOVERY_REQUIRED → 파일·DB 세대 대조. 일치 증거 없으면 입장 차단 후 마지막 일관된 파일+DB 묶음 복구 |
-| 손상·버전 미지원·디스크 고갈 | 원본·오류 증거 보존, 자동 빈 월드/빈 인벤토리 생성 금지. 승인된 복구·롤백 절차로 진행 |
+| DB 저장 실패 | 해당 개인 상태의 dirty/오류 유지·제한된 재시도·기록. 전환/복원만 필요한 범위에서 막고, 무관한 진행의 전체 정지를 기본으로 하지 않음 |
+| 월드 저장·언로드 실패 | 성공으로 오기록하지 않고 실제 로드 상태 유지, 해당 진행 오류 기록·관리자 확인. 강제 삭제/자동 빈 월드 대체 금지 |
+| 비정상 종료 후 아이템 불일치 의심 | 로그·마지막 성공 저장 시점·가용 DB/월드 백업을 대조. 모든 플레이어를 자동 rollback하거나 세대가 다르다는 이유만으로 전체 입장을 차단하지 않음 |
+| payload 손상·버전 미지원·진행 소유권 불명 | 해당 범위 접근 제한, 원본 보존 후 관리자가 복구·변환·수동 조정 판단 |
+| 수동 지급·회수·백업 복원 | 조치 전 대상 데이터 보존·중복 작업 확인, 승인된 범위에서만 적용. 사유·대상·수량·조치자·시각·근거·결과 기록 |
 
-복구는 복사본에서 먼저 검사하고 관련 진행만 정지한 상태에서 파일·DB snapshot을 같은 세대로 복원하는 후보입니다. 운영 데이터 덮어쓰기·복원·삭제는 별도 승인이 필요합니다. 백업 매체·보존·용량·오프사이트·정전 내구성은 미정·미검증입니다. 배치 lease 만료만으로 이전 프로세스의 쓰기가 멈췄다고 간주하지 않으며, A안 이전에는 단일 writer fencing·원본 보존·배치 전환·롤백 시험이 추가로 필요합니다.
+관리자는 영향을 받은 플레이어/진행·상자 위치와 오류 시점을 확인하고, 필요한 범위만 임시 제한한 뒤 로그·백업·현재 상태를 비교하는 방향입니다. 일부 유실·복사는 수동 지급/회수·상태 보정으로 처리할 수 있습니다. 근거가 부족하면 불확실성을 기록하고 자동 재지급하지 않습니다. 상자 또는 인벤토리 한쪽만 과거 상태로 복원하면 불일치가 커질 수 있으므로 범위·시점을 함께 검토합니다. 정확한 전체 이동 재구성은 필수도 보장도 아닙니다.
+
+이번 작업에서 로그·관리 명령·복원 도구를 구현하거나 운영 데이터를 보정하지 않았습니다. 실제 데이터 덮어쓰기·복원·삭제·서비스 조작에는 별도 승인이 필요합니다. 자동 복구 확대는 경량성·성능 근거가 있을 때만 별도로 검토합니다.
 
 ## 8. 보호와 자원 채집
 
@@ -162,25 +172,25 @@ jsonb는 유동적인 콘텐츠 변수에만 사용하고 run·소유자·버전
 | --- | --- | --- |
 | T1 / S4 | 두 템플릿 복제·로드, 반복 요청 | 서로 다른 물리 식별자·같은 요청 하나의 작업, 원본/기존 월드 보존. null·예외 시 타 진행/빈 월드로 대체 안 함 |
 | T2 / S4 | 파티 동시 입장·마지막 퇴장·재접속 경합 | 하나의 로드/저장 소유자, 다른 진행 접근 0건, 상태 준비 전 조작 불가 |
-| T3 / S4 | unload false·writer 지연·DB 타임아웃 주입 | 성공 표식 오기록 0건, 원본/이전 checkpoint 보존, 불일치 시 입장 차단 |
-| T4 / S4 | 각 checkpoint 단계에서 강제 종료 후 복구 | 파일+DB 같은 세대만 공개, 보상/인벤토리 중복·유실 여부 대조, 정의한 RPO 밖 손실 불허 |
-| T5 / S4 | 같은 계정 두 story run·economy 이동, 사망·재접속·전환 중 종료 | scope별 아이템·XP·관계 격리, 보상 재처리 중복 0건, 손상 payload를 빈 상태로 덮어쓰지 않음 |
+| T3 / S4 | unload false·DB 타임아웃·재시도 한도 주입 | 저장 성공 오기록 없음, 오류·원본 보존, 해당 범위 제한·관리자 대응 가능, 무한 대기·전체 잠금 없음 |
+| T4 / S4 | 저장·전환 중 강제 종료와 수동 대응 연습 | 시점 불일치·영향과 확인 가능한 근거 기록, 관리자 조치 절차 확인. 일부 장애 유실·복사 허용; 자동 무손실·모든 장애 중복 0건은 요구하지 않음 |
+| T5 / S4 | 정상 상자 입출고·드롭·보상·동시 저장·재접속·story/economy 전환 | 정상 경로의 중복·유실 없음, scope별 격리·저장 순서 확인. 손상 payload 덮어쓰기 금지. 강제 종료는 T4로 분리 |
 | T6 / S4 | DB 교차 run 참조·권한 위조·오래된 session 응답 | 복합 FK·DAO가 거부, 타 진행 조회/변경 0건. SQL migration·동시성 시험 필요 |
 | T7 / S4 | 구역 내외 건축·다중 블록·유체·피스톤·폭발·엔티티·양손 우회 | 보호 구역의 비허용 변화 0건, 허용 건축/정상 퀘스트 동작, 전체 변경 전후 대조 |
 | T8 / S4 | 콘텐츠·템플릿 버전 추가/비호환 migration | 기존 월드 불변, 삭제/변경 ID가 진행 초기화·중복 보상을 유발하지 않음, rollback 세대 확인 |
 | T9 / S4 | async DB·I/O 지연과 async 접근 감시 | Bukkit 비동기 위반·메인 스레드 future 대기 0건, 늦은 응답이 새 세션 상태 변경하지 않음 |
 | T10 / S5 | AI 검색·캐시·대화·탈퇴 중 지연 응답 | 다른 진행/개인의 비공개 정보 유출 0건. 모델·AI 구현은 미정 |
-| T11 / S6 | 활성 진행·플레이어·NPC·AI 중첩 부하 | 사전 합의 CPU·RAM·I/O·MSPT/GC·입장 지연 한계 만족, 반복 언로드 후 지속 참조 누수 없음 |
+| T11 / S6 | 활성 진행·플레이어·NPC·AI 중첩 부하 | 사전 합의 CPU·RAM·I/O·MSPT/GC·입장 지연 한계 만족, 반복 언로드 후 지속 참조 누수 없음. 클릭별 DB 트랜잭션/flush 부재 확인, 선택 안전장치의 부하·지연이 크면 제외 |
 
 S3 완료 전에는 아래 정책 제안 검토, 스키마/전이/복구 모순 해소, 콘텐츠 참조·보호 이벤트 목록과 검증 입력/결과 기록 형식까지 준비해야 합니다. 현재는 초안 작성만 완료했고 구현을 시작하지 않았습니다.
 
 ## 10. 결정 대기 목록
 
-- 스키마별 owner 구분, 인벤토리 정본/저장 포맷·전환 정책, 캐시·RLS 사용과 DB 연결 기술.
-- 유휴 시간·진행 시간 경과, checkpoint 방식·주기·RPO/RTO·저장 실패 재시도 한도, 안전한 로그인 대기 방식.
+- 스키마별 owner 구분, PostgreSQL 중심 개인 인벤토리의 정확한 범위/저장 포맷·전환 정책, 캐시·RLS 사용과 DB 연결 기술.
+- 유휴 시간·진행 시간 경과, 배치 저장 주기/크기·대기/재시도 한도·백업/로그 보존·관리자 조치 권한, 안전한 로그인 대기 방식. 고비용 checkpoint·자동 무손실은 필수 결정 항목에서 제외.
 - 중간 합류·과거 보상·탈퇴 자산·파티 분할/병합과 소유권 부재 정책.
 - 템플릿/콘텐츠 manifest 형식·버전 호환·migration/rollback, 기존 월드 신규 지형 적용 방식.
 - 보호 구역 충돌·행위별 권한·건축 드롭과 채집 반출 정책, 채집 인던 소유/초기화/재생성.
 - 경제 멀티 프로세스 분리 여부와 AI 세부 기술은 그대로 미정.
 
-확정 설계 변경이 필요한 항목은 사용자 검토 후 후속 ADR로 관리합니다. 이번 초안은 ADR-0001·0002를 변경하지 않으며 서버·컨테이너·DB 실행이나 운영 변경을 승인하지 않습니다.
+확정 설계 변경이 필요한 항목은 사용자 검토 후 후속 ADR로 관리합니다. 이번 초안은 ADR-0001·0002를 유지하고 인벤토리·장애 대응에는 ADR-0003을 반영하며 서버·컨테이너·DB 실행이나 운영 변경을 승인하지 않습니다.
