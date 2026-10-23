@@ -3,7 +3,8 @@
 | 문서 | 역할 |
 | --- | --- |
 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | 현재 단계·완료 근거·환경·미결정 및 미검증 항목 |
-| [stack-build-verification.md](stack-build-verification.md) | 공식 배포본 체크섬·Java 25 실제 빌드·JAR 검사 및 이전 사전 확인 이력 |
+| [stack-build-verification.md](stack-build-verification.md) | S2 빌드·API 참조 컴파일·계약 검토와 미검증 런타임 범위 |
+| [story-world-detailed-design.md](story-world-detailed-design.md) | S3 진행 ID·수명주기·DB·콘텐츠·보호/채집·복구의 제안 초안 |
 | [ROADMAP.md](ROADMAP.md) | 단계별 상태·목표·완료 조건·선행 조건 |
 | [CHANGELOG.md](CHANGELOG.md) | Git 기록에 근거한 주요 변경 이력 |
 | [architecture.md](architecture.md) | B안 채택 구조, 시스템 경계, 데이터 분리와 미정 항목 |

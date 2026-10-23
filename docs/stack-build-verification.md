@@ -7,6 +7,131 @@
 - 최신 재개 기준 SHA: `1231166724d0e26aee38c9c5f87807f841bd2cb3`.
 - 최신 결론: **Temurin JDK 25.0.5+8-LTS + Gradle 9.1.0 + Paper API 26.2.build.134-stable 조합의 실제 의존성 해결·Java 컴파일·JAR 패키징 성공.** Minecraft 서버 로딩·게임 기능·런타임 호환성은 미검증입니다.
 
+## S2 마무리: Paper 26.2 API 표면 검증
+
+- 기준 커밋: `fc438a86d56205c3a60038ce8b8a922a072ccbff`; 시작 main·작업 트리·staging 깨끗함.
+- S2 판정: **완료 — 기술 선택·빌드/API 사용 가능 경로 검토와 후속 성공 기준 문서화 범위.** 모든 API 기능의 실제 동작·DB 통합·성능·런타임 검증 완료가 아닙니다. 이는 S4 이후 실행 검증 대상으로 분리하며 아래 미검증 위험을 인계합니다.
+- 같은 API/JDK/Gradle로 `/tmp/hearth-s2-api-et_dqpd5`에 복사한 별도 검증 프로젝트를 사용했습니다. 기존 최소 빌드 산출물은 보존했습니다. Hearth 게임 소스·이벤트 등록·서버·DB 실행은 없습니다.
+
+| S2 완료 조건 | 확인 근거 | 판정 |
+| --- | --- | --- |
+| 지정 스택 최소 빌드 | 이전 Temurin 25.0.5·Gradle 9.1.0·고정 API 의존성 해결·컴파일·JAR 성공 | 충족 |
+| 월드 수명주기 API | createWorld·lookup·save(true)·unloadWorld 참조 컴파일 및 공식 API 소스 검토 | 충족; 동작 미시험 |
+| 이동·식별 API | getUID·getKey·getWorld(UUID/key)·teleportAsync 참조 컴파일 | 충족; 접속·이동 미시험 |
+| 보호 구현 경로 | 블록·상호작용·버킷·폭발·피스톤·유체·인벤토리 이벤트 참조 컴파일 | 충족; 보호 우회 미시험 |
+| 인벤토리 분리 경로 | storage·armor·offhand·ender chest 읽기/복원, ItemStack 직렬화 참조 컴파일 | 충족; 데이터 round trip 미시험 |
+| 스레드 제약·위험·성공 기준 | 아래 API 계약 및 [S3 초안의 후속 검증표](story-world-detailed-design.md) | 문서화 완료; 실행 미시험 |
+
+### API 계약과 구현 제약
+
+| 영역 | 검토한 API·구현 가능 경로 | 반드시 남겨둘 제약 |
+| --- | --- | --- |
+| 생성·로드 | Server.createWorld(WorldCreator), getWorld(UUID/NamespacedKey) | null·예외·이미 로드된 월드 반환 처리. 생성 옵션 복사는 공간 복제가 아님 |
+| 저장·언로드 | World.save(true), Server.unloadWorld(world,true), isTickingWorlds | 메인 스레드라는 조건만으로 충분하지 않음. 월드 틱 중 로드·언로드 예외 계약 확인, 안전한 scheduler 시점 검증 필요. save(true)는 chunk writer 대기이지 파일·DB 원자성·정전 내구성 보증이 아님 |
+| 이동 | Entity의 teleportAsync(Location,cause)를 Player에서 사용 | future false·예외·접속 종료 처리. 메인 스레드에서 get/join 금지. 반환 뒤에도 세션·권한 확인. portal·respawn 경로도 별도 통제 |
+| 식별 | getUID·getKey와 논리 run_id 매핑 | 물리 UUID·키를 파티 ID나 진행의 영구 ID로 사용하지 않음 |
+| 이벤트 보호 | setCancelled, 상호작용의 useInteractedBlock/useItemInHand DENY | 장소·행위·양손·다중 블록·외부 유입·다른 플러그인 변경까지 검사해야 함. 취소 가능한 이벤트 존재는 완전 보호의 증거가 아님 |
+| 인벤토리 | PlayerInventory, EnderChest, ItemStack serializeItemsAsBytes/deserializeItemsFromBytes | API 참조만 컴파일. 실제 호출은 서버 구현에 의존. 커서·GUI·장비·중복 지급·버전 이식은 미검증 |
+| 동시성 | BukkitScheduler.runTask / runTaskAsynchronously | 월드·플레이어·인벤토리 조회/변경은 서버 스레드에서. DB·파일·AI I/O는 불변 DTO만 전달. 늦은 결과의 세션/배치 epoch 재검사 |
+
+고정 API의 [공식 소스 JAR](https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/26.2.build.134-stable/paper-api-26.2.build.134-stable-sources.jar)과 실제 binary를 대조했습니다. [26.2 Server API](https://jd.papermc.io/paper/26.2/org/bukkit/Server.html), [ItemStack API](https://jd.papermc.io/paper/26.2/org/bukkit/inventory/ItemStack.html), [PlayerInteractEvent](https://jd.papermc.io/paper/26.2/org/bukkit/event/player/PlayerInteractEvent.html)를 참고합니다. 공식 문서의 계약 확인과 실제 런타임 시험은 구별합니다.
+
+[Paper 스케줄러 안내](https://docs.papermc.io/paper/dev/scheduler/)는 월드 상태 API의 비동기 접근을 제한합니다. [이동 안내](https://docs.papermc.io/paper/dev/entity-teleport/)는 미로드 청크 이동에 teleportAsync를 권장하고 메인 스레드의 future 대기를 금지합니다. 비동기 I/O를 시작했다고 Bukkit 접근이나 DB 응답을 틱 스레드에서 대기해도 되는 것은 아닙니다. 일반 파일 복사·DB I/O가 비동기여도 CPU·디스크 경쟁은 남습니다.
+
+### 실제 명령·증거
+
+소스는 API 서명만 확인하는 미호출 메서드입니다. listener 등록·실행·보호 로직·DB 코드는 없고 실제 구현으로 사용하면 안 됩니다. 이전 build.gradle.kts·plugin.yml과 같은 설정을 썼습니다.
+
+```bash
+env JAVA_HOME=/home/server/.local/share/hearth-verification/jdk-25.0.5+8 GRADLE_USER_HOME=/tmp/hearth-paper-build-18zrg9zn/gradle-user-home /tmp/hearth-gradle-9.1.0/gradle-9.1.0/bin/gradle --offline --no-daemon --console=plain --info compileJava jar > api-validation.log 2>&1
+```
+
+결과: 종료 코드 0, `BUILD SUCCESSFUL in 4s`, `3 actionable tasks: 3 executed`. Java toolchain 경로는 이전 JDK와 같고 캐시의 고정 API를 사용했습니다. compileJava는 새 프로젝트에서 실제 실행됐으며 up-to-date 판정이 아닙니다. 이번 offline 검사는 새로운 다운로드 가용성 검사가 아니고 이전 기록의 다운로드 성공을 재사용합니다.
+
+- 로그: `/tmp/hearth-s2-api-et_dqpd5/api-validation.log`
+- JAR: `/tmp/hearth-s2-api-et_dqpd5/build/libs/hearth-paper-verification-0.0.1.jar`
+- JAR SHA-256: `da1b57678e90d44812694c090a2919f2a4403a0e6a0b1a9c28a44b4d320c2b31`
+- 참조 소스 SHA-256: `fed34d83aabebe67fab4cdd26a26ce80e6484b7e01fa0dac4d720e6f2f476de8`
+- ZIP 검사 통과. 메인·ApiSurfaceProbe 두 클래스는 major 69. manifest·두 클래스·plugin.yml 외 파일 없음. Paper API 미포함.
+- **이번에 미실행**: 월드 생성·이동·저장·언로드, 이벤트 호출·차단, 인벤토리 직렬화/복원 실제 호출, JDBC·PostgreSQL, 장애 주입, 서버 로딩·성능.
+
+재현용 `ApiSurfaceProbe.java`(검증 프로젝트의 src/main/java/org/hearth/verification 아래):
+
+```java
+package org.hearth.verification;
+
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import org.bukkit.*;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.block.*;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.inventory.*;
+import org.bukkit.event.player.*;
+import org.bukkit.inventory.*;
+import org.bukkit.plugin.Plugin;
+
+// Compile-only surface probes. Never registered or invoked by the plugin.
+public final class ApiSurfaceProbe {
+    public World createOrLoad(Server server, String name) {
+        if (server.isTickingWorlds()) throw new IllegalStateException();
+        return server.createWorld(new WorldCreator(name));
+    }
+    public World lookup(Server server, UUID id, NamespacedKey key, World world) {
+        UUID physicalId = world.getUID();
+        NamespacedKey physicalKey = world.getKey();
+        server.getWorld(key);
+        return server.getWorld(id);
+    }
+    public boolean saveUnload(Server server, World world) {
+        if (server.isTickingWorlds()) throw new IllegalStateException();
+        world.save(true);
+        return server.unloadWorld(world, true);
+    }
+    public CompletableFuture<Boolean> move(Player player, Location destination) {
+        World source = player.getWorld();
+        return player.teleportAsync(destination, PlayerTeleportEvent.TeleportCause.PLUGIN);
+    }
+    public byte[][] snapshot(Player player) {
+        PlayerInventory inv = player.getInventory();
+        return new byte[][] {
+            ItemStack.serializeItemsAsBytes(inv.getStorageContents()),
+            ItemStack.serializeItemsAsBytes(inv.getArmorContents()),
+            ItemStack.serializeItemsAsBytes(new ItemStack[] {inv.getItemInOffHand()}),
+            ItemStack.serializeItemsAsBytes(player.getEnderChest().getContents())
+        };
+    }
+    public void restore(Player player, byte[][] data) {
+        PlayerInventory inv = player.getInventory();
+        inv.setStorageContents(ItemStack.deserializeItemsFromBytes(data[0]));
+        inv.setArmorContents(ItemStack.deserializeItemsFromBytes(data[1]));
+        inv.setItemInOffHand(ItemStack.deserializeItemsFromBytes(data[2])[0]);
+        player.getEnderChest().setContents(ItemStack.deserializeItemsFromBytes(data[3]));
+    }
+    public void protection(BlockBreakEvent broken, BlockPlaceEvent placed,
+            PlayerInteractEvent interact, PlayerBucketEmptyEvent bucket,
+            EntityExplodeEvent explosion, BlockPistonExtendEvent piston,
+            BlockFromToEvent flow, InventoryClickEvent click, InventoryDragEvent drag) {
+        Location location = placed.getBlockPlaced().getLocation();
+        broken.setCancelled(true); placed.setCancelled(true);
+        interact.setUseInteractedBlock(Event.Result.DENY);
+        interact.setUseItemInHand(Event.Result.DENY);
+        bucket.setCancelled(true); explosion.setCancelled(true);
+        explosion.blockList(); piston.getBlocks(); piston.setCancelled(true);
+        flow.setCancelled(true); click.setCancelled(true); drag.setCancelled(true);
+    }
+    public void threading(Plugin plugin, Runnable ioOnly, Runnable serverOnly) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, ioOnly);
+        plugin.getServer().getScheduler().runTask(plugin, serverOnly);
+    }
+    public void transitions(PlayerTeleportEvent teleport, PlayerRespawnEvent respawn) {
+        teleport.getFrom(); teleport.getTo(); teleport.setCancelled(true);
+        respawn.getRespawnLocation();
+    }
+}
+```
+
 ## 2026-10-23 실제 빌드 재개 결과
 
 시작 시 `main` 작업 트리·staging은 깨끗했고 origin fetch 후 이력 차이는 `0 0`이었습니다. 사용자 승인에 따라 JDK는 홈의 전용 디렉터리에, Gradle은 /tmp에 압축 해제했습니다. root·시스템 패키지·기본 Java·셸 초기화 파일·전역 환경 변수·기존 서비스 설정은 변경하지 않았습니다. JAVA_HOME과 GRADLE_USER_HOME은 실행 명령에만 지정했습니다.
