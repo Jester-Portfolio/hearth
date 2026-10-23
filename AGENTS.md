@@ -13,7 +13,7 @@ The project includes:
 
 ## Confirmed Stack and World Policies
 
-- Follow [ADR-0001](docs/decisions/0001-story-world-multiworld.md), [ADR-0002](docs/decisions/0002-stack-and-world-policies.md), [ADR-0003](docs/decisions/0003-inventory-performance-and-recovery.md), and [ADR-0004](docs/decisions/0004-community-quests-and-chapter-skip.md). These are design approvals, not implementation validation or operational approval.
+- Follow [ADR-0001](docs/decisions/0001-story-world-multiworld.md), [ADR-0002](docs/decisions/0002-stack-and-world-policies.md), [ADR-0003](docs/decisions/0003-inventory-performance-and-recovery.md), [ADR-0004](docs/decisions/0004-community-quests-and-chapter-skip.md), and [ADR-0005](docs/decisions/0005-dungeon-spawning-and-difficulty.md). These are design approvals, not implementation validation or operational approval.
 - Use Paper 26.2, Java 25, Gradle, PostgreSQL, a single plugin JAR with internal feature modules, Docker Compose, and existing Zabbix monitoring. Target vanilla Minecraft Java Edition clients, minimize separate client mods, and provide a server resource pack when needed. AI service technologies remain undecided.
 - Run story progress worlds in one Paper process. Clone versioned, prebuilt spatial templates; add templates over time and preserve existing player worlds and progress. Save and unload inactive worlds, restoring them on reconnect.
 - Keep NPC placement, dialogue, and quest definitions in separate content data. Store player progress, quests, NPC relationships, and story branches in PostgreSQL with per-world logical isolation. Separate story and economy inventories and progress.
@@ -86,6 +86,14 @@ The project includes:
 ## Community and Story Quest Policy
 
 - Follow ADR-0004: co-op uses a Community sharing one story_run_id, world and major outcomes. Do not implement an in-game party leave system or carry forward party leader/split/merge proposals as requirements. Joining and administrator membership changes remain undecided.
-- Keep personal inventory, quest completion and reward records separate by Community and player. Important Community quests require every currently online member to meet conditions; offline members are excluded. Roster changes during progression remain undecided.
+- Keep personal inventory, quest completion and reward records separate by Community and player. Important Community quests require every currently online member to meet conditions; offline members are excluded. New logins must not interrupt the current combat/cutscene/quest stage; recheck all currently online members at the next important stage and block entry if any fail. Preserve completed stages. Exact stage boundaries and login/logout races remain undecided.
 - Preserve fixed Community branches and world/NPC state during personal catch-up, assistance and per-chapter skips. Skip main and required roadside quests of the selected previously progressed chapter, satisfying personal next-chapter prerequisites; do not assume optional side quests are bulk skipped.
-- Do not decide skip/helper rewards, joining procedure, roster-change behavior, branch decision mechanism, or past-scene instance/cutscene/NPC implementation without approval. Physical replacement schemas remain proposals.
+- Do not decide skip/helper rewards, joining procedure, stage-boundary/login races, vote abstention/time limits/roster changes, or past-scene instance/cutscene/NPC implementation without approval. Physical replacement schemas remain proposals.
+
+- Important branch choices require satisfied progression conditions and a vote of currently online Community members: more than 50% of all eligible members. No majority or a tie means no commitment and a revote. One online eligible member may choose. Committed branches never change; late members follow them.
+- Follow ADR-0005 for combat dungeons: inner-boundary entry triggers spawning; a larger boundary supplies the player count at spawn time. Scale monster count/health/attack from that count and keep spawned difficulty fixed; recount at the next zone and suppress unintended duplicate events. Sizes, multipliers, boss details, respawns/reset, creation/ownership/reentry/death remain undecided. Do not infer gathering-instance lifecycle from combat spawning.
+- Separate reward execution from editable quest/dungeon reward data; aim to change values without code edits/rebuilds. Defer amounts/multipliers/skip/helper balancing until story and gameplay are concrete. Storage format and reload/application details remain undecided; retain ADR-0003 reward deduplication and immediate payout-state persistence.
+
+## Public Story Information Boundary
+
+- This public repository contains general system design only. Never include actual story, character secrets, twists, endings, or novel manuscripts. Do not read or copy from hearth-story-private or import its content into this repository.

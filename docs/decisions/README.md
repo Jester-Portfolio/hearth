@@ -8,6 +8,7 @@
 | [ADR-0002: 기술 스택과 월드 운영 정책](0002-stack-and-world-policies.md) | 승인 | 기술 스택, 템플릿·콘텐츠·진행 분리, 보호·채집 정책 |
 | [ADR-0003: 성능 우선 인벤토리 저장과 수동 장애 대응](0003-inventory-performance-and-recovery.md) | 승인 | 월드 상자·PostgreSQL 개인 인벤토리, 기본 안전성·비용 제한·수동 조정 |
 | [ADR-0004: 공동체·퀘스트·장별 따라잡기와 스킵](0004-community-quests-and-chapter-skip.md) | 승인·미구현 | 공유 진행·개인 퀘스트·접속자 전원 조건·고정 분기·장별 스킵 |
+| [ADR-0005: 전투 인던 구역별 스폰·소환 시점 난이도](0005-dungeon-spawning-and-difficulty.md) | 승인·미구현 | 내부/산정 바운더리 분리·시점별 인원 산정·난이도 고정·중복 억제 |
 
 각 기록에는 다음 내용을 포함합니다.
 
