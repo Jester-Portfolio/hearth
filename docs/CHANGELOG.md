@@ -2,6 +2,12 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-25 — 탐험·지역 접근·개인 거점 이동과 스마트폰
+
+- [ADR-0008](decisions/0008-story-exploration-regions-and-fast-travel.md)에 메인 기반 공동체 자유 탐험 개방·개인 기록 보존·지역 접근 3종·직접 방문 개인 거점/시설 빠른 이동을 기록했습니다.
+- [ADR-0009](decisions/0009-smartphone-item-gui-and-information.md)에 순정 인벤토리/E키 보존·드롭 불가 전용 아이템·슬롯 GUI·6메뉴/알림·기본 채팅 AI·지도/미니맵 구분·정보 경계를 기록했습니다. 0키/E키 교체/제작 슬롯 버튼·도감은 현행 요구가 아닙니다.
+- S3 후보/미실행 E/H/P/M 계획, ADR-0006 연결과 안내/현황/로드맵/작업 지침 반영. 기준 `9800d483b6b258e0499c96c10963b8781b25c908` 및 사용자 확정 지시; 결과 커밋은 `git log -- docs/decisions/0009-smartphone-item-gui-and-information.md`로 확인합니다. S2 완료·S3 진행 중·S4 미착수, 문서만 변경하며 운영/게임 실행·비공개 서사 접근은 없습니다.
+
 ## 2026-10-24 — 인던 유형별 난이도와 보스 운영·재도전
 
 - [ADR-0007](decisions/0007-dungeon-and-boss-operations.md)에 유형별 난이도·집결 자동 부활·길목/보스 횟수 분리·재도전 범위/초기화 선택지·명단 고정/복귀·전멸 대기/전원 종료·운영 투표를 기록했습니다.

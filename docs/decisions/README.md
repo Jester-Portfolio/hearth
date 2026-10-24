@@ -11,6 +11,8 @@
 | [ADR-0005: 전투 인던 구역별 스폰·소환 시점 난이도](0005-dungeon-spawning-and-difficulty.md) | 승인·미구현 | 내부/산정 바운더리 분리·시점별 인원 산정·난이도 고정·중복 억제 |
 | [ADR-0006: 퀘스트·대화·컷신·전투 사망과 조건부 부활](0006-quests-dialogue-cutscenes-and-combat-revival.md) | 승인·미구현 | 퀘스트 운영·개인 시청 기록·관전·설정형 부활·전투 인벤토리 유지 |
 | [ADR-0007: 필드·특수 인던과 보스전 운영·재도전](0007-dungeon-and-boss-operations.md) | 승인·미구현 | 유형별 난이도·집결/횟수 분리·명단 고정·복귀·전멸 대기·운영 투표 |
+| [ADR-0008: 스토리·자유 탐험·지역 접근·거점 이동](0008-story-exploration-regions-and-fast-travel.md) | 승인·미구현 | 공동체 탐험 개방·접근 3종·개인 방문 해금/시설 이동 |
+| [ADR-0009: 스마트폰 아이템·GUI·기본 메뉴·정보 접근](0009-smartphone-item-gui-and-information.md) | 승인·미구현 | 순정 인벤토리 보존·6메뉴·알림·채팅 AI·지도/미니맵 검증 경계 |
 
 각 기록에는 다음 내용을 포함합니다.
 
