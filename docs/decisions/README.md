@@ -9,6 +9,7 @@
 | [ADR-0003: 성능 우선 인벤토리 저장과 수동 장애 대응](0003-inventory-performance-and-recovery.md) | 승인 | 월드 상자·PostgreSQL 개인 인벤토리, 기본 안전성·비용 제한·수동 조정 |
 | [ADR-0004: 공동체·퀘스트·장별 따라잡기와 스킵](0004-community-quests-and-chapter-skip.md) | 승인·미구현 | 공유 진행·개인 퀘스트·접속자 전원 조건·고정 분기·장별 스킵 |
 | [ADR-0005: 전투 인던 구역별 스폰·소환 시점 난이도](0005-dungeon-spawning-and-difficulty.md) | 승인·미구현 | 내부/산정 바운더리 분리·시점별 인원 산정·난이도 고정·중복 억제 |
+| [ADR-0006: 퀘스트·대화·컷신·전투 사망과 조건부 부활](0006-quests-dialogue-cutscenes-and-combat-revival.md) | 승인·미구현 | 퀘스트 운영·개인 시청 기록·관전·설정형 부활·전투 인벤토리 유지 |
 
 각 기록에는 다음 내용을 포함합니다.
 
