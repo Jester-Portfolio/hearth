@@ -1,0 +1,104 @@
+{
+  "date": "2026-10-26",
+  "base_commit": "496d8c1b1c2fec9127d847b83a10a38edfeb8cdc",
+  "workspace": "/tmp/hearth-s4-4.ftzpohf3",
+  "jdk": "Temurin 25.0.5+8",
+  "gradle": "9.1.0",
+  "paper_api": "26.2.build.134-stable",
+  "postgresql": "18.3",
+  "result": "PASS",
+  "checks": [
+    "migration_and_idempotent_version",
+    "shared_A_does_not_change_B",
+    "same_run_shared_state_for_P1_P2",
+    "P1_A_does_not_change_P1_B",
+    "P1_A_does_not_change_P2_A",
+    "duplicate_keys_rejected",
+    "unknown_run_and_foreign_context_rejected",
+    "stale_revision_rejected",
+    "concurrent_CAS_single_winner",
+    "SQL_write_failure_logged_not_success",
+    "SQL_read_failure_logged_not_success",
+    "changed_migration_refused_without_reset",
+    "new_pool_connections_restore_committed_state",
+    "stopped_database_connection_failure_not_success"
+  ],
+  "suites": [
+    {
+      "task": "test",
+      "name": "io.github.jesterportfolio.hearth.persistence.PostgresProgressStoreTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "seconds": "1.548"
+    },
+    {
+      "task": "test",
+      "name": "io.github.jesterportfolio.hearth.world.TemplateStoreTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "seconds": "0.016"
+    },
+    {
+      "task": "postgresIntegrationTest",
+      "name": "io.github.jesterportfolio.hearth.persistence.PostgresIsolationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "seconds": "5.218"
+    }
+  ],
+  "loopback_port": 38267,
+  "db_stopped": "postmaster exited; loopback port released",
+  "jar": {
+    "path": "build/libs/Hearth-0.1.0-SNAPSHOT.jar",
+    "sha256": "6d9b3edf40fb6a5064254a2192de10ea218554277b73ee7af3be9a491f85e297",
+    "class_major": 69,
+    "sql_resource": true,
+    "runtime_dependencies_bundled": false
+  },
+  "artifacts": [
+    {
+      "file": "postgresql-42.7.14.jar",
+      "local_sha256": "73914527305a40cce504b0d3d90b23caf565136912d607ae8ae7c5895512332c",
+      "publisher_algorithm": "sha1",
+      "publisher_hash": "0e7c94ce80cb1dd9875ff44ffe6a40a8aaa3eefd",
+      "publisher_checksum": "https://repo.maven.apache.org/maven2/org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar.sha1"
+    },
+    {
+      "file": "HikariCP-7.1.0.jar",
+      "local_sha256": "2be45c641b841e81df87292e181f2c203500c5f0e9a1676f135927387f3cf40b",
+      "publisher_algorithm": "sha1",
+      "publisher_hash": "13ac26e0d5ef25ae7f1515e59e525c500f013ccc",
+      "publisher_checksum": "https://repo.maven.apache.org/maven2/com/zaxxer/HikariCP/7.1.0/HikariCP-7.1.0.jar.sha1"
+    },
+    {
+      "file": "embedded-postgres-2.2.2.jar",
+      "local_sha256": "9b1722ccfbfb441b7b1440edd35c1a229b173d82ab25d6111dd8642b48ba66fa",
+      "publisher_algorithm": "sha1",
+      "publisher_hash": "e764686a63618f077240e5cdbbf121266ee74808",
+      "publisher_checksum": "https://repo.maven.apache.org/maven2/io/zonky/test/embedded-postgres/2.2.2/embedded-postgres-2.2.2.jar.sha1"
+    },
+    {
+      "file": "embedded-postgres-binaries-linux-amd64-18.3.0.jar",
+      "local_sha256": "1974c3a59c3ae010e9818e81637e425aad94eaac26e4ef533b42e081fe7ca345",
+      "publisher_algorithm": "sha512",
+      "publisher_hash": "52643f7bbb3df784b78d0b2815b919b41b75be4bbd06e2fa40d2990e9be353c98f73e09d9a5af51cccc2da88114118f98fb670644c823843312fc0613b2cf392",
+      "publisher_checksum": "https://repo.maven.apache.org/maven2/io/zonky/test/postgres/embedded-postgres-binaries-linux-amd64/18.3.0/embedded-postgres-binaries-linux-amd64-18.3.0.jar.sha512"
+    }
+  ],
+  "logs_sha256": {
+    "stage.log": "cf3efb819199d9c794a3e424ab6517adeb698a727b34e81974178b54c835ae71",
+    "integration.log": "c1343dcb152dd9905fa22e83732120e491f2cc3282886dde99f7f610b04c0965",
+    "db-result.txt": "cfd747c2f6db047c35e9b672aa738089996da5abb19cfc1d09b76484414fb9f7",
+    "db-stopped.txt": "97f3ca650c4e18d55ea6cc623837e5769c4ac9830bb66326d8f7b9f62e90a0a5"
+  },
+  "not_executed": [
+    "Paper runtime with new libraries",
+    "authenticated player",
+    "DB process restart",
+    "inventory scheduler",
+    "CPU/RSS/TPS/MSPT/load measurements"
+  ]
+}

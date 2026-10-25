@@ -161,3 +161,9 @@ Hearth는 Minecraft 기반 RPG 및 서버 엔지니어링 프로젝트입니다.
 
 - [S4-3 기록](docs/s4-3-verification.md)을 참고합니다. 선택 manual-player 모드는 S4-2의 준비/복원/자원 감시를 재사용하고 수동 JVM 플래그가 있을 때만 온라인 플레이어 관측과 콘솔 player-open/status를 활성화합니다. 보호/bypass는 WorldGuard가 판정합니다. 준비와 두 수동 세션 모두 합산 240초 예산을 공유합니다.
 - 인증 클라이언트가 없어 실제 플레이어 행동과 수동 TTY 런타임은 모두 미실행입니다. 빌드/정적 게이트·기본 S4-1/S4-2 회귀 통과를 클라이언트 보호 성공으로 취급하지 않습니다. MANUAL_CLOSED / MANUAL_SESSIONS_CLOSED_UNVERIFIED는 PASS가 아닙니다. 계정 비밀번호/토큰 요청·저장, 온라인 인증 우회, 가짜 Player/이벤트로 시험 충족은 금지합니다. 원본 증거를 보존하고 전체 S4는 진행 중으로 유지합니다.
+
+## S4-4 저장 기반 경계
+
+- [S4-4 기록](docs/s4-4-verification.md)을 참고합니다. 최소 공유/개인 V001·pgJDBC/HikariCP·비동기 저장·revision CAS와 신규 격리 PostgreSQL 통합 시험을 추가했습니다. story_run_id 및 story_run_id+player_uuid만 소유권 키로 쓰며 물리 월드 ID나 가입 기능으로 확대하지 않습니다.
+- 컨텍스트 발급은 신뢰하는 서버의 검증된 연결만 사용해야 하며 현재 인증/세션·Paper 부팅과 연결하지 않았습니다. 메인 스레드 DB 대기·worker에서 Bukkit 호출을 금지하고 이후 연동에서 세션 재검증/메인 스레드 반영을 시험합니다. 변경된 스키마 체크섬·알 수 없는 버전을 빈 데이터로 재설정하지 않습니다.
+- 실제 시험은 신규 사용자 소유 /tmp 경로·loopback·체크섬·자원/시간 제한·종료/포트 반환 확인을 요구합니다. scripts/verify-s4-4.py는 기존 DB/운영 환경을 사용하거나 데이터 삭제를 수행하지 않습니다. 단위 시험과 실DB 시험은 별도이며 새로운 Paper libraries 로딩은 미시험입니다. 인벤토리/30초 스케줄러·거래/보상·운영 배포·전체 S4 완료로 취급하지 않습니다.
