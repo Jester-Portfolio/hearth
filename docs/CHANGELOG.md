@@ -2,6 +2,12 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-25 — S4 사전 플러그인 적합성 조사와 C1 추천안
+
+- [검토 문서](plugin-suitability-review.md)에 WG/WE·MV 공식 버전/라이선스/API/의존성, MV와 Paper API+Hearth 관리자 비교, 동적 월드/WG 저장·진행 격리·성능 위험과 미실행 PL1~PL10을 기록했습니다. WorldGuard 채택은 유지하고 Multiverse-Core는 후보로 남겼습니다.
+- AGENTS/ROADMAP에 기능 구현 전 기성 플러그인 조사·선택 근거 기록 원칙을 추가했습니다. 감사 C1 온라인 시작명단/난이도 안은 추천이며 사용자 승인 전 미해결입니다. S2 완료·S3 진행 중·S4 실제 구현 미착수 유지.
+- 기준 `be4a2917347372962124ac6e6c59f94c6d5f3d88`. 결과 커밋은 `git log -- docs/plugin-suitability-review.md`로 확인합니다. 문서/공식 공개 자료만 확인했으며 게임 코드·빌드·플러그인 다운로드/설치·서비스 실행·운영 변경·비공개 서사 접근은 없습니다.
+
 ## 2026-10-25 — G1~G4 후속 경계와 WorldGuard 채택·재감사
 
 - [ADR-0013](decisions/0013-vote-boss-and-gathering-state-boundaries.md)에 투표 입력마감/영속확정·보스 일시정지/필수 실패·진행별 채집 단일 리셋/실패 보류를, [ADR-0014](decisions/0014-worldguard-protection-engine.md)에 양쪽 WorldGuard 기본 보호·책임 분리/구역 수명주기/W1~W13을 기록했습니다.

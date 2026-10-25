@@ -4,6 +4,7 @@
 | --- | --- |
 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | 현재 단계·완료 근거·환경·미결정 및 미검증 항목 |
 | [stack-build-verification.md](stack-build-verification.md) | S2 빌드·API 참조 컴파일·계약 검토와 미검증 런타임 범위 |
+| [plugin-suitability-review.md](plugin-suitability-review.md) | S4 사전 조사: WorldGuard/WorldEdit 의존성·버전 근거, Multiverse-Core/Paper API 비교와 미실행 시험 계획 |
 | [story-world-detailed-design.md](story-world-detailed-design.md) | S3 진행 ID·수명주기·DB·콘텐츠·보호/채집·복구의 제안 초안 |
 | [ROADMAP.md](ROADMAP.md) | 단계별 상태·목표·완료 조건·선행 조건 |
 | [CHANGELOG.md](CHANGELOG.md) | Git 기록에 근거한 주요 변경 이력 |
