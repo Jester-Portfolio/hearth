@@ -13,14 +13,17 @@ public final class TemplateStoreTest {
         Path b = Files.createDirectory(root.resolve("b"));
         Files.createDirectory(source.resolve("region"));
         Files.writeString(source.resolve("region/r.0.0.mca"), "synthetic-region");
-        Files.writeString(source.resolve("uid.dat"), "template-identity");
-        Files.writeString(a.resolve("uid.dat"), "identity-a");
-        Files.writeString(b.resolve("uid.dat"), "identity-b");
+        Path identity = Path.of("data/paper/metadata.dat");
+        for (Path dir : new Path[] {source, a, b}) Files.createDirectories(dir.resolve(identity).getParent());
+        Files.writeString(source.resolve(identity), "template-identity");
+        Files.writeString(a.resolve(identity), "identity-a");
+        Files.writeString(b.resolve(identity), "identity-b");
         var store = new TemplateStore();
         String original = store.digest(source);
         store.copySpatial(source, a, original);
         store.copySpatial(source, b, original);
-        require(Files.readString(a.resolve("uid.dat")).equals("identity-a"), "identity preserved");
+        require(Files.readString(a.resolve(identity)).equals("identity-a")
+                && Files.readString(b.resolve(identity)).equals("identity-b"), "identity preserved");
         Files.writeString(a.resolve("region/r.0.0.mca"), "changed-a");
         require(store.digest(source).equals(original) && store.digest(b).equals(original), "physical copy isolation");
         expectIo(() -> store.copySpatial(source, b, "wrong-checksum"));

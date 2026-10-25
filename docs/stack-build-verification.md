@@ -5,7 +5,7 @@
 - 시작 상태: `main`, 작업 트리·staging 깨끗함. fetch 후 `origin/main...HEAD`는 `0 0`, 기존 미공개 커밋 없음.
 - 이전 사전 확인 결론: Stable API 다운로드까지 확인했으나 JDK·Gradle 부재로 컴파일은 미실행이었음. 아래에 해당 이력을 보존합니다.
 - 최신 재개 기준 SHA: `1231166724d0e26aee38c9c5f87807f841bd2cb3`.
-- 최신 결론: **Temurin JDK 25.0.5+8-LTS + Gradle 9.1.0 + Paper API 26.2.build.134-stable 조합의 실제 의존성 해결·Java 컴파일·JAR 패키징 성공.** Minecraft 서버 로딩·게임 기능·런타임 호환성은 미검증입니다.
+- S2 결론: **Temurin JDK 25.0.5+8-LTS + Gradle 9.1.0 + Paper API 26.2.build.134-stable 조합의 실제 의존성 해결·Java 컴파일·JAR 패키징 성공.** 아래는 당시 서버 미실행 기록입니다. 후속 2026-10-26 [S4-1 검증](s4-1-verification.md)에서 고정 조합의 최소 Paper 로딩·A/B 블록/구역 API smoke를 통과했으며 전체 게임 기능·부하는 미검증입니다.
 
 ## S2 마무리: Paper 26.2 API 표면 검증
 

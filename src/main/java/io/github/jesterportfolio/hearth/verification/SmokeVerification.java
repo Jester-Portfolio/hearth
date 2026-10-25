@@ -3,6 +3,8 @@ package io.github.jesterportfolio.hearth.verification;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.domains.Association;
+import com.sk89q.worldguard.protection.association.RegionAssociable;
 import com.sk89q.worldguard.protection.flags.Flags;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
@@ -133,8 +135,10 @@ public final class SmokeVerification implements AutoCloseable {
         manager.addRegion(region);
     }
     private void checkFlags() {
-        boolean allowA = manager(world(a)).getApplicableRegions(BlockVector3.at(0,64,0)).testState(null, Flags.BUILD);
-        boolean allowB = manager(world(b)).getApplicableRegions(BlockVector3.at(0,64,0)).testState(null, Flags.BUILD);
+        // BUILD requires a subject. This is an explicit synthetic nonmember, not a connected player/event test.
+        RegionAssociable subject = regions -> Association.NON_MEMBER;
+        boolean allowA = manager(world(a)).getApplicableRegions(BlockVector3.at(0,64,0)).testState(subject, Flags.BUILD);
+        boolean allowB = manager(world(b)).getApplicableRegions(BlockVector3.at(0,64,0)).testState(subject, Flags.BUILD);
         check(!allowA && allowB, "worldguard_same_region_id_distinct_flags");
     }
     private RegionManager manager(World world) {

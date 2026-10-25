@@ -138,6 +138,8 @@ motd=Hearth isolated S4 verification
                             outcome = 'PASS'
                         elif 'HEARTH_S4_RESULT FAIL' in message:
                             outcome = 'FAIL'
+                        elif sent_test and 'Unknown or incomplete command' in message:
+                            outcome = 'COMMAND_REJECTED'
             try:
                 child.wait(timeout=15)
             except subprocess.TimeoutExpired:

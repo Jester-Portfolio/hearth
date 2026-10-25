@@ -44,7 +44,8 @@ public final class PaperWorldBackend implements WorldBackend {
         try {
             String marker = Files.readString(placement.directory().resolve(".hearth-s4-spatial-ready")).trim();
             if (!marker.equals(placement.storyRunId() + "/" + placement.key() + "/" + placement.physicalId())
-                    || !Files.isRegularFile(placement.directory().resolve("uid.dat"))
+                    // Paper 26.2 persists UUID in saved data, not the pre-26.2 uid.dat.
+                    || !Files.isRegularFile(placement.directory().resolve("data/paper/metadata.dat"), LinkOption.NOFOLLOW_LINKS)
                     || !Files.isRegularFile(placement.directory().resolve("region/r.0.0.mca"))) {
                 throw new IllegalStateException("Missing identity/spatial readiness; refusing empty replacement");
             }

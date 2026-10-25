@@ -2,6 +2,13 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-26 — EULA 동의 후 S4-1 런타임 smoke 통과
+
+- 사용자 명시 EULA 동의 후 새 Hearth 전용 시험 경로에만 `eula=true`를 적용했습니다. 고정 Paper 26.2 build 134·Java 25·WG 7.0.19·WE 7.4.4 활성화/종료와 합성 A/B 월드 블록/식별자 분리·저장/언로드/재로드·구역 API/YAML 저장/재조회·원본 템플릿 보존을 확인했습니다.
+- 초기 콘솔 권한 거부, Paper 26.2 UUID 메타데이터 경로 가정, WG BUILD의 null 주체 오류를 수정하고 재빌드·파일 시험·새 격리 경로 재시험을 통과했습니다. 이전 시도 결과/로그는 보존하며 성공으로 소급하지 않습니다.
+- [S4-1 기록](s4-1-verification.md)과 [요약 증거](../verification/s4-1-runtime-result.json)에 버전/JAR·로그 해시·실제 자원·경고/미검증을 기록했습니다. 최종 harness/JVM exit 0, 21.09초·최대 표본 RSS 921.09MiB, 종료 후 시험 포트/JVM 없음. 부하/누수·실제 플레이어 이벤트·DB/전체 게임 기능은 미시험이며 S4 진행 중입니다.
+- 재개 기준 `fb58dbb613fc7a64b94b49e5af7ef936c8d2eb9f`. 기존 Docker/Zabbix/Cloudflare/SSH·전역 Java·다른 서버 설정 변경, 실제 게임 데이터/비공개 서사 접근은 없습니다. 결과 커밋은 이 항목의 Git 이력에서 확인합니다.
+
 ## 2026-10-26 — S4-1 최소 플러그인·파일 격리 검사 착수
 
 - Java 25/Gradle Kotlin DSL 최소 Hearth JAR, Paper API 어댑터/논리-물리 식별 경계·공간 템플릿 복사·격리 콘솔 smoke 경로·WG 연동 코드를 추가했습니다. Multiverse-Core 의존과 DB/NPC/퀘스트/AI/경제 구현은 없습니다.

@@ -10,4 +10,4 @@ commands:
     permission: hearth.verify
 permissions:
   hearth.verify:
-    default: false
+    default: op

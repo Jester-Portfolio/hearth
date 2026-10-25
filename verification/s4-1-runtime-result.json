@@ -1,0 +1,99 @@
+{
+  "checked_at": "2026-10-26T01:18:11+09:00",
+  "base_commit": "fb58dbb613fc7a64b94b49e5af7ef936c8d2eb9f",
+  "eula": "Explicit user acceptance received before test; eula=true only in isolated test directories",
+  "versions": {
+    "java": "Temurin 25.0.5+8-LTS",
+    "gradle": "9.1.0",
+    "paper": "26.2-134-3e24be0",
+    "paper_api": "26.2.build.134-stable",
+    "worldguard": "7.0.19+2400-f395a16",
+    "worldedit": "7.4.4+7546-f9e033f"
+  },
+  "hearth_jar_sha256": "35865d106dfeeb0f72716ffb3ccbb7600285c172a62f7eaa67c6c5cef245b174",
+  "outcome": "PASS",
+  "server_exit_code": 0,
+  "harness_exit_code": 0,
+  "workspace": "/tmp/hearth-s4-1.tqzurv7b",
+  "listen": "127.0.0.1:25585",
+  "port_released_after_exit": true,
+  "duration_seconds": 21.09,
+  "startup_reported_seconds": 10.132,
+  "resources": {
+    "heap_max_mib": 1536,
+    "active_processor_count_hint": 2,
+    "nice": 10,
+    "max_sampled_rss_kib": 943200,
+    "minimum_sampled_host_available_kib": 12456228,
+    "sampled_cpu_seconds": 41.52,
+    "sample_count": 182,
+    "note": "Short synthetic startup/smoke only; no player load, TPS/MSPT, heap/GC or leak benchmark; processor hint is not a hard CPU quota"
+  },
+  "checks": [
+    "template_saved_unloaded",
+    "distinct_identifiers",
+    "same_template_distinct_spatial_copies",
+    "template_content_loaded",
+    "a_change_does_not_change_b",
+    "duplicate_allocation_rejected",
+    "separate_worldguard_managers",
+    "worldguard_same_region_id_distinct_flags",
+    "worldguard_save_completed",
+    "a_b_saved_unloaded",
+    "reload_preserves_changes_and_ids",
+    "worldguard_same_region_id_distinct_flags",
+    "failure_did_not_change_other_world",
+    "template_preserved"
+  ],
+  "template_sha256": "81a195cb09289409bdcd5f2e6a42a180a40a124baab5c50b1436789834182470",
+  "placements_file": [
+    "templateVersion=synthetic-v1",
+    "templateSha256=81a195cb09289409bdcd5f2e6a42a180a40a124baab5c50b1436789834182470",
+    "00000000-0000-0000-0000-000000000001=hearth_verify:template_v1,55997f3d-9a0c-4d76-b462-bb256db6805c,/tmp/hearth-s4-1.tqzurv7b/server/world/dimensions/hearth_verify/template_v1",
+    "00000000-0000-0000-0000-00000000000a=hearth_verify:a,a505ae5b-4c8b-4cfa-91c3-ba936a38ca47,/tmp/hearth-s4-1.tqzurv7b/server/world/dimensions/hearth_verify/a",
+    "00000000-0000-0000-0000-00000000000b=hearth_verify:b,0646fb2c-4ef8-4b8d-848e-adadff2f950a,/tmp/hearth-s4-1.tqzurv7b/server/world/dimensions/hearth_verify/b"
+  ],
+  "retained_evidence_sha256": {
+    "console.log": "95859eb96426d69abc01a5389f565d20ae843e69934529c2fb8c715ab0e1d95c",
+    "resource-samples.json": "8fd1c0042a0ed6516bb5ab4556a7a59d410921320931371c176b840bb17483d9",
+    "run-result.json": "4bfad714dd57f397bf4a48f016e26f8b574806aade3343310ebf896aeb5f4fa6"
+  },
+  "earlier_attempts": [
+    {
+      "workspace": "/tmp/hearth-s4-1.RSHqyT",
+      "outcome": "NOT_COMPLETED",
+      "server_exit_code": 143,
+      "reason": "default:false hid console command; stopped only isolated JVM with SIGTERM, logs retained"
+    },
+    {
+      "workspace": "/tmp/hearth-s4-1.ggm_t22k",
+      "outcome": "FAIL",
+      "server_exit_code": 0,
+      "reason": "Legacy uid.dat guard rejected Paper 26.2 data/paper/metadata.dat"
+    },
+    {
+      "workspace": "/tmp/hearth-s4-1.2vk2kre3",
+      "outcome": "FAIL",
+      "server_exit_code": 0,
+      "reason": "WorldGuard BUILD requires non-null RegionAssociable; fixed explicit synthetic nonmember subject"
+    }
+  ],
+  "warnings": [
+    "Noninteractive terminal",
+    "JOML deprecated Unsafe use",
+    "Pinned Paper build is older than latest",
+    "Manual plugin-induced save while server auto-save configured"
+  ],
+  "not_tested": [
+    "Connected player movement/build events",
+    "Entity/NPC/player data cloning",
+    "DB and inventory isolation",
+    "Process restart restore",
+    "IDLE and repeated unload leak/load tests",
+    "Disk or DB fault injection",
+    "WorldEdit edit operations",
+    "Multiverse-Core comparison",
+    "Full ADR-0014 W1-W13 / PL1-PL10 suite"
+  ],
+  "scope": "Synthetic console block/world/region-API smoke, not production readiness or full S4 completion"
+}
