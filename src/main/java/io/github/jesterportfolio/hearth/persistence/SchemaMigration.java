@@ -8,6 +8,14 @@ import java.util.HexFormat;
 
 /** 한 개의 버전부터 시작하는 트랜잭션 마이그레이션. 기존 SQL 수정/자동 복구/초기화는 금지합니다. */
 final class SchemaMigration {
+    // 버전 행만 정상이고 필수 테이블/열이 없을 때 준비 완료로 오인하지 않습니다.
+    private static void validateTables(Connection connection) throws SQLException {
+        try (var st = connection.createStatement()) {
+            st.executeQuery("SELECT story_run_id,state_value,revision FROM hearth_progress.story_run LIMIT 0").close();
+            st.executeQuery("SELECT story_run_id,player_uuid,state_value,revision FROM hearth_progress.player_progress LIMIT 0").close();
+        }
+    }
+
     static void apply(Connection connection) throws Exception {
         byte[] bytes;
         try (var input = SchemaMigration.class.getResourceAsStream("/db/migration/V001__progress.sql")) {
@@ -28,6 +36,7 @@ final class SchemaMigration {
                         if (rows.getInt(1) != 1 || !rows.getString(2).equals(checksum) || rows.next()) {
                             throw new StorageFailure("migrate", "SCHEMA_VERSION_MISMATCH");
                         }
+                        validateTables(connection);
                         connection.commit();
                         return;
                     }

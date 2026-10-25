@@ -5,6 +5,8 @@
 - 상태: **최소 저장 모듈 구현·빌드·실제 격리 PostgreSQL 통합 시험 통과. S4 전체는 진행 중**입니다. Paper에서 DB 모듈을 활성화하거나 실제 플레이어 데이터를 저장한 결과가 아닙니다.
 - 기준: [ADR-0001](decisions/0001-story-world-multiworld.md), [0002](decisions/0002-stack-and-world-policies.md), [0003](decisions/0003-inventory-performance-and-recovery.md), [0012](decisions/0012-progress-storage-world-lifecycle-and-content.md), [0013](decisions/0013-vote-boss-and-gathering-state-boundaries.md), [S3 설계](story-world-detailed-design.md). 이번 변경은 승인 정책의 최소 구현이며 새 가입·탈퇴·파티장 정책을 만들지 않습니다.
 
+> 후속 [S4-5](s4-5-verification.md)에서 Paper libraries·실DB 연결·Paper 두 JVM 간 상태 복원과 대표 안정성을 시험했습니다. 아래 S4-4 당시의 미실행/구현 경계는 이력으로 보존하며 후속 결과와 구분합니다.
+
 ## 1. 기성 라이브러리 검토와 선택
 
 | 후보·공식 근거 | 확인된 사실·선택 이유 | 남는 경계 |

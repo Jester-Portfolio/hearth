@@ -63,6 +63,20 @@ final class PostgresProgressStoreTest {
         }
     }
 
+    @Test void writesBeforeMigrationNeverReachDatabase() throws Exception {
+        var calls = new AtomicInteger();
+        var access = new ServerProgressAccess();
+        var ctx = context(access);
+        var store = new PostgresProgressStore(new BrokenSource(calls::incrementAndGet),access,f -> {});
+        try {
+            assertEquals("SCHEMA_NOT_READY",failed(store.createRun(ctx.storyRunId(),"initial")).code());
+            assertEquals("SCHEMA_NOT_READY",failed(store.createPlayer(ctx,"initial")).code());
+            assertEquals("SCHEMA_NOT_READY",failed(store.saveShared(ctx,0,"unready")).code());
+            assertEquals("SCHEMA_NOT_READY",failed(store.savePersonal(ctx,0,"unready")).code());
+            assertEquals(0,calls.get(),"미준비 상태의 쓰기가 JDBC에 도달하면 안 됩니다");
+        } finally { store.closeAsync().toCompletableFuture().get(5,TimeUnit.SECONDS); }
+    }
+
     @Test void invalidPayloadFailsBeforeConnection() throws Exception {
         var calls = new AtomicInteger();
         var access = new ServerProgressAccess();

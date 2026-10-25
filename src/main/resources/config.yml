@@ -1,2 +1,4 @@
 # Never enable this in a production server. A matching JVM gate and marker are also required.
 verification-enabled: false
+# S4-5 전용 경로·JVM 플래그까지 확인해야 활성화됩니다. 일반 부팅에서는 DB에 연결하지 않습니다.
+db-verification-enabled: false

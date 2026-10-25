@@ -7,3 +7,7 @@
 ## S4-4 PostgreSQL 시험
 
 `verify-s4-4.py`는 준비된 JDK·Gradle·의존성 캐시를 받아 새 사용자 소유 `/tmp/hearth-s4-4.*` 경로에서만 실행합니다. 핵심 의존성 해시·자원 사전 검사 후 실제 PostgreSQL 통합 task를 실행하며 종료 시 자신의 시험 DB/포트를 확인하고 증거 데이터는 보존합니다. 운영 DB URL이나 계정 설정을 받지 않습니다. 사용 명령·라이선스/무결성 경계·시험 결과·미실행 범위는 [S4-4 기록](../docs/s4-4-verification.md)을 따릅니다.
+
+## S4-5 Paper·PostgreSQL 통합 시험
+
+`verify-s4-5.py`는 사전 빌드·stage된 새 사용자 소유 `/tmp/hearth-s4-5.*` 경로에서만 실행합니다. 기존 S4-2 자원/포트 검사·S4-4 해시/소유 DB 정리를 재사용하며 Paper 최대 2회 순차·PostgreSQL 1개·480초(작업 430초/정리 50초)·가용 RAM 6GiB·Paper 힙 1536MiB/RSS 2.5GiB 중단 한도를 적용합니다. 정확한 명령과 성공/미실행·소유권/자원/증거 경계는 [S4-5 기록](../docs/s4-5-verification.md)을 참고합니다. 기존 증거 경로에서 재실행하지 않습니다.

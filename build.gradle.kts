@@ -84,3 +84,16 @@ tasks.register("stageS44Runtime") {
         copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(target) }
     }
 }
+
+tasks.register("stageS45Runtime") {
+    description = "S4-5 DB 보조 프로세스의 클래스와 시험 라이브러리를 준비합니다. 서버를 실행하지 않습니다."
+    dependsOn(tasks.named("integrationTestClasses"))
+    doLast {
+        val root = file(providers.gradleProperty("s45Workspace").get())
+        require(root.canonicalFile.parentFile == file("/tmp") && root.name.startsWith("hearth-s4-5."))
+        val target = root.resolve("resolved-jars")
+        require(!target.exists()) { "기존 시험 경로 덮어쓰기 금지" }
+        copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(target) }
+        copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
+    }
+}
