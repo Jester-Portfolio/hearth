@@ -16,6 +16,8 @@
 | [ADR-0010: 코옵 정정·지도·정보 메뉴·HUD](0010-coop-information-and-hud.md) | 승인·기술 미검증 | 가입 기능 제외·지도 공개·일지/공동체/알림/설정·HUD |
 | [ADR-0011: 투표·보스 복귀/관전·채집 리셋](0011-votes-boss-return-and-gathering-reset.md) | 승인·추천값 별도 | 채팅30초·정확복귀·혼합 상태·채집 계기/세대 후보 |
 | [ADR-0012: 내부 식별·저장·월드/콘텐츠 보존](0012-progress-storage-world-lifecycle-and-content.md) | 승인·구현 후보 별도 | 소유권·영속 분기·월드 단일작업·버전 보존/백업 후보 |
+| [ADR-0013: 투표/보스/채집 경계](0013-vote-boss-and-gathering-state-boundaries.md) | 승인·C1 미결정 별도 | 입력마감/DB확정·보스일시정지·진행별리셋·단일작업 후보 |
+| [ADR-0014: WorldGuard 기본 보호 엔진](0014-worldguard-protection-engine.md) | 승인·버전/런타임 미검증 | 양쪽 월드 보호·WorldEdit 의존성 확인·Hearth 전용 문맥/시험 행렬 |
 
 각 기록에는 다음 내용을 포함합니다.
 

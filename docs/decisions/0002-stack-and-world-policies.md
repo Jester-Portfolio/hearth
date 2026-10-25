@@ -1,5 +1,7 @@
 # ADR-0002: 기술 스택과 월드 운영 정책
 
+> G1~G4 후속 결정: [ADR-0013](0013-vote-boss-and-gathering-state-boundaries.md)의 입력 마감/보스 상태/진행별 채집과 [ADR-0014](0014-worldguard-protection-engine.md)의 WorldGuard 기본 보호를 적용합니다. 집결의 온라인 기준과 시작 명단/자동 부활 연결은 C1 감사로 남기며 원래 결정일·다른 정책은 보존합니다.
+
 > 2026-10-25 후속 통합: [ADR-0010](0010-coop-information-and-hud.md)의 가입 없는 코옵/정보 UI, [ADR-0011](0011-votes-boss-return-and-gathering-reset.md)의 투표/보스 복귀/채집, [ADR-0012](0012-progress-storage-world-lifecycle-and-content.md)의 저장/월드/버전 정책을 우선합니다. 이전 검토 이력과 원래 결정일은 보존합니다.
 
 > 후속 확정: [ADR-0004](0004-community-quests-and-chapter-skip.md)의 공동체·개인 퀘스트·고정 분기·장별 스킵 정책을 함께 적용합니다. 아래 파티 표현은 공동체 공유 진행으로 해석하며 탈퇴·분할·병합 후보는 현행 요구로 승계하지 않습니다. 가입·탈퇴·관리자 구성원 관리 UI는 현행 요구가 아닙니다(ADR-0010). 본 ADR의 B안·기술·저장 정책은 유지합니다.
@@ -21,6 +23,7 @@
 | 플러그인 언어·빌드 | Java 25, Gradle |
 | 플러그인 구조 | 단일 JAR 배포, 내부 기능별 모듈화 |
 | 데이터베이스 | PostgreSQL |
+| 기본 보호 엔진 | 스토리/경제 모두 WorldGuard (ADR-0014); WorldEdit 제작/관리 및 선택 버전 실제 dependency 확인은 S4 |
 | 배포 | Docker Compose |
 | 모니터링 | 기존 Zabbix 활용 |
 | 클라이언트 | 순정 Minecraft Java Edition, 별도 모드 설치 최소화 |

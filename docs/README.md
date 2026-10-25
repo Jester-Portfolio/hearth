@@ -29,3 +29,5 @@
 
 - [S3 완료 조건 감사](s3-completion-audit.md): 영역별 충족/미충족/S4 이관/의도적 보류, 상태 변경 전 사용자 검토.
 - 통합 후속 정책: [ADR-0010](decisions/0010-coop-information-and-hud.md), [ADR-0011](decisions/0011-votes-boss-return-and-gathering-reset.md), [ADR-0012](decisions/0012-progress-storage-world-lifecycle-and-content.md).
+
+- G1~G4 후속: [ADR-0013](decisions/0013-vote-boss-and-gathering-state-boundaries.md)과 [ADR-0014](decisions/0014-worldguard-protection-engine.md), 최신 [S3 재감사](s3-completion-audit.md).

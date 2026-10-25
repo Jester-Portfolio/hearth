@@ -2,6 +2,12 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-25 — G1~G4 후속 경계와 WorldGuard 채택·재감사
+
+- [ADR-0013](decisions/0013-vote-boss-and-gathering-state-boundaries.md)에 투표 입력마감/영속확정·보스 일시정지/필수 실패·진행별 채집 단일 리셋/실패 보류를, [ADR-0014](decisions/0014-worldguard-protection-engine.md)에 양쪽 WorldGuard 기본 보호·책임 분리/구역 수명주기/W1~W13을 기록했습니다.
+- S3 §13에 VOTE/BOSS/RESET 경합 fixture·예상 결과 추가. G1/G3/G4 명세는 보완했고 G2 온라인 집결과 오프라인 시작명단/자동부활 C1은 미결정으로 재감사했습니다. S3 진행 중·S4 미착수 유지, 실제 호환성/부하는 미검증입니다.
+- 기준 `346ffc446d12155aa01abdef758f1fc294a243fc`·사용자 후속 지시. 결과 커밋은 `git log -- docs/decisions/0014-worldguard-protection-engine.md`로 확인합니다. 게임/SQL/서비스 실행·플러그인 다운로드/설치·운영 변경·비공개 서사 접근 없음.
+
 ## 2026-10-25 — S3 통합 정책 정정 및 완료 조건 감사
 
 - ADR-0010~0012에 가입 없는 코옵, 정보 UI/HUD·채팅 투표·정확 보스복귀/관전·채집 리셋·내부 소유권/저장/버전 보존을 통합했습니다. 이전 가입 미정/안전보정/전체 미정 문구는 후속 결정으로 대체했습니다.
