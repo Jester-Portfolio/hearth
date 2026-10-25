@@ -9,6 +9,7 @@ import org.bukkit.World;
 public interface WorldBackend {
     record Placement(UUID storyRunId, NamespacedKey key, UUID physicalId, Path directory) {}
     Placement create(UUID runId, NamespacedKey key);
+    void registerExisting(Placement placement);
     World load(Placement placement);
     void saveAndUnload(Placement placement);
 }

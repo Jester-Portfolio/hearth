@@ -99,3 +99,7 @@ python3 scripts/verify-s4-1.py --workspace /tmp/hearth-s4-1.tqzurv7b --java /hom
 ## 문서·산출물 검사
 
 2026-10-26: 추적 Markdown 36개·상대 링크 351개(앵커 2개 포함)·표 87개 검사 오류 0. 실행 요약/JAR/보존 로그 해시·공식 배포물 해시·JUnit XML을 대조했습니다. Python 구문 검사·`git diff --check`·staged diff 검사 통과, Gitleaks staged 검사에서 유출 없음. 전체 월드/배포 JAR/원본 로그는 스테이징하지 않습니다. Git 보안 Hook을 유지하며 commit/push 결과는 Git 이력과 작업 보고로 확인합니다.
+
+## 후속 S4-2 기록
+
+2026-10-26 [S4-2](s4-2-verification.md)에서 새 JVM의 최소 월드/구역 복원과 자연 피스톤 이벤트를 확인했습니다. 이 문서의 미실행은 S4-1 당시 범위이며 후속 결과와 구분합니다. 기존 S4-1 원본 로그/결과는 보존했고 새 JAR의 S4-1 smoke도 회귀 통과했습니다. 실제 플레이어 행동·전체 수명주기/부하/DB는 계속 미검증입니다.

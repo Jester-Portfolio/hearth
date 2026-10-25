@@ -145,3 +145,8 @@ The project includes:
 
 - See [S4-1 record](docs/s4-1-verification.md). The current Paper backend is a gated synthetic prototype behind WorldBackend; Multiverse-Core remains a candidate. No production PostgreSQL/NPC/quest/AI/economy implementation is implied.
 - Runtime smoke tests require explicit operator Minecraft EULA acceptance, a fresh user-owned isolated /tmp workspace, verified artifact hashes, localhost binding, resource checks and a bounded process lifetime. Do not reuse existing worlds or infer acceptance from an unanswered question. The user explicitly accepted EULA on 2026-10-26; the recorded pinned runtime smoke passed loading, synthetic block/ID persistence and region-API isolation. This does not prove connected-player WorldGuard event protection, production lifecycle/DB isolation or load/leak behavior. See the record for failed attempts and warnings.
+
+## S4-2 Verification Boundary
+
+- See [S4-2 record](docs/s4-2-verification.md). A fresh isolated test passed sequential JVM restart, recorded world UUID/key/block/region restoration and natural piston cancellation/movement before and after restart. Existing S4-1 smoke regression passed; its original evidence remains preserved.
+- The minimal Properties mapping and registerExisting path are test-only, not a PostgreSQL progression manager. Missing recorded worlds must fail without allocating replacements. Connected-player place/break, build/overlap behavior and permissions/bypass are NOT RUN; region API and natural server piston events do not establish client-action success. TPS/MSPT, repeated-load leaks, full protection/DB/gameplay and full S4 remain incomplete. Keep the same bounded resources, localhost-only fixture and EULA scope.

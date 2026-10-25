@@ -22,7 +22,9 @@ public final class PaperWorldBackend implements WorldBackend {
 
     @Override public Placement create(UUID runId, NamespacedKey key) {
         safeThread();
-        if (!key.getNamespace().equals("hearth_verify")) throw new IllegalArgumentException("Verification key required");
+        if (!key.getNamespace().equals("hearth_verify") || !key.getKey().matches("[a-z0-9_]+")) {
+            throw new IllegalArgumentException("Verification key required");
+        }
         Path expected = Bukkit.getServer().getLevelDirectory().resolve("dimensions")
                 .resolve(key.getNamespace()).resolve(key.getKey()).toAbsolutePath().normalize();
         if (owned.containsKey(key) || Bukkit.getWorld(key) != null || Files.exists(expected, LinkOption.NOFOLLOW_LINKS)) {
@@ -41,7 +43,38 @@ public final class PaperWorldBackend implements WorldBackend {
     @Override public World load(Placement placement) {
         safeThread();
         requireOwned(placement);
+        requireStored(placement);
+        World world = Objects.requireNonNull(Bukkit.createWorld(WorldCreator.ofKey(placement.key()).generator(generator)),
+                "load returned null");
+        if (!world.getUID().equals(placement.physicalId()) || !world.getKey().equals(placement.key())) {
+            throw new IllegalStateException("World identity changed: " + placement.key());
+        }
+        world.setAutoSave(false);
+        return world;
+    }
+
+    /** Reattach a recorded test placement after JVM restart; never allocates or copies a world. */
+    @Override public void registerExisting(Placement placement) {
+        safeThread();
+        Path expected = Bukkit.getServer().getLevelDirectory().resolve("dimensions")
+                .resolve(placement.key().getNamespace()).resolve(placement.key().getKey()).toAbsolutePath().normalize();
+        if (!placement.key().getNamespace().equals("hearth_verify") || !placement.key().getKey().matches("[a-z0-9_]+")
+                || !placement.directory().equals(expected)
+                || owned.containsKey(placement.key())) throw new IllegalArgumentException("Invalid existing placement");
+        requireStored(placement);
+        World loaded = Bukkit.getWorld(placement.key());
+        if (loaded != null && (!loaded.getUID().equals(placement.physicalId())
+                || !loaded.getWorldPath().toAbsolutePath().normalize().equals(expected))) {
+            throw new IllegalStateException("Loaded world identity mismatch");
+        }
+        owned.put(placement.key(), placement);
+    }
+
+    private void requireStored(Placement placement) {
         try {
+            if (!placement.directory().toRealPath().equals(placement.directory())) {
+                throw new IllegalStateException("World path contains symlink/alias");
+            }
             String marker = Files.readString(placement.directory().resolve(".hearth-s4-spatial-ready")).trim();
             if (!marker.equals(placement.storyRunId() + "/" + placement.key() + "/" + placement.physicalId())
                     // Paper 26.2 persists UUID in saved data, not the pre-26.2 uid.dat.
@@ -52,13 +85,6 @@ public final class PaperWorldBackend implements WorldBackend {
         } catch (java.io.IOException e) {
             throw new IllegalStateException("World not prepared/readable; refusing empty replacement", e);
         }
-        World world = Objects.requireNonNull(Bukkit.createWorld(WorldCreator.ofKey(placement.key()).generator(generator)),
-                "load returned null");
-        if (!world.getUID().equals(placement.physicalId()) || !world.getKey().equals(placement.key())) {
-            throw new IllegalStateException("World identity changed: " + placement.key());
-        }
-        world.setAutoSave(false);
-        return world;
     }
 
     @Override public void saveAndUnload(Placement placement) {

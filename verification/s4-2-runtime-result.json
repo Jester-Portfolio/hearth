@@ -1,0 +1,153 @@
+{
+  "outcome": "PASS",
+  "workspace": "/tmp/hearth-s4-2.vnd2kki4",
+  "duration_seconds": 43.51,
+  "jar_sha256": "8b2f47d4bd58f1c712dcde247302642807903babaf27ee736d2884e379b38589",
+  "limits": {
+    "total_seconds": 240,
+    "heap_max_mib": 1536,
+    "rss_stop_mib": 2560,
+    "active_processor_count_hint": 2,
+    "nice": 10,
+    "host_available_min_mib": 6144
+  },
+  "prepare": {
+    "phase": "prepare",
+    "outcome": "PASS",
+    "pid": 976171,
+    "exit_code": 0,
+    "duration_seconds": 27.329,
+    "ready_elapsed_seconds": 14.222,
+    "max_rss_kib": 1312692,
+    "min_host_available_kib": 12079108,
+    "sampled_cpu_seconds": 55.57,
+    "sample_count": 245,
+    "timings": [
+      "phase=prepare op=create_template ms=29.223",
+      "phase=prepare op=save_unload_template ms=250.835",
+      "phase=prepare op=create_a ms=25.775",
+      "phase=prepare op=create_b ms=23.998",
+      "phase=prepare op=load_a ms=22.429",
+      "phase=prepare op=load_b ms=22.125",
+      "phase=prepare op=save_unload_a ms=297.110",
+      "phase=prepare op=save_unload_b ms=275.140"
+    ],
+    "checks": [
+      "PASS prepare distinct_world_identity",
+      "PASS prepare same_template_copied",
+      "PASS prepare initial_template_blocks",
+      "PASS prepare API_world_isolation",
+      "PASS prepare API_overlap_priority",
+      "PASS prepare API_distinct_managers",
+      "PASS prepare API_priorities_persisted",
+      "PASS prepare distinct_blocks_preserved",
+      "PASS prepare EVENT_natural_piston_A_denied",
+      "PASS prepare EVENT_natural_piston_B_allowed",
+      "PASS prepare distinct_blocks_preserved",
+      "PASS prepare worldguard_save_completed",
+      "PASS prepare template_preserved",
+      "PASS prepare mapping_and_spatial_saved"
+    ],
+    "events": [
+      "natural_piston world=hearth_verify:restart_a cancelled=true affected=1",
+      "natural_piston world=hearth_verify:restart_b cancelled=false affected=1"
+    ],
+    "snapshots": [
+      "phase=prepare run=00000000-0000-002a-0000-00000000000a key=hearth_verify:restart_a uuid=d0338083-1d20-442c-95e2-27aa4f2a7e53 block=GOLD_BLOCK",
+      "phase=prepare run=00000000-0000-002a-0000-00000000000b key=hearth_verify:restart_b uuid=57a69884-65d9-41ff-840f-7b031ad2712f block=DIAMOND_BLOCK",
+      "phase=prepare run=00000000-0000-002a-0000-00000000000a key=hearth_verify:restart_a uuid=d0338083-1d20-442c-95e2-27aa4f2a7e53 block=GOLD_BLOCK",
+      "phase=prepare run=00000000-0000-002a-0000-00000000000b key=hearth_verify:restart_b uuid=57a69884-65d9-41ff-840f-7b031ad2712f block=DIAMOND_BLOCK"
+    ]
+  },
+  "resume": {
+    "phase": "resume",
+    "outcome": "PASS",
+    "pid": 976339,
+    "exit_code": 0,
+    "duration_seconds": 16.18,
+    "ready_elapsed_seconds": 8.928,
+    "max_rss_kib": 963236,
+    "min_host_available_kib": 12446448,
+    "sampled_cpu_seconds": 34.43,
+    "sample_count": 134,
+    "timings": [
+      "phase=resume op=restore_load_a ms=85.002",
+      "phase=resume op=restore_load_b ms=94.510",
+      "phase=resume op=save_unload_a ms=468.779",
+      "phase=resume op=save_unload_b ms=287.828"
+    ],
+    "checks": [
+      "PASS resume missing_world_rejected_without_replacement",
+      "PASS resume existing_placements_registered_no_allocation",
+      "PASS resume preload_identity_metadata_preserved_restart_template",
+      "PASS resume preload_identity_metadata_preserved_restart_a",
+      "PASS resume preload_identity_metadata_preserved_restart_b",
+      "PASS resume preload_template_preserved",
+      "PASS resume preload_spatial_files_preserved",
+      "PASS resume existing_uuids_and_keys_restored",
+      "PASS resume API_world_isolation",
+      "PASS resume API_overlap_priority",
+      "PASS resume API_distinct_managers",
+      "PASS resume API_priorities_persisted",
+      "PASS resume distinct_blocks_preserved",
+      "PASS resume EVENT_natural_piston_A_denied",
+      "PASS resume EVENT_natural_piston_B_allowed",
+      "PASS resume distinct_blocks_preserved",
+      "PASS resume worldguard_save_completed",
+      "PASS resume template_preserved"
+    ],
+    "events": [
+      "natural_piston world=hearth_verify:restart_a cancelled=true affected=1",
+      "natural_piston world=hearth_verify:restart_b cancelled=false affected=1"
+    ],
+    "snapshots": [
+      "phase=resume run=00000000-0000-002a-0000-00000000000a key=hearth_verify:restart_a uuid=d0338083-1d20-442c-95e2-27aa4f2a7e53 block=GOLD_BLOCK",
+      "phase=resume run=00000000-0000-002a-0000-00000000000b key=hearth_verify:restart_b uuid=57a69884-65d9-41ff-840f-7b031ad2712f block=DIAMOND_BLOCK",
+      "phase=resume run=00000000-0000-002a-0000-00000000000a key=hearth_verify:restart_a uuid=d0338083-1d20-442c-95e2-27aa4f2a7e53 block=GOLD_BLOCK",
+      "phase=resume run=00000000-0000-002a-0000-00000000000b key=hearth_verify:restart_b uuid=57a69884-65d9-41ff-840f-7b031ad2712f block=DIAMOND_BLOCK"
+    ]
+  },
+  "connected_player_tests": "NOT RUN: no authenticated Minecraft client in this isolated fixture",
+  "tps_mspt_and_leaks": "NOT MEASURED",
+  "all_test_jvms_exited": true,
+  "port_released": true,
+  "checked_at": "2026-10-26T01:53:25+09:00",
+  "base_commit": "4691b11f6664242d25188fc17d5d451332313ae1",
+  "versions": {
+    "java": "Temurin 25.0.5+8-LTS",
+    "gradle": "9.1.0",
+    "paper": "26.2-134-3e24be0",
+    "paper_api": "26.2.build.134-stable",
+    "worldguard": "7.0.19+2400-f395a16",
+    "worldedit": "7.4.4+7546-f9e033f"
+  },
+  "scope": "Full JVM restart and persisted test worlds/regions; API queries plus natural piston events; no connected player action validation or full S4 completion",
+  "retained_evidence_sha256": {
+    "prepare-console.log": "47e4cba4b5f01bc5b381f9120cf3eded2a3ee0ca051fbb9dd20306449ff9838d",
+    "resume-console.log": "63f7a3075790b1c4d60aac98bd38cad69c73f266b333f1504ba8742d06f335f3",
+    "prepare-resources.json": "bae2a63b3f4d8e77e9be0d66ce5010d0df208b567f4724f514d91cd6bc2c360d",
+    "resume-resources.json": "de12ac7bbf4949df34339da34927d0ffaf5bbf6abd5e8726481433b4b5ca816b",
+    "prepare-result.json": "1f4e331defb2bdd697133c2c6a663b6482b94a8aa216ec568dbbdfbb1374080c",
+    "resume-result.json": "92be39157463b43bf9034ae5b168a00173b99b686edf9a2cfbefe71a0e33e424",
+    "run-result.json": "6518636f75ddcd3d5ffc69a8552702f4ee90f848604fa2e97797aaef0a99ad07",
+    "server/plugins/Hearth/restart-mapping.properties": "8511c1c54c4f8fb5b158296accf71a676fcf26db650483e7f942ac725fff48e9",
+    "server/plugins/Hearth/restart-prepare-result.properties": "f720def73735c1b2b1187b2529f28f83fc1cca08c6d25d162a20ae161fa8d31d",
+    "server/plugins/Hearth/restart-resume-result.properties": "36ccd8cb2235b41dd5b89fe3eadb96c6b04e57be2bea3b066673823c754f63d9"
+  },
+  "earlier_attempt": {
+    "workspace": "/tmp/hearth-s4-2.0qcb7zku",
+    "phase": "prepare",
+    "outcome": "FAIL",
+    "server_exit_code": 0,
+    "reason": "Fixed 30-tick wait expired before chunk preparation and natural piston events; changed to bounded observation/settling wait; original logs preserved, no resume JVM started"
+  },
+  "remaining": [
+    "Authenticated player place/break and event permissions/bypass",
+    "Player-action overlap and building-zone tests",
+    "Other indirect events (explosions, fluid, fire, entities)",
+    "Crash/corrupt-data IO failure injection",
+    "Separate save vs unload time, TPS/MSPT, heap/GC, repeated-load leak benchmark",
+    "Production mapping/PostgreSQL and inventory/progress isolation",
+    "WorldEdit editing and Multiverse comparison"
+  ]
+}
