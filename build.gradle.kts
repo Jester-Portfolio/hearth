@@ -58,6 +58,7 @@ dependencies {
     add(integrationTest.runtimeOnlyConfigurationName, "io.zonky.test.postgres:embedded-postgres-binaries-linux-amd64:18.3.0")
 }
 tasks.register<Test>("postgresIntegrationTest") {
+    include("**/PostgresIsolationTest.class")
     description = "새 사용자 소유 격리 PostgreSQL에서 저장·진행 격리를 검사합니다."
     testClassesDirs = integrationTest.output.classesDirs
     classpath = integrationTest.runtimeClasspath
@@ -94,6 +95,34 @@ tasks.register("stageS45Runtime") {
         val target = root.resolve("resolved-jars")
         require(!target.exists()) { "기존 시험 경로 덮어쓰기 금지" }
         copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(target) }
+        copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
+    }
+}
+
+tasks.register<Test>("inventoryIntegrationTest") {
+    description = "새 격리 PostgreSQL의 V001 보존·V002·인벤토리 키/CAS를 검사합니다."
+    testClassesDirs = integrationTest.output.classesDirs
+    classpath = integrationTest.runtimeClasspath
+    useJUnitPlatform()
+    include("**/InventoryPostgresTest.class")
+    maxHeapSize = "256m"
+    jvmArgs("-XX:ActiveProcessorCount=2")
+    timeout.set(Duration.ofSeconds(90))
+    outputs.upToDateWhen { false }
+    doFirst {
+        val root = providers.gradleProperty("inventoryWorkspace").get()
+        systemProperty("hearth.inventory.workspace", root)
+        systemProperty("java.io.tmpdir", root)
+    }
+}
+
+tasks.register("stageInventoryRuntime") {
+    dependsOn(tasks.named("integrationTestClasses"))
+    doLast {
+        val root = file(providers.gradleProperty("inventoryWorkspace").get())
+        require(root.canonicalFile.parentFile == file("/tmp") && root.name.startsWith("hearth-s4-6."))
+        require(!root.resolve("resolved-jars").exists())
+        copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(root.resolve("resolved-jars")) }
         copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
     }
 }

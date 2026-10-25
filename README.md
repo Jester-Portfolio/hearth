@@ -39,9 +39,11 @@ Git 저장소의 문서를 ChatGPT와 Codex가 공유하는 공식 프로젝트 
 
 [S4-3](docs/s4-3-verification.md)는 인증된 플레이어의 수동 건축 시험 경로를 준비했습니다. 클라이언트 미확보로 실제 접속 행동과 수동 경로 런타임은 미실행이며 S4는 진행 중입니다.
 
-[S4-4](docs/s4-4-verification.md)는 최소 PostgreSQL 공유/개인 스키마·비동기 저장·revision 기반 덮어쓰기 방지와 실DB 진행 격리·실패·재연결 시험을 통과했습니다. Paper DB 활성화·전체 인벤토리/30초 자동 저장·운영 배포는 아직 수행하지 않았습니다.
+[S4-4](docs/s4-4-verification.md)는 최소 PostgreSQL 공유/개인 스키마·비동기 저장·revision 기반 덮어쓰기 방지와 실DB 진행 격리·실패·재연결 시험을 통과했습니다. 해당 S4-4 단계에서는 Paper DB 활성화·전체 인벤토리/30초 자동 저장·운영 배포를 수행하지 않았습니다.
 
-[S4-5](docs/s4-5-verification.md)는 격리 Paper–PostgreSQL 연결·libraries 로딩·두 Paper JVM 간 상태/revision 복원과 대표 오류/대기열/종료 처리를 검증했습니다. 실제 플레이어·전체 인벤토리/자동 저장·장기 안정성·운영 배포는 미완료이며 S4는 진행 중입니다.
+[S4-5](docs/s4-5-verification.md)는 격리 Paper–PostgreSQL 연결·libraries 로딩·두 Paper JVM 간 상태/revision 복원과 대표 오류/대기열/종료 처리를 검증했습니다. 해당 S4-5 범위는 실제 플레이어·전체 인벤토리/자동 저장·장기 안정성·운영 배포를 포함하지 않으며 S4는 진행 중입니다.
+
+[S4-6~8](docs/s4-8-verification.md)은 V002 인벤토리·실제 30초 dirty 저장·source 저장 후 내부 전환·두 JVM 복원과 대표 오류를 검증했습니다. 실제 접속 플레이어와 일반 아이템 이벤트·추가 인벤토리 영역·운영 배포는 미검증이며 전체 S4는 진행 중입니다.
 
 후속 [S4-2 검증](docs/s4-2-verification.md)에서 새 JVM의 A/B 영속성·구역 API·자연 피스톤 보호를 확인했습니다. 접속 플레이어 설치/파괴는 미실행이며 전체 S4는 진행 중입니다.
 

@@ -10,10 +10,15 @@ import java.util.*;
 public final class S45DatabaseFixture {
     public static void main(String[] args) throws Exception {
         Path root=Path.of(args[0]).toRealPath();
+        boolean inventory=args.length==2 && args[1].equals("--inventory");
+        String prefix=inventory ? "hearth-s4-6." : "hearth-s4-5.";
+        String database=inventory ? "hearth_s4_6" : "hearth_s4_5";
+        String table=inventory ? "story_inventory" : "player_progress";
+        byte[] originalInventory=null;
         if (System.getProperty("user.name").equals("root") || !root.getParent().equals(Path.of("/tmp"))
-                || !root.getFileName().toString().startsWith("hearth-s4-5.")
+                || !root.getFileName().toString().startsWith(prefix)
                 || !Files.getOwner(root).getName().equals(System.getProperty("user.name"))
-                || !Files.readString(root.resolve(".hearth-s45-isolated")).trim().equals("S4-5 isolated test only")
+                || !Files.readString(root.resolve(inventory ? ".hearth-inventory-isolated" : ".hearth-s45-isolated")).trim().equals(inventory ? "S4-6 isolated test only" : "S4-5 isolated test only")
                 || Files.exists(root.resolve("data"))) throw new IllegalStateException("Fresh owned S4-5 fixture required");
         Path sockets=Files.createDirectory(root.resolve("socket"));
         EmbeddedPostgres pg=null;
@@ -29,13 +34,13 @@ public final class S45DatabaseFixture {
                 .setLocaleConfig("locale","C").setConnectConfig("connectTimeout","2").setConnectConfig("socketTimeout","5").start();
             try (var c=pg.getPostgresDatabase().getConnection(); var st=c.createStatement()) {
                 try (var rs=st.executeQuery("SHOW data_directory")) { rs.next(); if (!Path.of(rs.getString(1)).toRealPath().equals(root.resolve("data"))) throw new IllegalStateException("Wrong DB"); }
-                st.execute("CREATE DATABASE hearth_s4_5");
+                st.execute("CREATE DATABASE "+database);
             }
-            var ds=pg.getDatabase("postgres","hearth_s4_5");
+            var ds=pg.getDatabase("postgres",database);
             admin=ds.getConnection();
             String marker=UUID.randomUUID().toString();
             Files.writeString(root.resolve(".hearth-s45-db"),marker,StandardOpenOption.CREATE_NEW);
-            Files.writeString(root.resolve("db-endpoint.properties"),"port="+pg.getPort()+"\ndatabase=hearth_s4_5\nmarker="+marker+"\n",StandardOpenOption.CREATE_NEW);
+            Files.writeString(root.resolve("db-endpoint.properties"),"port="+pg.getPort()+"\ndatabase="+database+"\nmarker="+marker+"\n",StandardOpenOption.CREATE_NEW);
             System.out.println("HEARTH_S45_DB READY port="+pg.getPort()); System.out.flush();
             try (var reader=new BufferedReader(new InputStreamReader(System.in))) {
                 for (String command;(command=reader.readLine())!=null;) {
@@ -47,7 +52,7 @@ public final class S45DatabaseFixture {
                     else if (command.equals("lock")) {
                         if (lock!=null) throw new IllegalStateException("Already locked");
                         lock=ds.getConnection(); lock.setAutoCommit(false);
-                        try (var st=lock.createStatement()) { st.setQueryTimeout(3); st.execute("LOCK TABLE hearth_progress.story_run IN ACCESS EXCLUSIVE MODE"); }
+                        try (var st=lock.createStatement()) { st.setQueryTimeout(3); st.execute("LOCK TABLE hearth_progress."+(inventory ? "story_inventory" : "story_run")+" IN ACCESS EXCLUSIVE MODE"); }
                     } else if (command.equals("unlock")) {
                         Objects.requireNonNull(lock).rollback(); lock.close(); lock=null;
                     } else {
@@ -55,10 +60,10 @@ public final class S45DatabaseFixture {
                             st.setQueryTimeout(3);
                             switch (command) {
                                 case "write-fail-on" -> {
-                                    st.execute("CREATE FUNCTION hearth_progress.reject_s45() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test write failure' USING ERRCODE='23514'; END $$");
-                                    st.execute("CREATE TRIGGER reject_s45 BEFORE UPDATE ON hearth_progress.player_progress FOR EACH ROW EXECUTE FUNCTION hearth_progress.reject_s45()");
+                                    st.execute("CREATE OR REPLACE FUNCTION hearth_progress.reject_s45() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test write failure' USING ERRCODE='23514'; END $$");
+                                    st.execute("CREATE TRIGGER reject_s45 BEFORE UPDATE ON hearth_progress."+table+" FOR EACH ROW EXECUTE FUNCTION hearth_progress.reject_s45()");
                                 }
-                                case "write-fail-off" -> st.execute("DROP TRIGGER reject_s45 ON hearth_progress.player_progress");
+                                case "write-fail-off" -> st.execute("DROP TRIGGER reject_s45 ON hearth_progress."+table);
                                 case "schema-corrupt" -> {
                                     try (var rs=st.executeQuery("SELECT checksum FROM hearth_progress.schema_version WHERE version=1")) { rs.next(); checksum=rs.getString(1); }
                                     st.executeUpdate("UPDATE hearth_progress.schema_version SET checksum='s45-injected-mismatch' WHERE version=1");
@@ -70,6 +75,20 @@ public final class S45DatabaseFixture {
                                 case "table-show" -> {
                                     try (var rs=st.executeQuery("SELECT to_regclass('hearth_progress.player_progress')")) { rs.next(); if (rs.getString(1)!=null) throw new IllegalStateException("Unexpected replacement table"); }
                                     st.execute("ALTER TABLE hearth_progress.s45_held_player_progress RENAME TO player_progress");
+                                }
+                                case "inventory-corrupt", "inventory-repair" -> {
+                                    if (!inventory) throw new IllegalArgumentException("Inventory fixture required");
+                                    var run=new UUID(42,11); var player=new UUID(46,1);
+                                    if (command.equals("inventory-corrupt")) {
+                                        try (var read=admin.prepareStatement("SELECT payload FROM hearth_progress.story_inventory WHERE story_run_id=? AND player_uuid=?")) {
+                                            read.setObject(1,run); read.setObject(2,player);
+                                            try (var row=read.executeQuery()) { if (!row.next()) throw new IllegalStateException("Missing test inventory"); originalInventory=row.getBytes(1); }
+                                        }
+                                    }
+                                    try (var write=admin.prepareStatement("UPDATE hearth_progress.story_inventory SET payload=? WHERE story_run_id=? AND player_uuid=?")) {
+                                        write.setBytes(1,command.equals("inventory-corrupt") ? new byte[208] : Objects.requireNonNull(originalInventory));
+                                        write.setObject(2,run); write.setObject(3,player); write.executeUpdate();
+                                    }
                                 }
                                 default -> throw new IllegalArgumentException("Unknown fixture command");
                             }

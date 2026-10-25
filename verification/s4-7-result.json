@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-26",
+  "status": "PASS",
+  "stage_complete": true,
+  "runtime_evidence": "s4-8-result.json",
+  "unit_suite": {
+    "name": "io.github.jesterportfolio.hearth.inventory.InventoryTransitionTest",
+    "tests": 6,
+    "failures": 0
+  },
+  "runtime_checks": [
+    "source_saved_before_target_applied",
+    "target_inventory_applied",
+    "rejected_BUSY",
+    "rejected_MISSING_INVENTORY",
+    "rejected_APPLY_FAILED",
+    "rejected_INVALID_STATE",
+    "rejected_23514",
+    "rejected_STALE_CONTEXT",
+    "logout_pending_latest_drained"
+  ],
+  "unit_only": [
+    "지연된 source in-flight와 최신 스냅샷 사이의 전환 대기 상세",
+    "전환 중 DB revision 충돌"
+  ],
+  "not_executed": [
+    "실제 로그인·텔레포트·종료 이벤트",
+    "commit 응답 불명·비정상 종료",
+    "부분적인 PlayerInventory setter 적용 실패"
+  ]
+}

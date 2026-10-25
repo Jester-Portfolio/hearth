@@ -1,0 +1,225 @@
+{
+  "outcome": "PASS",
+  "failure": null,
+  "cleanup_errors": [],
+  "workspace": "/tmp/hearth-s4-6.bxx056__",
+  "duration_seconds": 74.732,
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "processes": {
+    "database": {
+      "pid": 1015417,
+      "exit_code": 0,
+      "ready_seconds": null,
+      "duration_seconds": 74.02,
+      "shutdown_seconds": 0.005,
+      "max_sampled_rss_kib": 219960,
+      "observed_cpu_seconds": 2.37,
+      "min_sampled_host_available_kib": 11365580,
+      "sample_count": 1098,
+      "checks": [],
+      "timings": [],
+      "states": []
+    },
+    "paper-prepare": {
+      "pid": 1015492,
+      "exit_code": 0,
+      "ready_seconds": 13.962,
+      "duration_seconds": 51.954,
+      "shutdown_seconds": 0.595,
+      "max_sampled_rss_kib": 1291296,
+      "observed_cpu_seconds": 63.12,
+      "min_sampled_host_available_kib": 11365580,
+      "sample_count": 700,
+      "checks": [
+        "NBT_41_slots_metadata_empty_roundtrip",
+        "corrupt_NBT_rejected",
+        "rejected_SCHEMA_NOT_READY",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_0",
+        "slot_amount_metadata_roundtrip_64",
+        "actual_30_second_cycle",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_1",
+        "slot_amount_metadata_roundtrip_63",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000002_0",
+        "slot_amount_metadata_roundtrip_7",
+        "revision_00000000-0000-002a-0000-00000000000b_00000000-0000-002e-0000-000000000001_0",
+        "slot_amount_metadata_roundtrip_15",
+        "dirty_requests_coalesced",
+        "late_save_preserves_new_dirty",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_2",
+        "slot_amount_metadata_roundtrip_62",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_3",
+        "slot_amount_metadata_roundtrip_61",
+        "rejected_23514",
+        "failed_write_keeps_dirty_revision",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_3",
+        "slot_amount_metadata_roundtrip_61",
+        "s46_required_gates",
+        "new_connection_inventory_restore",
+        "s46_before_s47",
+        "rejected_BUSY",
+        "source_saved_before_target_applied",
+        "target_inventory_applied",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_5",
+        "slot_amount_metadata_roundtrip_59",
+        "rejected_CLOSED"
+      ],
+      "timings": [],
+      "states": [
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=64 revision=0",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=63 revision=1",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000002 amount=7 revision=0",
+        "run=00000000-0000-002a-0000-00000000000b player=00000000-0000-002e-0000-000000000001 amount=15 revision=0",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=62 revision=2",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=61 revision=3",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=61 revision=3",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=59 revision=5"
+      ]
+    },
+    "paper-resume": {
+      "pid": 1015781,
+      "exit_code": 0,
+      "ready_seconds": 8.982,
+      "duration_seconds": 19.251,
+      "shutdown_seconds": 3.522,
+      "max_sampled_rss_kib": 1170384,
+      "observed_cpu_seconds": 38.95,
+      "min_sampled_host_available_kib": 11643600,
+      "sample_count": 348,
+      "checks": [
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_5",
+        "slot_amount_metadata_roundtrip_59",
+        "revision_00000000-0000-002a-0000-00000000000b_00000000-0000-002e-0000-000000000001_1",
+        "slot_amount_metadata_roundtrip_14",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000002_0",
+        "slot_amount_metadata_roundtrip_7",
+        "revision_00000000-0000-002a-0000-00000000000b_00000000-0000-002e-0000-000000000002_0",
+        "slot_amount_metadata_roundtrip_20",
+        "rejected_ACCESS_DENIED",
+        "rejected_MISSING_INVENTORY",
+        "probe_no_target_apply_missing",
+        "rejected_APPLY_FAILED",
+        "probe_no_target_apply_apply",
+        "rejected_INVALID_STATE",
+        "probe_no_target_apply_corrupt",
+        "rejected_23514",
+        "probe_no_target_apply_source",
+        "rejected_STALE_CONTEXT",
+        "probe_no_target_apply_stale",
+        "inventory_queue_bounded",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_6",
+        "slot_amount_metadata_roundtrip_58",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_7",
+        "slot_amount_metadata_roundtrip_57",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_8",
+        "slot_amount_metadata_roundtrip_56",
+        "revision_00000000-0000-002a-0000-00000000000b_00000000-0000-002e-0000-000000000001_1",
+        "slot_amount_metadata_roundtrip_14",
+        "rejected_CLOSED",
+        "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_10",
+        "slot_amount_metadata_roundtrip_54",
+        "logout_pending_latest_drained",
+        "connection_failure_keeps_dirty",
+        "rejected_CLOSED"
+      ],
+      "timings": [],
+      "states": [
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=59 revision=5",
+        "run=00000000-0000-002a-0000-00000000000b player=00000000-0000-002e-0000-000000000001 amount=14 revision=1",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000002 amount=7 revision=0",
+        "run=00000000-0000-002a-0000-00000000000b player=00000000-0000-002e-0000-000000000002 amount=20 revision=0",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=58 revision=6",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=57 revision=7",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=56 revision=8",
+        "run=00000000-0000-002a-0000-00000000000b player=00000000-0000-002e-0000-000000000001 amount=14 revision=1",
+        "run=00000000-0000-002a-0000-00000000000a player=00000000-0000-002e-0000-000000000001 amount=54 revision=10"
+      ]
+    }
+  },
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "b6bb537c1cf3760f5d5d327f33773cd2924dab6fced2dbd03a3d5f9be6823d3d",
+  "runtime_library_sources": [],
+  "runtime_library_jars": [
+    "libraries/com/zaxxer/HikariCP/7.1.0/HikariCP-7.1.0.jar",
+    "libraries/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar",
+    "libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+    "libraries/org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar",
+    "libraries/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar"
+  ],
+  "not_executed": [
+    "실제 인증 플레이어/PlayerInventory 이벤트",
+    "PostgreSQL 프로세스 재시작",
+    "TPS/MSPT·장기 부하·메모리 누수",
+    "운영 배포·엔더 상자/커서/GUI·경제 realm"
+  ],
+  "date": "2026-10-26",
+  "base_commit": "48277c8ef5c7e9be8c34e88f6db6c57772d946dc",
+  "stage_complete": true,
+  "stages": {
+    "S4-6": "PASS",
+    "S4-7": "PASS",
+    "S4-8": "PASS"
+  },
+  "user_approved_sequence": "단계별 구현·사전 검사 뒤 최대 두 JVM에서 실제 시험 순차 수행",
+  "actual_autosave_ms": 30049,
+  "queue_rejections": 22,
+  "postgresql": {
+    "version": "18.3",
+    "pid": 1015477,
+    "starts": 1,
+    "exited": true,
+    "native_resource_usage": "미측정"
+  },
+  "unit_suites": [
+    {
+      "name": "io.github.jesterportfolio.hearth.inventory.InventorySaveTest",
+      "tests": 4,
+      "failures": 0,
+      "xml_sha256": "96ed79b1fbd622dd6ef3df2921ac281c0d7f6177bb28c1346954ac0dbbd15826"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.inventory.InventoryTransitionTest",
+      "tests": 6,
+      "failures": 0,
+      "xml_sha256": "35a7cab2b8b2dba311b6f18dcdffc9908e8fa163970d7d3a472c4a3cb7842344"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.persistence.PostgresProgressStoreTest",
+      "tests": 4,
+      "failures": 0,
+      "xml_sha256": "4f9100a3f8cb8b74dd7b8d38d3023020d60ddb096c2f2197f002484fc2ee08f0"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.world.TemplateStoreTest",
+      "tests": 1,
+      "failures": 0,
+      "xml_sha256": "9c188fe32d40e672d8aae3a9958b30d1665ef580775583498c39fb033eccfbc0"
+    }
+  ],
+  "log_sha256": {
+    "run-result.json": "1446070da86b83a49be9ac1e1abaab9c86cb76aef34972773c8f2f1518610747",
+    "database-console.log": "3991b27c5f8a66680dbe849bd6532897296f5848077948576c8dee4ea4435a1d",
+    "paper-prepare-console.log": "cf0540d8af95a21f9dce1ba6b183ae2c7f0630e411dbad71747557078ce7ff35",
+    "paper-resume-console.log": "fb6e8a7c65e5f2179ba31e8ec55fb2e41d520a86e060faa53e430f0316346ce2",
+    "database-resources.json": "7e658424ee3ecb392b902f6df1b11bbc984fd147dd64ee178264445272fbb422",
+    "paper-prepare-resources.json": "2225a269d27db30dcffb8f70c2657ec1ebc03d98975377fa03ce6e82bc522246",
+    "paper-resume-resources.json": "155acc22d3543dbf843c5e3c155fd56911c366ab6c62e5ff5b7db8527bc1d527"
+  },
+  "world_mapping": {
+    "restart-prepare-result.properties": "#PASS\n#Mon Oct 26 05:16:39 KST 2026\nbootId=bb48c1b5-ffbc-46ff-ac94-0da9acd6c7b2\nphase=prepare\npid=1015492\nprepareBootId=bb48c1b5-ffbc-46ff-ac94-0da9acd6c7b2\nrestart_a.metadataSha256=131fb71af78236752efa8f24392013f7062abba505042f82062bc0287afae8ec\nrestart_a.run=00000000-0000-002a-0000-00000000000a\nrestart_a.uuid=734c90ab-152b-4297-ae25-504cca35b558\nrestart_b.metadataSha256=8a73e5dd326a540c3c019b35ee59fa3386d58496348c6ddf214ed5fc62fde19b\nrestart_b.run=00000000-0000-002a-0000-00000000000b\nrestart_b.uuid=5df1eddd-7efa-4dbb-a62a-55c0b778905b\nrestart_template.metadataSha256=47148a8aa642bb84aae58907d95993ff9c3e0107d0bb0e2c4f2cecd790f78041\nrestart_template.run=00000000-0000-002a-0000-000000000001\nrestart_template.uuid=a351c429-c6d1-44f1-9c75-3429015c70cb\nscope=region API and natural piston event; connected player tests NOT RUN\nspatial.a=cb9ed0f763154e78fa2570c3db6d73588335d5bdffeb217714e311add0d6a382\nspatial.b=de208630559eb7a2acae61177326312483cb742e0964ddba3b55def0973e98de\ntemplateDigest=85c832dfd89a0b4ff23b79e371ede835545a101c794423bf4875f15084aa7176\ntemplateVersion=synthetic-restart-v1\n",
+    "restart-resume-result.properties": "#PASS\n#Mon Oct 26 05:17:24 KST 2026\nbootId=d53c2d0c-0eec-48c5-9f44-55d2977e5094\nphase=resume\npid=1015781\npostResumeSpatial.a=c4099f09f432c892258d3e2e387eda54bd331f5edbe3eb4352320f997a2581c0\npostResumeSpatial.b=aa2c630a78c5e7a5284136cb8b53a13f607f6955ef38abb9b8449eb1f56af93a\nprepareBootId=bb48c1b5-ffbc-46ff-ac94-0da9acd6c7b2\nrestart_a.metadataSha256=131fb71af78236752efa8f24392013f7062abba505042f82062bc0287afae8ec\nrestart_a.run=00000000-0000-002a-0000-00000000000a\nrestart_a.uuid=734c90ab-152b-4297-ae25-504cca35b558\nrestart_b.metadataSha256=8a73e5dd326a540c3c019b35ee59fa3386d58496348c6ddf214ed5fc62fde19b\nrestart_b.run=00000000-0000-002a-0000-00000000000b\nrestart_b.uuid=5df1eddd-7efa-4dbb-a62a-55c0b778905b\nrestart_template.metadataSha256=47148a8aa642bb84aae58907d95993ff9c3e0107d0bb0e2c4f2cecd790f78041\nrestart_template.run=00000000-0000-002a-0000-000000000001\nrestart_template.uuid=a351c429-c6d1-44f1-9c75-3429015c70cb\nscope=region API and natural piston event; connected player tests NOT RUN\nspatial.a=cb9ed0f763154e78fa2570c3db6d73588335d5bdffeb217714e311add0d6a382\nspatial.b=de208630559eb7a2acae61177326312483cb742e0964ddba3b55def0973e98de\ntemplateDigest=85c832dfd89a0b4ff23b79e371ede835545a101c794423bf4875f15084aa7176\ntemplateVersion=synthetic-restart-v1\n"
+  },
+  "expected_unsaved_failure_probe": "DB 정상 종료 후 실패 주입용 A/P2 내부 probe는 dirty/HOLD·저장 미완료로 끝남. 정상 source/target 저장 성공에 포함하지 않음.",
+  "port_listener_recheck": {
+    "25585": "리스너 없음",
+    "37263": "리스너 없음(샌드박스 netlink 차단 후 승인된 환경에서 재확인)"
+  }
+}

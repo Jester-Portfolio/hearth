@@ -2,3 +2,7 @@
 verification-enabled: false
 # S4-5 전용 경로·JVM 플래그까지 확인해야 활성화됩니다. 일반 부팅에서는 DB에 연결하지 않습니다.
 db-verification-enabled: false
+# 초기 자동 저장 주기(초). 실제 플레이어 이벤트 연결은 일반 부팅에서 활성화하지 않습니다.
+inventory-autosave-seconds: 30
+# S4-6~8 명시적 격리 검증에서만 활성화합니다.
+inventory-verification-enabled: false

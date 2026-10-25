@@ -29,10 +29,11 @@ s44 = load_tool('verify-s4-4')
 
 
 class Monitor:
-    def __init__(self, root, started):
+    def __init__(self, root, started, prefix='HEARTH_S45', work_seconds=430):
         self.root = root
         self.started = started
-        self.deadline = self.started + 430  # 480초 중 정상 종료·정리 예산 50초를 남깁니다.
+        self.prefix = prefix
+        self.deadline = self.started + work_seconds  # 480초 중 정상 종료·정리 예산 50초를 남깁니다.
         self.selector = selectors.DefaultSelector()
         self.children = {}
         self.stopping = False
@@ -91,9 +92,9 @@ class Monitor:
                 item['lines'].append(line)
                 if 'Done (' in line and item['ready'] is None:
                     item['ready'] = round(time.monotonic()-item['started'], 3)
-                if any(token in line for token in ['HEARTH_S45_RESULT', 'HEARTH_S4_2_RESULT', 'HEARTH_S45_DB OK', 'HEARTH_S45_DB READY', 'HEARTH_S45_DISABLE_CLOSE']):
+                if any(token in line for token in [self.prefix+'_RESULT', 'HEARTH_S4_2_RESULT', 'HEARTH_S45_DB OK', 'HEARTH_S45_DB READY', self.prefix+'_DISABLE_CLOSE']):
                     print(key.data + ': ' + line, flush=True)
-                if not self.stopping and any(token in line for token in ['HEARTH_S45_RESULT FAIL', 'HEARTH_S4_2_RESULT FAIL', 'Error occurred while', 'Could not load', 'Unknown or incomplete command']):
+                if not self.stopping and any(token in line for token in [self.prefix+'_RESULT FAIL', 'HEARTH_S4_2_RESULT FAIL', 'Error occurred while', 'Could not load', 'Unknown or incomplete command']):
                     raise RuntimeError('통합 시험/플러그인 오류: ' + key.data)
 
     def wait(self, name, token, since=0, seconds=90):
@@ -145,7 +146,7 @@ class Monitor:
         self.pump()
         assert proc.returncode == 0, name+': 비정상 종료'
         if name.startswith('paper'):
-            assert any('HEARTH_S45_DISABLE_CLOSE PASS' in line for line in item['lines']), 'DB 풀 종료 확인 누락'
+            assert any(self.prefix+'_DISABLE_CLOSE PASS' in line for line in item['lines']), 'DB 풀 종료 확인 누락'
 
     def finish(self):
         self.stopping = True
@@ -189,9 +190,9 @@ class Monitor:
                 max_sampled_rss_kib=max((s['rss_kib'] for s in samples),default=0),
                 observed_cpu_seconds=round(max((s['cpu_ticks'] for s in samples),default=0)/os.sysconf('SC_CLK_TCK'),3),
                 min_sampled_host_available_kib=min((s['host_available_kib'] for s in samples),default=0), sample_count=len(samples),
-                checks=[line.split('HEARTH_S45_CHECK PASS ',1)[1] for line in item['lines'] if 'HEARTH_S45_CHECK PASS ' in line],
-                timings=[line.split('HEARTH_S45_TIMING ',1)[1] for line in item['lines'] if 'HEARTH_S45_TIMING ' in line],
-                states=[line.split('HEARTH_S45_STATE ',1)[1] for line in item['lines'] if 'HEARTH_S45_STATE ' in line])
+                checks=[line.split(self.prefix+'_CHECK PASS ',1)[1] for line in item['lines'] if self.prefix+'_CHECK PASS ' in line],
+                timings=[line.split(self.prefix+'_TIMING ',1)[1] for line in item['lines'] if self.prefix+'_TIMING ' in line],
+                states=[line.split(self.prefix+'_STATE ',1)[1] for line in item['lines'] if self.prefix+'_STATE ' in line])
         return result
 
 

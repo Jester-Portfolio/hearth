@@ -174,3 +174,9 @@ Hearth는 Minecraft 기반 RPG 및 서버 엔지니어링 프로젝트입니다.
 - DB worker는 Bukkit API 없이 결과 큐에 전달하고 Paper 메인 task가 시험 세대를 확인해 처리합니다. 정식 플레이어 세션/가입 기능이 아니며 옛 결과 거부가 이미 수행한 DB 쓰기의 롤백을 뜻하지 않습니다. 일반 부팅·마이그레이션 전 쓰기 런타임 경로·임의 비활성화/commit 불명·운영 부하 검증은 확대 주장하지 않습니다.
 - S4-5는 실제 Paper 두 JVM·실DB 상태 복원·대표 저장/스키마/큐/종료/연결 오류를 통과했습니다. 새 시험은 순차 Paper 최대 2회/DB 1개, 480초, Paper 힙 1536MiB/RSS 2.5GiB 중단, ActiveProcessorCount=2/nice +10, 가용 RAM 6GiB·디스크 4GiB, localhost·명시 EULA 범위를 유지하며 실패 시 한도 확대·추가 기동 없이 보존/보고합니다. 기존 S4-1~4 증거·운영 환경을 변경하지 않습니다.
 - S4-3 실제 클라이언트는 보류/미실행, 전체 인벤토리/30초 스케줄러·거래/보상·NPC/퀘스트/AI·IDLE·운영 배포와 전체 S4 완료는 아닙니다. 상세 결과/미검증은 기록을 우선합니다.
+
+## S4-6~8 인벤토리·전환 경계
+
+- [S4-6](docs/s4-6-verification.md)·[S4-7](docs/s4-7-verification.md)·[S4-8](docs/s4-8-verification.md)을 따릅니다. V001은 보존하고 V002에 story_run_id+player_uuid의 인벤토리/CAS를 추가했습니다. 41슬롯 NBT·dirty/단일 in-flight·기본 30초·source 최신 저장 후 target 적용·stale/중복/실패 HOLD를 유지합니다. 연결/commit 불명·CAS 충돌을 무조건 재시도/빈 초기화하지 않습니다.
+- 일반 로그인·클릭/드롭 등은 자동 연결하지 않았습니다. 내부 markDirty 통지와 검증된 컨텍스트·owner executor를 사용하며 결과 전달기는 I/O 정리까지 유지해야 합니다. body/saddle·엔더 상자/커서/GUI·경제 realm·실제 플레이어 행동은 별도 정책/시험입니다. 오류 HOLD를 새 컨텍스트로 무조건 덮지 않습니다.
+- 승인된 순서는 단계별 사전 검사 뒤 최대 두 JVM에서 S4-6→7→8 런타임 검증입니다. 새 소유 /tmp/hearth-s4-6.*·PG 최대 1개·순차 Paper 최대 2회·600초·Xmx1536MiB/RSS2.5GiB 중단·CPU 힌트2/nice+10·가용 RAM6GiB/디스크4GiB·localhost/EULA 범위를 유지합니다. 기존 증거/DB/운영 환경을 재사용·덮어쓰지 않고 실행 파일 캐시만 해시 확인 후 복사합니다. 전체 S4·실제 클라이언트·DB 재시작·부하/누수·운영 배포 완료를 뜻하지 않습니다.

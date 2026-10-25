@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-26",
+  "base_commit": "48277c8ef5c7e9be8c34e88f6db6c57772d946dc",
+  "status": "PASS",
+  "stage_complete": true,
+  "workspace": "/tmp/hearth-s4-6.l5kt4i1l",
+  "suites": [
+    {
+      "task": "inventoryIntegrationTest",
+      "name": "io.github.jesterportfolio.hearth.persistence.InventoryPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "seconds": "2.501"
+    },
+    {
+      "task": "test",
+      "name": "io.github.jesterportfolio.hearth.inventory.InventorySaveTest",
+      "tests": 4,
+      "failures": 0,
+      "seconds": "0.028"
+    },
+    {
+      "task": "test",
+      "name": "io.github.jesterportfolio.hearth.persistence.PostgresProgressStoreTest",
+      "tests": 4,
+      "failures": 0,
+      "seconds": "1.54"
+    },
+    {
+      "task": "test",
+      "name": "io.github.jesterportfolio.hearth.world.TemplateStoreTest",
+      "tests": 1,
+      "failures": 0,
+      "seconds": "0.015"
+    }
+  ],
+  "postgresql": "18.3",
+  "db_stopped": "postmaster exited; port released",
+  "checks": [
+    "V001-preserved",
+    "V002-upgrade",
+    "A-B-P1-P2-isolation",
+    "CAS",
+    "FK",
+    "duplicate",
+    "SQL-failure",
+    "reconnect"
+  ],
+  "v001_sha256": "9cfd301837659e3d303f5c7c81ed7b4f2b884bb3160a638cffcaf37d35520c4a",
+  "not_executed": [
+    "실제 인증 플레이어/PlayerInventory 캡처·적용 이벤트",
+    "body/saddle·엔더 상자·커서·GUI",
+    "다른 Minecraft 버전의 데이터 변환",
+    "CPU/RSS 사전 DB 시험(통합 자원은 S4-8 참조)"
+  ],
+  "log_sha256": {
+    "junit_xml": "f8e13840a4d551c20ef659dbf26f2c5bf3aae7f8dbd1f830aa0d3af89d7563be"
+  },
+  "runtime_workspace": "/tmp/hearth-s4-6.bxx056__",
+  "runtime_evidence": "s4-8-result.json",
+  "actual_autosave_ms": 30049,
+  "runtime_checks": [
+    "NBT_41_slots_metadata_empty_roundtrip",
+    "corrupt_NBT_rejected",
+    "rejected_SCHEMA_NOT_READY",
+    "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_0",
+    "slot_amount_metadata_roundtrip_64",
+    "actual_30_second_cycle",
+    "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_1",
+    "slot_amount_metadata_roundtrip_63",
+    "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000002_0",
+    "slot_amount_metadata_roundtrip_7",
+    "revision_00000000-0000-002a-0000-00000000000b_00000000-0000-002e-0000-000000000001_0",
+    "slot_amount_metadata_roundtrip_15",
+    "dirty_requests_coalesced",
+    "late_save_preserves_new_dirty",
+    "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_2",
+    "slot_amount_metadata_roundtrip_62",
+    "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_3",
+    "slot_amount_metadata_roundtrip_61",
+    "rejected_23514",
+    "failed_write_keeps_dirty_revision",
+    "revision_00000000-0000-002a-0000-00000000000a_00000000-0000-002e-0000-000000000001_3",
+    "slot_amount_metadata_roundtrip_61",
+    "s46_required_gates",
+    "new_connection_inventory_restore"
+  ]
+}

@@ -1,6 +1,7 @@
 package io.github.jesterportfolio.hearth.persistence;
 
 import com.zaxxer.hikari.HikariDataSource;
+import io.github.jesterportfolio.hearth.inventory.InventoryPayload;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.Objects;
@@ -13,7 +14,7 @@ import java.util.function.Consumer;
 import javax.sql.DataSource;
 
 /** Bukkit API/메인 스레드 대기가 없는 최소 JDBC 저장 모듈. 플러그인 부팅에는 아직 연결하지 않습니다. */
-public final class PostgresProgressStore implements ProgressStore {
+public final class PostgresProgressStore implements ProgressStore, InventoryStore {
     public record Failure(String operation, UUID storyRunId, UUID playerId, String code) {}
     private final ServerProgressAccess access;
     private final HikariDataSource pool;
@@ -106,6 +107,44 @@ public final class PostgresProgressStore implements ProgressStore {
                 try (var rows = st.executeQuery()) {
                     if (!rows.next()) throw new StorageFailure("save", "REVISION_CONFLICT_OR_MISSING");
                     return new State(rows.getString(1),rows.getLong(2));
+                }
+            }
+        });
+    }
+
+    @Override public CompletionStage<Stored> createInventory(ServerProgressAccess.Context ctx,InventoryPayload payload) {
+        return submit("create_inventory",ctx,() -> {
+            access.requireIssued(ctx); requireReady(); Objects.requireNonNull(payload);
+            try (var c=pool.getConnection(); var st=c.prepareStatement(
+                    "INSERT INTO hearth_progress.story_inventory(story_run_id,player_uuid,payload) VALUES (?,?,?) RETURNING revision")) {
+                st.setObject(1,ctx.storyRunId()); st.setObject(2,ctx.playerId()); st.setBytes(3,payload.bytes());
+                try (var row=st.executeQuery()) { row.next(); return new Stored(payload,row.getLong(1)); }
+            }
+        });
+    }
+    @Override public CompletionStage<Stored> readInventory(ServerProgressAccess.Context ctx) {
+        return submit("read_inventory",ctx,() -> {
+            access.requireIssued(ctx); requireReady();
+            try (var c=pool.getConnection(); var st=c.prepareStatement(
+                    "SELECT payload,revision FROM hearth_progress.story_inventory WHERE story_run_id=? AND player_uuid=?")) {
+                st.setObject(1,ctx.storyRunId()); st.setObject(2,ctx.playerId());
+                try (var row=st.executeQuery()) {
+                    if (!row.next()) throw new StorageFailure("inventory","MISSING_INVENTORY");
+                    return new Stored(InventoryPayload.parse(row.getBytes(1)),row.getLong(2));
+                }
+            }
+        });
+    }
+    @Override public CompletionStage<Stored> saveInventory(ServerProgressAccess.Context ctx,long revision,InventoryPayload payload) {
+        return submit("save_inventory",ctx,() -> {
+            access.requireIssued(ctx); requireReady(); Objects.requireNonNull(payload);
+            if (revision<0 || revision==Long.MAX_VALUE) throw new IllegalArgumentException("Invalid revision");
+            try (var c=pool.getConnection(); var st=c.prepareStatement(
+                    "UPDATE hearth_progress.story_inventory SET payload=?,revision=revision+1 WHERE story_run_id=? AND player_uuid=? AND revision=? RETURNING revision")) {
+                st.setBytes(1,payload.bytes()); st.setObject(2,ctx.storyRunId()); st.setObject(3,ctx.playerId()); st.setLong(4,revision);
+                try (var row=st.executeQuery()) {
+                    if (!row.next()) throw new StorageFailure("inventory","REVISION_CONFLICT_OR_MISSING");
+                    return new Stored(payload,row.getLong(1));
                 }
             }
         });
