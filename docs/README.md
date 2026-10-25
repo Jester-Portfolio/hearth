@@ -26,3 +26,6 @@
 작업 시작 시 현황·로드맵·관련 ADR을 확인합니다. 현재 사실, 단계별 계획, 주요 이력과 확정 설계의 역할을 구분하고 상세 내용은 해당 문서로 연결합니다. 문서 갱신과 두 환경 간 인계·커밋 규칙은 [AGENTS.md](../AGENTS.md)를 따릅니다.
 
 - [ADR-0004: 공동체·퀘스트·장별 따라잡기와 스킵](decisions/0004-community-quests-and-chapter-skip.md) — 승인된 운영 정책. 구현·런타임 시험 미완료.
+
+- [S3 완료 조건 감사](s3-completion-audit.md): 영역별 충족/미충족/S4 이관/의도적 보류, 상태 변경 전 사용자 검토.
+- 통합 후속 정책: [ADR-0010](decisions/0010-coop-information-and-hud.md), [ADR-0011](decisions/0011-votes-boss-return-and-gathering-reset.md), [ADR-0012](decisions/0012-progress-storage-world-lifecycle-and-content.md).

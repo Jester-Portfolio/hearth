@@ -13,6 +13,9 @@
 | [ADR-0007: 필드·특수 인던과 보스전 운영·재도전](0007-dungeon-and-boss-operations.md) | 승인·미구현 | 유형별 난이도·집결/횟수 분리·명단 고정·복귀·전멸 대기·운영 투표 |
 | [ADR-0008: 스토리·자유 탐험·지역 접근·거점 이동](0008-story-exploration-regions-and-fast-travel.md) | 승인·미구현 | 공동체 탐험 개방·접근 3종·개인 방문 해금/시설 이동 |
 | [ADR-0009: 스마트폰 아이템·GUI·기본 메뉴·정보 접근](0009-smartphone-item-gui-and-information.md) | 승인·미구현 | 순정 인벤토리 보존·6메뉴·알림·채팅 AI·지도/미니맵 검증 경계 |
+| [ADR-0010: 코옵 정정·지도·정보 메뉴·HUD](0010-coop-information-and-hud.md) | 승인·기술 미검증 | 가입 기능 제외·지도 공개·일지/공동체/알림/설정·HUD |
+| [ADR-0011: 투표·보스 복귀/관전·채집 리셋](0011-votes-boss-return-and-gathering-reset.md) | 승인·추천값 별도 | 채팅30초·정확복귀·혼합 상태·채집 계기/세대 후보 |
+| [ADR-0012: 내부 식별·저장·월드/콘텐츠 보존](0012-progress-storage-world-lifecycle-and-content.md) | 승인·구현 후보 별도 | 소유권·영속 분기·월드 단일작업·버전 보존/백업 후보 |
 
 각 기록에는 다음 내용을 포함합니다.
 
