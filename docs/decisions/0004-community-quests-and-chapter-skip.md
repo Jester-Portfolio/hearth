@@ -1,6 +1,6 @@
 # ADR-0004: 공동체 코옵·스토리 퀘스트·장별 따라잡기와 스킵
 
-> G1~G4 후속 결정: [ADR-0013](0013-vote-boss-and-gathering-state-boundaries.md)의 입력 마감/보스 상태/진행별 채집과 [ADR-0014](0014-worldguard-protection-engine.md)의 WorldGuard 기본 보호를 적용합니다. 집결의 온라인 기준과 시작 명단/자동 부활 연결은 C1 감사로 남기며 원래 결정일·다른 정책은 보존합니다.
+> G1~G4 후속 결정: [ADR-0013](0013-vote-boss-and-gathering-state-boundaries.md)의 입력 마감/보스 상태/진행별 채집과 [ADR-0014](0014-worldguard-protection-engine.md)의 WorldGuard 기본 보호를 적용합니다. 집결/보스 시작 명단 C1은 ADR-0013의 2026-10-25 후속 승인으로 온라인 참가자만 반영하도록 확정됐습니다. 원래 결정일·이전 이력·다른 정책은 보존합니다.
 
 > 2026-10-25 후속 통합: [ADR-0010](0010-coop-information-and-hud.md)의 가입 없는 코옵/정보 UI, [ADR-0011](0011-votes-boss-return-and-gathering-reset.md)의 투표/보스 복귀/채집, [ADR-0012](0012-progress-storage-world-lifecycle-and-content.md)의 저장/월드/버전 정책을 우선합니다. 이전 검토 이력과 원래 결정일은 보존합니다.
 
@@ -49,4 +49,4 @@
 
 ## 후속 검증과 운영 범위
 
-[S3 상세 설계](../story-world-detailed-design.md)의 공동체 모델과 C1~C13 시나리오를 구현 이전 시험 명세로 사용합니다. 모두 미실행이며 단계 경계·접속/종료 경합·투표 상세·보상·과거 재현 방법은 확정 후 시험 기대값을 보완합니다. S3는 진행 중으로 유지합니다. 실제 게임 코드·서버·DB·컨테이너 실행이나 기존 운영 설정 변경은 범위 밖입니다.
+[S3 상세 설계](../story-world-detailed-design.md)의 공동체 모델과 C1~C13 시나리오를 구현 이전 시험 명세로 사용합니다. 모두 미실행이며 단계 경계·접속/종료 경합·투표 상세·보상·과거 재현 방법은 확정 후 시험 기대값을 보완합니다. 작성 당시 S3는 진행 중이었으며 최신 설계 완료 판정은 [완료 감사](../s3-completion-audit.md)를 따릅니다. 실제 게임 코드·서버·DB·컨테이너 실행이나 기존 운영 설정 변경은 범위 밖입니다.

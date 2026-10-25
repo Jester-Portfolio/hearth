@@ -1,6 +1,6 @@
 # ADR-0002: 기술 스택과 월드 운영 정책
 
-> G1~G4 후속 결정: [ADR-0013](0013-vote-boss-and-gathering-state-boundaries.md)의 입력 마감/보스 상태/진행별 채집과 [ADR-0014](0014-worldguard-protection-engine.md)의 WorldGuard 기본 보호를 적용합니다. 집결의 온라인 기준과 시작 명단/자동 부활 연결은 C1 감사로 남기며 원래 결정일·다른 정책은 보존합니다.
+> G1~G4 후속 결정: [ADR-0013](0013-vote-boss-and-gathering-state-boundaries.md)의 입력 마감/보스 상태/진행별 채집과 [ADR-0014](0014-worldguard-protection-engine.md)의 WorldGuard 기본 보호를 적용합니다. 집결/보스 시작 명단 C1은 ADR-0013의 2026-10-25 후속 승인으로 온라인 참가자만 반영하도록 확정됐습니다. 원래 결정일·이전 이력·다른 정책은 보존합니다.
 
 > 2026-10-25 후속 통합: [ADR-0010](0010-coop-information-and-hud.md)의 가입 없는 코옵/정보 UI, [ADR-0011](0011-votes-boss-return-and-gathering-reset.md)의 투표/보스 복귀/채집, [ADR-0012](0012-progress-storage-world-lifecycle-and-content.md)의 저장/월드/버전 정책을 우선합니다. 이전 검토 이력과 원래 결정일은 보존합니다.
 

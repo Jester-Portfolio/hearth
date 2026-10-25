@@ -5,7 +5,7 @@
 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | 현재 단계·완료 근거·환경·미결정 및 미검증 항목 |
 | [stack-build-verification.md](stack-build-verification.md) | S2 빌드·API 참조 컴파일·계약 검토와 미검증 런타임 범위 |
 | [plugin-suitability-review.md](plugin-suitability-review.md) | S4 사전 조사: WorldGuard/WorldEdit 의존성·버전 근거, Multiverse-Core/Paper API 비교와 미실행 시험 계획 |
-| [story-world-detailed-design.md](story-world-detailed-design.md) | S3 진행 ID·수명주기·DB·콘텐츠·보호/채집·복구의 제안 초안 |
+| [story-world-detailed-design.md](story-world-detailed-design.md) | S3 설계 완료 기준선: 승인 정책·수명주기/DB/보호 후보·보류·미실행 시험 |
 | [ROADMAP.md](ROADMAP.md) | 단계별 상태·목표·완료 조건·선행 조건 |
 | [CHANGELOG.md](CHANGELOG.md) | Git 기록에 근거한 주요 변경 이력 |
 | [architecture.md](architecture.md) | B안 채택 구조, 시스템 경계, 데이터 분리와 미정 항목 |
@@ -28,7 +28,7 @@
 
 - [ADR-0004: 공동체·퀘스트·장별 따라잡기와 스킵](decisions/0004-community-quests-and-chapter-skip.md) — 승인된 운영 정책. 구현·런타임 시험 미완료.
 
-- [S3 완료 조건 감사](s3-completion-audit.md): 영역별 충족/미충족/S4 이관/의도적 보류, 상태 변경 전 사용자 검토.
+- [S3 완료 조건 감사](s3-completion-audit.md): C1 최종 승인·필수 12영역 명세 충족에 따른 S3 설계 완료, S4 실행 이관/의도적 보류 구분.
 - 통합 후속 정책: [ADR-0010](decisions/0010-coop-information-and-hud.md), [ADR-0011](decisions/0011-votes-boss-return-and-gathering-reset.md), [ADR-0012](decisions/0012-progress-storage-world-lifecycle-and-content.md).
 
 - G1~G4 후속: [ADR-0013](decisions/0013-vote-boss-and-gathering-state-boundaries.md)과 [ADR-0014](decisions/0014-worldguard-protection-engine.md), 최신 [S3 재감사](s3-completion-audit.md).

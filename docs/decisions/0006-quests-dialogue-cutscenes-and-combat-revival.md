@@ -1,6 +1,6 @@
 # ADR-0006: 퀘스트·NPC 대화·개인 컷신·전투 사망과 조건부 부활
 
-> G1~G4 후속 결정: [ADR-0013](0013-vote-boss-and-gathering-state-boundaries.md)의 입력 마감/보스 상태/진행별 채집과 [ADR-0014](0014-worldguard-protection-engine.md)의 WorldGuard 기본 보호를 적용합니다. 집결의 온라인 기준과 시작 명단/자동 부활 연결은 C1 감사로 남기며 원래 결정일·다른 정책은 보존합니다.
+> G1~G4 후속 결정: [ADR-0013](0013-vote-boss-and-gathering-state-boundaries.md)의 입력 마감/보스 상태/진행별 채집과 [ADR-0014](0014-worldguard-protection-engine.md)의 WorldGuard 기본 보호를 적용합니다. 집결/보스 시작 명단 C1은 ADR-0013의 2026-10-25 후속 승인으로 온라인 참가자만 반영하도록 확정됐습니다. 원래 결정일·이전 이력·다른 정책은 보존합니다.
 
 > 2026-10-25 후속 통합: [ADR-0010](0010-coop-information-and-hud.md)의 가입 없는 코옵/정보 UI, [ADR-0011](0011-votes-boss-return-and-gathering-reset.md)의 투표/보스 복귀/채집, [ADR-0012](0012-progress-storage-world-lifecycle-and-content.md)의 저장/월드/버전 정책을 우선합니다. 이전 검토 이력과 원래 결정일은 보존합니다.
 
@@ -71,4 +71,4 @@
 - 구체 부활 횟수·체력 비율·효과·보상 등 밸런싱은 보류. 설정 저장 형식·상세 API·물리 스키마는 미정.
 - 가입 기능은 없으며 스토리 투표는 ADR-0011의 기본 채팅·30초 초기값·대상 변경 취소/재투표 규칙입니다. 인던 재도전 범위·길목 초기화 선택지는 ADR-0007을 따르고 실행/저장/보상 처리는 후속 설계입니다.
 
-후속 검증은 [S3 상세 설계](../story-world-detailed-design.md)의 Q1~Q4·N1~N2·V1~V5·B1~B5 명세를 따르며 **모두 미실행**입니다. S2 완료·S3 진행 중·S4 미착수입니다. 게임 코드·서버·DB·컨테이너 실행이나 기존 운영 설정 변경은 승인 범위 밖입니다.
+후속 검증은 [S3 상세 설계](../story-world-detailed-design.md)의 Q1~Q4·N1~N2·V1~V5·B1~B5 명세를 따르며 **모두 미실행**입니다. 작성 당시 S2 완료·S3 진행 중·S4 미착수였으며 최신 S3 설계 완료 판정은 [완료 감사](../s3-completion-audit.md)를 따릅니다. 이번 문서 작업에서 게임 코드·서버·DB·컨테이너 실행이나 기존 운영 설정 변경은 승인 범위 밖입니다.
