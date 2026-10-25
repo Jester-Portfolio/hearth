@@ -1,157 +1,163 @@
-# Hearth Project — Codex Instructions
+# Hearth 프로젝트 — Codex 작업 지침
 
-## Project
-Hearth is a Minecraft-based RPG and server engineering project.
+## 프로젝트
+Hearth는 Minecraft 기반 RPG 및 서버 엔지니어링 프로젝트입니다.
 
-The project includes:
-- A single-player/co-op story world.
-- A separate economy-focused multiplayer world.
-- Realistic medieval technology without magic.
-- NPCs, quests, world progression, and economic systems.
-- A local AI assistant for the story world.
-- Docker-based deployment and Zabbix monitoring.
+프로젝트 범위:
+- 싱글 플레이·코옵 스토리 월드.
+- 별도의 경제 중심 멀티플레이 월드.
+- 마법 없는 현실적인 중세 기술.
+- NPC, 퀘스트, 월드 진행과 경제 시스템.
+- 스토리 월드의 로컬 AI 어시스턴트.
+- Docker 기반 배포와 Zabbix 모니터링.
 
-## Confirmed Stack and World Policies
+## 확정 기술 스택과 월드 정책
 
-- Follow [ADR-0001](docs/decisions/0001-story-world-multiworld.md), [ADR-0002](docs/decisions/0002-stack-and-world-policies.md), [ADR-0003](docs/decisions/0003-inventory-performance-and-recovery.md), [ADR-0004](docs/decisions/0004-community-quests-and-chapter-skip.md), [ADR-0005](docs/decisions/0005-dungeon-spawning-and-difficulty.md), [ADR-0006](docs/decisions/0006-quests-dialogue-cutscenes-and-combat-revival.md), [ADR-0007](docs/decisions/0007-dungeon-and-boss-operations.md), [ADR-0008](docs/decisions/0008-story-exploration-regions-and-fast-travel.md), [ADR-0009](docs/decisions/0009-smartphone-item-gui-and-information.md), [ADR-0010](docs/decisions/0010-coop-information-and-hud.md), [ADR-0011](docs/decisions/0011-votes-boss-return-and-gathering-reset.md), [ADR-0012](docs/decisions/0012-progress-storage-world-lifecycle-and-content.md), [ADR-0013](docs/decisions/0013-vote-boss-and-gathering-state-boundaries.md), and [ADR-0014](docs/decisions/0014-worldguard-protection-engine.md). These are design approvals, not implementation validation or operational approval.
-- Use Paper 26.2, Java 25, Gradle, PostgreSQL, a single plugin JAR with internal feature modules, Docker Compose, and existing Zabbix monitoring. Target vanilla Minecraft Java Edition clients, minimize separate client mods, and provide a server resource pack when needed. AI service technologies remain undecided.
-- Run story progress worlds in one Paper process. Clone versioned, prebuilt spatial templates; add templates over time and preserve existing player worlds and progress. Save and unload inactive worlds, restoring them on reconnect.
-- Keep NPC placement, dialogue, and quest definitions in separate content data. Store player progress, quests, NPC relationships, and story branches in PostgreSQL with per-world logical isolation. Separate story and economy inventories and progress.
-- Protect story worlds by default; allow building and terrain changes only in designated areas. Protect designated cities and shared facilities in economy worlds while allowing more freedom elsewhere. Center major resource supply in both modes on dedicated gathering instances; treat building terrain changes and gathering as separate policies.
-- Economy process separation and AI technologies remain undecided. Gathering reset triggers are approved in ADR-0011; construction updates preserve existing changes under ADR-0012. Do not invent lifecycle implementation, content or balance values. Preserve AI isolation and future A-option placement separation.
+- [ADR-0001](docs/decisions/0001-story-world-multiworld.md), [ADR-0002](docs/decisions/0002-stack-and-world-policies.md), [ADR-0003](docs/decisions/0003-inventory-performance-and-recovery.md), [ADR-0004](docs/decisions/0004-community-quests-and-chapter-skip.md), [ADR-0005](docs/decisions/0005-dungeon-spawning-and-difficulty.md), [ADR-0006](docs/decisions/0006-quests-dialogue-cutscenes-and-combat-revival.md), [ADR-0007](docs/decisions/0007-dungeon-and-boss-operations.md), [ADR-0008](docs/decisions/0008-story-exploration-regions-and-fast-travel.md), [ADR-0009](docs/decisions/0009-smartphone-item-gui-and-information.md), [ADR-0010](docs/decisions/0010-coop-information-and-hud.md), [ADR-0011](docs/decisions/0011-votes-boss-return-and-gathering-reset.md), [ADR-0012](docs/decisions/0012-progress-storage-world-lifecycle-and-content.md), [ADR-0013](docs/decisions/0013-vote-boss-and-gathering-state-boundaries.md), [ADR-0014](docs/decisions/0014-worldguard-protection-engine.md)를 따릅니다. 설계 승인이지 구현 검증이나 운영 승인이 아닙니다.
+- Paper 26.2, Java 25, Gradle, PostgreSQL, 내부 기능별 모듈을 둔 단일 플러그인 JAR, Docker Compose, 기존 Zabbix 모니터링을 사용합니다. 순정 Minecraft Java Edition 클라이언트를 기준으로 별도 클라이언트 모드를 최소화하고 필요시 서버 리소스팩을 제공합니다. AI 서비스 기술은 미정입니다.
+- 하나의 Paper 프로세스에서 진행별 독립 스토리 월드를 운영합니다. 버전이 있는 사전 제작 공간 템플릿을 복제하고 점진적으로 템플릿을 추가하되 기존 플레이어 월드와 진행을 보존합니다. 비활성 월드는 저장·언로드하고 재접속 시 복원합니다.
+- NPC 배치·대화·퀘스트 정의는 별도 콘텐츠 데이터로 관리합니다. 플레이어 진행·퀘스트·NPC 관계·스토리 분기는 PostgreSQL에 진행 월드별로 논리 격리해 저장합니다. 스토리·경제 인벤토리와 진행은 분리합니다.
+- 스토리 월드는 기본 보호하고 지정 구역에서만 건축·지형 변경을 허용합니다. 경제 월드는 지정 도시·공용 시설을 보호하고 일반 지역의 자유도를 높입니다. 두 모드의 주요 자원 공급은 전용 채집 인던 중심이며 건축용 지형 변경과 채집 정책을 구분합니다.
+- 경제 프로세스 분리와 AI 기술은 미정입니다. 채집 리셋 조건은 ADR-0011에서 승인됐고 기존 변경을 보존하는 건축 업데이트는 ADR-0012를 따릅니다. 수명주기 구현·콘텐츠·밸런스 수치를 임의로 정하지 않습니다. AI 진행 격리와 향후 A안의 배치 분리 가능성을 유지합니다.
 
-- Prioritize server performance and smooth play over complex automatic item recovery. Keep ordinary chests/warehouses in Minecraft world files and player inventories primarily in PostgreSQL. Prevent normal-play duplication/loss through basic concurrency and save ordering; do not require a DB transaction or synchronous disk flush for every item movement. Complex escrow storage, costly checkpoints, and fully automatic recovery are optional, not required. Add safeguards only when simple and low-cost; omit them if load or latency is high. Allow administrators to handle some unexpected-crash item loss/duplication using logs and backups; retain minimal error records and intervention procedures. Never promise automatic lossless recovery or duplication prevention in all circumstances.
+- 복잡한 자동 아이템 복구보다 서버 성능과 원활한 플레이를 우선합니다. 일반 상자·창고는 Minecraft 월드 파일에, 플레이어 인벤토리는 PostgreSQL 중심으로 저장합니다. 정상 플레이의 중복·유실은 기본 동시성 제어와 저장 순서로 예방하며 아이템 이동마다 DB 트랜잭션이나 동기 디스크 flush를 요구하지 않습니다. 복잡한 거래 보관 시스템·고비용 체크포인트·완전 자동 복구는 선택 사항입니다. 단순하고 저비용일 때만 추가 안전장치를 도입하며 부하·지연이 크면 생략합니다. 예상치 못한 장애의 일부 유실·복사는 로그·백업을 참고한 관리자 수동 처리를 허용하고 최소 오류 기록·조치 절차는 유지합니다. 자동 무손실 복구나 모든 상황의 복사 방지를 보장하지 않습니다.
 
-## Development
-- Prefer simple, maintainable solutions.
-- Before implementing a new game feature, research existing Paper plugins. Evaluate requirement coverage, Paper 26.2/Java 25 evidence, public API/external integration, dependencies/conflicts, CPU/memory risks, updates/maintenance, license/redistribution terms, independent story-run/data isolation and dynamic world load/unload. Record evidence and recommend plugin use, API extension or custom development in the relevant review. Reuse suitable plugins and implement Hearth-specific behavior through focused integration; compare custom implementation if fit or maintenance is poor. Discovery is neither adoption approval nor runtime compatibility validation. See [plugin suitability review](docs/plugin-suitability-review.md).
-- Explain major architecture decisions before implementation.
-- Keep story and economy world data logically separate.
-- Preserve existing project files and player data.
-- Use Git to track source code changes.
-- Run relevant tests after modifications.
-- Report what changed and what was verified.
+## 개발
+- 단순하고 유지보수하기 쉬운 해결책을 우선합니다.
+- 새 게임 기능 구현 전에 기성 Paper 플러그인을 조사합니다. 요구 충족, Paper 26.2/Java 25 근거, 공개 API/외부 연동, 의존성/충돌, CPU/메모리 위험, 업데이트/유지보수, 라이선스/재배포 조건, 독립 진행/데이터 격리·동적 월드 로드/언로드 적합성을 평가합니다. 관련 검토에 근거와 플러그인 사용/API 확장/자체 개발 추천을 남깁니다. 적합한 플러그인을 재사용하고 Hearth 고유 기능만 연동하며, 부적합하거나 유지보수 부담이 크면 자체 구현과 비교합니다. 발견 자체를 채택 승인이나 런타임 호환성 검증으로 취급하지 않습니다. [플러그인 적합성 검토](docs/plugin-suitability-review.md)를 참고합니다.
+- 주요 아키텍처 결정은 구현 전에 설명합니다.
+- 스토리·경제 월드 데이터를 논리적으로 분리합니다.
+- 기존 프로젝트 파일과 플레이어 데이터를 보존합니다.
+- 소스 코드 변경은 Git으로 추적합니다.
+- 수정 후 관련 시험을 수행합니다.
+- 변경 내용과 검증 범위를 보고합니다.
 
-## Server Environment
+## 서버 환경
 - OS: Rocky Linux 9.8.
-- Host: rocky-laptop.
-- Development user: server.
-- Project root: /home/server/projects/hearth.
-- Existing services include Docker, Zabbix, and Cloudflare Tunnel.
+- 호스트: rocky-laptop.
+- 개발 사용자: server.
+- 프로젝트 경로: /home/server/projects/hearth.
+- 기존 서비스: Docker, Zabbix, Cloudflare Tunnel.
 
-## Operational Safety
-- Never assume root privileges are available.
-- Do not modify unrelated services or system configuration.
-- Inspect existing configuration before proposing changes.
-- Require explicit user approval before:
-  - Restarting or stopping production services.
-  - Modifying firewall, SSH, or Cloudflare configuration.
-  - Changing Docker infrastructure outside Hearth.
-  - Installing or removing system packages.
-  - Deleting persistent data or performing destructive operations.
-- Prepare a rollback plan for significant operational changes.
-- Never expose credentials, tokens, or private keys.
-- Never commit secrets to Git.
+## 운영 안전
+- root 권한이 있다고 가정하지 않습니다.
+- 무관한 서비스나 시스템 설정을 변경하지 않습니다.
+- 변경을 제안하기 전에 기존 설정을 확인합니다.
+- 다음 작업은 사용자 명시 승인이 필요합니다.
+  - 운영 서비스 재시작·중지.
+  - 방화벽·SSH·Cloudflare 설정 변경.
+  - Hearth 밖의 Docker 인프라 변경.
+  - 시스템 패키지 설치·제거.
+  - 영속 데이터 삭제나 파괴적 작업.
+- 중대한 운영 변경에는 롤백 계획을 준비합니다.
+- 자격 증명·토큰·비밀키를 노출하지 않습니다.
+- 비밀 정보를 Git에 커밋하지 않습니다.
 
-## Workflow
-- Development and safe tests may proceed autonomously.
-- For significant infrastructure changes, present a plan first.
-- Ask for approval before applying operational changes.
-- Distinguish verified facts from assumptions.
-- Do not claim success without checking the result.
+## 작업 흐름
+- 승인 범위의 개발과 안전한 시험은 자율적으로 진행할 수 있습니다.
+- 중대한 인프라 변경은 계획부터 제시합니다.
+- 운영 변경을 적용하기 전에 승인을 받습니다.
+- 확인된 사실과 가정을 구분합니다.
+- 결과를 확인하지 않고 성공했다고 보고하지 않습니다.
 
-## Official Project Records
+## 공식 프로젝트 기록
 
-- Git repository documents are the official shared project record for ChatGPT and Codex. ChatGPT handles planning, architecture, and result review; Codex handles implementation, testing, and infrastructure work within the approved scope. Do not assume automatic access to the other environment's conversations or local changes; share relevant documents and commit references when handing off work.
-- At task start, read [PROJECT_STATUS](docs/PROJECT_STATUS.md), [ROADMAP](docs/ROADMAP.md), and related [ADRs](docs/decisions/README.md), along with relevant design and code.
-- At task completion, update PROJECT_STATUS and ROADMAP when progress or next steps changed, and record major changes in [CHANGELOG](docs/CHANGELOG.md). Include confirmation dates, evidence, test scope, and related commit references where applicable. Do not edit documents unnecessarily when their content remains accurate.
-- Keep responsibilities separate: PROJECT_STATUS summarizes current facts, ROADMAP owns stage order and completion criteria, CHANGELOG records major changes, and ADRs own confirmed architecture decisions. Link to detailed records instead of duplicating them.
-- Manage confirmed design changes through ADRs. Preserve comparison and feasibility documents, and mark adopted or superseded decisions clearly. Architecture approval is not implementation validation or operational approval.
-- Never mark unfinished work complete or untested functionality verified. Distinguish design, implementation, execution tests, and deployment; report partial checks and unverified items explicitly.
-- If documentation and actual code conflict, inspect the evidence and report the discrepancy before deciding which record to update. Do not silently treat a proposal as implemented behavior.
-- Include related documentation and code changes in the same commit by default, excluding unrelated files and unnecessary documentation edits. Follow the Git Work Policy below for user-approved development and documentation work.
-- Never change existing Docker, Zabbix, or Cloudflare environments without approval. Documentation and roadmap entries do not authorize installation, service execution, or operational changes.
+- Git 저장소 문서는 ChatGPT와 Codex가 공유하는 공식 프로젝트 기록입니다. ChatGPT는 기획·아키텍처·결과 검토를, Codex는 승인 범위의 구현·시험·인프라를 담당합니다. 다른 환경의 대화나 로컬 변경에 자동 접근할 수 있다고 가정하지 않으며 인계 시 관련 문서와 커밋을 공유합니다.
+- 시작 시 [PROJECT_STATUS](docs/PROJECT_STATUS.md), [ROADMAP](docs/ROADMAP.md), 관련 [ADR](docs/decisions/README.md)과 설계·코드를 읽습니다.
+- 완료 시 진행 상태나 다음 작업이 달라졌다면 PROJECT_STATUS·ROADMAP을 갱신하고 주요 변경을 [CHANGELOG](docs/CHANGELOG.md)에 기록합니다. 필요에 따라 확인 날짜·근거·시험 범위·관련 커밋을 포함하며 내용이 여전히 정확한 문서는 불필요하게 수정하지 않습니다.
+- 책임을 구분합니다. PROJECT_STATUS는 현재 사실, ROADMAP은 단계 순서·완료 조건, CHANGELOG는 주요 이력, ADR은 확정 아키텍처 결정을 담당합니다. 상세 기록을 중복하기보다 연결합니다.
+- 확정 설계 변경은 ADR로 관리합니다. 비교·구현 가능성 검토를 보존하고 채택·대체 관계를 명시합니다. 아키텍처 승인을 구현 검증이나 운영 승인으로 취급하지 않습니다.
+- 미완료 작업을 완료로, 미시험 기능을 검증 완료로 표시하지 않습니다. 설계·구현·실행 시험·배포를 구분하고 부분 검사와 미검증을 명시합니다.
+- 문서와 실제 코드가 충돌하면 근거를 조사하고 차이를 보고한 뒤 갱신 대상을 결정합니다. 제안을 구현된 동작으로 조용히 취급하지 않습니다.
+- 관련 문서·코드는 같은 커밋에 포함하는 것을 기본으로 하며 무관한 파일과 불필요한 문서 수정은 제외합니다. 사용자 승인 작업에는 아래 Git 작업 정책을 따릅니다.
+- 기존 Docker·Zabbix·Cloudflare는 승인 없이 변경하지 않습니다. 문서·로드맵 기록이 설치·서비스 실행·운영 변경을 허용하지 않습니다.
 
-## Git Work Policy
+## 보고·문서 언어
 
-- User approval of development or documentation work authorizes automatically committing and pushing the completed work without a separate confirmation. Explicit task-specific instructions to defer or omit commits or pushes take precedence.
-- At task start, inspect the branch, working tree, and staging area, and record pre-existing uncommitted changes. Do not include pre-existing changes or files from other tasks without explicit authorization. If changes overlap and cannot be safely separated, stop and report.
-- Before committing, complete relevant tests and verify the final changes. Update PROJECT_STATUS and ROADMAP when facts, progress, or next steps changed, and record major changes in CHANGELOG. Do not claim untested functionality is verified.
-- Stage only files or hunks belonging to the approved task. Inspect the staged diff and create commits in meaningful units with clear messages.
-- Fetch origin and check the current branch and its relationship to origin/main before committing and again before pushing. Automatically push verified task commits to origin/main only when the branch is main and its history extends the latest origin/main without unrelated unpublished commits. If these conditions are not met, stop and report instead of switching branches, merging, or rebasing automatically.
-- If tests fail, conflicts occur, the remote branch does not match the expected history, or a push fails, stop the commit/push workflow and report the evidence and remaining work. Do not bypass failed checks or force a push.
-- Force pushes, reset --hard, rewriting existing commit history (including amend or rebase), and branch deletion always require separate explicit approval.
-- Git commit/push authorization does not authorize operational changes. Changes to existing Docker, Zabbix, or Cloudflare environments still require separate explicit approval.
-- At completion, briefly report commit hashes, push results, and test results, including partial checks or anything unverified.
+- 앞으로 모든 작업 보고와 Markdown 문서는 한국어로 작성합니다.
+- 코드 식별자·명령어·파일 경로·공식 영문 명칭은 그대로 유지합니다.
+- 최종 커밋 전에 이번 작업에서 변경한 모든 Markdown 문서의 일본어 혼입 여부를 검사하고 본문·제목·표·링크 설명을 한국어로 통일합니다. 문자 검색뿐 아니라 문맥도 확인합니다.
 
-## Community and Story Quest Policy
+## Git 작업 정책
 
-- Follow ADR-0004: co-op uses a Community sharing one story_run_id, world and major outcomes. Do not implement an in-game party leave system or carry forward party leader/split/merge proposals as requirements. No in-game joining/leaving/invitation/kick/leader/role UI exists. Internal player_uuid–story_run_id linkage is not membership gameplay.
-- Keep personal inventory, quest completion and reward records separate by Community and player. Important Community quests require every currently online member to meet conditions; offline members are excluded. New logins must not interrupt the current combat/cutscene/quest stage; recheck all currently online members at the next important stage and block entry if any fail. Preserve completed stages. Exact stage boundaries and login/logout races remain undecided.
-- Preserve fixed Community branches and world/NPC state during personal catch-up, assistance and per-chapter skips. Skip main and required roadside quests of the selected previously progressed chapter, satisfying personal next-chapter prerequisites; do not assume optional side quests are bulk skipped.
-- Do not decide skip/helper rewards, unapproved game-stage boundary changes, or past-scene instance/cutscene/NPC implementation without approval. Physical replacement schemas remain proposals.
+- 개발·문서 작업의 사용자 승인은 완료한 작업의 자동 커밋·푸시도 허용합니다. 작업별로 커밋·푸시 보류나 생략을 지시했다면 그 지시를 우선합니다.
+- 시작 시 브랜치·작업 트리·스테이징을 검사하고 기존 미커밋 변경을 기록합니다. 명시 승인 없이 기존 변경이나 다른 작업 파일을 포함하지 않습니다. 겹치는 변경을 안전하게 분리할 수 없으면 중단·보고합니다.
+- 커밋 전에 관련 시험과 최종 변경 검증을 마칩니다. 사실·진행·다음 작업 변경 시 PROJECT_STATUS·ROADMAP을 갱신하고 주요 변경은 CHANGELOG에 기록합니다. 미시험 기능을 검증 완료라고 보고하지 않습니다.
+- 승인 작업의 파일·부분 변경만 스테이징합니다. 스테이징 diff를 검토하고 의미 있는 단위·명확한 메시지로 커밋합니다.
+- 커밋 전과 푸시 전에 각각 `git fetch origin`으로 최신 원격을 확인하고 현재 브랜치와 origin/main 관계를 검사합니다. main이고 무관한 미공개 커밋 없이 최신 origin/main을 잇는 경우에만 검증한 작업 커밋을 `git push origin main`으로 푸시합니다. 그렇지 않으면 자동 브랜치 전환·병합·rebase 없이 중단·보고합니다. Git 명령은 `&&`로 연결하지 않고 개별 실행하며 fetch·push는 위의 동일한 명령 형태를 유지합니다.
+- 시험 실패·충돌·예상과 다른 원격 이력·푸시 실패 시 커밋/푸시 흐름을 중단하고 근거와 남은 작업을 보고합니다. 실패한 검사를 우회하거나 강제 푸시하지 않습니다.
+- force push, `reset --hard`, amend/rebase를 포함한 기존 이력 재작성, 브랜치 삭제는 별도 명시 승인이 필요합니다.
+- 커밋/푸시 승인은 운영 변경 승인이 아닙니다. 기존 Docker·Zabbix·Cloudflare 변경에는 여전히 별도 승인이 필요합니다.
+- 완료 시 커밋 해시·푸시·시험 결과를 간결하게 보고하고 부분 검사·미검증도 포함합니다.
 
-- Important branch choices require satisfied progression conditions and a vote of currently online Community members: more than 50% of all eligible members. No majority or a tie means no commitment and a revote. One online eligible member may choose. Committed branches never change; late members follow them.
-- Follow ADR-0005/0007 for field dungeons: inner-boundary entry triggers spawning; a larger boundary supplies the player count at spawn time. Scale monster count/health/attack from that count and keep spawned difficulty fixed; recount at the next zone and suppress unintended duplicate events. Sizes, multipliers, boss details, reset execution and creation/ownership remain undecided; route reset choices and boss reentry follow ADR-0007; death/spectating/conditional revival follow ADR-0006, with its implementation details unresolved. Do not infer gathering-instance lifecycle from combat spawning.
-- Separate reward execution from editable quest/dungeon reward data; aim to change values without code edits/rebuilds. Defer amounts/multipliers/skip/helper balancing until story and gameplay are concrete. Storage format and reload/application details remain undecided; retain ADR-0003 reward deduplication and immediate payout-state persistence.
+## 공동체·스토리 퀘스트 정책
 
-## Public Story Information Boundary
+- ADR-0004를 따릅니다. 코옵은 하나의 story_run_id·월드·주요 결과를 공유하는 공동체(Community)입니다. 게임 내 파티 탈퇴나 파티장/분할/병합 제안을 요구사항으로 유지하지 않습니다. 가입/탈퇴/초대/추방/파티장/권한 UI는 없습니다. 내부 player_uuid–story_run_id 연결은 멤버십 게임 기능이 아닙니다.
+- 개인 인벤토리·퀘스트 완료·보상 기록은 공동체와 플레이어별로 구분합니다. 공동체 중요 퀘스트는 현재 접속 구성원 전원의 조건 충족이 필요하며 오프라인은 제외합니다. 새 접속이 진행 중인 전투/컷신/퀘스트 단계를 중단해서는 안 됩니다. 다음 중요 단계에서 현재 접속자 전원 조건을 다시 확인하고 미충족자가 있으면 진입을 차단합니다. 완료 단계는 보존하며 정확한 단계 경계·접속/종료 경합은 미정입니다.
+- 개인 따라잡기·지원·장별 스킵으로 공동체의 고정 분기와 월드/NPC 상태를 바꾸지 않습니다. 이미 공동체가 진행한 선택 장의 메인·필수 길목 퀘스트를 스킵하고 개인의 다음 장 선행 조건을 충족 처리합니다. 일반 서브 퀘스트까지 일괄 스킵한다고 가정하지 않습니다.
+- 스킵/지원 보상, 미승인 단계 경계 변경, 과거 장면의 인스턴스/컷신/NPC 구현을 승인 없이 확정하지 않습니다. 물리 대체 스키마는 제안입니다.
 
-- This public repository contains general system design only. Never include actual story, character secrets, twists, endings, or novel manuscripts. Do not read or copy from hearth-story-private or import its content into this repository.
+- 중요 분기는 진행 조건 충족 후 현재 접속 공동체 구성원의 투표로 선택합니다. 전체 대상의 50% 초과가 필요하고 동률/과반수 미달은 미확정·재투표입니다. 조건을 충족한 접속자가 한 명이면 단독 선택할 수 있습니다. 확정 분기는 바꾸지 않으며 나중에 진행을 경험하는 구성원도 따릅니다.
+- 필드 인던은 ADR-0005/0007을 따릅니다. 내부 경계 진입으로 소환하고 더 넓은 경계의 소환 시점 인원을 기준으로 몬스터 수/체력/공격력을 조정합니다. 소환된 난이도는 고정하고 다음 구역에서 재산정하며 의도치 않은 중복 실행을 막습니다. 크기·배율·보스 세부·초기화 실행·생성/소유권은 미정이며 길목 초기화 선택·보스 재입장은 ADR-0007, 사망/관전/조건부 부활은 ADR-0006을 따르되 구현 상세는 미정입니다. 전투 소환으로 채집 인던 수명주기를 추정하지 않습니다.
+- 보상 실행 로직과 수정 가능한 퀘스트/인던 보상 데이터를 분리하고 코드 수정/재빌드 없이 값을 바꾸는 구조를 지향합니다. 수량/배율/스킵/지원 밸런싱은 스토리·플레이 구체화 뒤로 미룹니다. 저장 형식·재로드/적용 상세는 미정이며 ADR-0003의 중복 방지·지급 상태 즉시 저장은 유지합니다.
 
-## Quest, Cutscene and Combat Policy
+## 공개 스토리 정보 경계
 
-- Follow ADR-0006 for configurable quest starts, report-wait completion and authored failure checkpoints. Gameplay checkpoints do not require costly storage checkpoints or rollback shared outcomes/consumed items. Keep dialogue/choices/quest definitions separate from code; vanilla-client UI/camera technologies remain unverified.
-- Only the triggering player watches a co-op cutscene. Ordinary dialogue preserves movement/view; important cutscenes may control them. First viewing is mandatory; disconnect does not complete it and reconnect restarts it. Ask to skip on the second challenge; choosing skip suppresses prompts on later retries, with an unspecified input for rewatching. Do not decide later behavior after declining that second skip. Track retries/view completion per player; never reapply shared outcomes or duplicate rewards. Chapter skipping remains separate.
-- ADR-0007 supersedes immediate boss all-dead failure: all dead and online enters wipe wait, while route all-dead is route failure. Personal/unrelated quest failure does not close a boss; a validated direct mandatory boss failure does. Terminal event ordering is specified as a serialized design candidate in ADR-0013. Dead players spectate surviving allies with target switching and no combat intervention, returning before combat end only through configured revival conditions. Keep existing monster difficulty fixed.
-- Configure revival conditions/disabled revival, personal or shared battle limits, health/effects and safe death/start/authored positions per battle. Preserve carried inventory/equipment without death drops or restoring consumed items. Keep ADR-0003 storage rules. Leave balance, participant/lifecycle details, failure/revival races, unsafe-location fallbacks and concrete implementation undecided.
+- 공개 저장소에는 일반 시스템 설계만 기록합니다. 실제 스토리·등장인물 비밀·반전·결말·소설 원고를 넣지 않습니다. hearth-story-private을 읽거나 복사하거나 이 저장소로 가져오지 않습니다.
 
-## Dungeon and Boss Operations
+## 퀘스트·컷신·전투 정책
 
-- Follow ADR-0007. Special dungeons/boss attempts lock starting participants and difficulty; later summons use the same basis through death/revival/disconnect/reconnect. New attempts recount; no new mid-fight participants, existing participants may reconnect before closure.
-- Online living route participants are the gathering check set under ADR-0013. The approved C1 follow-up includes only online participants in the boss starting roster and difficulty; online dead route players revive at entry and count without consuming route revival uses. Route players offline at boss start cannot join that attempt and may participate from the next attempt. Players already in the locked boss roster retain reconnect rights after later logout. No new mid-fight participants or difficulty recalculation. Separate route/boss personal or shared limits; reset boss allowance at entry/new boss attempts. Route wipe retries support full reset, cleared-state retention or checkpoint-after reset; boss retries choose boss-only or route-from-start/checkpoint. Do not infer reset execution/storage/reward details.
-- All boss participants dead but online means paused wipe wait and spectators, not immediate failure or auto-restart. Last participant logout closes the attempt; all living players offline or return-protected with online participants pauses only that boss AI/attacks/skills/boss clocks; protection time still runs, and normal living return resumes it. Never use zero online combat-capable players alone as immediate failure.
-- Logout removes the character immediately with no offline damage, retaining location. Reconnect before closure uses exact logout position and orientation without safety relocation and short no-damage/no-combat return wait; preserve death/spectating and revival use, never revive by reconnect. Three seconds is a recommendation, not an approved value; implementation races remain unverified. Conditional revival safety is separate.
-- Existing participants may request a boss retry vote even before wipe. Voters are currently online boss participants including dead spectators, excluding offline members; more than 50% of all targets passes, tie/shortfall does not, revotes allowed. Passing closes the attempt and applies retry scope. Keep this operational vote separate from ADR-0004 story branches. Votes use vanilla chat, 30-second initial duration, duplicate blocking, abstention/nonvote is not assent; target changes while OPEN cancel/restart votes. Majority closes input, after which roster changes do not recalculate it; story finalization waits for DB success. Unknown commit is resolved by the same request ID, not a new branch.
-- Boss retries preserve individual cutscene viewing/skip records under ADR-0006. Keep inventory/equipment, no death drops or consumed-item restoration; retain ADR-0003 storage and defer all balance values.
+- ADR-0006의 설정 가능한 퀘스트 시작·보고 대기 완료·제작자 지정 실패 체크포인트를 따릅니다. 플레이 체크포인트가 고비용 저장 체크포인트나 공유 결과/소비 아이템의 되돌리기를 요구하지 않습니다. 대화/선택지/퀘스트 정의는 코드와 분리하며 순정 클라이언트 UI/카메라 기술은 미검증입니다.
+- 코옵 컷신은 발동한 플레이어만 봅니다. 일반 대화는 이동/시점을 유지하고 중요 컷신만 제어할 수 있습니다. 최초 시청은 필수이며 도중 종료는 완료가 아니고 재접속 시 처음부터 재생합니다. 두 번째 도전에서 스킵 여부를 묻고 스킵 선택 후 이후 재도전의 질문을 생략하며 별도 미정 입력으로 재시청할 수 있습니다. 두 번째 스킵 거절 뒤 동작을 확정하지 않습니다. 재시도/시청 완료는 개인별 관리하며 공유 결과 재적용·중복 보상은 금지합니다. 장 스킵과 구분합니다.
+- ADR-0007이 보스 전원 사망 즉시 실패를 대체합니다. 전원 사망·접속 중이면 전멸 대기, 길목 전원 사망은 길목 실패입니다. 개인/무관한 퀘스트 실패로 보스를 종료하지 않고 직접적인 필수 보스 실패 조건이 확정되면 종료합니다. 종료 이벤트 순서화는 ADR-0013 설계 후보입니다. 사망자는 생존 동료 관전·대상 전환만 가능하고 전투에 개입하지 않습니다. 전투 종료 전에는 설정된 조건부 부활로만 복귀하며 기존 몬스터 난이도는 고정합니다.
+- 전투별 부활 조건/부활 불가, 개인/공동 횟수, 체력/효과, 안전한 사망/시작/제작자 지정 위치를 설정합니다. 보유 인벤토리/장비를 유지하고 사망 드롭이나 소비 아이템 복구는 없습니다. ADR-0003 저장 규칙을 유지합니다. 밸런스·참가자/수명주기 상세·실패/부활 경합·위험 위치 대안·구체 구현은 미정입니다.
 
-## Exploration, Fast Travel and Smartphone
+## 인던·보스 운영
 
-- Follow ADR-0008: early main/NPC play teaches systems; no required separate tutorial world or extra mandatory learning-quest gate. An authored main-story milestone unlocks exploration for the Community, including late members, without completing personal quests. Preserve important progression gates and ADR-0004 catch-up/skip. Actual chapter/events remain undecided.
-- Regions configure entry restriction, content-only gating or normal openness from shared story state; building protection is separate. Fast travel requires personally visited/unlocked origin and destination hubs and use at an unlocked hub facility, with region/story checks. No field/phone instant travel, shared discoveries, co-op follow invitations or Community group travel; each player acts individually. Appearance/transport/cost/time remain undecided.
-- Follow ADR-0009: retain vanilla E inventory/crafting/existing slots; use a separate non-droppable held phone item with left/right-click menu goal and separate slot-based GUI. 0-key calls, E replacement and crafting-slot buttons are not requirements. Issuance, fixed position, trade/transfer restrictions, recovery and duplicate issuance remain undecided; test input/drop/identity/reconnect/death/loss cases before implementation claims.
-- The six basic menus are quests, world map, journal, Community, notifications and settings; no encyclopedia. Notifications support read/unread, unread count and newest-first; type filters are not mandatory. Keep quest list/detail and tracking policies. UI slot count/design/icons/pages/Lore/books remain undecided.
-- AI remains required and assists on questions/need using vanilla chat, not a separate smartphone dialogue window. Restrict all views/search/cache/late responses to authorized disclosed information; never reveal private story or undiscovered secrets. AI technologies remain undecided.
-- Phone world map and always-visible minimap are distinct goals. Map supports regions/location/personal discoveries, not direct fast travel. Verify Paper/resource-pack-only minimap/HUD limits in S4; do not claim mod-level flexibility verified. Disclosure is base geography/towns plus personal discoveries with secrecy first; right-top circular minimap is the target. Rendering/size/zoom/update/performance remain S4 verification. Personal green ! report markers override yellow ? new quests. S2 and S3 design are complete; S4 is in progress with an isolated S4-1 prototype; only the synthetic S4-1 world/block/region-API smoke has passed; full gameplay runtime verification remains pending.
+- ADR-0007을 따릅니다. 특수 인던/보스 도전 시작 명단과 난이도는 고정하고 이후 소환도 사망/부활/접속 종료/재접속과 무관하게 같은 기준을 씁니다. 새 도전은 재산정하며 도중 신규 참가 금지·기존 참가자의 종료 전 재접속을 유지합니다.
+- ADR-0013의 길목 집결은 온라인 생존자를 검사합니다. C1 후속 승인에 따라 보스 시작 명단/난이도는 온라인 참가자만 포함하고 온라인 길목 사망자는 진입 시 길목 횟수 소비 없이 부활해 포함합니다. 시작 당시 오프라인 길목 참가자는 해당 도전에 들어오지 못하고 다음 도전부터 참가합니다. 보스 명단에 이미 포함된 사람은 이후 종료해도 재접속 권리를 유지합니다. 도중 신규 참가나 난이도 재산정은 없습니다. 길목/보스 개인·공동 횟수를 구분하고 진입/새 도전 시 보스 횟수를 초기화합니다. 길목 전멸 재도전은 전체 초기화/돌파 유지/체크포인트 이후 초기화, 보스는 보스만 또는 길목 시작/체크포인트 재도전을 지원합니다. 초기화 실행/저장/보상 상세를 추정하지 않습니다.
+- 보스 전원 사망·접속 중이면 정지된 전멸 대기와 관전을 유지하고 즉시 실패/자동 재시작하지 않습니다. 마지막 참가자 종료 시 도전을 닫습니다. 생존자가 모두 오프라인/복귀 보호 중이고 온라인 참가자가 남으면 해당 보스 AI/공격/스킬/전용 시계만 정지합니다. 보호시간은 계속 경과하고 정상 생존자 복귀 시 재개합니다. 온라인 전투 가능 인원 0만으로 즉시 실패하지 않습니다.
+- 종료 시 캐릭터를 즉시 제거해 오프라인 피해를 받지 않게 하고 위치를 보존합니다. 종료 전 복귀는 안전 보정 없이 정확한 종료 위치·방향과 짧은 피해 면역/전투 개입 불가 대기를 적용합니다. 사망/관전·부활 사용량을 보존하고 재접속으로 부활하지 않습니다. 3초는 추천이지 승인값이 아니며 구현 경합은 미검증입니다. 조건부 부활 위치 안전성은 별개입니다.
+- 기존 참가자는 전멸 전에도 재도전 투표를 요청할 수 있습니다. 대상은 사망 관전자 포함 현재 온라인 보스 참가자이며 오프라인은 제외합니다. 전체 대상의 50% 초과 찬성으로 통과하고 동률/미달은 미확정·재투표 가능합니다. 통과 시 현재 도전을 닫고 재도전 범위를 적용합니다. ADR-0004의 스토리 분기 투표와 구분합니다. 기본 채팅·초기 30초·중복 투표 차단·기권/미투표는 찬성 제외, OPEN 중 대상 변경은 취소/재투표입니다. 과반수 도달로 입력 마감 후 접속자 변화로 재산정하지 않으며 스토리 확정은 DB 성공을 기다립니다. commit 불명은 새 분기가 아닌 같은 요청 ID로 확인합니다.
+- 보스 재도전은 ADR-0006의 개인 컷신 시청/스킵 기록을 보존합니다. 인벤토리/장비 유지·사망 드롭/소비 아이템 복구 없음·ADR-0003 저장을 유지하며 밸런스 수치는 보류합니다.
 
-## Integrated S3 Policy and Audit
+## 탐험·빠른 이동·스마트폰
 
-- ADR-0010 owns no-membership co-op, map disclosure, personal NPC markers, multiple tracked objectives, automatic journal, three Community submenus, personal-only notifications, settings and HUD. Community notifications are neither stored nor displayed. No voting GUI/history screen, manual journal notes, sound/filter/popups or extra top-level menus.
-- Journal subcategories are story/people/exploration/chronology; shared events and personal facts remain separate. Reading shared events cannot complete quests or reward players. Community submenu is only players/story progress/prerequisites; show others' prerequisite satisfaction, not private details. Story branch detail stays in quests.
-- Display toggles default on, persist per player and never mutate progress. Left-top concise multiquest HUD, right-top circular minimap, vanilla bottom HUD/crosshair and boss-only name/HP/revival/status overlays are approved goals. Urgent battle state > revival counts > important quest > discovery priority. Realization with vanilla Paper/resource packs remains unverified.
-- ADR-0011 requires exact boss reconnect coordinates/orientation, no danger-based relocation; retain conditional revival location safety. Spectator cameras auto-switch valid living targets, detach to free-view waiting when none, reconnect after normal return/protection, clean on closure; camera failure cannot change life/death. Gathering resets at schedule or next entry after all leave; evacuate residents at schedule, preserve acquired items, prevent concurrent entry/gather/reset and version changes until reset boundary.
-- ADR-0012 owns shared/personal logical ownership, durable branch confirmation, single world operations, preserved worlds and collision-checked content changes. Three-second return protection and five-minute IDLE are recommendations only; generation/operation IDs, map layers and backup manifest are design candidates. No DDL or runtime verification is implied.
-- Read docs/s3-completion-audit.md for the S3 design completion boundary. User approval resolves C1 and the 12-area document audit supports S3 design completion; game implementation, runtime tests and S4 are not complete. Preserve explicitly deferred policies and seek their decisions before implementing affected features. Do not treat balanced numbers, SQL implementation or runtime measurements as already complete.
+- ADR-0008을 따릅니다. 초반 메인/NPC 진행으로 시스템을 학습하며 독립 튜토리얼 월드나 추가 필수 학습 퀘스트 관문을 요구하지 않습니다. 제작자 지정 메인 시점에서 공동체 자유 탐험을 개방하며 나중에 진행을 경험하는 사람도 따르지만 개인 퀘스트를 완료시키지 않습니다. 중요 진행 제한과 ADR-0004 따라잡기/스킵은 유지하고 실제 장/사건은 미정입니다.
+- 지역은 공유 스토리 상태로 진입 제한/콘텐츠만 제한/일반 개방을 설정하며 건축 보호와 별개입니다. 빠른 이동은 본인이 방문/해금한 출발·도착 거점과 해금 시설 이용, 지역/스토리 검사를 요구합니다. 필드/스마트폰 즉시 이동·발견 공유·코옵 동행 초대·공동체 일괄 이동은 없고 각자 실행합니다. 외형/수단/비용/시간은 미정입니다.
+- ADR-0009를 따릅니다. 순정 E키 인벤토리/제작/기존 슬롯을 유지하고 별도 버릴 수 없는 손에 든 스마트폰 아이템의 좌/우클릭 메뉴와 슬롯 GUI를 목표로 합니다. 0키 호출·E키 교체·제작 슬롯 버튼은 요구사항이 아닙니다. 지급/위치 고정/거래·양도 제한/복구/중복 지급은 미정이며 구현 성공을 주장하기 전에 입력/드롭/식별/재접속/사망/유실을 시험합니다.
+- 기본 6개 메뉴는 퀘스트·월드 지도·일지·공동체·알림·설정이며 도감은 없습니다. 알림은 읽음/안 읽음·미확인 개수·최신순을 지원하고 종류별 필터는 필수가 아닙니다. 퀘스트 목록/상세·추적 정책을 유지하며 슬롯 수/디자인/아이콘/페이지/Lore/책 UI는 미정입니다.
+- AI는 필수이며 질문/도움이 필요할 때 별도 스마트폰 대화창 대신 기본 채팅으로 보조합니다. 모든 조회/검색/캐시/늦은 응답을 권한이 허용된 공개 정보로 제한하고 비공개 스토리·미발견 비밀을 누출하지 않습니다. AI 기술은 미정입니다.
+- 스마트폰 월드 지도와 상시 미니맵을 구분합니다. 지도는 지역/위치/개인 발견을 보여주되 직접 빠른 이동하지 않습니다. Paper/리소스팩만으로 가능한 미니맵/HUD 범위는 S4에서 검증하고 모드 수준의 자유도가 검증됐다고 하지 않습니다. 기본 지형/마을과 개인 발견을 표시하되 비밀 보호를 우선하고 오른쪽 상단 원형 미니맵을 목표로 합니다. 렌더링/크기/확대/갱신/성능은 S4 검증입니다. 개인 보고 가능 초록 !가 새 퀘스트 노랑 ?보다 우선합니다. S2·S3 설계 완료, S4 격리 프로토타입 진행 중이며 S4-1은 합성 월드/블록/구역 API만 통과했고 전체 게임 런타임은 미검증입니다.
 
-## G1–G4 Follow-up
+## S3 통합 정책·감사
 
-- ADR-0013 closes vote input on majority, serializes close/roster/timeout, separates DB pending/success/failure/unknown and deduplicates boss retries. Persistent vote ballots are not required. First valid terminal boss result survives later callbacks; personal/unrelated quest failures do not end the boss, direct mandatory boss failure does.
-- Same story_run_id co-op shares its gathering scope; other runs are isolated and economy ownership stays E1. Reset blocks entry/gathering, checks required player saves/evacuation/world work/template readiness; failure defers destructive reset in local ERROR_HOLD and preserves originals. Single reset requests advance generation only on completion, avoid repeat reset of an already refreshed empty cycle and reject old-generation reentry. No per-item DB writes/checkpoints; empty-instance unload/lazy reset remain optimization candidates.
-- ADR-0014 adopts WorldGuard for both story/economy base protection, not a Hearth generic engine. WorldGuard owns ordinary build/indirect protection and region flags/priorities; WorldEdit is editing/management tooling with actual selected dependency/runtime requirements to verify; Hearth owns run isolation/content-change authority/reset-specific exceptions. Region files/managers must follow the correct physical-world/run mapping and persist through unload. Do not assume internal direct edits are automatically blocked.
-- WorldGuard/WorldEdit version metadata and source declarations are documented. The pinned S4-1 combination passed loading and synthetic per-world region save/reload checks, with short CPU/RSS observations. Player event protection, full lifecycle/reference behavior, load/leaks and other versions remain unverified S4 work. Never download/install/run them during documentation tasks. C1 approval does not authorize invitations/leaving/kicks/leader systems.
-- WorldGuard adoption stands; WorldEdit Bukkit is a documented hard dependency in inspected WorldGuard 7.0.19, with WG 7.0.19/WE 7.4.4 used in the limited S4-1 smoke; production version acceptance remains pending broader tests. Multiverse-Core is only a candidate, not an approved world manager or inventory authority. Preserve approved online-only boss starts, online dead-player entry revival and reconnect rights for existing locked boss participants. S3 design is complete; S4-1 implementation/build and minimal runtime smoke passed; full S4 remains in progress.
+- ADR-0010은 가입 없는 코옵·지도 공개·개인 NPC 표식·다중 추적·자동 일지·공동체 3개 하위 메뉴·개인 알림·설정/HUD를 담당합니다. 공동체 알림은 저장/표시하지 않습니다. 투표 GUI/이력 화면·수동 일지·효과음/필터/팝업·추가 최상위 메뉴는 없습니다.
+- 일지 하위 구분은 스토리/인물/탐험/연대기이며 공유 사건·개인 사실을 분리합니다. 공유 기록 열람으로 퀘스트 완료/보상을 지급하지 않습니다. 공동체 메뉴는 구성원/스토리 진행/진행 조건만 두고 타인의 상세 정보 대신 조건 충족 여부만 표시합니다. 분기 상세는 퀘스트 메뉴에 둡니다.
+- 표시 설정은 기본 켜짐·개인별 저장이며 진행을 바꾸지 않습니다. 왼쪽 상단 간결한 다중 퀘스트 HUD·오른쪽 상단 원형 미니맵·순정 하단 HUD/조준점·보스전 전용 이름/체력/부활/상태 안내는 승인 목표입니다. 긴급 전투 상태 > 부활 횟수 > 중요 퀘스트 > 발견 순으로 우선합니다. 순정 Paper/리소스팩 구현은 미검증입니다.
+- ADR-0011의 보스 복귀는 정확 위치/방향·위험 보정 없음이며 조건부 부활 위치 안전성은 유지합니다. 관전은 유효 생존자로 자동 전환하고 없으면 연결 해제/자유 시점 대기, 정상 복귀/보호 종료 후 재연결, 도전 종료 시 정리합니다. 카메라 오류로 생사 상태를 바꾸지 않습니다. 채집은 정기 시각 또는 전원 퇴장 뒤 다음 입장에 초기화하고 정기 시 잔류자를 입구로 이동하며 획득 아이템을 보존합니다. 입장/채집/리셋 경합과 리셋 경계 전 버전 변경을 막습니다.
+- ADR-0012는 공유/개인 논리 소유권·분기 영속 확정·단일 월드 작업·기존 월드 보존·충돌 검사 콘텐츠 변경을 담당합니다. 복귀 보호 3초/IDLE 5분은 추천일 뿐이며 generation/작업 ID·지도 계층·백업 manifest는 후보입니다. DDL/런타임 검증을 뜻하지 않습니다.
+- S3 완료 경계는 docs/s3-completion-audit.md를 읽습니다. 사용자 승인으로 C1을 해소했고 12개 영역 문서 감사가 S3 설계 완료를 뒷받침합니다. 게임 구현/런타임/전체 S4는 완료가 아닙니다. 명시적 보류 정책을 유지하고 관련 기능 구현 전에 결정받습니다. 밸런스 수치·SQL 구현·런타임 측정을 완료로 취급하지 않습니다.
 
-## S4-1 Verification Boundary
+## G1~G4 후속 정책
 
-- See [S4-1 record](docs/s4-1-verification.md). The current Paper backend is a gated synthetic prototype behind WorldBackend; Multiverse-Core remains a candidate. No production PostgreSQL/NPC/quest/AI/economy implementation is implied.
-- Runtime smoke tests require explicit operator Minecraft EULA acceptance, a fresh user-owned isolated /tmp workspace, verified artifact hashes, localhost binding, resource checks and a bounded process lifetime. Do not reuse existing worlds or infer acceptance from an unanswered question. The user explicitly accepted EULA on 2026-10-26; the recorded pinned runtime smoke passed loading, synthetic block/ID persistence and region-API isolation. This does not prove connected-player WorldGuard event protection, production lifecycle/DB isolation or load/leak behavior. See the record for failed attempts and warnings.
+- ADR-0013은 과반수 입력 마감, 마감/접속자/시간 만료 순서화, DB 대기/성공/실패/불명 구분, 보스 재도전 중복 방지를 규정합니다. 개별 투표의 DB 영속화는 필수가 아닙니다. 최초 유효 종료 결과는 후속 콜백으로 다시 적용하지 않으며 개인/무관한 퀘스트 실패로 보스를 종료하지 않고 직접 필수 실패만 적용합니다.
+- 같은 story_run_id 코옵은 채집 범위를 공유하고 다른 진행은 격리하며 경제 소유권은 E1입니다. 리셋 시 입장/채집을 막고 필요한 개인 저장/이동/월드 작업/템플릿 준비를 확인합니다. 실패 시 해당 범위 ERROR_HOLD로 파괴적 작업을 보류·원본 보존합니다. 단일 리셋은 완료 후에만 generation을 올리고 이미 갱신한 빈 주기의 중복 리셋/이전 세대 재진입을 막습니다. 아이템별 DB 쓰기/체크포인트를 추가하지 않으며 빈 인던 언로드/지연 리셋은 최적화 후보입니다.
+- ADR-0014는 스토리/경제 기본 보호를 WorldGuard에 맡기며 Hearth 범용 보호 엔진을 만들지 않습니다. 일반 건축/간접 보호·구역 플래그/우선순위는 WorldGuard, 제작/관리는 WorldEdit이며 선택 의존성/런타임 요구를 검증합니다. Hearth는 진행 격리/콘텐츠 변경 권한/리셋 전용 예외를 담당합니다. 구역 파일/manager는 실제 월드·진행 매핑을 따르고 언로드 시 영속 보존합니다. 내부 직접 변경이 자동 차단된다고 가정하지 않습니다.
+- WorldGuard/WorldEdit 메타데이터·공개 소스를 기록했습니다. 고정 S4-1 조합은 로딩·합성 구역 저장/재로드와 짧은 CPU/RSS 관측을 통과했지만 플레이어 이벤트 보호·전체 수명주기/참조·부하/누수·다른 버전은 S4 미검증입니다. 문서 작업 중 플러그인 다운로드/설치/실행은 금지합니다. C1 승인은 가입/탈퇴/추방/파티장 시스템을 허용하지 않습니다.
+- WorldGuard 채택은 유지합니다. 확인한 WG 7.0.19의 WorldEdit Bukkit은 필수 의존성이며 제한된 S4-1에서 WG 7.0.19/WE 7.4.4를 사용했지만 운영 버전 수용은 추가 시험을 기다립니다. Multiverse-Core는 후보일 뿐 월드 관리자나 인벤토리 정본으로 채택하지 않았습니다. 온라인만 보스 시작·온라인 사망자 진입 부활·기존 보스 참가자의 복귀를 유지합니다. S3 설계·S4-1 구현/빌드/최소 런타임은 통과했고 전체 S4는 진행 중입니다.
 
-## S4-2 Verification Boundary
+## S4-1 검증 경계
 
-- See [S4-2 record](docs/s4-2-verification.md). A fresh isolated test passed sequential JVM restart, recorded world UUID/key/block/region restoration and natural piston cancellation/movement before and after restart. Existing S4-1 smoke regression passed; its original evidence remains preserved.
-- The minimal Properties mapping and registerExisting path are test-only, not a PostgreSQL progression manager. Missing recorded worlds must fail without allocating replacements. Connected-player place/break, build/overlap behavior and permissions/bypass are NOT RUN; region API and natural server piston events do not establish client-action success. TPS/MSPT, repeated-load leaks, full protection/DB/gameplay and full S4 remain incomplete. Keep the same bounded resources, localhost-only fixture and EULA scope.
+- [S4-1 기록](docs/s4-1-verification.md)을 참고합니다. 현재 Paper 어댑터는 WorldBackend 뒤의 격리 게이트 합성 프로토타입이고 Multiverse-Core는 후보입니다. 운영용 PostgreSQL/NPC/퀘스트/AI/경제 구현을 뜻하지 않습니다.
+- 런타임 시험은 운영자의 명시적 Minecraft EULA 동의·사용자 소유의 새 격리 /tmp 경로·공식 아티팩트 해시·localhost·자원 사전 검사·프로세스 실행 시간 제한을 요구합니다. 기존 월드 재사용이나 미응답을 동의로 추정하지 않습니다. 사용자는 2026-10-26 EULA에 명시 동의했고 고정 조합의 로딩·합성 블록/식별자 보존·구역 API 격리가 통과했습니다. 실제 플레이어 이벤트·운영 수명주기/DB 격리·부하/누수 검증은 아니며 실패 시도/경고는 기록을 따릅니다.
 
-## S4-3 Preparation Boundary
+## S4-2 검증 경계
 
-- See [S4-3 record](docs/s4-3-verification.md). The optional manual-player mode reuses the S4-2 fixture/restore/resource runner; only its manual JVM flag enables online-player observation and console player-open/status. WorldGuard remains the protection/bypass authority. The two manual sessions plus preparation share the existing 240-second work budget.
-- No authenticated client was available: live player actions AND the manual TTY runtime path remain NOT RUN. Build/static gates and the default S4-1/S4-2 regression passed, which is not evidence of client protection. MANUAL_CLOSED / MANUAL_SESSIONS_CLOSED_UNVERIFIED never means PASS. Never request/store account passwords or tokens, bypass online authentication, or manufacture Player/events to satisfy this test. Keep original evidence and full S4 in progress.
+- [S4-2 기록](docs/s4-2-verification.md)을 참고합니다. 새 격리 시험에서 JVM 순차 재시작·기록된 월드 UUID/key/블록/구역 복원·전후 자연 피스톤 취소/이동을 확인했습니다. 기존 S4-1 회귀도 통과했고 원본 증거를 보존했습니다.
+- 최소 Properties 매핑과 registerExisting은 시험용이며 PostgreSQL 진행 관리자가 아닙니다. 누락 월드는 대체 생성 없이 실패해야 합니다. 실제 접속 플레이어의 설치/파괴·건축/중첩·권한/bypass는 미실행입니다. 구역 API와 자연 피스톤은 클라이언트 행동 성공을 증명하지 않습니다. TPS/MSPT·반복 로드 누수·전체 보호/DB/게임 기능·전체 S4는 미완료이며 기존 자원/localhost/EULA 범위를 유지합니다.
+
+## S4-3 준비 경계
+
+- [S4-3 기록](docs/s4-3-verification.md)을 참고합니다. 선택 manual-player 모드는 S4-2의 준비/복원/자원 감시를 재사용하고 수동 JVM 플래그가 있을 때만 온라인 플레이어 관측과 콘솔 player-open/status를 활성화합니다. 보호/bypass는 WorldGuard가 판정합니다. 준비와 두 수동 세션 모두 합산 240초 예산을 공유합니다.
+- 인증 클라이언트가 없어 실제 플레이어 행동과 수동 TTY 런타임은 모두 미실행입니다. 빌드/정적 게이트·기본 S4-1/S4-2 회귀 통과를 클라이언트 보호 성공으로 취급하지 않습니다. MANUAL_CLOSED / MANUAL_SESSIONS_CLOSED_UNVERIFIED는 PASS가 아닙니다. 계정 비밀번호/토큰 요청·저장, 온라인 인증 우회, 가짜 Player/이벤트로 시험 충족은 금지합니다. 원본 증거를 보존하고 전체 S4는 진행 중으로 유지합니다.
