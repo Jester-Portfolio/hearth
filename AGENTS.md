@@ -150,3 +150,8 @@ The project includes:
 
 - See [S4-2 record](docs/s4-2-verification.md). A fresh isolated test passed sequential JVM restart, recorded world UUID/key/block/region restoration and natural piston cancellation/movement before and after restart. Existing S4-1 smoke regression passed; its original evidence remains preserved.
 - The minimal Properties mapping and registerExisting path are test-only, not a PostgreSQL progression manager. Missing recorded worlds must fail without allocating replacements. Connected-player place/break, build/overlap behavior and permissions/bypass are NOT RUN; region API and natural server piston events do not establish client-action success. TPS/MSPT, repeated-load leaks, full protection/DB/gameplay and full S4 remain incomplete. Keep the same bounded resources, localhost-only fixture and EULA scope.
+
+## S4-3 Preparation Boundary
+
+- See [S4-3 record](docs/s4-3-verification.md). The optional manual-player mode reuses the S4-2 fixture/restore/resource runner; only its manual JVM flag enables online-player observation and console player-open/status. WorldGuard remains the protection/bypass authority. The two manual sessions plus preparation share the existing 240-second work budget.
+- No authenticated client was available: live player actions AND the manual TTY runtime path remain NOT RUN. Build/static gates and the default S4-1/S4-2 regression passed, which is not evidence of client protection. MANUAL_CLOSED / MANUAL_SESSIONS_CLOSED_UNVERIFIED never means PASS. Never request/store account passwords or tokens, bypass online authentication, or manufacture Player/events to satisfy this test. Keep original evidence and full S4 in progress.

@@ -1,0 +1,137 @@
+{
+  "checked_at": "2026-10-26",
+  "base_commit": "a4a32d53bc9fe4c448db4f4092f3e32689e8c613",
+  "status": "PREPARED_PLAYER_TESTS_NOT_RUN",
+  "client_check": {
+    "minecraft-launcher_on_path": false,
+    "prismlauncher_on_path": false,
+    "multimc_on_path": false,
+    "gui_display_available": false,
+    "note": "No authenticated client available to this task; no account/password/token requested or inspected"
+  },
+  "build": "Gradle 9.1.0 check/jar PASS; Temurin 25.0.5+8; JUnit 1 test, zero failures/errors/skips",
+  "jar_sha256": "24d9ade82f3b724df86bd8a95c122b08b18ece91de48effe450a6ba187e40c27",
+  "static_checks": [
+    "Python syntax/help",
+    "Missing EULA rejects without server creation",
+    "Manual mode without TTY rejects without server creation",
+    "Console allowlist accepts documented fixture commands; rejects other worlds/arbitrary commands/oversized or fractional block edits"
+  ],
+  "automatic_regression": {
+    "scope": "Existing S4-1/S4-2 only; no manual-player JVM flag or connected-player checks",
+    "workspace": "/tmp/hearth-s4-2.307e1geh",
+    "outcome": "PASS",
+    "duration_seconds": 42.519,
+    "prepare": {
+      "phase": "prepare",
+      "outcome": "PASS",
+      "pid": 985343,
+      "exit_code": 0,
+      "duration_seconds": 26.122,
+      "ready_elapsed_seconds": 14.82,
+      "max_rss_kib": 1254448,
+      "min_host_available_kib": 12062360,
+      "sampled_cpu_seconds": 52.18,
+      "sample_count": 247,
+      "timings": [
+        "phase=prepare op=create_template ms=26.484",
+        "phase=prepare op=save_unload_template ms=244.423",
+        "phase=prepare op=create_a ms=40.110",
+        "phase=prepare op=create_b ms=28.306",
+        "phase=prepare op=load_a ms=25.818",
+        "phase=prepare op=load_b ms=22.475",
+        "phase=prepare op=save_unload_a ms=329.941",
+        "phase=prepare op=save_unload_b ms=313.227"
+      ],
+      "checks": [
+        "PASS prepare distinct_world_identity",
+        "PASS prepare same_template_copied",
+        "PASS prepare initial_template_blocks",
+        "PASS prepare API_world_isolation",
+        "PASS prepare API_overlap_priority",
+        "PASS prepare API_distinct_managers",
+        "PASS prepare API_priorities_persisted",
+        "PASS prepare distinct_blocks_preserved",
+        "PASS prepare EVENT_natural_piston_A_denied",
+        "PASS prepare EVENT_natural_piston_B_allowed",
+        "PASS prepare distinct_blocks_preserved",
+        "PASS prepare worldguard_save_completed",
+        "PASS prepare template_preserved",
+        "PASS prepare mapping_and_spatial_saved"
+      ],
+      "events": [
+        "natural_piston world=hearth_verify:restart_a cancelled=true affected=1",
+        "natural_piston world=hearth_verify:restart_b cancelled=false affected=1"
+      ],
+      "snapshots": [
+        "phase=prepare run=00000000-0000-002a-0000-00000000000a key=hearth_verify:restart_a uuid=f7ce84e8-d476-4544-b5f0-b5978de92114 block=GOLD_BLOCK",
+        "phase=prepare run=00000000-0000-002a-0000-00000000000b key=hearth_verify:restart_b uuid=99e32a44-b9c9-4c65-99a7-b9a7f8997946 block=DIAMOND_BLOCK",
+        "phase=prepare run=00000000-0000-002a-0000-00000000000a key=hearth_verify:restart_a uuid=f7ce84e8-d476-4544-b5f0-b5978de92114 block=GOLD_BLOCK",
+        "phase=prepare run=00000000-0000-002a-0000-00000000000b key=hearth_verify:restart_b uuid=99e32a44-b9c9-4c65-99a7-b9a7f8997946 block=DIAMOND_BLOCK"
+      ]
+    },
+    "resume": {
+      "phase": "resume",
+      "outcome": "PASS",
+      "pid": 985506,
+      "exit_code": 0,
+      "duration_seconds": 16.396,
+      "ready_elapsed_seconds": 8.833,
+      "max_rss_kib": 979248,
+      "min_host_available_kib": 12359992,
+      "sampled_cpu_seconds": 35.31,
+      "sample_count": 134,
+      "timings": [
+        "phase=resume op=restore_load_a ms=117.390",
+        "phase=resume op=restore_load_b ms=56.039",
+        "phase=resume op=save_unload_a ms=447.702",
+        "phase=resume op=save_unload_b ms=285.614"
+      ],
+      "checks": [
+        "PASS resume missing_world_rejected_without_replacement",
+        "PASS resume existing_placements_registered_no_allocation",
+        "PASS resume preload_identity_metadata_preserved_restart_template",
+        "PASS resume preload_identity_metadata_preserved_restart_a",
+        "PASS resume preload_identity_metadata_preserved_restart_b",
+        "PASS resume preload_template_preserved",
+        "PASS resume preload_spatial_files_preserved",
+        "PASS resume existing_uuids_and_keys_restored",
+        "PASS resume API_world_isolation",
+        "PASS resume API_overlap_priority",
+        "PASS resume API_distinct_managers",
+        "PASS resume API_priorities_persisted",
+        "PASS resume distinct_blocks_preserved",
+        "PASS resume EVENT_natural_piston_A_denied",
+        "PASS resume EVENT_natural_piston_B_allowed",
+        "PASS resume distinct_blocks_preserved",
+        "PASS resume worldguard_save_completed",
+        "PASS resume template_preserved"
+      ],
+      "events": [
+        "natural_piston world=hearth_verify:restart_a cancelled=true affected=1",
+        "natural_piston world=hearth_verify:restart_b cancelled=false affected=1"
+      ],
+      "snapshots": [
+        "phase=resume run=00000000-0000-002a-0000-00000000000a key=hearth_verify:restart_a uuid=f7ce84e8-d476-4544-b5f0-b5978de92114 block=GOLD_BLOCK",
+        "phase=resume run=00000000-0000-002a-0000-00000000000b key=hearth_verify:restart_b uuid=99e32a44-b9c9-4c65-99a7-b9a7f8997946 block=DIAMOND_BLOCK",
+        "phase=resume run=00000000-0000-002a-0000-00000000000a key=hearth_verify:restart_a uuid=f7ce84e8-d476-4544-b5f0-b5978de92114 block=GOLD_BLOCK",
+        "phase=resume run=00000000-0000-002a-0000-00000000000b key=hearth_verify:restart_b uuid=99e32a44-b9c9-4c65-99a7-b9a7f8997946 block=DIAMOND_BLOCK"
+      ]
+    }
+  },
+  "manual_session_runtime": "NOT RUN",
+  "client_place_break_overlap_bypass_after_restart": "NOT RUN",
+  "old_evidence_unchanged": true,
+  "retained_evidence_sha256": {
+    "prepare-console.log": "c565d7102744f70509230755aaa7425ff1d64af5cf4c365725309e3d9ce50246",
+    "resume-console.log": "50b12a8160a986123a0231a5d1560f2706548b56858d3f80c19e680507ee0537",
+    "run-result.json": "8569ea3e6de82cde59af334c1064fc488c8a290b43a1cd0afe22db500e3e1e0f"
+  },
+  "full_S4": "IN PROGRESS",
+  "earlier_automatic_regression": {
+    "workspace": "/tmp/hearth-s4-2.icg0fw4l",
+    "outcome": "PASS",
+    "jar_sha256": "17fa7c4c4f4827ab5f8aeaf0973bd84121e10cf5091cf0d5dc14e09bf84ac9e3",
+    "note": "Before adding existing region/priority API check to the unexecuted manual READY path; original logs retained"
+  }
+}

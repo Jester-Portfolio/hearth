@@ -2,6 +2,7 @@ package io.github.jesterportfolio.hearth;
 
 import io.github.jesterportfolio.hearth.verification.SmokeVerification;
 import io.github.jesterportfolio.hearth.verification.RestartVerification;
+import io.github.jesterportfolio.hearth.verification.PlayerActionObserver;
 import java.nio.file.*;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -9,6 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class HearthPlugin extends JavaPlugin {
     private SmokeVerification verification;
     private RestartVerification restartVerification;
+    private boolean playerTest;
 
     @Override public void onEnable() {
         saveDefaultConfig();
@@ -27,6 +29,8 @@ public final class HearthPlugin extends JavaPlugin {
                 }
                 verification = new SmokeVerification(this);
                 if (s42) restartVerification = new RestartVerification(this);
+                playerTest = s42 && Boolean.getBoolean("hearth.verification.players");
+                if (playerTest) getServer().getPluginManager().registerEvents(new PlayerActionObserver(this), this);
             } catch (Exception e) {
                 getLogger().severe("Verification refused: " + e.getMessage());
                 getServer().getPluginManager().disablePlugin(this);
@@ -42,6 +46,13 @@ public final class HearthPlugin extends JavaPlugin {
             } else if (args.length == 2 && args[0].equals("restart") && restartVerification != null
                     && (args[1].equals("prepare") || args[1].equals("resume"))) {
                 restartVerification.start(args[1]);
+            } else if (playerTest && args.length == 1 && args[0].equals("player-open")) {
+                restartVerification.openForPlayers();
+            } else if (playerTest && args.length == 2 && args[0].equals("player-status")) {
+                var player = getServer().getPlayerExact(args[1]);
+                if (player == null) sender.sendMessage("NOT_CONNECTED");
+                else sender.sendMessage("HEARTH_S4_3_STATUS uuid=" + player.getUniqueId() + " world=" + player.getWorld().getKey()
+                        + " op=" + player.isOp() + " bypass=" + PlayerActionObserver.bypass(player));
             } else {
                 sender.sendMessage("Usage: hearthverify smoke (one run per fresh isolated server directory)");
             }

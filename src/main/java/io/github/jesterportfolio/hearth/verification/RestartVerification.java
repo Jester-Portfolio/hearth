@@ -149,6 +149,24 @@ public final class RestartVerification implements AutoCloseable, Listener {
     }
 
     private CompletableFuture<Void> resume() {
+        return resume(true);
+    }
+
+    /** Manual client sessions may have legitimately edited blocks; identity/template guards still apply. */
+    public void openForPlayers() {
+        if (started) throw new IllegalStateException("One verification phase per JVM");
+        started = true;
+        phase = "player";
+        resume(false).thenCompose(v -> main(() -> {
+            apiChecks(); // Reuse the existing region/priority gate before accepting manual fixture commands.
+            return null;
+        })).whenComplete((v, error) -> {
+            if (error == null) plugin.getLogger().info("HEARTH_S4_3_READY; client actions NOT YET VERIFIED");
+            else plugin.getLogger().log(Level.SEVERE, "HEARTH_S4_3_FAIL; preserve fixture", error);
+        });
+    }
+
+    private CompletableFuture<Void> resume(boolean strictSpatial) {
         return io(() -> {
             try (var in = Files.newInputStream(mapping)) { evidence.load(in); }
             if (!"synthetic-restart-v1".equals(evidence.getProperty("templateVersion"))
@@ -178,8 +196,10 @@ public final class RestartVerification implements AutoCloseable, Listener {
                         "preload_identity_metadata_preserved_" + p.key().getKey());
             }
             check(templates.digest(template.directory()).equals(templateDigest), "preload_template_preserved");
-            check(templates.digest(a.directory()).equals(evidence.getProperty("spatial.a"))
-                    && templates.digest(b.directory()).equals(evidence.getProperty("spatial.b")), "preload_spatial_files_preserved");
+            if (strictSpatial) {
+                check(templates.digest(a.directory()).equals(evidence.getProperty("spatial.a"))
+                        && templates.digest(b.directory()).equals(evidence.getProperty("spatial.b")), "preload_spatial_files_preserved");
+            }
             return null;
         })).thenCompose(v -> main(() -> {
             // No call to backend.create or copySpatial is permitted on this phase.
