@@ -1,0 +1,2 @@
+# Never enable this in a production server. A matching JVM gate and marker are also required.
+verification-enabled: false

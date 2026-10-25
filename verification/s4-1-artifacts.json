@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-10-26",
+  "artifacts": [
+    {
+      "file": "paper-26.2-134.jar",
+      "metadata": "https://fill.papermc.io/v3/projects/paper/versions/26.2/builds/134",
+      "url": "https://fill-data.papermc.io/v1/objects/3cce0a4922baf79bd8e1275ee5ff9f073f24675770e09b0d4be9442d513e7a6b/paper-26.2-134.jar",
+      "algorithm": "sha256",
+      "hash": "3cce0a4922baf79bd8e1275ee5ff9f073f24675770e09b0d4be9442d513e7a6b"
+    },
+    {
+      "file": "worldguard-bukkit-7.0.19.jar",
+      "metadata": "https://api.modrinth.com/v2/version/TtfwTyi6",
+      "url": "https://cdn.modrinth.com/data/DKY9btbd/versions/TtfwTyi6/worldguard-bukkit-7.0.19.jar",
+      "algorithm": "sha512",
+      "hash": "e9ad7ad53c93a07a7d5c3af3d844a677abbe894de4d7ff69fc03397daae5e8532217d57de23a3cddbe0d94ae81ee7acde6c78384b9596aa1eb3001bb37087d41"
+    },
+    {
+      "file": "worldedit-bukkit-7.4.4.jar",
+      "metadata": "https://api.modrinth.com/v2/version/qNuPcliz",
+      "url": "https://cdn.modrinth.com/data/1u6JkXh5/versions/qNuPcliz/worldedit-bukkit-7.4.4.jar",
+      "algorithm": "sha512",
+      "hash": "86d9b76baf8e25ed32170ff25ed8862c00d5adf9441955dd87af01e648b410d0f2ecd5d9a2a51044f425d30869458004687e9ff2e5522aefec65e1c91630f08d"
+    }
+  ]
+}

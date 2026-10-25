@@ -22,6 +22,10 @@ credentials/
 *.tfvars.json
 
 # Local development / runtime data
+.gradle/
+build/
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
 .codex/
 .idea/
 .vscode/

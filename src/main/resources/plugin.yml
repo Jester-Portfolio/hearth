@@ -1,0 +1,13 @@
+name: Hearth
+version: '${version}'
+main: io.github.jesterportfolio.hearth.HearthPlugin
+api-version: '26.2'
+depend: [WorldEdit, WorldGuard]
+description: Hearth S4 isolated multiworld verification foundation
+commands:
+  hearthverify:
+    description: Console-only isolated S4 verification
+    permission: hearth.verify
+permissions:
+  hearth.verify:
+    default: false
