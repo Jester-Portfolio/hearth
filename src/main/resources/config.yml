@@ -12,3 +12,6 @@ lifecycle-verification-enabled: false
 
 # S4-11 새 격리 경로·lifecycle 설정·sessions JVM 게이트를 모두 요구합니다.
 session-verification-enabled: false
+
+# 세션 격리 모드와 별도의 JVM 게이트가 모두 필요합니다.
+quest-verification-enabled: false

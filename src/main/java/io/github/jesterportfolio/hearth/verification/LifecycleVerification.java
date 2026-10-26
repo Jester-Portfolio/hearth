@@ -110,7 +110,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
             CompletionStage<Void> work=switch(phase) {
                 case "session-prepare" -> { if(!sessionMode) throw new IllegalStateException("Session mode disabled");yield initialize(false); }
                 case "session-resume" -> { if(!sessionMode) throw new IllegalStateException("Session mode disabled");yield initialize(true); }
-                case "session-personal-generation", "session-personal-generation-done", "session-inventory-generation", "session-inventory-generation-done", "session-basic", "session-race", "session-race-done", "session-prepare-quit", "session-prepare-done", "session-move-quit", "session-restored", "session-move-failure", "session-write-failure" -> {
+                case "quest-first", "quest-restored", "quest-cycle", "quest-failure", "session-personal-generation", "session-personal-generation-done", "session-inventory-generation", "session-inventory-generation-done", "session-basic", "session-race", "session-race-done", "session-prepare-quit", "session-prepare-done", "session-move-quit", "session-restored", "session-move-failure", "session-write-failure" -> {
                     if (!sessionMode || sessions==null) throw new IllegalStateException("Session fixture not ready"); yield sessions.run(phase);
                 }
                 case "prepare" -> initialize(false);
@@ -210,7 +210,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
             return deliver(store.readShared(ctx)).thenAccept(state -> check(state.value().equals(shared) && state.revision()==sharedRevision,"shared_progress_"+placement.key()+"_r"+sharedRevision));
         }
         @Override public boolean ownReferencesClear() { return sessionMode ? sessions.canUnload(placement.storyRunId()) : session!=null && !session.dirty() && !session.saving(); }
-        @Override public void release() { session=null; view.clear(); }
+        @Override public void release() { if(sessions!=null)sessions.releaseQuests(placement.storyRunId());session=null; view.clear(); }
     }
     private static class Forward implements WorldPersistence.Boundary {
         final WorldPersistence.Boundary b;

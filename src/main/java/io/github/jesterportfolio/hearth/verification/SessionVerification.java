@@ -4,6 +4,8 @@ import io.github.jesterportfolio.hearth.inventory.*;
 import io.github.jesterportfolio.hearth.lifecycle.*;
 import io.github.jesterportfolio.hearth.persistence.*;
 import io.github.jesterportfolio.hearth.session.*;
+import io.github.jesterportfolio.hearth.quest.*;
+import org.bukkit.configuration.file.YamlConfiguration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
@@ -33,6 +35,10 @@ public final class SessionVerification implements AutoCloseable {
     private PlayerSessions.Session s1,s2,s3,oldSession,newSession;
     private CompletionStage<Void> oldClosing,barrier;
     private boolean cycle,expectedHold;
+    private PersonalQuest quests;
+    private PaperQuestAdapter questAdapter;
+    private QuestContent content;
+    private PersonalQuest.Session qa,qb;
     private long started=System.nanoTime();
     public SessionVerification(JavaPlugin plugin,PostgresProgressStore store,ServerProgressAccess access,Map<UUID,WorldLifecycle> worlds,
             Executor owner,PaperInventoryCodec codec,IntFunction<InventoryPayload> fixture) {
@@ -45,6 +51,15 @@ public final class SessionVerification implements AutoCloseable {
         World waiting=Bukkit.getWorlds().getFirst();
         for (int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)waiting.getBlockAt(x,63,z).setType(Material.STONE,false);
         adapter=new PaperSessionAdapter(plugin,coordinator,owner,codec,new Location(waiting,0.5,64,0.5));
+        if(plugin.getConfig().getBoolean("quest-verification-enabled")) {
+            if(!Boolean.getBoolean("hearth.verification.quests"))throw new IllegalStateException("Quest gate missing");
+            java.io.File file=new java.io.File(plugin.getDataFolder(),"quest-demo.yml");
+            if(!file.exists())plugin.saveResource("quest-demo.yml",false);
+            content=QuestContent.load(YamlConfiguration.loadConfiguration(file));
+            quests=new PersonalQuest(store,content.id(),owner,SessionVerification::main);
+            questAdapter=new PaperQuestAdapter(plugin,adapter,quests,content,owner,
+                Set.of(worlds.get(a).mapping().physicalId(),worlds.get(b).mapping().physicalId()));
+        }
     }
     private ServerProgressAccess.Context ctx(UUID run,int player){return access.forVerifiedServerLink(run,new UUID(49,player));}
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("Not main thread");}
@@ -102,6 +117,10 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "quest-first" -> questFirst();
+        case "quest-restored" -> questRestored();
+        case "quest-cycle" -> questCycle();
+        case "quest-failure" -> questFailure();
         case "session-personal-generation" -> generationPending("personal",12);
         case "session-personal-generation-done" -> generationDone("personal",12);
         case "session-inventory-generation" -> generationPending("inventory",13);
@@ -172,8 +191,75 @@ public final class SessionVerification implements AutoCloseable {
             check(worlds.get(b).state()==WorldLifecycle.State.ACTIVE,"generation_probe_other_run_active");
         });
     }
-    public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run);}
-    public boolean canUnload(UUID run){return coordinator.canUnload(run);}
+    private void npcCheck() {
+        for(UUID run:List.of(a,b)) {
+            World w=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));
+            questAdapter.ensure(w);questAdapter.ensure(w);
+            check(questAdapter.count(w)==1 && questAdapter.dialogueAllowed(w),"quest_npc_single_interaction_flag_"+run);
+        }
+        check(content.contains(13,64,13) && !content.contains(2,64,2),"quest_content_visit_bounds");
+    }
+    private CompletionStage<Void> questRead(ServerProgressAccess.Context ctx,QuestStore.Phase phase,long revision) {
+        return mainResult(store.readQuest(ctx,content.id())).thenAccept(row->check(row.phase()==phase && row.revision()==revision,"quest_row_"+ctx.storyRunId()+"_"+ctx.playerId()+"_"+phase+"_r"+revision));
+    }
+    private CompletionStage<Void> rejectQuest(CompletionStage<?> stage) {
+        return mainResult(stage.handle((v,e)->{if(e==null)throw new IllegalStateException("Quest accepted invalid operation");return null;})).thenRun(()->check(true,"quest_invalid_or_duplicate_rejected"));
+    }
+    private CompletionStage<Void> questFirst() {
+        if(quests==null)throw new IllegalStateException("Quest disabled");
+        return openAll().thenRun(this::npcCheck)
+            .thenCompose(v->quests.open(a1,s1,()->coordinator.playable(s1)))
+            .thenCompose(q->{qa=q;return rejectQuest(quests.advance(q,QuestStore.Phase.REPORT_READY));})
+            .thenCompose(v->questRead(a1,QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->{var first=quests.advance(qa,QuestStore.Phase.ACTIVE);var duplicate=rejectQuest(quests.advance(qa,QuestStore.Phase.ACTIVE));return first.thenCombine(duplicate,(row,ignored)->row);})
+            .thenCompose(v->quests.advance(qa,QuestStore.Phase.REPORT_READY))
+            .thenCompose(v->questRead(a1,QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->{var first=quests.advance(qa,QuestStore.Phase.COMPLETED);var duplicate=rejectQuest(quests.advance(qa,QuestStore.Phase.COMPLETED));return first.thenCombine(duplicate,(row,ignored)->row);})
+            .thenCompose(v->questRead(a1,QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(a2,QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->quests.open(a2,s2,()->coordinator.playable(s2)))
+            .thenCompose(q->{qb=q;return quests.advance(q,QuestStore.Phase.ACTIVE);})
+            .thenCompose(v->quests.advance(qb,QuestStore.Phase.REPORT_READY))
+            .thenCompose(v->questRead(a1,QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->rejectQuest(store.readQuest(ctx(a,99),content.id())))
+            .thenCompose(v->rejectQuest(store.advanceQuest(a1,content.id(),new QuestStore.Saved(QuestStore.Phase.ACTIVE,0),QuestStore.Phase.REPORT_READY)))
+            .thenRun(()->check(true,"quest_personal_A1_A2_B1_isolation_CAS"));
+    }
+    private CompletionStage<Void> questRestored() {
+        return openAll().thenRun(this::npcCheck)
+            .thenCompose(v->questRead(a1,QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(a2,QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->quests.open(a1,s1,()->coordinator.playable(s1)))
+            .thenCompose(q->{qa=q;return rejectQuest(quests.advance(q,QuestStore.Phase.COMPLETED));})
+            .thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0))
+            .thenRun(()->check(true,"quest_new_JVM_completed_without_recreation"));
+    }
+    private CompletionStage<Void> questCycle() {
+        UUID physical=worlds.get(a).mapping().physicalId();
+        return mainResult(coordinator.disconnect(s1)).thenCompose(v->mainResult(coordinator.disconnect(s2)))
+            .thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
+            .thenRun(()->check(Bukkit.getWorld(physical)==null && !questAdapter.tracks(physical),"quest_NPC_unloaded_no_world_reference"))
+            .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return mainResult(s1.ready()).thenCompose(x->mainResult(s2.ready()));})
+            .thenRun(this::npcCheck)
+            .thenCompose(v->quests.open(a1,s1,()->coordinator.playable(s1)))
+            .thenAccept(q->{qa=q;check(q.saved().phase()==QuestStore.Phase.COMPLETED && q.saved().revision()==2,"quest_reconnect_reload_completed_retained");});
+    }
+    private CompletionStage<Void> questFailure() {
+        // 같은 실DB의 결정적 SQL 실패를 별도 제어 세션에 주입합니다. 실제 플레이어 실패가 아닙니다.
+        var probe=new PersonalQuest(store,content.id(),owner,SessionVerification::main);
+        return probe.open(a2,new Object(),()->true).thenCompose(q->rejectQuest(probe.advance(q,QuestStore.Phase.COMPLETED))
+            .thenRun(()->check(q.held() && q.saved().phase()==QuestStore.Phase.REPORT_READY && q.saved().revision()==1,"quest_SQL_failure_HOLD_old_state_preserved"))
+            .thenCompose(v->rejectQuest(probe.barrier(a))))
+            .thenCompose(v->questRead(a2,QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->questRead(a1,QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1));
+    }
+    public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run),owner);}
+    public boolean canUnload(UUID run){return coordinator.canUnload(run) && (quests==null || quests.settled(run));}
+    public void releaseQuests(UUID run){if(quests!=null)quests.release(run);}
     public CompletionStage<Void> shutdown(){
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
         autosave.close();adapter.close();
@@ -183,7 +269,7 @@ public final class SessionVerification implements AutoCloseable {
                     && generationProbes.size()==2 && generationProbes.values().stream().allMatch(s->s.state()==PlayerSessions.State.HOLD && "STALE_WORLD".equals(s.error()))
                     && Set.of("23514","MOVE_FAILED","STALE_WORLD").contains(LifecycleFailure.code(error))))throw new CompletionException(error);
             log("DRAIN "+(error==null ? "PASS" : "EXPECTED_HOLD_PRESERVED"));return null;
-        },owner));
+        },owner)).thenCompose(v->quests==null?CompletableFuture.completedFuture(null):quests.shutdown());
     }
     private CompletionStage<Void> linkExisting(ServerProgressAccess.Context context) {
         return mainResult(store.readPersonal(context)).thenCompose(v -> mainResult(store.readInventory(context))).thenAccept(saved -> {
@@ -204,9 +290,11 @@ public final class SessionVerification implements AutoCloseable {
         main();if(!manual)throw new IllegalStateException("수동 시험 전용입니다");
         var profile=Bukkit.getWhitelistedPlayers().stream().filter(p->name.equals(p.getName())).findFirst().orElseThrow();
         var context=access.forVerifiedServerLink(a,profile.getUniqueId());
+        if(quests!=null)mainResult(store.readQuest(context,content.id())).thenAccept(row->log("MANUAL_QUEST phase="+row.phase()+" revision="+row.revision()))
+            .exceptionally(error->{log("MANUAL_QUEST HOLD "+LifecycleFailure.code(error));return null;});
         log("MANUAL "+adapter.status(profile.getUniqueId())+" world_state="+worlds.get(a).state()+" world_epoch="+worlds.get(a).generation());
         mainResult(store.readInventory(context)).thenAccept(saved->log("MANUAL_DB count="+codec.decode(saved.payload())[0].getAmount()+" revision="+saved.revision()))
             .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
-    @Override public void close(){autosave.close();adapter.close();}
+    @Override public void close(){if(questAdapter!=null)questAdapter.close();autosave.close();adapter.close();}
 }

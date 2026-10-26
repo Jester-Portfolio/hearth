@@ -135,3 +135,17 @@ PL1의 WG/WE 로딩/종료 부분은 실행했고 MV 조합은 미실행입니�
 ## S4-2 후속 확인 (2026-10-26)
 
 [두 JVM 검증](s4-2-verification.md)에서 같은 고정 WG/WE/Paper 조합의 재시작·월드별 구역/중첩 보존과 자연 발생 피스톤 A 거부/B 허용을 확인했습니다. PL3과 W4 일부의 근거이며 접속 플레이어 설치/파괴·권한/bypass·전체 W1~W13/PL1~PL10 통과가 아닙니다. 최소 Paper API 배치 매핑만 확장했고 MV 후보/비교 상태와 WG 채택을 변경하지 않았습니다.
+
+## 격리 NPC·개인 방문 퀘스트 검토 — 2026-10-26
+
+이번 범위는 중립적인 주민 한 명과 아이템 소모·보상 없는 방문/보고 퀘스트 한 개입니다. 외부 플러그인의 설치·채택 승인을 추정하지 않습니다.
+
+| 후보 | 공식 자료에서 확인한 사실 | Hearth 적합성·미확인 | 이번 선택 |
+| --- | --- | --- | --- |
+| Citizens | 공식 저장소는 NPC 공개 API·개발 빌드 경로를 안내합니다. 확인한 POM은 `2.0.44-SNAPSHOT`, `v26_2_R1` 모듈을 포함합니다. OSL-3.0 라이선스입니다. | 26.2 대응 소스 근거는 있으나 고정 Paper build 134/Java 25 배포 JAR 실동작은 미검증. registry·위치 기반 NPC를 story_run_id·동적 월드/청크에 연결하고 비영속 인스턴스 정리를 별도 검증해야 합니다. 버전별 내부 서버 어댑터 유지보수 위험이 있습니다. | 향후 외형·경로·다수 NPC 요구 시 API 연동 후보. 이번에는 설치하지 않음 |
+| BetonQuest | 공식 대화 문서에 콘텐츠 기반 대화·Citizens 연결이 있고, 공개 개발 API와 변경 이력·기여 경로가 있습니다. GPL-3.0 라이선스입니다. | 최신 배포의 정확한 26.2/Java 25 조합은 미확인. 이번 자료만으로 `story_run_id+player_uuid` 소유권·동적 복제 월드의 대화/NPC 참조 정리가 보장된다고 판단할 수 없습니다. 기존 PostgreSQL 정본과 외부 진행 정본의 중복 관리 위험이 있습니다. | 대화/퀘스트 플랫폼 채택은 별도 아키텍처 선택. 지금 채택하지 않음 |
+| Paper 기본 주민·Adventure 채팅 + Hearth 저장 연동 | 기존 Paper API가 주민 생성·상호작용 이벤트·비영속 엔티티와 채팅 선택을 제공합니다. | 복잡한 NPC 플랫폼을 재현하지 않고 고정된 주민 하나와 세 번의 상태 전이만 연결합니다. 기존 bounded DB worker·CAS·세션·월드 저장 장벽을 재사용할 수 있습니다. 실제 클릭과 클라이언트 UI는 별도 시험입니다. | 이번 격리 프로토타입에 한정해 사용. 운영 NPC 플랫폼 확정이 아님 |
+
+자료: [Citizens README](https://raw.githubusercontent.com/CitizensDev/Citizens2/master/README.md), [POM](https://raw.githubusercontent.com/CitizensDev/Citizens2/master/pom.xml), [라이선스](https://raw.githubusercontent.com/CitizensDev/Citizens2/master/LICENSE), [BetonQuest 대화](https://betonquest.org/2.2/Documentation/Features/Conversations/), [공개 API](https://betonquest.org/RELEASE/API/Overview/), [저장소·라이선스](https://github.com/BetonQuest/BetonQuest). Citizens 버전 위키 직접 열기는403으로 실패해 정확한 배포 호환 버전을 확정하지 않았습니다. 개발 브랜치·문서 존재를 안정성/성능 보장으로 취급하지 않으며 외부 코드·배포물을 복사하거나 재배포하지 않았습니다.
+
+구현 API 근거: [Paper 상호작용 이벤트](https://jd.papermc.io/paper/26.2/org/bukkit/event/player/PlayerInteractEntityEvent.html)는 세부 위치 이벤트 사용을 권고하므로 `PlayerInteractAtEntityEvent`를 사용합니다. [엔티티 비영속 설정](https://jd.papermc.io/paper/26.2/org/bukkit/entity/Entity.html#setPersistent(boolean))에 따라 시험 NPC를 월드 파일에 중복 저장하지 않습니다. [WorldGuard flags](https://worldguard.enginehub.org/en/latest/regions/flags/)의 `INTERACT`를 NPC 지점에만 허용하며 건축 권한과 구분합니다. 실제 결과와 남은 시험은 [개인 퀘스트 기록](personal-quest-verification.md)을 따릅니다.

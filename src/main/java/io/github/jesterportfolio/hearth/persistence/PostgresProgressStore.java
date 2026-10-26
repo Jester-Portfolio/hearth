@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 import javax.sql.DataSource;
 
 /** Bukkit API/메인 스레드 대기가 없는 최소 JDBC 저장 모듈. 플러그인 부팅에는 아직 연결하지 않습니다. */
-public final class PostgresProgressStore implements ProgressStore, InventoryStore {
+public final class PostgresProgressStore implements ProgressStore, InventoryStore, QuestStore {
     public record Failure(String operation, UUID storyRunId, UUID playerId, String code) {}
     private final ServerProgressAccess access;
     private final HikariDataSource pool;
@@ -145,6 +145,42 @@ public final class PostgresProgressStore implements ProgressStore, InventoryStor
                 try (var row=st.executeQuery()) {
                     if (!row.next()) throw new StorageFailure("inventory","REVISION_CONFLICT_OR_MISSING");
                     return new Stored(payload,row.getLong(1));
+                }
+            }
+        });
+    }
+
+    private void questAccess(ServerProgressAccess.Context ctx,String quest) {
+        access.requireIssued(ctx);requireReady();
+        if (quest==null || !quest.matches("[a-z][a-z0-9_]{0,63}")) throw new IllegalArgumentException("Invalid quest id");
+    }
+    @Override public CompletionStage<QuestStore.Saved> readQuest(ServerProgressAccess.Context ctx,String quest) {
+        return submit("read_quest",ctx,() -> {
+            questAccess(ctx,quest);
+            try(var c=pool.getConnection();var st=c.prepareStatement(
+                    "SELECT q.phase,q.revision FROM hearth_progress.player_progress p LEFT JOIN hearth_progress.personal_quest q ON q.story_run_id=p.story_run_id AND q.player_uuid=p.player_uuid AND q.quest_id=? WHERE p.story_run_id=? AND p.player_uuid=?")) {
+                st.setString(1,quest);st.setObject(2,ctx.storyRunId());st.setObject(3,ctx.playerId());
+                try(var row=st.executeQuery()) {
+                    if(!row.next())throw new StorageFailure("quest","MISSING_PLAYER");
+                    String phase=row.getString(1);
+                    return phase==null ? new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1) : new QuestStore.Saved(QuestStore.Phase.valueOf(phase),row.getLong(2));
+                }
+            }
+        });
+    }
+    @Override public CompletionStage<QuestStore.Saved> advanceQuest(ServerProgressAccess.Context ctx,String quest,QuestStore.Saved expected,QuestStore.Phase next) {
+        return submit("advance_quest",ctx,() -> {
+            questAccess(ctx,quest);
+            if(!QuestStore.follows(expected.phase(),next) || expected.revision()==Long.MAX_VALUE)throw new IllegalArgumentException("Invalid quest transition");
+            boolean first=expected.phase()==QuestStore.Phase.NOT_ACCEPTED;
+            String sql=first ? "INSERT INTO hearth_progress.personal_quest(story_run_id,player_uuid,quest_id,phase) VALUES (?,?,?,?) ON CONFLICT DO NOTHING RETURNING revision"
+                : "UPDATE hearth_progress.personal_quest SET phase=?,revision=revision+1 WHERE story_run_id=? AND player_uuid=? AND quest_id=? AND phase=? AND revision=? RETURNING revision";
+            try(var c=pool.getConnection();var st=c.prepareStatement(sql)) {
+                if(first){st.setObject(1,ctx.storyRunId());st.setObject(2,ctx.playerId());st.setString(3,quest);st.setString(4,next.name());}
+                else {st.setString(1,next.name());st.setObject(2,ctx.storyRunId());st.setObject(3,ctx.playerId());st.setString(4,quest);st.setString(5,expected.phase().name());st.setLong(6,expected.revision());}
+                try(var row=st.executeQuery()) {
+                    if(!row.next())throw new StorageFailure("quest","REVISION_CONFLICT_OR_MISSING");
+                    return new QuestStore.Saved(next,row.getLong(1));
                 }
             }
         });

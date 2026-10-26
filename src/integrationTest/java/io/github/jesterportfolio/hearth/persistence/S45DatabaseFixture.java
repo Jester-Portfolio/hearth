@@ -60,6 +60,11 @@ public final class S45DatabaseFixture {
                         try (var st=Objects.requireNonNull(admin).createStatement()) {
                             st.setQueryTimeout(3);
                             switch (command) {
+                                case "quest-fail-on" -> {
+                                    st.execute("CREATE OR REPLACE FUNCTION hearth_progress.reject_quest() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'isolated quest write failure' USING ERRCODE='23514'; END $$");
+                                    st.execute("CREATE TRIGGER reject_quest BEFORE INSERT OR UPDATE ON hearth_progress.personal_quest FOR EACH ROW EXECUTE FUNCTION hearth_progress.reject_quest()");
+                                }
+                                case "quest-fail-off" -> st.execute("DROP TRIGGER reject_quest ON hearth_progress.personal_quest");
                                 case "write-fail-on" -> {
                                     st.execute("CREATE OR REPLACE FUNCTION hearth_progress.reject_s45() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test write failure' USING ERRCODE='23514'; END $$");
                                     st.execute("CREATE TRIGGER reject_s45 BEFORE UPDATE ON hearth_progress."+table+" FOR EACH ROW EXECUTE FUNCTION hearth_progress.reject_s45()");

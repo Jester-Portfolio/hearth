@@ -1,0 +1,434 @@
+{
+  "기준_커밋": "37cc064f1291bac6de8e1aae38c5261644713241",
+  "확인일": "2026-10-26",
+  "범위": "격리 NPC 한 명·개인 방문 퀘스트. 실제 클라이언트 클릭/선택/이동은 미실행. 전체 S4 진행 중.",
+  "단위_회귀": {
+    "tests": 43,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "자동_묶음_사용": 2,
+  "자동_묶음_상한": 3,
+  "시도": [
+    {
+      "경로": "/tmp/hearth-s4-11.a3lpsq3j",
+      "원시_결과_sha256": "144c705733bacbac5dbde040e619aadd24f3b27a8cebceb998e4a0ddaf3fa04e",
+      "결과": "PASS",
+      "초": 53.95,
+      "한도": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "JAR_sha256": "4bddc2004ade1b5aa6d7a10691aefc1ebc6365e313eaebf962de5b47b021954f",
+      "설치_JAR_sha256": "4bddc2004ade1b5aa6d7a10691aefc1ebc6365e313eaebf962de5b47b021954f",
+      "종료_반환": true,
+      "자원": {
+        "database": {
+          "pid": 1203289,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 53.252,
+          "shutdown_seconds": 0.208,
+          "max_sampled_rss_kib": 220152,
+          "observed_cpu_seconds": 2.25,
+          "min_sampled_host_available_kib": 11810012,
+          "sample_count": 920
+        },
+        "paper-prepare": {
+          "pid": 1203347,
+          "exit_code": 0,
+          "ready_seconds": 13.501,
+          "duration_seconds": 32.551,
+          "shutdown_seconds": 4.153,
+          "max_sampled_rss_kib": 1166988,
+          "observed_cpu_seconds": 62.81,
+          "min_sampled_host_available_kib": 11810012,
+          "sample_count": 533
+        },
+        "paper-resume": {
+          "pid": 1203563,
+          "exit_code": 0,
+          "ready_seconds": 8.84,
+          "duration_seconds": 17.66,
+          "shutdown_seconds": 3.523,
+          "max_sampled_rss_kib": 936916,
+          "observed_cpu_seconds": 32.44,
+          "min_sampled_host_available_kib": 12002240,
+          "sample_count": 332
+        }
+      },
+      "검사": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b",
+        "quest_content_visit_bounds",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_REPORT_READY_r1",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_COMPLETED_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_NOT_ACCEPTED_r-1",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_COMPLETED_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_personal_A1_A2_B1_isolation_CAS",
+        "quest_NPC_unloaded_no_world_reference",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b",
+        "quest_content_visit_bounds",
+        "quest_reconnect_reload_completed_retained",
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b",
+        "quest_content_visit_bounds",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_COMPLETED_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_ACTIVE_r0",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_invalid_or_duplicate_rejected",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count32_r0",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_count5_r0",
+        "restored_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000003_count7_r0",
+        "quest_new_JVM_completed_without_recreation",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_SQL_failure_HOLD_old_state_preserved",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_ACTIVE_r0",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_COMPLETED_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_NPC_unloaded_no_world_reference",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b",
+        "quest_content_visit_bounds",
+        "quest_reconnect_reload_completed_retained"
+      ],
+      "로그": [
+        {
+          "path": "database-console.log",
+          "sha256": "a9b2aef188632255eb9c7b9414bbfaf5192056526294f527defde51e7d642297"
+        },
+        {
+          "path": "paper-prepare-console.log",
+          "sha256": "74dea6f469788c0c83e496a73bad968c663dd43cc28d0c622c8582ecae1a1b9c"
+        },
+        {
+          "path": "paper-resume-console.log",
+          "sha256": "c5ea8603276b82095426c7012f2811e4a5a4c67ab02f0b95982ee7e549ac74c0"
+        }
+      ]
+    },
+    {
+      "경로": "/tmp/hearth-s4-11.0yry4h2e",
+      "원시_결과_sha256": "f608f24d3bd8ff5402206d8f1136d987535d452b41f1037c39aa8595244e218a",
+      "결과": "PASS",
+      "초": 54.884,
+      "한도": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "JAR_sha256": "84793c22bd2178d9b75071154f84bd8cc44ac5f5cc4fa7979f7fd9fc4ccad2b2",
+      "설치_JAR_sha256": "84793c22bd2178d9b75071154f84bd8cc44ac5f5cc4fa7979f7fd9fc4ccad2b2",
+      "종료_반환": true,
+      "자원": {
+        "database": {
+          "pid": 1205538,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 54.186,
+          "shutdown_seconds": 0.208,
+          "max_sampled_rss_kib": 210192,
+          "observed_cpu_seconds": 2.26,
+          "min_sampled_host_available_kib": 11889420,
+          "sample_count": 934
+        },
+        "paper-prepare": {
+          "pid": 1205614,
+          "exit_code": 0,
+          "ready_seconds": 14.8,
+          "duration_seconds": 33.854,
+          "shutdown_seconds": 3.658,
+          "max_sampled_rss_kib": 1062472,
+          "observed_cpu_seconds": 64.86,
+          "min_sampled_host_available_kib": 11889420,
+          "sample_count": 547
+        },
+        "paper-resume": {
+          "pid": 1205828,
+          "exit_code": 0,
+          "ready_seconds": 8.663,
+          "duration_seconds": 17.375,
+          "shutdown_seconds": 3.516,
+          "max_sampled_rss_kib": 950412,
+          "observed_cpu_seconds": 32.2,
+          "min_sampled_host_available_kib": 12016068,
+          "sample_count": 334
+        }
+      },
+      "검사": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b",
+        "quest_content_visit_bounds",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_REPORT_READY_r1",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_COMPLETED_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_NOT_ACCEPTED_r-1",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_COMPLETED_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_personal_A1_A2_B1_isolation_CAS",
+        "quest_NPC_unloaded_no_world_reference",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b",
+        "quest_content_visit_bounds",
+        "quest_reconnect_reload_completed_retained",
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b",
+        "quest_content_visit_bounds",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_COMPLETED_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_REPORT_READY_r1",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_invalid_or_duplicate_rejected",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count32_r0",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_count5_r0",
+        "restored_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000003_count7_r0",
+        "quest_new_JVM_completed_without_recreation",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_SQL_failure_HOLD_old_state_preserved",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_REPORT_READY_r1",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_COMPLETED_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_NOT_ACCEPTED_r-1",
+        "quest_NPC_unloaded_no_world_reference",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a",
+        "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b",
+        "quest_content_visit_bounds",
+        "quest_reconnect_reload_completed_retained"
+      ],
+      "로그": [
+        {
+          "path": "database-console.log",
+          "sha256": "965561dd6be0f7a035a38271b96da36fc95f0beaf0afc1b0cce2b7f546f1e05c"
+        },
+        {
+          "path": "paper-prepare-console.log",
+          "sha256": "3fc03d685999377490377c2c983bc6b97fe7505b59668d20d6e4e95c7e89be65"
+        },
+        {
+          "path": "paper-resume-console.log",
+          "sha256": "da6beee721126146d3d0e5b69fa5bd5ea542804c37ccf52fe3c4186fea341c68"
+        }
+      ]
+    }
+  ],
+  "최종_실행_JAR_일치": true,
+  "최종_빌드_입력": [
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/HearthPlugin.java",
+      "sha256": "2058d655fb84b4eb4d9e4fcb7855e764ffdcb88c0eba4bf297fe0e8bd1884853"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryAutosave.java",
+      "sha256": "45f248c7f865fe8e23b866f649bdbeb582984adf47c843b7a955eca500825463"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryPayload.java",
+      "sha256": "8ff879502e58f73ec5088fbcd8573af4204b1cf4367db72b853fb2b6131e2e00"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventorySaveSession.java",
+      "sha256": "8e612bd8ff6dbf58c3f067ed6069f6c8acf8fe53c8155e9bd2d3a91edb6fdae1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryTransition.java",
+      "sha256": "46a9d0446de17a5d4eb3bc99fc29301f9ab048cf77a957d479c124a04acfaf71"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryAutosave.java",
+      "sha256": "8b2a9dbffdfca427e61c4049159069e4716d3c2fe29d4a81cdc85c1b02950bb5"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryCodec.java",
+      "sha256": "d48daed9f3c948fd58391683816fded7e2633f29132afe4ebf1b0cb01e6cdd94"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/LifecycleFailure.java",
+      "sha256": "ff1fcca716d8d6c8696749e89a4de8104eff35102d62bdc2869f55d54f7706b0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary.java",
+      "sha256": "c276e62a12f6f8d8702ad2a121385888297a48262726b0402b0f5171320f8f35"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldLifecycle.java",
+      "sha256": "b33868a5bdd87e956c3147793ecf52d9ac15f39e42eb1b766d00590c9df45925"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldPersistence.java",
+      "sha256": "bc947ff843c46cdea35e80743474acd196b5be70e81804f2c200f0a25fcfda12"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/InventoryStore.java",
+      "sha256": "07dc183985f058b45da0901a2e7a19f1e3f52e4a5b0a978667161b57a5a7eefb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/PostgresProgressStore.java",
+      "sha256": "96c9efa91360e82cbd072cf06e442526d6f62edab66ace83bbe3eb502e2555b7"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ProgressStore.java",
+      "sha256": "6671c08210d54ae01a9e568e652d951d8718dab3dd8eea711baf13d3c00b168f"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/QuestStore.java",
+      "sha256": "48b902e4dc45239455e6a114a37abeb930bee4f9665dde5222011397a033ecc1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/SchemaMigration.java",
+      "sha256": "82c823661ba1907a0b3184dc308f84c9f248ce9c51b13cd121a761dca613da15"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ServerProgressAccess.java",
+      "sha256": "b938fe1e8e18ea5fe9d997f092a5655260fefd11d0678563765a9d753867aae2"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/StorageFailure.java",
+      "sha256": "2648853231e00e70ee7ceba5809da1eda1aeb4134509fab9e623bd62f3d8a9fb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PaperQuestAdapter.java",
+      "sha256": "ef8a7f539202ce39e6befbf63823b29029a2866beb5cc7cb8eb1b15eea5074dd"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PersonalQuest.java",
+      "sha256": "0543b6bcc4b0e9e82aec77d046dd1788b84a089d5ef40eb8e622d7ff21d73a52"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestContent.java",
+      "sha256": "48b5091e4947bd414b8dedc10761f800a74f51a3c6b2be47a1b50a046d883dd7"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PaperSessionAdapter.java",
+      "sha256": "a6a7545cf371b04a319a0e1422491a44536b253392746554e16b181a0327f2cb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PlayerSessions.java",
+      "sha256": "2a6fede944d8e36f8cebdc75fe8e622da80ad63e14cc1effba62fb40776f8684"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/DatabaseVerification.java",
+      "sha256": "a9ccf7a3506b31e5689ee7d7ee627b4b6d1ac45bc7c6f1922879a182b4a71ff4"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/InventoryVerification.java",
+      "sha256": "a1a94f421841a19b5406c2e9651278d9a9752baf47c6bd338a0063a4cb4ab300"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/LifecycleVerification.java",
+      "sha256": "1e12ada66bcfc09cf3a54560cbf407bacbdf821bd4c8f680580ae24cd88a810d"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/PlayerActionObserver.java",
+      "sha256": "f0c85f4a4151d6f0d179dc57202d563b5b370e53dc986805132bf3966964d802"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/RestartVerification.java",
+      "sha256": "17fecf78ad0a14a980a683de475b923dbdad896976455a5d0ddc393ab7c2b782"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java",
+      "sha256": "4ee77bb389a6f020c198a2792e237317fd955d697bbea8520e1e83d8f699b88d"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SmokeVerification.java",
+      "sha256": "2ec3647a00f3f66328923591eacdbf20ee976b21c256cbdeb2b3e2190e8c4370"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/PaperWorldBackend.java",
+      "sha256": "b46a5acbc7f43b03ab25f523982f8110bb3c7942bbb77fafed7ef6cf1685e1ca"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/TemplateStore.java",
+      "sha256": "d27b4d777c72c8968136855267e496c35bd138134ef2cfe32a1daa5df18c26b1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/WorldBackend.java",
+      "sha256": "bf9d5742a8a955aeb754f5eb70510cf75d6b38ff7e371864058135d02303b42e"
+    },
+    {
+      "path": "src/main/resources/config.yml",
+      "sha256": "c78c088e194e4281524d13444745465ec819872e4fd5853b0ac9adf0b4aad462"
+    },
+    {
+      "path": "src/main/resources/db/migration/V001__progress.sql",
+      "sha256": "9cfd301837659e3d303f5c7c81ed7b4f2b884bb3160a638cffcaf37d35520c4a"
+    },
+    {
+      "path": "src/main/resources/db/migration/V002__story_inventory.sql",
+      "sha256": "b04a0051a12bfd56c5c5d993eb988ee3a760cdc270a53d54d89e1048f74a5c16"
+    },
+    {
+      "path": "src/main/resources/db/migration/V003__personal_quest.sql",
+      "sha256": "3c9799d3665d81697245be21149375f4a4365fe696df9a5a6e40909c32a34cc6"
+    },
+    {
+      "path": "src/main/resources/plugin.yml",
+      "sha256": "816d959a3f032ec6a18dc211b4e25f36ef9acebc26245901dd10023f787672ae"
+    },
+    {
+      "path": "src/main/resources/quest-demo.yml",
+      "sha256": "4769cf011373cdf16102d22e300c806e0d2d98732806af6cf0528ab1e62b6125"
+    },
+    {
+      "path": "build.gradle.kts",
+      "sha256": "d6be3d63d1fb0fc05b803f0476506d584cbd30e902b937fe6f0135b1fd42fc4b"
+    },
+    {
+      "path": "settings.gradle.kts",
+      "sha256": "3c65ec08315b00dea23f54b6db4b985cb1f763ddfc1b936d5193235730742570"
+    }
+  ],
+  "변경_이유": "첫 묶음 PASS 뒤 완료 UPDATE 실패를 명시적으로 보강하고 명령 등록/취소 검사·이동 중복 억제·수동 상태 조회를 보완. 최종 JAR로 두 번째 묶음 PASS. 관련 변경 없는 반복 실행 없음.",
+  "실제_시험": "실제 Paper 2회/PG1개씩. V003·CAS·A/P1 A/P2 B/P1·두 JVM 완료 복원·NPC/WG·IDLE 재로드·완료 UPDATE SQLSTATE23514. 제어 세션을 실제 Player라고 표시하지 않음.",
+  "단위만_시험": "늦은 콜백·새 세션 이전 쓰기 대기·다중 저장 장벽·미완료 종료·쓰기 실패 후 재접속 HOLD. 실제 인증 사용자 경합은 미실행.",
+  "미실행": [
+    "실제 NPC 클릭·채팅 수락/보고·목표 이동",
+    "실제 동시 코옵/DB 실패 중 접속 종료",
+    "기존 영속 운영 DB 업그레이드",
+    "PostgreSQL 프로세스 재시작",
+    "장기 부하·메모리 누수·TPS/MSPT",
+    "S4-3 B 행동·일부 권한 전환·전체 반복",
+    "운영 배포"
+  ],
+  "기존_증거_및_V001_V002": "기존 verification 파일과 V001/V002 불변. 새 시험 경로만 생성.",
+  "경고": "고정 Paper 업데이트 안내·JOML Unsafe·비대화형 터미널·수동 저장 경고. MISSING_PLAYER/REVISION_CONFLICT_OR_MISSING/23514는 의도한 거부 검사."
+}

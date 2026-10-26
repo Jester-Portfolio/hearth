@@ -32,6 +32,9 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private final Map<UUID,Player> moving=new HashMap<>();
     private final Set<Entry> samples=Collections.newSetFromMap(new IdentityHashMap<>());
     private boolean closed;
+    private BiPredicate<Player,String> questCommand=(p,c)->false;
+    public void questCommand(BiPredicate<Player,String> handler){main();questCommand=handler;}
+    public PlayerSessions.Session current(Player p){main();Entry e=entry(p);return allowed(p)?e.session():null;}
     public PaperSessionAdapter(JavaPlugin plugin,PlayerSessions sessions,Executor owner,PaperInventoryCodec codec,Location waiting) {
         this.plugin=plugin;this.sessions=sessions;this.owner=owner;this.codec=codec;this.waiting=waiting.clone();
         Bukkit.getPluginManager().registerEvents(this,plugin);
@@ -115,7 +118,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void consume(PlayerItemConsumeEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void swap(PlayerSwapHandItemsEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void damageItem(PlayerItemDamageEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
-    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied && allowed(e.getPlayer()))questCommand.test(e.getPlayer(),e.getMessage());}
     @EventHandler(priority=EventPriority.HIGHEST) public void damage(EntityDamageEvent e){if(e.getEntity() instanceof Player)e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void attack(EntityDamageByEntityEvent e){if(e.getDamager() instanceof Player)e.setCancelled(true);}
     @Override public void close(){main();closed=true;HandlerList.unregisterAll(this);}

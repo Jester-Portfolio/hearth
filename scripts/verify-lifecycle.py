@@ -75,6 +75,7 @@ def main():
     parser.add_argument('--plugin', required=True, type=Path)
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--quests', action='store_true', help='격리 개인 방문 퀘스트/NPC와 기존 세션을 검증합니다')
     parser.add_argument('--sessions', action='store_true', help='새 격리 환경에서 최소 세션 어댑터/저장 장벽을 검증합니다')
     parser.add_argument('--manual-player', action='store_true', help='인증 클라이언트가 준비된 뒤에만 사용하는 별도 수동 데이터/두 JVM 모드')
     parser.add_argument('--operator-ready', action='store_true', help='프로필·기존 SSH 전달 경로·클라이언트 준비를 운영자가 확인했습니다')
@@ -84,6 +85,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.quests and not args.sessions:
+        parser.error("--quests는 --sessions가 필요합니다")
     root = args.workspace.resolve(strict=True)
     assert args.accept_eula and os.getuid()!=0, 'EULA 동의·일반 사용자 실행 필요'
     assert not args.workspace.is_symlink() and root.parent==Path('/tmp') and root.name.startswith('hearth-s4-11.')
@@ -113,7 +116,7 @@ def main():
     shutil.copyfile(args.plugin,plugins/'Hearth.jar')
     (plugins/'Hearth').mkdir()
     idle_seconds=10 if args.manual_player else 1
-    (plugins/'Hearth/config.yml').write_text('verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
+    (plugins/'Hearth/config.yml').write_text(f"quest-verification-enabled: {str(args.quests).lower()}\n"+'verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
     if args.sessions:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('session-verification-enabled: true\ninventory-autosave-seconds: 30\n')
@@ -150,6 +153,8 @@ motd=Hearth isolated S4-11 verification
         if args.sessions:
             paper.insert(-3,'-Dhearth.verification.sessions=true')
             paper.insert(-3,'-Dhearth.verification.players=true')
+        if args.quests:
+            paper.insert(-3,'-Dhearth.verification.quests=true')
         if args.manual_player:
             paper.insert(-3,'-Dhearth.verification.sessionManual=true')
         for phase in ['prepare','resume']:
@@ -174,7 +179,10 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        automatic_first(monitor,name)
+                        if args.quests:
+                            monitor.action(name,'quest-first'); monitor.action(name,'quest-cycle')
+                        else:
+                            automatic_first(monitor,name)
                 else:
                     monitor.action(name,'prepare')
                 if not args.sessions:
@@ -197,6 +205,10 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.quests:
+                        monitor.action(name,'session-resume'); monitor.action(name,'quest-restored')
+                        monitor.db('quest-fail-on'); monitor.action(name,'quest-failure'); monitor.db('quest-fail-off')
+                        monitor.action(name,'quest-cycle')
                     else:
                         monitor.action(name,'session-resume'); monitor.action(name,'session-restored')
                         monitor.action(name,'session-move-failure')
@@ -235,7 +247,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    sessions_mode=args.sessions, manual_player_mode=args.manual_player,
+                    sessions_mode=args.sessions, quests_mode=args.quests, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

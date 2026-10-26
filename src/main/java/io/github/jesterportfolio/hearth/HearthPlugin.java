@@ -59,6 +59,9 @@ public final class HearthPlugin extends JavaPlugin {
                 return;
             }
         }
+        java.util.Objects.requireNonNull(getCommand("hearthquest")).setExecutor((sender,cmd,label,args)->{
+            sender.sendMessage("격리 퀘스트는 준비된 플레이어의 NPC 대화에서만 사용할 수 있습니다.");return true;
+        });
         var command = java.util.Objects.requireNonNull(getCommand("hearthverify"));
         command.setExecutor((sender, ignored, label, args) -> {
             if (!(sender instanceof ConsoleCommandSender) || verification == null) {
