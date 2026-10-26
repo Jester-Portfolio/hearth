@@ -36,11 +36,15 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
     private Scope a,b;
     private long ticks,waitPolls;
     private boolean busy,closed,drained,cancelUnload;
+    private final boolean sessionMode;
+    private SessionVerification sessions;
     private CompletionStage<WorldLifecycle.Admission> queued;
     private InventorySaveSession failedProbe;
 
     public LifecycleVerification(JavaPlugin plugin,Path root) throws Exception {
         this.plugin=plugin; main();
+        sessionMode=plugin.getConfig().getBoolean("session-verification-enabled");
+        if (sessionMode && !Boolean.getBoolean("hearth.verification.sessions")) throw new IllegalStateException("Session gate missing");
         if (!root.toRealPath().equals(root) || !root.getParent().equals(Path.of("/tmp"))
                 || !root.getFileName().toString().startsWith("hearth-s4-11.")
                 || !Files.getOwner(root).getName().equals(System.getProperty("user.name"))
@@ -104,6 +108,11 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
         main(); if (busy || closed || drained) { log("HEARTH_LIFE_COMMAND_REJECTED"); return; } busy=true;
         try {
             CompletionStage<Void> work=switch(phase) {
+                case "session-prepare" -> { if(!sessionMode) throw new IllegalStateException("Session mode disabled");yield initialize(false); }
+                case "session-resume" -> { if(!sessionMode) throw new IllegalStateException("Session mode disabled");yield initialize(true); }
+                case "session-basic", "session-race", "session-race-done", "session-prepare-quit", "session-prepare-done", "session-move-quit", "session-restored", "session-move-failure", "session-write-failure" -> {
+                    if (!sessionMode || sessions==null) throw new IllegalStateException("Session fixture not ready"); yield sessions.run(phase);
+                }
                 case "prepare" -> initialize(false);
                 case "resume" -> initialize(true);
                 case "wait-safety" -> waitSafety();
@@ -150,8 +159,8 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
         CompletableFuture<Void> pause;
         Scope(WorldBackend.Placement p,String hash,boolean resume) {
             placement=p; ctx=access.forVerifiedServerLink(p.storyRunId(),new UUID(49,1));
-            boolean isA=p.storyRunId().equals(new UUID(42,10)); shared=isA ? resume ? "a-saved" : "a" : "b";
-            sharedRevision=isA && resume ? 1 : 0; amount=isA ? resume ? 30 : 32 : 7; inventoryRevision=isA && resume ? 2 : 0;
+            boolean isA=p.storyRunId().equals(new UUID(42,10)); shared=isA ? resume && !sessionMode ? "a-saved" : "a" : "b";
+            sharedRevision=isA && resume && !sessionMode ? 1 : 0; amount=isA ? resume ? 30 : 32 : 7; inventoryRevision=isA && resume ? 2 : 0;
             boundary=new PaperLifecycleBoundary(plugin,p,hash,backend,io,owner,() -> lifecycleGeneration(),this,this::regions,this::before);
             persistence=new WorldPersistence(new Forward(boundary) {
                 @Override public CompletionStage<Void> saveRegions() {
@@ -180,6 +189,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
             if (isA) check(manager.getRegion("build").getPriority()==10 && manager.getRegion("overlap").getPriority()==20,"region_priorities_restored");
         }
         @Override public CompletionStage<Void> restore() {
+            if (sessionMode) return verifyShared();
             long epoch=lifecycle.generation();
             return verifyShared().thenCompose(v -> deliver(store.readPersonal(ctx))).thenCompose(personal -> {
                 check(personal.revision()==0 && personal.value().equals("p1"),"personal_progress_"+placement.key()); return deliver(store.readInventory(ctx));
@@ -191,6 +201,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
             });
         }
         @Override public CompletionStage<Void> drain() {
+            if (sessionMode) return sessions.barrier(placement.storyRunId());
             return deliver(Objects.requireNonNull(session).closeForLogout()).thenRun(() -> {
                 inventoryRevision=session.revision(); check(!session.dirty() && !session.saving(),"inventory_drained_"+placement.key()+"_r"+inventoryRevision);
             });
@@ -198,7 +209,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
         @Override public CompletionStage<Void> verifyShared() {
             return deliver(store.readShared(ctx)).thenAccept(state -> check(state.value().equals(shared) && state.revision()==sharedRevision,"shared_progress_"+placement.key()+"_r"+sharedRevision));
         }
-        @Override public boolean ownReferencesClear() { return session!=null && !session.dirty() && !session.saving(); }
+        @Override public boolean ownReferencesClear() { return sessionMode ? sessions.canUnload(placement.storyRunId()) : session!=null && !session.dirty() && !session.saving(); }
         @Override public void release() { session=null; view.clear(); }
     }
     private static class Forward implements WorldPersistence.Boundary {
@@ -229,6 +240,10 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
         }
         var a2=access.forVerifiedServerLink(a.ctx.storyRunId(),new UUID(49,2));
         if (!resume) init=init.thenCompose(v -> deliver(store.createPlayer(a2,"p2"))).thenCompose(v -> deliver(store.createInventory(a2,payload(5)))).thenAccept(saved -> {});
+        if (sessionMode) {
+            sessions=new SessionVerification(plugin,store,access,Map.of(a.placement.storyRunId(),a.lifecycle,b.placement.storyRunId(),b.lifecycle),owner,codec,this::payload);
+            return init.thenCompose(v -> sessions.initialize(resume));
+        }
         return init.thenCompose(v -> {
             UUID request=UUID.randomUUID(); var first=a.lifecycle.reserve(request,a.ctx.playerId());
             check(first==a.lifecycle.reserve(request,a.ctx.playerId()),"duplicate_reservation_single_future");
@@ -333,9 +348,11 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
             return until(() -> b.lifecycle.state()==WorldLifecycle.State.OFFLINE);
         }).thenRun(() -> check(Bukkit.getWorld(b.placement.key())==null && b.inventoryRevision==1 && a.lifecycle.state()==WorldLifecycle.State.ERROR_HOLD,"A_hold_B_save_unload_success"));
     }
+    public void fixturePlayer(String name,boolean existing) { if (!sessionMode || sessions==null) throw new IllegalStateException("Session fixture not ready");sessions.fixturePlayer(name,existing); }
     private CompletionStage<Void> shutdown() {
         CompletionStage<Void> work=CompletableFuture.completedFuture(null);
-        for (Scope s:List.of(a,b)) if (s.lifecycle.state()==WorldLifecycle.State.ACTIVE) {
+        if (sessionMode) work=sessions.shutdown().thenCompose(v -> until(() -> scopes.values().stream().allMatch(s -> s.lifecycle.state()==WorldLifecycle.State.OFFLINE || s.lifecycle.state()==WorldLifecycle.State.ERROR_HOLD)));
+        for (Scope s:List.of(a,b)) if (!sessionMode && s.lifecycle.state()==WorldLifecycle.State.ACTIVE) {
             work=work.thenCompose(v -> s.drain()).thenCompose(v -> s.persistence.save());
         }
         return work.thenCompose(v -> deliver(store.closeAsync())).thenCompose(v -> {
@@ -343,7 +360,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
         });
     }
     @Override public void close() {
-        main(); if (closed) return; closed=true; pump.cancel(); HandlerList.unregisterAll(this);
+        main(); if (closed) return; closed=true; if(sessions!=null)sessions.close(); pump.cancel(); HandlerList.unregisterAll(this);
         io.shutdown();
         log("HEARTH_LIFE_DISABLE_CLOSE "+(drained && io.isTerminated() ? "PASS" : "FAIL"));
         if (!drained) store.closeAsync();

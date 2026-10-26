@@ -44,9 +44,10 @@ public final class RestartVerification implements AutoCloseable, Listener {
     public void start(String phase) {
         if (started) throw new IllegalStateException("One restart phase per JVM");
         started = true;
-        this.phase = phase;
+        boolean creating=phase.equals("prepare") || phase.equals("prepare-player");
+        this.phase = creating ? "prepare" : phase;
         Bukkit.getPluginManager().registerEvents(this, plugin);
-        CompletableFuture<Void> work = phase.equals("prepare") ? prepare() : resume();
+        CompletableFuture<Void> work = creating ? prepare() : resume();
         work.thenCompose(v -> main(() -> {
             apiChecks();
             snapshot();
@@ -70,7 +71,7 @@ public final class RestartVerification implements AutoCloseable, Listener {
             check(templates.digest(template.directory()).equals(templateDigest), "template_preserved");
             String digestA = templates.digest(a.directory());
             String digestB = templates.digest(b.directory());
-            if (phase.equals("prepare")) {
+            if (creating) {
                 evidence.setProperty("templateDigest", templateDigest);
                 evidence.setProperty("spatial.a", digestA);
                 evidence.setProperty("spatial.b", digestB);
@@ -102,7 +103,13 @@ public final class RestartVerification implements AutoCloseable, Listener {
                 result.store(out, "PASS");
             }
             return null;
-        })).whenComplete((v, error) -> {
+        })).thenCompose(v -> {
+            if (!phase.equals("prepare-player")) return CompletableFuture.completedFuture(null);
+            return main(() -> {
+                backend.load(a);backend.load(b);apiChecks();
+                plugin.getLogger().info("HEARTH_S4_3_READY; client actions NOT YET VERIFIED");return null;
+            });
+        }).whenComplete((v, error) -> {
             if (error == null) plugin.getLogger().info("HEARTH_S4_2_RESULT PASS " + phase);
             else plugin.getLogger().log(Level.SEVERE, "HEARTH_S4_2_RESULT FAIL " + phase + "; preserve fixture", error);
         });

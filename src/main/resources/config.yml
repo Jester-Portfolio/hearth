@@ -9,3 +9,6 @@ inventory-verification-enabled: false
 
 # 새 S4-11 격리 경로와 JVM 승인 플래그가 모두 있을 때만 활성화합니다.
 lifecycle-verification-enabled: false
+
+# S4-11 새 격리 경로·lifecycle 설정·sessions JVM 게이트를 모두 요구합니다.
+session-verification-enabled: false

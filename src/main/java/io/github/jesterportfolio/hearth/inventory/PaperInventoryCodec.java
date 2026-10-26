@@ -34,6 +34,8 @@ public final class PaperInventoryCodec {
             return slots;
         } catch (RuntimeException invalid) { throw new IllegalArgumentException("INVALID_ITEM_NBT"); }
     }
+    /** NBT 표기 정규화 차이를 아이템 변경으로 세지 않습니다. CAS 저장의 바이트 검증과 별개입니다. */
+    public boolean equivalent(InventoryPayload left,InventoryPayload right) { main();return Arrays.equals(decode(left),decode(right)); }
     public void apply(PlayerInventory inventory, InventoryPayload payload) {
         main(); ItemStack[] slots=decode(payload); // 모든 검증을 끝낸 뒤에만 적용합니다.
         inventory.setStorageContents(Arrays.copyOf(slots,36));

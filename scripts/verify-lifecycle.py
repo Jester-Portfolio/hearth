@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--plugin', required=True, type=Path)
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--sessions', action='store_true', help='새 격리 환경에서 최소 세션 어댑터/저장 장벽을 검증합니다')
     args = parser.parse_args()
     root = args.workspace.resolve(strict=True)
     assert args.accept_eula and os.getuid()!=0, 'EULA 동의·일반 사용자 실행 필요'
@@ -66,6 +67,9 @@ def main():
         shutil.copyfile(root/name,plugins/name)
     shutil.copyfile(args.plugin,plugins/'Hearth.jar')
     (plugins/'Hearth').mkdir(); (plugins/'Hearth/config.yml').write_text('verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\nlifecycle-test-idle-seconds: 1\n')
+    if args.sessions:
+        with (plugins/'Hearth/config.yml').open('a') as config:
+            config.write('session-verification-enabled: true\ninventory-autosave-seconds: 30\n')
     (plugins/'bStats').mkdir(); (plugins/'bStats/config.yml').write_text('enabled: false\n')
     (runtime/'eula.txt').write_text('eula=true\n')
     (runtime/'server.properties').write_text('''server-ip=127.0.0.1
@@ -96,6 +100,9 @@ motd=Hearth isolated S4-11 verification
         paper=[str(args.java.resolve()),'-Xms256m','-Xmx1536m','-XX:ActiveProcessorCount=2',
                '-Dhearth.verification.root='+str(runtime),'-Dhearth.verification.lifecycle=true',
                '-jar',str(root/'paper-26.2-134.jar'),'--nogui']
+        if args.sessions:
+            paper.insert(-3,'-Dhearth.verification.sessions=true')
+            paper.insert(-3,'-Dhearth.verification.players=true')
         for phase in ['prepare','resume']:
             s42.port_free()
             name='paper-'+phase
@@ -103,25 +110,43 @@ motd=Hearth isolated S4-11 verification
             monitor.wait(name,'Done (',seconds=120)
             monitor.wait(name,'HEARTH_LIFE_MODULE READY',seconds=10)
             if phase=='prepare':
-                monitor.send(name,'hearthverify restart prepare')
-                monitor.wait(name,'HEARTH_S4_2_RESULT PASS prepare',seconds=90)
-                monitor.action(name,'prepare')
-                monitor.action(name,'wait-safety')
-                monitor.action(name,'idle-cancel')
-                monitor.db('lock')
-                monitor.action(name,'begin-cycle')
-                monitor.delay(0.3)
-                monitor.db('unlock')
-                monitor.wait(name,'HEARTH_LIFE_SAVE_PAUSED',seconds=20)
-                monitor.action(name,'queue-entry')
-                monitor.action(name,'resume-save')
+                start_phase='prepare-player' if args.sessions else 'prepare'
+                monitor.send(name,'hearthverify restart '+start_phase)
+                monitor.wait(name,'HEARTH_S4_2_RESULT PASS '+start_phase,seconds=90)
+                if args.sessions:
+                    monitor.wait(name,'HEARTH_S4_3_READY',seconds=10)
+                if args.sessions:
+                    monitor.action(name,'session-prepare')
+                    monitor.action(name,'session-basic')
+                    monitor.db('lock'); monitor.action(name,'session-race'); monitor.db('unlock')
+                    monitor.action(name,'session-race-done')
+                    monitor.db('lock'); monitor.action(name,'session-prepare-quit'); monitor.db('unlock')
+                    monitor.action(name,'session-prepare-done'); monitor.action(name,'session-move-quit')
+                else:
+                    monitor.action(name,'prepare')
+                if not args.sessions:
+                    monitor.action(name,'wait-safety')
+                    monitor.action(name,'idle-cancel')
+                    monitor.db('lock')
+                    monitor.action(name,'begin-cycle')
+                    monitor.delay(0.3)
+                    monitor.db('unlock')
+                    monitor.wait(name,'HEARTH_LIFE_SAVE_PAUSED',seconds=20)
+                    monitor.action(name,'queue-entry')
+                    monitor.action(name,'resume-save')
             else:
                 # 기존 매핑을 직접 로드합니다. 복제·신규 월드·신규 DB 행 생성은 하지 않습니다.
-                monitor.action(name,'resume')
-                monitor.action(name,'stale')
-                monitor.db('write-fail-on'); monitor.action(name,'db-failure'); monitor.db('write-fail-off')
-                monitor.action(name,'boundaries')
-                monitor.action(name,'unload-false')
+                if args.sessions:
+                    monitor.action(name,'session-resume'); monitor.action(name,'session-restored')
+                    monitor.action(name,'session-move-failure')
+                    monitor.db('write-fail-on'); monitor.action(name,'session-write-failure'); monitor.db('write-fail-off')
+                else:
+                    monitor.action(name,'resume')
+                if not args.sessions:
+                    monitor.action(name,'stale')
+                    monitor.db('write-fail-on'); monitor.action(name,'db-failure'); monitor.db('write-fail-off')
+                    monitor.action(name,'boundaries')
+                    monitor.action(name,'unload-false')
             monitor.action(name,'close')
             monitor.stop(name,'stop')
             s42.port_free()
@@ -142,6 +167,8 @@ motd=Hearth isolated S4-11 verification
                     paper_starts_max=2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
+                    session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
+                    sessions_mode=args.sessions,
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],
                     not_executed=['실제 인증 플레이어/로그인·텔레포트','PostgreSQL 프로세스 재시작','실제 파일시스템 저장 장애·강제 종료 복구','TPS/MSPT·장기 부하·메모리 누수','운영 배포·경제 realm'])

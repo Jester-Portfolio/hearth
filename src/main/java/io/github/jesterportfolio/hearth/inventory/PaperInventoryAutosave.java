@@ -11,14 +11,19 @@ public final class PaperInventoryAutosave implements AutoCloseable {
     private final InventoryAutosave autosave;
     private final BukkitTask task;
     public PaperInventoryAutosave(JavaPlugin plugin,List<InventorySaveSession> sessions,Runnable observedCycle) {
+        this(plugin,sessions,() -> {},observedCycle);
+    }
+    public PaperInventoryAutosave(JavaPlugin plugin,List<InventorySaveSession> sessions,Runnable beforeCycle,Runnable observedCycle) {
         main();
         long seconds=plugin.getConfig().getLong("inventory-autosave-seconds",30);
-        autosave=new InventoryAutosave(Duration.ofSeconds(seconds),System::nanoTime,PaperInventoryAutosave::main);
+        autosave=new InventoryAutosave(Duration.ofSeconds(seconds),System::nanoTime,PaperInventoryAutosave::main,beforeCycle);
         sessions.forEach(autosave::add);
         task=Bukkit.getScheduler().runTaskTimer(plugin,() -> {
             if (autosave.tick()) observedCycle.run();
         },1,1);
     }
+    public void add(InventorySaveSession session) { autosave.add(session); }
+    public void remove(InventorySaveSession session) { autosave.remove(session); }
     public Duration period() { return autosave.period(); }
     @Override public void close() { main(); task.cancel(); autosave.stop(); }
     private static void main() { if (!Bukkit.isPrimaryThread()) throw new IllegalStateException("Inventory capture requires main thread"); }

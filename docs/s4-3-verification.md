@@ -4,6 +4,9 @@
 - **준비 코드·빌드/정적 검사 및 S4-1/S4-2 자동 회귀는 통과했습니다. S4-3 수동 모드의 런타임, 인증된 플레이어 접속/설치/파괴/중첩/bypass/재시작 후 행동은 모두 미실행입니다. S4 전체는 진행 중입니다.**
 - PATH에서 minecraft-launcher·prismlauncher·multimc를 찾지 못했고 DISPLAY/WAYLAND_DISPLAY도 없었습니다. 이 작업에서 사용할 인증된 클라이언트가 확보되지 않았다는 관측이며 호스트 전체의 설치 부재를 단정하지 않습니다. 계정·런처 인증 파일은 읽지 않았고 비밀번호/토큰을 요청하거나 저장하지 않았습니다.
 
+
+후속 최소 세션 작업에서 준비와 첫 수동 진입을 같은 JVM의 `prepare-player`로 합쳤습니다. 현재 `--manual-player`는 **총2회**이며 기존240초 예산을 유지합니다. 새 자동 시험에서 첫 JVM의 READY 경로는 통과했으나 인증 플레이어 행동과 두 TTY 수동 세션 전체는 계속 미실행입니다. 최신 근거와 미검증은 [최소 세션 기록](player-session-verification.md)을 따릅니다. 아래 과거 회귀 결과/JAR 해시는 당시 기록으로 보존합니다.
+
 ## 재사용과 최소 확장
 
 [S4-1](s4-1-verification.md)·[S4-2](s4-2-verification.md)의 같은 Paper 26.2-134·Java 25·WG 7.0.19·WE 7.4.4와 [ADR-0014](decisions/0014-worldguard-protection-engine.md)의 보호 엔진을 유지합니다. Multiverse-Core·별도 보호 엔진·PostgreSQL/NPC/퀘스트/AI/경제는 추가하지 않습니다.
@@ -41,9 +44,9 @@ cp /tmp/hearth-s4-2.307e1geh/paper-26.2-134.jar /tmp/hearth-s4-2.307e1geh/worldg
 python3 scripts/verify-s4-2.py --workspace "$HEARTH_S43_WORKSPACE" --java /home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java --plugin build/libs/Hearth-0.1.0-SNAPSHOT.jar --accept-eula --manual-player
 ```
 
-이 명령은 **운영자 터미널**에서 실행하는 준비 절차이며 이번 실행 기록이 아닙니다. 기존 prepare가 종료된 뒤 첫 수동 JVM이 자동으로 A/B를 열고 `HEARTH_S4_3_READY`를 출력합니다. 모든 명령은 READY 이후 **한 줄씩 결과를 확인하며** 입력합니다. 인증된 클라이언트는 같은 호스트의 `127.0.0.1:25585`로 접속합니다. 다른 PC에서는 이미 허용된 SSH 로컬 포워딩 등 기존 승인 경로만 사용할 수 있으며 이번에 접근 경로를 시험하지 않았습니다. 불허 시 SSH/방화벽/Cloudflare를 수정하거나 게임 포트를 공개하지 않습니다.
+이 명령은 **운영자 터미널**에서 실행하는 준비 절차이며 이번 실행 기록이 아닙니다. 첫 수동 JVM에서 prepare와 A/B 준비를 함께 완료한 뒤 `HEARTH_S4_3_READY`를 출력합니다. 모든 명령은 READY 이후 **한 줄씩 결과를 확인하며** 입력합니다. 인증된 클라이언트는 같은 호스트의 `127.0.0.1:25585`로 접속합니다. 다른 PC에서는 이미 허용된 SSH 로컬 포워딩 등 기존 승인 경로만 사용할 수 있으며 이번에 접근 경로를 시험하지 않았습니다. 불허 시 SSH/방화벽/Cloudflare를 수정하거나 게임 포트를 공개하지 않습니다.
 
-**전체 prepare+두 수동 JVM 합산 240초**·Xmx1536MiB·RSS 감시 2.5GiB·호스트 가용 6GiB·nice+10·CPU 힌트 2를 유지합니다. stop 유예 후 해당 자식만 종료합니다. 시작 전 클라이언트/관측표를 준비하고, 시간 내 끝내지 못한 항목은 미실행/미완료로 남깁니다. 예산을 늘리거나 서버를 상시 실행하지 않습니다. EOF/오류/시간 제한이면 실패/중단 기록을 보존하고 후속 JVM을 무리하게 진행하지 않습니다.
+**준비를 포함한 두 수동 JVM 합산 240초**·Xmx1536MiB·RSS 감시 2.5GiB·호스트 가용 6GiB·nice+10·CPU 힌트 2를 유지합니다. stop 유예 후 해당 자식만 종료합니다. 시작 전 클라이언트/관측표를 준비하고, 시간 내 끝내지 못한 항목은 미실행/미완료로 남깁니다. 예산을 늘리거나 서버를 상시 실행하지 않습니다. EOF/오류/시간 제한이면 실패/중단 기록을 보존하고 후속 JVM을 무리하게 진행하지 않습니다.
 
 ### 2. 접속·안전 발판·권한 준비
 

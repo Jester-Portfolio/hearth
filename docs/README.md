@@ -15,6 +15,7 @@
 | [s4-9-verification.md](s4-9-verification.md) | 수명주기·예약·IDLE·세대 단위 조건 통과와 실제 시험 경계 |
 | [s4-10-verification.md](s4-10-verification.md) | 저장 순서·실패 보존 단위 및 실제 기존 월드 재진입/대표 거부 검증 |
 | [s4-11-verification.md](s4-11-verification.md) | watchdog 실패 이력·수정본 두 JVM 재검증 통과·자원/정리와 미실행 경계 |
+| [player-session-verification.md](player-session-verification.md) | 격리 세션 이벤트/저장·빠른 재접속·다중 장벽 자동 검사, 실제 플레이어 미검증 |
 | [plugin-suitability-review.md](plugin-suitability-review.md) | S4 사전 조사: WorldGuard/WorldEdit 의존성·버전 근거, Multiverse-Core/Paper API 비교와 미실행 시험 계획 |
 | [story-world-detailed-design.md](story-world-detailed-design.md) | S3 설계 완료 기준선: 승인 정책·수명주기/DB/보호 후보·보류·미실행 시험 |
 | [ROADMAP.md](ROADMAP.md) | 단계별 상태·목표·완료 조건·선행 조건 |

@@ -38,7 +38,8 @@ public final class HearthPlugin extends JavaPlugin {
                 }
                 verification = new SmokeVerification(this);
                 if (lifecycle || inventory || s42 || s45) restartVerification = new RestartVerification(this);
-                playerTest = s42 && Boolean.getBoolean("hearth.verification.players");
+                playerTest = (s42 || lifecycle && getConfig().getBoolean("session-verification-enabled") && Boolean.getBoolean("hearth.verification.sessions"))
+                        && Boolean.getBoolean("hearth.verification.players");
                 if (playerTest) getServer().getPluginManager().registerEvents(new PlayerActionObserver(this), this);
                 if (getConfig().getBoolean("lifecycle-verification-enabled")) {
                     if (!lifecycle || !Boolean.getBoolean("hearth.verification.lifecycle")) throw new IllegalStateException("Lifecycle gate missing");
@@ -62,6 +63,9 @@ public final class HearthPlugin extends JavaPlugin {
         command.setExecutor((sender, ignored, label, args) -> {
             if (!(sender instanceof ConsoleCommandSender) || verification == null) {
                 sender.sendMessage("Only an explicitly gated isolated verification console can run this command.");
+            } else if (args.length == 2 && (args[0].equals("session-fixture") || args[0].equals("session-link-existing")) && lifecycleVerification != null) {
+                try { lifecycleVerification.fixturePlayer(args[1],args[0].equals("session-link-existing")); }
+                catch (RuntimeException e) { sender.sendMessage("격리 fixture 준비 거부: "+e.getMessage()); }
             } else if (args.length == 2 && args[0].equals("lifecycle") && lifecycleVerification != null) {
                 lifecycleVerification.start(args[1]);
             } else if (args.length == 2 && args[0].equals("inventory") && inventoryVerification != null) {
@@ -71,7 +75,7 @@ public final class HearthPlugin extends JavaPlugin {
             } else if (args.length == 1 && args[0].equals("smoke")) {
                 verification.start();
             } else if (args.length == 2 && args[0].equals("restart") && restartVerification != null
-                    && (args[1].equals("prepare") || args[1].equals("resume"))) {
+                    && (args[1].equals("prepare") || args[1].equals("resume") || playerTest && args[1].equals("prepare-player"))) {
                 restartVerification.start(args[1]);
             } else if (playerTest && args.length == 1 && args[0].equals("player-open")) {
                 restartVerification.openForPlayers();

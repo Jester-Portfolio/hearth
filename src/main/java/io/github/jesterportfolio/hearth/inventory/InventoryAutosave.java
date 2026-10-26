@@ -10,12 +10,14 @@ public final class InventoryAutosave {
     private final Duration period;
     private final LongSupplier clock;
     private final Runnable checkOwner;
+    private final Runnable beforeCycle;
     private long next;
     private boolean stopped;
     private final Map<String,InventorySaveSession> sessions=new LinkedHashMap<>();
-    public InventoryAutosave(Duration period,LongSupplier clock,Runnable checkOwner) {
+    public InventoryAutosave(Duration period,LongSupplier clock,Runnable checkOwner) { this(period,clock,checkOwner,() -> {}); }
+    public InventoryAutosave(Duration period,LongSupplier clock,Runnable checkOwner,Runnable beforeCycle) {
         if (period.isNegative() || period.isZero() || period.compareTo(Duration.ofHours(1))>0) throw new IllegalArgumentException("Invalid autosave period");
-        this.period=period; this.clock=Objects.requireNonNull(clock); this.checkOwner=Objects.requireNonNull(checkOwner);
+        this.period=period; this.clock=Objects.requireNonNull(clock); this.checkOwner=Objects.requireNonNull(checkOwner);this.beforeCycle=Objects.requireNonNull(beforeCycle);
         next=Math.addExact(clock.getAsLong(),period.toNanos());
     }
     public Duration period() { return period; }
@@ -24,10 +26,12 @@ public final class InventoryAutosave {
         String key=session.context().storyRunId()+"/"+session.context().playerId();
         if (sessions.putIfAbsent(key,session)!=null) throw new IllegalStateException("Duplicate inventory session");
     }
+    public void remove(InventorySaveSession session) { checkOwner.run();sessions.remove(session.context().storyRunId()+"/"+session.context().playerId(),session); }
     public boolean tick() {
         checkOwner.run(); if (stopped || clock.getAsLong()<next) return false;
         next=Math.addExact(clock.getAsLong(),period.toNanos());
-        for (var session:sessions.values()) if (session.dirty()) session.flush();
+        beforeCycle.run();
+        for (var session:List.copyOf(sessions.values())) if (session.dirty()) session.flush();
         return true;
     }
     public void stop() { checkOwner.run(); stopped=true; }

@@ -91,7 +91,7 @@ def run_jvm(base, java, phase, deadline, manual=False):
                     rss = int(stats.get('VmRSS', '0 kB').split()[0])
                     samples.append(dict(seconds=round(now-started, 3), rss_kib=rss,
                                         available_kib=available_kib(), cpu_ticks=int(cpu_fields[13])+int(cpu_fields[14])))
-                    if rss > 2560 * 1024 or samples[-1]['available_kib'] < 6 * 1024**2:
+                    if rss >= 2560 * 1024 or samples[-1]['available_kib'] < 6 * 1024**2:
                         outcome = 'RESOURCE_LIMIT'
                 except FileNotFoundError:
                     if child.poll() is None:
@@ -143,7 +143,7 @@ def run_jvm(base, java, phase, deadline, manual=False):
                         message = line.decode(errors='replace')
                         if 'Done (' in message and startup is None:
                             startup = round(time.monotonic()-started, 3)
-                            first = ('hearthverify player-open' if manual else
+                            first = (('hearthverify restart prepare-player' if phase == 'player_before' else 'hearthverify player-open') if manual else
                                      ('hearthverify smoke' if phase == 'prepare' else 'hearthverify restart resume'))
                             child.stdin.write((first+'\n').encode()); child.stdin.flush()
                         if phase == 'prepare' and 'HEARTH_S4_RESULT PASS' in message and not sent_phase:
@@ -252,15 +252,15 @@ motd=Hearth isolated S4-2 verification
 ''')
     started = time.monotonic()
     deadline = started + 240  # Combined two-JVM work retains the original 240-second test budget.
-    before = run_jvm(base, args.java, 'prepare', deadline)
     if args.manual_player:
         sessions = [run_jvm(base, args.java, name, deadline, manual=True) for name in ['player_before', 'player_after']]
-        report = dict(outcome='MANUAL_SESSIONS_CLOSED_UNVERIFIED', prepare=before, sessions=sessions,
+        report = dict(outcome='MANUAL_SESSIONS_CLOSED_UNVERIFIED', preparation_in_first_jvm=True, sessions=sessions,
                       connected_player_tests='Require human review of client actions, event logs and final block states',
                       all_test_jvms_exited=True, port_released=True)
         (base/'manual-result.json').write_text(json.dumps(report, indent=2)+'\n')
         print('Manual sessions ended; no automatic player protection PASS is asserted', flush=True)
         return
+    before = run_jvm(base, args.java, 'prepare', deadline)
     after = run_jvm(base, args.java, 'resume', deadline)
     if before['pid'] == after['pid']:
         raise RuntimeError('Expected distinct JVM PIDs')
