@@ -87,17 +87,31 @@ public final class PaperWorldBackend implements WorldBackend {
         }
     }
 
-    @Override public void saveAndUnload(Placement placement) {
-        safeThread();
-        requireOwned(placement);
-        World world = Objects.requireNonNull(Bukkit.getWorld(placement.key()), "World is not loaded");
-        if (!world.getUID().equals(placement.physicalId()) || !world.getPlayers().isEmpty()) {
-            throw new IllegalStateException("Identity mismatch or players present; refusing unload");
-        }
+    /** 월드 저장은 안전한 메인 시점에서만 실행합니다. DB/구역 저장은 호출자의 선행 조건입니다. */
+    @Override public void save(Placement placement) {
+        safeThread(); requireOwned(placement);
+        World world=loadedFor(placement);
+        if (!world.getPlayers().isEmpty()) throw new IllegalStateException("Players present; refusing save boundary");
         world.save(true);
-        if (!Bukkit.unloadWorld(world, true) || Bukkit.getWorld(placement.key()) != null) {
-            throw new IllegalStateException("Unload did not complete: " + placement.key());
-        }
+    }
+    /** 다른 플러그인의 티켓을 강제로 제거하지 않습니다. false면 호출자가 HOLD로 보존해야 합니다. */
+    @Override public boolean unload(Placement placement) {
+        safeThread(); requireOwned(placement); World world=loadedFor(placement);
+        if (!world.getPlayers().isEmpty() || !world.getPluginChunkTickets().isEmpty() || !world.getForceLoadedChunks().isEmpty())
+            throw new IllegalStateException("Unload blockers present");
+        boolean result=Bukkit.unloadWorld(world,false); // 선행 save 완료 후 중복 저장을 피합니다.
+        if (result && Bukkit.getWorld(placement.key())!=null) throw new IllegalStateException("Unload reported success but world remains loaded");
+        return result;
+    }
+    @Override public void saveAndUnload(Placement placement) {
+        save(placement);
+        if (!unload(placement)) throw new IllegalStateException("Unload did not complete: "+placement.key());
+    }
+    private World loadedFor(Placement placement) {
+        World world=Objects.requireNonNull(Bukkit.getWorld(placement.key()),"World is not loaded");
+        if (!world.getUID().equals(placement.physicalId()) || !world.getWorldPath().toAbsolutePath().normalize().equals(placement.directory()))
+            throw new IllegalStateException("Loaded world identity mismatch");
+        return world;
     }
 
     private void requireOwned(Placement p) {

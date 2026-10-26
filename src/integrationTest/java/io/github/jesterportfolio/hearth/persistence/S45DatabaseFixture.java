@@ -10,15 +10,16 @@ import java.util.*;
 public final class S45DatabaseFixture {
     public static void main(String[] args) throws Exception {
         Path root=Path.of(args[0]).toRealPath();
-        boolean inventory=args.length==2 && args[1].equals("--inventory");
-        String prefix=inventory ? "hearth-s4-6." : "hearth-s4-5.";
-        String database=inventory ? "hearth_s4_6" : "hearth_s4_5";
+        boolean lifecycle=args.length==2 && args[1].equals("--lifecycle");
+        boolean inventory=lifecycle || args.length==2 && args[1].equals("--inventory");
+        String prefix=lifecycle ? "hearth-s4-11." : inventory ? "hearth-s4-6." : "hearth-s4-5.";
+        String database=lifecycle ? "hearth_s4_11" : inventory ? "hearth_s4_6" : "hearth_s4_5";
         String table=inventory ? "story_inventory" : "player_progress";
         byte[] originalInventory=null;
         if (System.getProperty("user.name").equals("root") || !root.getParent().equals(Path.of("/tmp"))
                 || !root.getFileName().toString().startsWith(prefix)
                 || !Files.getOwner(root).getName().equals(System.getProperty("user.name"))
-                || !Files.readString(root.resolve(inventory ? ".hearth-inventory-isolated" : ".hearth-s45-isolated")).trim().equals(inventory ? "S4-6 isolated test only" : "S4-5 isolated test only")
+                || !Files.readString(root.resolve(lifecycle ? ".hearth-lifecycle-isolated" : inventory ? ".hearth-inventory-isolated" : ".hearth-s45-isolated")).trim().equals(lifecycle ? "S4-11 isolated test only" : inventory ? "S4-6 isolated test only" : "S4-5 isolated test only")
                 || Files.exists(root.resolve("data"))) throw new IllegalStateException("Fresh owned S4-5 fixture required");
         Path sockets=Files.createDirectory(root.resolve("socket"));
         EmbeddedPostgres pg=null;

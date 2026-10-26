@@ -6,3 +6,6 @@ db-verification-enabled: false
 inventory-autosave-seconds: 30
 # S4-6~8 명시적 격리 검증에서만 활성화합니다.
 inventory-verification-enabled: false
+
+# 새 S4-11 격리 경로와 JVM 승인 플래그가 모두 있을 때만 활성화합니다.
+lifecycle-verification-enabled: false

@@ -180,3 +180,10 @@ Hearth는 Minecraft 기반 RPG 및 서버 엔지니어링 프로젝트입니다.
 - [S4-6](docs/s4-6-verification.md)·[S4-7](docs/s4-7-verification.md)·[S4-8](docs/s4-8-verification.md)을 따릅니다. V001은 보존하고 V002에 story_run_id+player_uuid의 인벤토리/CAS를 추가했습니다. 41슬롯 NBT·dirty/단일 in-flight·기본 30초·source 최신 저장 후 target 적용·stale/중복/실패 HOLD를 유지합니다. 연결/commit 불명·CAS 충돌을 무조건 재시도/빈 초기화하지 않습니다.
 - 일반 로그인·클릭/드롭 등은 자동 연결하지 않았습니다. 내부 markDirty 통지와 검증된 컨텍스트·owner executor를 사용하며 결과 전달기는 I/O 정리까지 유지해야 합니다. body/saddle·엔더 상자/커서/GUI·경제 realm·실제 플레이어 행동은 별도 정책/시험입니다. 오류 HOLD를 새 컨텍스트로 무조건 덮지 않습니다.
 - 승인된 순서는 단계별 사전 검사 뒤 최대 두 JVM에서 S4-6→7→8 런타임 검증입니다. 새 소유 /tmp/hearth-s4-6.*·PG 최대 1개·순차 Paper 최대 2회·600초·Xmx1536MiB/RSS2.5GiB 중단·CPU 힌트2/nice+10·가용 RAM6GiB/디스크4GiB·localhost/EULA 범위를 유지합니다. 기존 증거/DB/운영 환경을 재사용·덮어쓰지 않고 실행 파일 캐시만 해시 확인 후 복사합니다. 전체 S4·실제 클라이언트·DB 재시작·부하/누수·운영 배포 완료를 뜻하지 않습니다.
+
+
+## S4-9~11 수명주기 검증 경계
+
+- [S4-9](docs/s4-9-verification.md)·[S4-10](docs/s4-10-verification.md)·[S4-11](docs/s4-11-verification.md)의 승인된 내부 수명주기/저장·재진입·두 JVM 통합 범위가 통과했습니다. 최초 시험 대기 루프의 watchdog exit70과 당시 커밋 보류 이력을 보존하고, 사용자 재개 후 새 격리 경로에서 수정본·대기 종료/다음 틱/stale·대표 실패·정상 종료를 확인했습니다. [재검증 JSON](verification/s4-11-reverification-result.json)의 실제/단위/제어 경계와 미실행 범위를 따릅니다. 실제 로그인/텔레포트나 전체 게임 검증이 아닙니다.
+- Bukkit 안전 시점 재검사/조건 대기는 같은 틱의 즉시 재예약 루프를 피합니다. RegionManager의 공식 I/O 계약만 worker에서 사용하고 World/Bukkit 변경은 안전한 메인 시점에 수행합니다. 인벤토리/DB→구역→월드 저장·방해 검사·실제 unload true 뒤에만 OFFLINE을 허용합니다. 실패 HOLD를 새 조정자로 무조건 해제하지 않습니다.
+- IDLE 5분은 추천값이며 시험 1초는 운영 확정값이 아닙니다. 새 /tmp/hearth-s4-11.*·명시적 설정/JVM 게이트·localhost·Paper 최대2회/PG1개·600초·기존 RSS/RAM/CPU 한도를 유지합니다. 최초 실패 시의 프로세스/포트 반환은 정상 저장 성공이 아니며, 별도 재검증에서는 두 JVM/DB 정상 종료와 반환을 모두 확인했습니다. S4-3 실제 클라이언트는 보류, 전체 S4는 진행 중이며 로그인/텔레포트·가입 기능이나 운영 자동 배포는 없습니다.

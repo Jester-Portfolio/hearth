@@ -1,0 +1,274 @@
+{
+  "checked_on": "2026-10-26 Asia/Seoul",
+  "base_commit": "7cf167e63a83a90761dcb67e0d46e0b16ea1c585",
+  "whole_s4": "진행 중",
+  "s4_3": "보류·실제 인증 플레이어 미실행",
+  "commit": null,
+  "push": "미실행: 런타임 실패 후 Git 정책에 따라 중단",
+  "workspace": "/tmp/hearth-s4-11.zot94g67",
+  "schema_sha256_unchanged": {
+    "src/main/resources/db/migration/V001__progress.sql": "9cfd301837659e3d303f5c7c81ed7b4f2b884bb3160a638cffcaf37d35520c4a",
+    "src/main/resources/db/migration/V002__story_inventory.sql": "b04a0051a12bfd56c5c5d993eb988ee3a760cdc270a53d54d89e1048f74a5c16"
+  },
+  "previous_verification_files_unchanged": true,
+  "unit_suites": [
+    {
+      "name": "io.github.jesterportfolio.hearth.inventory.InventorySaveTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f3ceeaa7da521daeb8eb8d224cc6b8c0d72f13d1fb235e3493584c91d74e0b38"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.inventory.InventoryTransitionTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "93e65c9b89e5390530aa9556609328e2b3c374c1ee88e1aa146f65b6860bfeba"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.lifecycle.WorldLifecycleTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "06fd099cce38ff1f29628133d3f931b4e73ea376a7e648382aacbacc45f10a33"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.lifecycle.WorldPersistenceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "12a17b922e7dd2b23c82f8b10186cb047f90cc9bc7ded094946720799cf1a566"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.persistence.PostgresProgressStoreTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bfb65ba62ef44ed7f78a0a64a2f1aeeddc38a65719aeadc900cb3d85cf181ae3"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.world.TemplateStoreTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f99dc901fe51a25f2b25bf7f91f700f83b0ce777388fe13534313c698ebb449b"
+    }
+  ],
+  "unit_total": 26,
+  "corrected_build_jar_sha256": "fe9962c6d0cd5d0224242ca26855accf3b4b5f08e420dc15f6c987566f7028d8",
+  "runtime_jar_sha256": "32bcd10cd2589ec1cf638259b983038a78f97051e282e9a632d034d8044c604f",
+  "corrected_runtime_tested": false,
+  "stage": "S4-11",
+  "outcome": "FAIL",
+  "runtime": {
+    "outcome": "FAIL",
+    "failure": "RuntimeError: paper-prepare: 예상 토큰 이전 종료: HEARTH_LIFE_RESULT PASS begin-cycle",
+    "cleanup_errors": [
+      "AssertionError: paper-prepare: 비정상 종료"
+    ],
+    "workspace": "/tmp/hearth-s4-11.zot94g67",
+    "duration_seconds": 90.553,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "processes": {
+      "database": {
+        "pid": 1134322,
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 90.169,
+        "shutdown_seconds": 0.108,
+        "max_sampled_rss_kib": 214936,
+        "observed_cpu_seconds": 2.39,
+        "min_sampled_host_available_kib": 11757492,
+        "sample_count": 1152,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-prepare": {
+        "pid": 1134398,
+        "exit_code": 70,
+        "ready_seconds": 13.38,
+        "duration_seconds": 87.458,
+        "shutdown_seconds": null,
+        "max_sampled_rss_kib": 1014892,
+        "observed_cpu_seconds": 210.04,
+        "min_sampled_host_available_kib": 11757492,
+        "sample_count": 1102,
+        "checks": [
+          "duplicate_reservation_single_future",
+          "region_isolation_hearth_verify:restart_b",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "personal_progress_hearth_verify:restart_b",
+          "personal_progress_hearth_verify:restart_a",
+          "inventory_restore_hearth_verify:restart_a_r0",
+          "inventory_restore_hearth_verify:restart_b_r0",
+          "a_active_after_all_restore",
+          "b_active_after_all_restore",
+          "coalesced_load_independent_A_B",
+          "physical_identity_hearth_verify:restart_a",
+          "original_block_hearth_verify:restart_a",
+          "physical_identity_hearth_verify:restart_b",
+          "original_block_hearth_verify:restart_b",
+          "last_exit_idle",
+          "idle_entry_cancel",
+          "old_idle_timer_no_unload",
+          "last_exit_idle",
+          "idle_entry_cancel",
+          "old_idle_timer_no_unload",
+          "change_gate_hearth_verify:restart_a",
+          "change_gate_hearth_verify:restart_a"
+        ],
+        "timings": [
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=547",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=546",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=304",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=301",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=12",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=232",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=49",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=1250",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=249",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=49",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=1402"
+        ],
+        "states": [
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000b state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE"
+        ]
+      }
+    },
+    "all_owned_processes_and_ports_closed": false,
+    "plugin_sha256": "32bcd10cd2589ec1cf638259b983038a78f97051e282e9a632d034d8044c604f",
+    "snapshots": [
+      "run=00000000-0000-002a-0000-00000000000a uuid=7be641b2-37d9-42cd-b598-2077a860efff key=hearth_verify:restart_a block=GOLD_BLOCK shared_revision=0 inventory_revision=0 amount=32",
+      "run=00000000-0000-002a-0000-00000000000b uuid=9b74a483-2ab4-439e-bab2-a8bbc8479e80 key=hearth_verify:restart_b block=DIAMOND_BLOCK shared_revision=0 inventory_revision=0 amount=7"
+    ],
+    "runtime_library_jars": [
+      "libraries/com/zaxxer/HikariCP/7.1.0/HikariCP-7.1.0.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+      "libraries/org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar",
+      "libraries/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar"
+    ],
+    "not_executed": [
+      "실제 인증 플레이어/로그인·텔레포트",
+      "PostgreSQL 프로세스 재시작",
+      "실제 파일시스템 저장 장애·강제 종료 복구",
+      "TPS/MSPT·장기 부하·메모리 누수",
+      "운영 배포·경제 realm"
+    ]
+  },
+  "independent_resource_cleanup_recheck": {
+    "database_pid_absent": true,
+    "database_group_absent": true,
+    "paper-prepare_pid_absent": true,
+    "paper-prepare_group_absent": true,
+    "port_25585_returned": true,
+    "port_34119_returned": true,
+    "postmaster_pid_absent": true
+  },
+  "resource_cleanup_confirmed": true,
+  "normal_paper_shutdown_passed": false,
+  "root_cause": "시험 조건 대기가 runTask로 같은 틱에 자신을 재예약하여 heartbeat 정지·SQL 57014·watchdog exit 70.",
+  "source_fix": "자기 재예약을 runTaskLater(...,1)로 변경. 수정본은 빌드/단위만 검사.",
+  "paper_starts_actual": 1,
+  "postgres_starts_actual": 1,
+  "second_paper_jvm": "미실행",
+  "runtime_checks_not_reached": [
+    "QUIESCING 이후 latest dirty 및 저장 순서",
+    "저장 중 재입장·기존 월드 재로드 보존",
+    "실제 unload false/DB 실패 및 A 실패 B 정상",
+    "두 번째 JVM 복원·정상 종료"
+  ],
+  "evidence_sha256": {
+    "run-result.json": "c479432c6ca9833a1b0ae5bb0adb6512503a516ac598b1706bafac898e24073b",
+    "cleanup-recheck.json": "e7071b23534d199fbc3d2edc2f7676bcd82540ec23bc19bce9084244a0a4e976",
+    "executed-verify-lifecycle.py": "4af4b660f20a8e36504583b0e07e6382c98b7d2eb4ed4c536ca7241858469a77",
+    "paper-prepare-console.log": "0e12626a11624ba1fd292251a273b359e24f9fabd2bca61ade5b3870e3a464dc",
+    "database-console.log": "75bd87bcb618f8eb487001b6129063697c3fe3be9a0d7a03648188216d313efd",
+    "paper-prepare-resources.json": "16742f6219e8ba918f3c99668feac1f76f70ad488d8e750bd4f918f330cfb6b9",
+    "database-resources.json": "28a34a2ae40e306585f81fb976fb11b3e57d71b9d55fdd0efc165526920b6d61",
+    "server/plugins/Hearth/restart-mapping.properties": "1e9d5490574123c39520869afce08ae51e62e205f39d850d094a7de028a99b00",
+    "server/plugins/Hearth.jar": "32bcd10cd2589ec1cf638259b983038a78f97051e282e9a632d034d8044c604f",
+    "corrected-build-Hearth.jar": "fe9962c6d0cd5d0224242ca26855accf3b4b5f08e420dc15f6c987566f7028d8"
+  },
+  "changed_files": [
+    "AGENTS.md",
+    "build.gradle.kts",
+    "docs/CHANGELOG.md",
+    "docs/PROJECT_STATUS.md",
+    "docs/README.md",
+    "docs/ROADMAP.md",
+    "docs/s4-10-verification.md",
+    "docs/s4-11-verification.md",
+    "docs/s4-9-verification.md",
+    "docs/story-world-detailed-design.md",
+    "scripts/README.md",
+    "scripts/verify-lifecycle.py",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/persistence/S45DatabaseFixture.java",
+    "src/main/java/io/github/jesterportfolio/hearth/HearthPlugin.java",
+    "src/main/java/io/github/jesterportfolio/hearth/lifecycle/LifecycleFailure.java",
+    "src/main/java/io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary.java",
+    "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldLifecycle.java",
+    "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldPersistence.java",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/LifecycleVerification.java",
+    "src/main/java/io/github/jesterportfolio/hearth/world/PaperWorldBackend.java",
+    "src/main/java/io/github/jesterportfolio/hearth/world/WorldBackend.java",
+    "src/main/resources/config.yml",
+    "src/test/java/io/github/jesterportfolio/hearth/lifecycle/WorldLifecycleTest.java",
+    "src/test/java/io/github/jesterportfolio/hearth/lifecycle/WorldPersistenceTest.java",
+    "verification/s4-10-result.json",
+    "verification/s4-11-result.json",
+    "verification/s4-9-result.json"
+  ],
+  "final_checks": {
+    "gradle_build_test_check": "PASS",
+    "unit_tests": 26,
+    "unit_failures_errors_skipped": 0,
+    "markdown_files": 10,
+    "relative_links": 217,
+    "markdown_errors": 0,
+    "japanese_mixed_text_errors": 0,
+    "git_diff_check": "PASS",
+    "gitleaks_changed_files": "PASS",
+    "staged_hook_and_push_hook": "미실행: 커밋 흐름 중단",
+    "branch": "main",
+    "remote_relation_left_right": [
+      0,
+      0
+    ],
+    "staging": "비어 있음"
+  }
+}

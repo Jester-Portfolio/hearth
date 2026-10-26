@@ -126,3 +126,16 @@ tasks.register("stageInventoryRuntime") {
         copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
     }
 }
+
+
+tasks.register("stageLifecycleRuntime") {
+    description = "S4-11 새 격리 시험 경로에 기존 DB 시험 의존성만 준비합니다."
+    dependsOn(tasks.named("integrationTestClasses"))
+    doLast {
+        val root = file(providers.gradleProperty("lifecycleWorkspace").get())
+        require(root.canonicalFile.parentFile == file("/tmp") && root.name.startsWith("hearth-s4-11."))
+        require(!root.resolve("resolved-jars").exists())
+        copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(root.resolve("resolved-jars")) }
+        copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
+    }
+}

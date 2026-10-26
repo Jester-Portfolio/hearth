@@ -1,0 +1,100 @@
+{
+  "checked_on": "2026-10-26 Asia/Seoul",
+  "base_commit": "7cf167e63a83a90761dcb67e0d46e0b16ea1c585",
+  "whole_s4": "진행 중",
+  "s4_3": "보류·실제 인증 플레이어 미실행",
+  "commit": null,
+  "push": "미실행: 런타임 실패 후 Git 정책에 따라 중단",
+  "workspace": "/tmp/hearth-s4-11.zot94g67",
+  "schema_sha256_unchanged": {
+    "src/main/resources/db/migration/V001__progress.sql": "9cfd301837659e3d303f5c7c81ed7b4f2b884bb3160a638cffcaf37d35520c4a",
+    "src/main/resources/db/migration/V002__story_inventory.sql": "b04a0051a12bfd56c5c5d993eb988ee3a760cdc270a53d54d89e1048f74a5c16"
+  },
+  "previous_verification_files_unchanged": true,
+  "unit_suites": [
+    {
+      "name": "io.github.jesterportfolio.hearth.inventory.InventorySaveTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f3ceeaa7da521daeb8eb8d224cc6b8c0d72f13d1fb235e3493584c91d74e0b38"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.inventory.InventoryTransitionTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "93e65c9b89e5390530aa9556609328e2b3c374c1ee88e1aa146f65b6860bfeba"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.lifecycle.WorldLifecycleTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "06fd099cce38ff1f29628133d3f931b4e73ea376a7e648382aacbacc45f10a33"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.lifecycle.WorldPersistenceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "12a17b922e7dd2b23c82f8b10186cb047f90cc9bc7ded094946720799cf1a566"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.persistence.PostgresProgressStoreTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bfb65ba62ef44ed7f78a0a64a2f1aeeddc38a65719aeadc900cb3d85cf181ae3"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.world.TemplateStoreTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f99dc901fe51a25f2b25bf7f91f700f83b0ce777388fe13534313c698ebb449b"
+    }
+  ],
+  "unit_total": 26,
+  "corrected_build_jar_sha256": "fe9962c6d0cd5d0224242ca26855accf3b4b5f08e420dc15f6c987566f7028d8",
+  "runtime_jar_sha256": "32bcd10cd2589ec1cf638259b983038a78f97051e282e9a632d034d8044c604f",
+  "corrected_runtime_tested": false,
+  "stage": "S4-9",
+  "outcome": "PASS_UNIT_SCOPE",
+  "unit_methods": 8,
+  "detail": "상태/예약·단일 로드·IDLE·세대/실패 격리 단위 조건 통과. 실제 플레이어 없음.",
+  "runtime_initial_checks": [
+    "duplicate_reservation_single_future",
+    "region_isolation_hearth_verify:restart_b",
+    "region_isolation_hearth_verify:restart_a",
+    "region_priorities_restored",
+    "shared_progress_hearth_verify:restart_b_r0",
+    "shared_progress_hearth_verify:restart_a_r0",
+    "personal_progress_hearth_verify:restart_b",
+    "personal_progress_hearth_verify:restart_a",
+    "inventory_restore_hearth_verify:restart_a_r0",
+    "inventory_restore_hearth_verify:restart_b_r0",
+    "a_active_after_all_restore",
+    "b_active_after_all_restore",
+    "coalesced_load_independent_A_B",
+    "physical_identity_hearth_verify:restart_a",
+    "original_block_hearth_verify:restart_a",
+    "physical_identity_hearth_verify:restart_b",
+    "original_block_hearth_verify:restart_b",
+    "last_exit_idle",
+    "idle_entry_cancel",
+    "old_idle_timer_no_unload",
+    "last_exit_idle",
+    "idle_entry_cancel",
+    "old_idle_timer_no_unload",
+    "change_gate_hearth_verify:restart_a",
+    "change_gate_hearth_verify:restart_a"
+  ],
+  "runtime_full_cycle": "미완료: 후속 S4-11 실패"
+}

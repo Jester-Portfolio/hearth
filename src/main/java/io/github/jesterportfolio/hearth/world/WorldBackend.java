@@ -11,5 +11,7 @@ public interface WorldBackend {
     Placement create(UUID runId, NamespacedKey key);
     void registerExisting(Placement placement);
     World load(Placement placement);
+    void save(Placement placement);
+    boolean unload(Placement placement);
     void saveAndUnload(Placement placement);
 }

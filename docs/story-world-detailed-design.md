@@ -6,6 +6,8 @@
 - 후속 [S4-6~8](s4-8-verification.md)은 V002·명시한 41슬롯·30초/dirty·내부 source/target 전환의 최소 구현·통합 근거입니다. 전체 인벤토리/게임·경제 realm·실제 로그인/이벤트 검증으로 확대하지 않습니다.
 - 선행 결과: [S2 빌드/API 검토](stack-build-verification.md). S2 완료는 구현 경로·위험·시험 기준 정리까지이며 런타임 동작 보증이 아닙니다.
 
+- 후속 [S4-9](s4-9-verification.md)·[S4-10](s4-10-verification.md)은 상태/저장 경계 단위를 검사했습니다. [S4-11](s4-11-verification.md) 최초 통합은 시험 대기 루프 오류로 중단됐으며 실패 이력을 보존합니다. 사용자 재개 후 수정본의 내부 컨텍스트 IDLE·저장/재진입·두 JVM·대표 실패/정상 종료는 통과했습니다. 실제 로그인/텔레포트·전체 운영 수명주기 검증으로 확대하지 않습니다.
+
 ## 1. 확정 경계와 모듈 책임 후보
 
 [ADR-0001](decisions/0001-story-world-multiworld.md)의 단일 프로세스 B안, [ADR-0002](decisions/0002-stack-and-world-policies.md)의 Paper 26.2·Java 25·Gradle·단일 JAR 내부 모듈·PostgreSQL·템플릿/콘텐츠 분리·보호/채집 원칙을 유지합니다. [ADR-0003](decisions/0003-inventory-performance-and-recovery.md)에 따라 서버 성능과 원활한 플레이를 복잡한 자동 복구보다 우선합니다. 일반 상자·창고는 월드 파일, 플레이어 인벤토리는 PostgreSQL 중심으로 관리합니다. [ADR-0004](decisions/0004-community-quests-and-chapter-skip.md)의 공동체·개인 퀘스트·분기 고정·장별 스킵 정책도 확정입니다. 아래 구체 자료구조·상태 전이·스키마는 제안이며 미구현·미검증입니다.
