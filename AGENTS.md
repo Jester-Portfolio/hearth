@@ -156,6 +156,8 @@ Hearth는 Minecraft 기반 RPG 및 서버 엔지니어링 프로젝트입니다.
 
 ## S4-1 검증 경계
 
+아래 단계별 미실행 설명은 해당 단계 당시의 경계입니다. 이후 실제 인증 플레이어의 부분 검증과 현재 남은 범위는 마지막 격리 최소 세션 경계 및 연결된 수동 기록을 우선합니다.
+
 - [S4-1 기록](docs/s4-1-verification.md)을 참고합니다. 현재 Paper 어댑터는 WorldBackend 뒤의 격리 게이트 합성 프로토타입이고 Multiverse-Core는 후보입니다. 운영용 PostgreSQL/NPC/퀘스트/AI/경제 구현을 뜻하지 않습니다.
 - 런타임 시험은 운영자의 명시적 Minecraft EULA 동의·사용자 소유의 새 격리 /tmp 경로·공식 아티팩트 해시·localhost·자원 사전 검사·프로세스 실행 시간 제한을 요구합니다. 기존 월드 재사용이나 미응답을 동의로 추정하지 않습니다. 사용자는 2026-10-26 EULA에 명시 동의했고 고정 조합의 로딩·합성 블록/식별자 보존·구역 API 격리가 통과했습니다. 실제 플레이어 이벤트·운영 수명주기/DB 격리·부하/누수 검증은 아니며 실패 시도/경고는 기록을 따릅니다.
 
@@ -199,4 +201,4 @@ Hearth는 Minecraft 기반 RPG 및 서버 엔지니어링 프로젝트입니다.
 ## 격리 최소 세션 경계
 
 - [세션 기록](docs/player-session-verification.md)을 따릅니다. 기존 저장/수명주기에 서버 측 신뢰 연결과 준비/이동 후 참가·종료 불변 스냅샷·퇴장 장벽·빠른 재접속을 연결했습니다. session-verification-enabled는 기본 false이며 새 격리 경로/설정/JVM 게이트 밖에서 활성화하지 않습니다. fixture는 명시적으로 준비하며 로그인 시 생성하지 않습니다.
-- 실제 Player 이벤트·인증·PlayerInventory/이동/입력은 아직 미검증입니다. 제어 포트의 자동 성공을 실제 로그인 성공으로 표시하지 않습니다. 후속 최종 소스/JAR 일치·두 JVM 세션 통합과 개인/인벤토리 응답 대기 중 제어 월드 세대 무효화 거부를 확인했습니다. 실제 프로필은 자동 실패 fixture와 다른 새 수동 모드/DB에서만 준비하며 [수동 절차](docs/player-session-manual-test.md)를 따릅니다. 수동 TTY 전체 실행·PlayerInventory/teleportAsync는 미검증입니다. S4-3 보류·전체 S4 진행 중을 유지합니다. 이 기록을 근거로 일반 서버나 운영 DB에 자동 연결하지 않습니다.
+- 실제 인증 한 명의 A 보호·허용 건축/중첩·bypass 비교·PlayerInventory 수량·teleportAsync 후 입장·빠른 재접속·IDLE 재입장·두 JVM 복원을 [수동 기록](docs/player-session-manual-test.md)에서 확인했습니다. B 실제 행동·전체 권한/슬롯/클라이언트 경합은 미검증입니다. 제어 포트의 자동 성공을 실제 로그인 성공으로 표시하지 않습니다. 후속 최종 소스/JAR 일치·두 JVM 세션 통합과 개인/인벤토리 응답 대기 중 제어 월드 세대 무효화 거부를 확인했습니다. 실제 프로필은 자동 실패 fixture와 다른 새 수동 모드/DB에서만 준비하며 [수동 절차](docs/player-session-manual-test.md)를 따릅니다. 세션/DB 동반 수동 TTY 두 JVM을 실제 실행했으며 도구의 MANUAL_CLOSED_UNVERIFIED를 자동 행동 PASS로 바꾸지 않고 관측별로 판정합니다. S4-3 부분 검증·전체 S4 진행 중을 유지합니다. 이 기록을 근거로 일반 서버나 운영 DB에 자동 연결하지 않습니다.

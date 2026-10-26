@@ -239,7 +239,8 @@ motd=Hearth isolated S4-11 verification
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],
-                    not_executed=['실제 인증 플레이어/로그인·텔레포트','PostgreSQL 프로세스 재시작','실제 파일시스템 저장 장애·강제 종료 복구','TPS/MSPT·장기 부하·메모리 누수','운영 배포·경제 realm'])
+                    player_actions_verdict='NOT_AUTOMATICALLY_ASSESSED' if args.manual_player else 'NOT_RUN',
+                    not_executed=([] if args.manual_player else ['실제 인증 플레이어/로그인·텔레포트'])+['PostgreSQL 프로세스 재시작','실제 파일시스템 저장 장애·강제 종료 복구','TPS/MSPT·장기 부하·메모리 누수','운영 배포·경제 realm'])
         (root/'run-result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
         print('S4-11 '+outcome+'; 증거: '+str(root/'run-result.json'),flush=True)
     return 0 if outcome in ['PASS','MANUAL_CLOSED_UNVERIFIED'] else 1

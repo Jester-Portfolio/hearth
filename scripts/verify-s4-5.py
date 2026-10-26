@@ -162,8 +162,7 @@ class Monitor:
             endpoint = self.root / 'db-endpoint.properties'
             if endpoint.exists():
                 port = int(next(line.split('=')[1] for line in endpoint.read_text().splitlines() if line.startswith('port=')))
-                with socket.socket() as probe:
-                    probe.bind(('127.0.0.1', port))
+                s42.port_free(port)
             for item in self.children.values():
                 assert item['proc'].poll() is not None, '시험 프로세스 잔존'
                 try:

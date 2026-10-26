@@ -1,0 +1,359 @@
+{
+  "확인일": "2026-10-26",
+  "기준_커밋": "c261779530a4e027b39a3698fbbb61912555657a",
+  "전체_S4": "진행 중",
+  "S4_3": "부분 검증, P4/P5 일부/P6 전체 반복 미완료",
+  "실제_플레이어": "trial-player 한 명, 정상 인증 및 기존 사용자 PC SSH 로컬 전달. 계정 이름/UUID/IP/인증정보는 공개 요약에서 제외.",
+  "판정": [
+    {
+      "id": "M1",
+      "result": "PASS",
+      "내용": "정상 인증 클라이언트 접속, 기존 개인 인벤토리 적용/teleportAsync 후 ACTIVE. 초기 메모리/DB 32개 revision0, 일반 권한 확인."
+    },
+    {
+      "id": "P1",
+      "result": "PASS",
+      "내용": "첫 시도 A 보호 구역 설치 취소 및 (4,64,4) 파괴 취소/STONE 보존. 실제 이벤트·2틱 뒤 블록 확인."
+    },
+    {
+      "id": "P2",
+      "result": "PASS",
+      "내용": "A 허용 구역 설치 및 파괴 성공. 수정본 첫 JVM (6,64,6)에 실제 한 개 설치, 32→31 revision1 저장."
+    },
+    {
+      "id": "P3",
+      "result": "PASS",
+      "내용": "첫 시도 (8,64,8) 파괴 거부, 수정본 두 번째 JVM 같은 위치 설치 거부/AIR 보존. 중첩 우선순위 유지."
+    },
+    {
+      "id": "P4",
+      "result": "NOT_RUN",
+      "내용": "B의 실제 플레이어 설치/파괴는 미실행. B 구역 API/매핑 확인으로 대체하지 않음."
+    },
+    {
+      "id": "P5",
+      "result": "PARTIAL",
+      "내용": "일반 권한에서 막힌 (4,64,4) 파괴가 op=true/bypass=true에서는 성공, 이후 op=false/bypass=false 복귀 확인. 권한 해제 직후 같은 블록 재거부와 관리자 중첩 구역 행동은 미실행."
+    },
+    {
+      "id": "P6",
+      "result": "PARTIAL",
+      "내용": "수정본 두 번째 JVM에서 기존 UUID/key·WG 우선순위 API·실제 설치 블록·인벤토리31/revision1·중첩 설치 거부 확인. P1~P5 전체 반복은 미실행."
+    },
+    {
+      "id": "M2",
+      "result": "PASS",
+      "내용": "첫 시도 실제 인벤토리22개/revision4 저장 후 약6초 재접속, 수량/revision/ACTIVE 보존·IDLE 취소 확인."
+    },
+    {
+      "id": "M3",
+      "result": "PASS",
+      "내용": "첫 시도 마지막 종료 후10초 IDLE→저장→언로드/OFFLINE(epoch2), 재입장→ACTIVE(epoch3). 이후 추가 설치로 메모리21 dirty=true/DB22 revision4, 뒤에21/revision5로 저장됨."
+    },
+    {
+      "id": "M4",
+      "result": "PASS",
+      "내용": "수정본에서 같은 DB/월드로 두 번째 Paper JVM을 시작, session-link-existing 사용. 인벤토리31/revision1 복원. 실제 (6,64,6) 파괴 이벤트의 previous=STONE/final=AIR로 플레이어 설치 블록 영속성 확인."
+    },
+    {
+      "id": "M5",
+      "result": "PASS",
+      "내용": "수정본 모든 Paper/DB exit0·저장 장벽/IO 정리 PASS·프로세스 그룹과 게임/DB 포트 반환. 전체514.678초."
+    }
+  ],
+  "시도": [
+    {
+      "outcome": "FAIL",
+      "failure": "OSError: [Errno 98] Address already in use",
+      "cleanup_errors": [
+        "OSError: [Errno 98] Address already in use"
+      ],
+      "duration_seconds": 477.28,
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "all_owned_processes_and_ports_closed": false,
+      "plugin_sha256": "129ef136102fa6b2a96f173c433bad789d72244ce3ce6755818363ad036a2d05",
+      "workspace": "/tmp/hearth-s4-11._x41of5k",
+      "processes": {
+        "database": {
+          "pid": 1192037,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "shutdown_seconds": 0.106,
+          "max_sampled_rss_kib": 223556,
+          "observed_cpu_seconds": 2.32,
+          "min_sampled_host_available_kib": 11879808
+        },
+        "paper-prepare": {
+          "pid": 1192115,
+          "exit_code": 0,
+          "ready_seconds": 16.474,
+          "shutdown_seconds": 0.629,
+          "max_sampled_rss_kib": 1117900,
+          "observed_cpu_seconds": 134.22,
+          "min_sampled_host_available_kib": 11879808
+        }
+      },
+      "raw_result_sha256": "0d34dec82618be4a2aa49cc05e6299a559d3ebf7926205e578233dfd317450dc",
+      "evidence": [
+        {
+          "file": "paper-prepare-console.log",
+          "sha256": "d44caa5553f3745fad3e48b527cc2611b9666be57823be40e71ae7b7c19170ec",
+          "observations": [
+            "[22:36:59 INFO]: [Hearth] HEARTH_S4_2_CHECK PASS prepare API_priorities_persisted",
+            "[22:37:05 INFO]: [Hearth] HEARTH_S4_2_CHECK PASS prepare API_priorities_persisted",
+            "[22:37:58 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=LOADING",
+            "[22:37:58 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=READY",
+            "[22:37:58 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+            "[22:38:21 INFO]: [Hearth] HEARTH_SESSION_MANUAL state=ACTIVE playable=true slot0=32 revision=0 dirty=false world_state=ACTIVE world_epoch=1",
+            "[22:38:21 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=32 revision=0",
+            "[22:38:34 INFO]: [Hearth] HEARTH_S4_3_ACTION id=5f2e1747-b6b1-4b4c-9ee4-dfc784277db1 player=trial-player action=place world=hearth_verify:restart_a xyz=1,64,1 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:38:34 INFO]: [Hearth] HEARTH_S4_3_STATE id=5f2e1747-b6b1-4b4c-9ee4-dfc784277db1 final=AIR",
+            "[22:38:34 INFO]: [Hearth] HEARTH_S4_3_ACTION id=ab3c688f-db50-43ae-b519-94856f7afda1 player=trial-player action=place world=hearth_verify:restart_a xyz=2,64,2 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:38:34 INFO]: [Hearth] HEARTH_S4_3_STATE id=ab3c688f-db50-43ae-b519-94856f7afda1 final=AIR",
+            "[22:38:34 INFO]: [Hearth] HEARTH_S4_3_ACTION id=920af6c0-c4f8-496f-958f-f60ea4164750 player=trial-player action=place world=hearth_verify:restart_a xyz=2,64,3 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:38:35 INFO]: [Hearth] HEARTH_S4_3_STATE id=920af6c0-c4f8-496f-958f-f60ea4164750 final=AIR",
+            "[22:38:35 INFO]: [Hearth] HEARTH_S4_3_ACTION id=8b107458-91f7-4bbb-b8f9-2f4655ef1b23 player=trial-player action=place world=hearth_verify:restart_a xyz=6,64,6 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:38:35 INFO]: [Hearth] HEARTH_S4_3_STATE id=8b107458-91f7-4bbb-b8f9-2f4655ef1b23 final=STONE",
+            "[22:38:36 INFO]: [Hearth] HEARTH_S4_3_ACTION id=9a66936a-2a50-4d39-b268-2cfc30fee2e4 player=trial-player action=place world=hearth_verify:restart_a xyz=10,64,12 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:38:36 INFO]: [Hearth] HEARTH_S4_3_STATE id=9a66936a-2a50-4d39-b268-2cfc30fee2e4 final=AIR",
+            "[22:38:36 INFO]: [Hearth] HEARTH_S4_3_ACTION id=f805cc30-e10c-4c05-a6c4-00481e581827 player=trial-player action=place world=hearth_verify:restart_a xyz=11,64,10 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:38:36 INFO]: [Hearth] HEARTH_S4_3_STATE id=f805cc30-e10c-4c05-a6c4-00481e581827 final=AIR",
+            "[22:38:38 INFO]: [Hearth] HEARTH_S4_3_ACTION id=b66393e5-d02b-4a6d-ba6f-2e53a79aec63 player=trial-player action=place world=hearth_verify:restart_a xyz=7,64,6 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:38:38 INFO]: [Hearth] HEARTH_S4_3_STATE id=b66393e5-d02b-4a6d-ba6f-2e53a79aec63 final=STONE",
+            "[22:38:38 INFO]: [Hearth] HEARTH_S4_3_ACTION id=925ae993-0016-4276-9db3-6854d7cc1716 player=trial-player action=place world=hearth_verify:restart_a xyz=6,65,6 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:38:38 INFO]: [Hearth] HEARTH_S4_3_STATE id=925ae993-0016-4276-9db3-6854d7cc1716 final=STONE",
+            "[22:38:39 INFO]: [Hearth] HEARTH_S4_3_ACTION id=c37a0831-d4fb-4713-8004-7413e3b906d6 player=trial-player action=place world=hearth_verify:restart_a xyz=7,65,6 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:38:39 INFO]: [Hearth] HEARTH_S4_3_STATE id=c37a0831-d4fb-4713-8004-7413e3b906d6 final=STONE",
+            "[22:38:39 INFO]: [Hearth] HEARTH_S4_3_ACTION id=753be13f-97c9-4db0-b2f6-44ad4438fdcf player=trial-player action=place world=hearth_verify:restart_a xyz=7,64,7 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:38:39 INFO]: [Hearth] HEARTH_S4_3_STATE id=753be13f-97c9-4db0-b2f6-44ad4438fdcf final=STONE",
+            "[22:38:40 INFO]: [Hearth] HEARTH_S4_3_ACTION id=549530ce-a6e1-4337-b4bf-d78fdeb8e73d player=trial-player action=place world=hearth_verify:restart_a xyz=7,64,8 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:38:40 INFO]: [Hearth] HEARTH_S4_3_STATE id=549530ce-a6e1-4337-b4bf-d78fdeb8e73d final=STONE",
+            "[22:38:40 INFO]: [Hearth] HEARTH_S4_3_ACTION id=20e929bd-002d-4791-8f94-46a7e4b6a259 player=trial-player action=place world=hearth_verify:restart_a xyz=7,64,10 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:38:40 INFO]: [Hearth] HEARTH_S4_3_STATE id=20e929bd-002d-4791-8f94-46a7e4b6a259 final=STONE",
+            "[22:38:41 INFO]: [Hearth] HEARTH_S4_3_ACTION id=96615a9e-702e-4437-b750-e48a9b783545 player=trial-player action=place world=hearth_verify:restart_a xyz=7,64,12 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:38:41 INFO]: [Hearth] HEARTH_S4_3_STATE id=96615a9e-702e-4437-b750-e48a9b783545 final=AIR",
+            "[22:38:41 INFO]: [Hearth] HEARTH_S4_3_ACTION id=d6711e48-81b4-4463-983f-4bedae21579e player=trial-player action=place world=hearth_verify:restart_a xyz=7,64,11 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:38:42 INFO]: [Hearth] HEARTH_S4_3_STATE id=d6711e48-81b4-4463-983f-4bedae21579e final=AIR",
+            "[22:39:07 INFO]: [Hearth] HEARTH_S4_3_ACTION id=fe5afd0e-c482-4612-b327-a872d797bc2f player=trial-player action=break world=hearth_verify:restart_a xyz=4,64,4 op=false bypass=false cancelled=true previous=STONE",
+            "[22:39:07 INFO]: [Hearth] HEARTH_S4_3_STATE id=fe5afd0e-c482-4612-b327-a872d797bc2f final=STONE",
+            "[22:39:32 INFO]: [Hearth] HEARTH_S4_3_ACTION id=c52772d0-e107-4d6c-a396-75bf7bfacfb9 player=trial-player action=break world=hearth_verify:restart_a xyz=2,63,1 op=false bypass=false cancelled=true previous=STONE",
+            "[22:39:32 INFO]: [Hearth] HEARTH_S4_3_STATE id=c52772d0-e107-4d6c-a396-75bf7bfacfb9 final=STONE",
+            "[22:39:35 INFO]: [Hearth] HEARTH_SESSION_MANUAL state=ACTIVE playable=true slot0=25 revision=2 dirty=false world_state=ACTIVE world_epoch=1",
+            "[22:39:35 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=25 revision=2",
+            "[22:39:47 INFO]: [Hearth] HEARTH_S4_3_ACTION id=86114ec7-c6a7-4918-aa0a-2705effbc720 player=trial-player action=break world=hearth_verify:restart_a xyz=7,64,10 op=false bypass=false cancelled=false previous=STONE",
+            "[22:39:47 INFO]: [Hearth] HEARTH_S4_3_STATE id=86114ec7-c6a7-4918-aa0a-2705effbc720 final=AIR",
+            "[22:39:58 INFO]: [Hearth] HEARTH_S4_3_ACTION id=75eae6c6-d432-413d-9455-d53cdd4cb9a7 player=trial-player action=break world=hearth_verify:restart_a xyz=6,63,15 op=false bypass=false cancelled=true previous=STONE",
+            "[22:39:58 INFO]: [Hearth] HEARTH_S4_3_STATE id=75eae6c6-d432-413d-9455-d53cdd4cb9a7 final=STONE",
+            "[22:40:17 INFO]: [Hearth] HEARTH_S4_3_ACTION id=e46145c4-a284-4428-9776-727a7661a3c6 player=trial-player action=place world=hearth_verify:restart_a xyz=7,66,6 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:40:17 INFO]: [Hearth] HEARTH_S4_3_STATE id=e46145c4-a284-4428-9776-727a7661a3c6 final=STONE",
+            "[22:40:40 INFO]: [Hearth] HEARTH_S4_3_ACTION id=d0f981a4-9d54-4c75-9347-a7e0273e886c player=trial-player action=place world=hearth_verify:restart_a xyz=7,65,8 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:40:40 INFO]: [Hearth] HEARTH_S4_3_STATE id=d0f981a4-9d54-4c75-9347-a7e0273e886c final=STONE",
+            "[22:40:42 INFO]: [Hearth] HEARTH_S4_3_ACTION id=d1cf2e1e-a17c-44b8-b63f-13dec9ab8da7 player=trial-player action=place world=hearth_verify:restart_a xyz=7,66,8 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:40:42 INFO]: [Hearth] HEARTH_S4_3_STATE id=d1cf2e1e-a17c-44b8-b63f-13dec9ab8da7 final=STONE",
+            "[22:41:05 INFO]: [Hearth] HEARTH_S4_3_ACTION id=df7ca6e6-8f00-431c-ae49-e37290e72f12 player=trial-player action=break world=hearth_verify:restart_a xyz=8,64,8 op=false bypass=false cancelled=true previous=STONE",
+            "[22:41:05 INFO]: [Hearth] HEARTH_S4_3_STATE id=df7ca6e6-8f00-431c-ae49-e37290e72f12 final=STONE",
+            "[22:41:14 INFO]: [Hearth] HEARTH_S4_3_ACTION id=59b7dd25-8054-44b3-b6f8-b0d8c6aad2b1 player=trial-player action=break world=hearth_verify:restart_a xyz=7,64,8 op=false bypass=false cancelled=false previous=STONE",
+            "[22:41:14 INFO]: [Hearth] HEARTH_S4_3_STATE id=59b7dd25-8054-44b3-b6f8-b0d8c6aad2b1 final=AIR",
+            "[22:41:16 INFO]: [Hearth] HEARTH_SESSION_MANUAL state=ACTIVE playable=true slot0=22 revision=4 dirty=false world_state=ACTIVE world_epoch=1",
+            "[22:41:16 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=22 revision=4",
+            "[22:41:19 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=IDLE",
+            "[22:41:19 INFO]: [Hearth] HEARTH_SESSION_QUIT SAVED",
+            "[22:41:25 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=READY",
+            "[22:41:25 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+            "[22:41:38 INFO]: [Hearth] HEARTH_SESSION_MANUAL state=ACTIVE playable=true slot0=22 revision=4 dirty=false world_state=ACTIVE world_epoch=1",
+            "[22:41:38 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=22 revision=4",
+            "[22:41:53 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=IDLE",
+            "[22:41:53 INFO]: [Hearth] HEARTH_SESSION_QUIT SAVED",
+            "[22:42:03 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+            "[22:42:03 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=SAVING",
+            "[22:42:03 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+            "[22:42:03 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=OFFLINE",
+            "[22:42:19 INFO]: [Hearth] HEARTH_SESSION_MANUAL OFFLINE world_state=OFFLINE world_epoch=2",
+            "[22:42:19 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=22 revision=4",
+            "[22:42:31 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=LOADING",
+            "[22:42:31 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=READY",
+            "[22:42:31 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+            "[22:42:39 INFO]: [Hearth] HEARTH_S4_3_ACTION id=f4eb59c1-4e42-4c45-a495-817eedd9d2ea player=trial-player action=place world=hearth_verify:restart_a xyz=6,65,7 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:42:39 INFO]: [Hearth] HEARTH_S4_3_STATE id=f4eb59c1-4e42-4c45-a495-817eedd9d2ea final=STONE",
+            "[22:42:42 INFO]: [Hearth] HEARTH_SESSION_MANUAL state=ACTIVE playable=true slot0=21 revision=4 dirty=true world_state=ACTIVE world_epoch=3",
+            "[22:42:42 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=22 revision=4",
+            "[22:43:48 INFO]: [Hearth] HEARTH_S4_3_ACTION id=677433a9-852a-4240-80e5-fba4a70a2df1 player=trial-player action=break world=hearth_verify:restart_a xyz=4,63,3 op=true bypass=true cancelled=false previous=STONE",
+            "[22:43:48 INFO]: [Hearth] HEARTH_S4_3_STATE id=677433a9-852a-4240-80e5-fba4a70a2df1 final=AIR",
+            "[22:43:57 INFO]: [Hearth] HEARTH_S4_3_ACTION id=7b33032b-89f2-4444-8e06-79a217a90136 player=trial-player action=break world=hearth_verify:restart_a xyz=4,64,4 op=true bypass=true cancelled=false previous=STONE",
+            "[22:43:57 INFO]: [Hearth] HEARTH_S4_3_STATE id=7b33032b-89f2-4444-8e06-79a217a90136 final=AIR",
+            "[22:44:02 INFO]: [Hearth] HEARTH_SESSION_MANUAL state=ACTIVE playable=true slot0=21 revision=5 dirty=false world_state=ACTIVE world_epoch=3",
+            "[22:44:02 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=21 revision=5",
+            "[22:44:17 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=IDLE",
+            "[22:44:17 INFO]: [Hearth] HEARTH_SESSION_QUIT SAVED",
+            "[22:44:27 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+            "[22:44:27 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=SAVING",
+            "[22:44:27 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+            "[22:44:27 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=OFFLINE",
+            "[22:44:33 INFO]: [Hearth] HEARTH_LIFE_DISABLE_CLOSE PASS"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "MANUAL_CLOSED_UNVERIFIED",
+      "failure": null,
+      "cleanup_errors": [],
+      "duration_seconds": 514.678,
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "129ef136102fa6b2a96f173c433bad789d72244ce3ce6755818363ad036a2d05",
+      "workspace": "/tmp/hearth-s4-11.uorim7l_",
+      "processes": {
+        "database": {
+          "pid": 1194950,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "shutdown_seconds": 0.108,
+          "max_sampled_rss_kib": 221272,
+          "observed_cpu_seconds": 2.31,
+          "min_sampled_host_available_kib": 11915176
+        },
+        "paper-prepare": {
+          "pid": 1195006,
+          "exit_code": 0,
+          "ready_seconds": 13.897,
+          "shutdown_seconds": 0.621,
+          "max_sampled_rss_kib": 1099252,
+          "observed_cpu_seconds": 109.8,
+          "min_sampled_host_available_kib": 11912188
+        },
+        "paper-resume": {
+          "pid": 1195944,
+          "exit_code": 0,
+          "ready_seconds": 9.264,
+          "shutdown_seconds": 0.55,
+          "max_sampled_rss_kib": 985756,
+          "observed_cpu_seconds": 52.42,
+          "min_sampled_host_available_kib": 12028548
+        }
+      },
+      "raw_result_sha256": "77dc548f5033428d2d2d8d014f3c092b6d2fc820c3cfaf607cad3e40b273afa6",
+      "evidence": [
+        {
+          "file": "paper-prepare-console.log",
+          "sha256": "8fb65f1b3d7ea701a4701de211b708ab0c56aa650150ff0c360ebe0b3d27da0f",
+          "observations": [
+            "[22:51:56 INFO]: [Hearth] HEARTH_S4_2_CHECK PASS prepare API_priorities_persisted",
+            "[22:52:01 INFO]: [Hearth] HEARTH_S4_2_CHECK PASS prepare API_priorities_persisted",
+            "[22:53:09 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=LOADING",
+            "[22:53:10 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=READY",
+            "[22:53:10 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+            "[22:53:38 INFO]: [Hearth] HEARTH_SESSION_MANUAL state=ACTIVE playable=true slot0=32 revision=0 dirty=false world_state=ACTIVE world_epoch=1",
+            "[22:53:38 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=32 revision=0",
+            "[22:55:05 INFO]: [Hearth] HEARTH_S4_3_ACTION id=3766873e-315b-4959-8b9f-1b3b887d300a player=trial-player action=place world=hearth_verify:restart_a xyz=11,64,7 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:55:05 INFO]: [Hearth] HEARTH_S4_3_STATE id=3766873e-315b-4959-8b9f-1b3b887d300a final=AIR",
+            "[22:55:21 INFO]: [Hearth] HEARTH_S4_3_ACTION id=9aa9044b-9d3f-4e11-a622-68853bc0d3ef player=trial-player action=place world=hearth_verify:restart_a xyz=6,64,6 op=false bypass=false cancelled=false previous=AIR attempted=STONE canBuild=true",
+            "[22:55:21 INFO]: [Hearth] HEARTH_S4_3_STATE id=9aa9044b-9d3f-4e11-a622-68853bc0d3ef final=STONE",
+            "[22:55:56 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=IDLE",
+            "[22:55:56 INFO]: [Hearth] HEARTH_SESSION_QUIT SAVED",
+            "[22:56:01 INFO]: [Hearth] HEARTH_SESSION_MANUAL OFFLINE world_state=IDLE world_epoch=1",
+            "[22:56:01 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=31 revision=1",
+            "[22:56:06 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+            "[22:56:06 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=SAVING",
+            "[22:56:06 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+            "[22:56:06 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=OFFLINE",
+            "[22:56:14 INFO]: [Hearth] HEARTH_LIFE_DISABLE_CLOSE PASS"
+          ]
+        },
+        {
+          "file": "paper-resume-console.log",
+          "sha256": "e414bda23dfb3116df09f6b7e1afa82e3d4208f4e2874710334e6ecbb11772fb",
+          "observations": [
+            "[22:56:24 INFO]: [Hearth] HEARTH_S4_2_CHECK PASS player existing_uuids_and_keys_restored",
+            "[22:56:24 INFO]: [Hearth] HEARTH_S4_2_CHECK PASS player API_priorities_persisted",
+            "[22:56:40 INFO]: [Hearth] HEARTH_SESSION_MANUAL OFFLINE world_state=OFFLINE world_epoch=0",
+            "[22:56:40 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=31 revision=1",
+            "[22:57:02 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=LOADING",
+            "[22:57:03 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=READY",
+            "[22:57:03 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+            "[22:58:03 INFO]: [Hearth] HEARTH_SESSION_MANUAL state=ACTIVE playable=true slot0=31 revision=1 dirty=false world_state=ACTIVE world_epoch=1",
+            "[22:58:03 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=31 revision=1",
+            "[22:58:34 INFO]: [Hearth] HEARTH_S4_3_ACTION id=f3bfc003-c211-45d5-ab54-9f8396f04621 player=trial-player action=break world=hearth_verify:restart_a xyz=6,64,6 op=false bypass=false cancelled=false previous=STONE",
+            "[22:58:34 INFO]: [Hearth] HEARTH_S4_3_STATE id=f3bfc003-c211-45d5-ab54-9f8396f04621 final=AIR",
+            "[22:59:15 INFO]: [Hearth] HEARTH_S4_3_ACTION id=8a988377-ad52-4a72-9722-6a9a77064986 player=trial-player action=place world=hearth_verify:restart_a xyz=8,64,8 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:59:15 INFO]: [Hearth] HEARTH_S4_3_STATE id=8a988377-ad52-4a72-9722-6a9a77064986 final=AIR",
+            "[22:59:21 INFO]: [Hearth] HEARTH_S4_3_ACTION id=1cc44a4b-08f9-44fa-aa1a-27ed94443aae player=trial-player action=place world=hearth_verify:restart_a xyz=8,64,8 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:59:21 INFO]: [Hearth] HEARTH_S4_3_STATE id=1cc44a4b-08f9-44fa-aa1a-27ed94443aae final=AIR",
+            "[22:59:21 INFO]: [Hearth] HEARTH_S4_3_ACTION id=1689f822-c1f5-4544-bd49-d6b27428d61e player=trial-player action=place world=hearth_verify:restart_a xyz=8,64,8 op=false bypass=false cancelled=true previous=AIR attempted=STONE canBuild=true",
+            "[22:59:22 INFO]: [Hearth] HEARTH_S4_3_STATE id=1689f822-c1f5-4544-bd49-d6b27428d61e final=AIR",
+            "[22:59:47 INFO]: [Hearth] HEARTH_SESSION_MANUAL state=ACTIVE playable=true slot0=31 revision=1 dirty=false world_state=ACTIVE world_epoch=1",
+            "[22:59:47 INFO]: [Hearth] HEARTH_SESSION_MANUAL_DB count=31 revision=1",
+            "[22:59:51 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=IDLE",
+            "[22:59:51 INFO]: [Hearth] HEARTH_SESSION_QUIT SAVED",
+            "[23:00:01 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+            "[23:00:01 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=SAVING",
+            "[23:00:01 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+            "[23:00:01 INFO]: [Hearth] HEARTH_LIFE_STATE run=00000000-0000-002a-0000-00000000000a state=OFFLINE",
+            "[23:00:11 INFO]: [Hearth] HEARTH_LIFE_DISABLE_CLOSE PASS"
+          ]
+        }
+      ]
+    }
+  ],
+  "오류_구분": [
+    "첫 도구 결과 FAIL은 그대로 보존. Paper/DB exit0 이후 bind 포트 검사 EADDRINUSE. 실제 TIME_WAIT 상태는 뒤늦은 조회에서 직접 관측하지 못했지만 별도 loopback 연결에서 이전 검사 오탐을 재현함. SO_REUSEADDR 검사로 종료 포트를 허용하고 실제 LISTEN은 계속 거부.",
+    "수정본의 읽기 확인 콘솔 명령 execute in ... run if block는 문법 오류로 미실행. 블록을 변경하지 않았으며 실제 플레이어 파괴 이벤트 previous=STONE으로 영속성을 별도 검증. 올바른 execute in ... if block ... run say 허용 목록으로 수정하고 정적 명령 회귀10건 통과. 수정 명령의 Paper 재실행은 하지 않음.",
+    "원본 run-result.json의 MANUAL_CLOSED_UNVERIFIED와 고정 not_executed 플레이어 문구는 자동 판정기가 행동을 심사하지 않는 이전 출력 형식이다. 원본을 바꾸지 않고 이 요약의 개별 실제 관측으로 판정. 이후 도구 출력은 실제 행동 미자동판정과 미실행을 구분하도록 수정."
+  ],
+  "포트_회귀": {
+    "checks": [
+      "active_listener_rejected_reuse_False",
+      "active_listener_rejected_reuse_True",
+      "old_probe_false_busy_after_connection_close_reproduced",
+      "time_wait_reusable_port_accepted",
+      "owned_trial_game_port_returned",
+      "owned_trial_db_port_returned"
+    ],
+    "result": "PASS",
+    "original_runtime_result": "FAIL 보존",
+    "실제_첫_시험_TIME_WAIT_직접_관측": "미관측. 당시 EADDRINUSE 이후 리스너/프로세스 없음과 별도 동일 조건 재현으로 원인을 판단함"
+  },
+  "콘솔_회귀": {
+    "허용": 4,
+    "거부": 6,
+    "결과": "PASS",
+    "경계": "Python 허용 목록/좌표 검사. 수정된 if block 명령의 Paper 재실행은 하지 않음"
+  },
+  "미검증": [
+    "다른 인증 사용자/동시 코옵",
+    "실제 클라이언트 DB 지연·저장 실패·HOLD/준비 중 종료 경합",
+    "모든41슬롯 메타데이터의 클라이언트 전수 대조",
+    "엔더 상자/커서/컨테이너/GUI·전투",
+    "DB 프로세스 재시작",
+    "TPS/MSPT·장기 부하/누수·강제 종료 복구",
+    "운영 배포"
+  ],
+  "소스_경계": "Java/JAR은 이전 최종 자동 통합의129ef136102fa6b2a96f173c433bad789d72244ce3ce6755818363ad036a2d05 그대로. 이번 변경은 시험 도구의 포트 확인·읽기 명령 허용 목록·결과 분류 및 문서뿐.",
+  "최종_정적_검사": {
+    "Markdown": 9,
+    "상대_링크": 220,
+    "링크_구조_일본어_한자_오류": 0,
+    "Python_구문": 3,
+    "결과_출력_분기": 2,
+    "원시_해시_JAR_소스_보존_익명화": "PASS",
+    "비밀_검사": "기존 Git 커밋/푸시 훅에서 수행"
+  }
+}

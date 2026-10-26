@@ -1,13 +1,13 @@
-# S4-3 실제 플레이어 건축 보호 — 준비 결과와 수동 시험 절차
+# S4-3 실제 플레이어 건축 보호 — 부분 검증과 수동 시험 절차
 
 - 확인일: **2026-10-26 (Asia/Seoul)**. 기준 `a4a32d53bc9fe4c448db4f4092f3e32689e8c613`. 시작 시 main·작업 트리/스테이징 깨끗함, fetch 후 origin/main과 일치.
-- **준비 코드·빌드/정적 검사 및 S4-1/S4-2 자동 회귀는 통과했습니다. S4-3 수동 모드의 런타임, 인증된 플레이어 접속/설치/파괴/중첩/bypass/재시작 후 행동은 모두 미실행입니다. S4 전체는 진행 중입니다.**
+- **최신 판정: 실제 인증 한 명의 A 보호/건축·중첩·bypass 비교·세션/두 JVM 복원을 부분 검증했습니다. [실제 수동 기록](player-session-manual-test.md)과 [관측 JSON](../verification/player-session-manual-result.json)을 따릅니다. B 실제 행동·일부 권한 전환·전체 반복은 미실행이며 S4 전체는 진행 중입니다.** 아래 준비/자동 회귀의 과거 결과는 보존합니다.
 - PATH에서 minecraft-launcher·prismlauncher·multimc를 찾지 못했고 DISPLAY/WAYLAND_DISPLAY도 없었습니다. 이 작업에서 사용할 인증된 클라이언트가 확보되지 않았다는 관측이며 호스트 전체의 설치 부재를 단정하지 않습니다. 계정·런처 인증 파일은 읽지 않았고 비밀번호/토큰을 요청하거나 저장하지 않았습니다.
 
 
-후속 최소 세션 작업에서 준비와 첫 수동 진입을 같은 JVM의 `prepare-player`로 합쳤습니다. 현재 `--manual-player`는 **총2회**이며 기존240초 예산을 유지합니다. 새 자동 시험에서 첫 JVM의 READY 경로는 통과했으나 인증 플레이어 행동과 두 TTY 수동 세션 전체는 계속 미실행입니다. 최신 근거와 미검증은 [최소 세션 기록](player-session-verification.md)을 따릅니다. 아래 과거 회귀 결과/JAR 해시는 당시 기록으로 보존합니다.
+후속 최소 세션 작업에서 준비와 첫 수동 진입을 같은 JVM의 `prepare-player`로 합쳤습니다. 현재 `--manual-player`는 **총2회**이며 기존240초 예산을 유지합니다. 새 자동 시험에서 첫 JVM의 READY 경로를 통과했습니다. 이후 실제 세션/DB 동반 시험은 별도600초 도구에서 수행했으며 현재 결과는 위 실제 수동 기록을 따릅니다. 최신 근거와 미검증은 [최소 세션 기록](player-session-verification.md)을 따릅니다. 아래 과거 회귀 결과/JAR 해시는 당시 기록으로 보존합니다.
 
-## 재사용과 최소 확장
+## 최초 준비 당시 재사용과 최소 확장
 
 [S4-1](s4-1-verification.md)·[S4-2](s4-2-verification.md)의 같은 Paper 26.2-134·Java 25·WG 7.0.19·WE 7.4.4와 [ADR-0014](decisions/0014-worldguard-protection-engine.md)의 보호 엔진을 유지합니다. Multiverse-Core·별도 보호 엔진·PostgreSQL/NPC/퀘스트/AI/경제는 추가하지 않습니다.
 
@@ -20,7 +20,7 @@
 
 콘솔은 whitelist/OP·deop/creative/시험 아이템/status/save/stop와 **A/B 안의 제한된 fill/setblock/tp/블록 확인**만 전달합니다. 편집/이동 좌표는 x/z -2..17·y 63..70, 블록 편집은 정수 좌표·STONE/AIR/COBBLESTONE만 허용합니다. 다른 월드·임의 execute 체인·과도한 범위 명령은 거부합니다. 수동 모드에서 부여한 OP는 정상 종료/시간 제한의 stop 요청 전에 deop 명령을 보냅니다. 강제 종료/예외 시 deop 반영을 보장하지 않으므로 해당 새 시험 경로를 운영 서버로 전용하지 않습니다.
 
-## 실제 수행한 검사
+## 최초 준비 당시 수행한 검사
 
 | 구분 | 결과 |
 | --- | --- |
@@ -32,7 +32,7 @@
 
 회귀 JAR SHA-256은 `24d9ade82f3b724df86bd8a95c122b08b18ece91de48effe450a6ba187e40c27`입니다. 배포 JAR은 기존 [공식 아티팩트 해시](../verification/s4-1-artifacts.json)와 다시 대조했습니다. Paper bootstrap의 전이 다운로드 전체를 별도 해시 고정했다고 주장하지 않습니다. 경고는 기존 비대화형 터미널/JOML Unsafe/고정 빌드 업데이트 안내/수동 저장 성능 경고이며 회귀에서 ERROR는 없었습니다.
 
-## 수동 실행 절차 — 아직 실행하지 않음
+## 기존 독립 보호 도구의 수동 절차 — 240초 경로 자체는 미실행
 
 ### 1. 독립 인증 클라이언트와 새 시험 환경 준비
 
@@ -44,7 +44,7 @@ cp /tmp/hearth-s4-2.307e1geh/paper-26.2-134.jar /tmp/hearth-s4-2.307e1geh/worldg
 python3 scripts/verify-s4-2.py --workspace "$HEARTH_S43_WORKSPACE" --java /home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java --plugin build/libs/Hearth-0.1.0-SNAPSHOT.jar --accept-eula --manual-player
 ```
 
-이 명령은 **운영자 터미널**에서 실행하는 준비 절차이며 이번 실행 기록이 아닙니다. 첫 수동 JVM에서 prepare와 A/B 준비를 함께 완료한 뒤 `HEARTH_S4_3_READY`를 출력합니다. 모든 명령은 READY 이후 **한 줄씩 결과를 확인하며** 입력합니다. 인증된 클라이언트는 같은 호스트의 `127.0.0.1:25585`로 접속합니다. 다른 PC에서는 이미 허용된 SSH 로컬 포워딩 등 기존 승인 경로만 사용할 수 있으며 이번에 접근 경로를 시험하지 않았습니다. 불허 시 SSH/방화벽/Cloudflare를 수정하거나 게임 포트를 공개하지 않습니다.
+이 명령은 **운영자 터미널**에서 실행하는 준비 절차이며 이번 실행 기록이 아닙니다. 첫 수동 JVM에서 prepare와 A/B 준비를 함께 완료한 뒤 `HEARTH_S4_3_READY`를 출력합니다. 모든 명령은 READY 이후 **한 줄씩 결과를 확인하며** 입력합니다. 인증된 클라이언트는 같은 호스트의 `127.0.0.1:25585`로 접속합니다. 다른 PC에서는 이미 허용된 SSH 로컬 포워딩 등 기존 승인 경로만 사용할 수 있으며 최초 준비 당시 접근 경로는 미시험이었고 후속 실제 시험에서는 기존 SSH 전달을 사용했습니다. 불허 시 SSH/방화벽/Cloudflare를 수정하거나 게임 포트를 공개하지 않습니다.
 
 **준비를 포함한 두 수동 JVM 합산 240초**·Xmx1536MiB·RSS 감시 2.5GiB·호스트 가용 6GiB·nice+10·CPU 힌트 2를 유지합니다. stop 유예 후 해당 자식만 종료합니다. 시작 전 클라이언트/관측표를 준비하고, 시간 내 끝내지 못한 항목은 미실행/미완료로 남깁니다. 예산을 늘리거나 서버를 상시 실행하지 않습니다. EOF/오류/시간 제한이면 실패/중단 기록을 보존하고 후속 JVM을 무리하게 진행하지 않습니다.
 
@@ -82,17 +82,17 @@ execute in hearth_verify:restart_a run setblock 3 64 2 minecraft:air
 
 | ID | 실제 플레이어 위치·행동 | 일반 권한 기대 결과 | 이번 결과 |
 | --- | --- | --- | --- |
-| P1 | A (2,64,2) STONE 파괴, 인접 (3,64,2)에 COBBLESTONE 설치 | 파괴/설치 거부, STONE/AIR 유지 | 미실행 |
-| P2 | A (6,64,6) 파괴, (7,64,6) 설치 | priority10 build 안에서 허용, AIR/COBBLESTONE으로 변경 | 미실행 |
-| P3 | A (8,64,8) 파괴, (9,64,8) 설치 | priority20 deny 우선, STONE/AIR 유지 | 미실행 |
+| P1 | A (2,64,2) STONE 파괴, 인접 (3,64,2)에 COBBLESTONE 설치 | 파괴/설치 거부, STONE/AIR 유지 | 대표 보호 좌표 실제 확인 |
+| P2 | A (6,64,6) 파괴, (7,64,6) 설치 | priority10 build 안에서 허용, AIR/COBBLESTONE으로 변경 | STONE 설치/파괴로 실제 확인 |
+| P3 | A (8,64,8) 파괴, (9,64,8) 설치 | priority20 deny 우선, STONE/AIR 유지 | (8,64,8) 실제 파괴/설치 거부 확인 |
 | P4 | B (2,64,2) 파괴, (3,64,2) 설치 | B allow에서 허용, A deny의 영향 없음 | 미실행 |
-| P5 | 같은 A 보호/중첩에서 관리자 bypass로 행동 | status bypass=true 확인 후 허용, 해제 후 다시 거부 | 미실행 |
-| P6 | 정상 저장/종료, 새 JVM에 접속해 P1~P5 반복 | 같은 UUID/key/구역/권한 규칙 유지 | 미실행 |
+| P5 | 같은 A 보호/중첩에서 관리자 bypass로 행동 | status bypass=true 확인 후 허용, 해제 후 다시 거부 | 허용·권한 해제 확인, 해제 직후 재거부 미실행 |
+| P6 | 정상 저장/종료, 새 JVM에 접속해 P1~P5 반복 | 같은 UUID/key/구역/권한 규칙 유지 | UUID/key·설치 블록·중첩 거부 확인, 전체 반복 미실행 |
 
 행동은 하나씩 수행하고 클라이언트 표시·WorldGuard 거부 안내, ACTION의 UUID/world/좌표/OP/bypass/cancelled, 같은 id의 2틱 뒤 STATE를 기록합니다. 거부된 설치 대상의 예시 확인 명령:
 
 ```text
-execute in hearth_verify:restart_a run if block 3 64 2 minecraft:air run say A_PLACE_TARGET_STILL_AIR
+execute in hearth_verify:restart_a if block 3 64 2 minecraft:air run say A_PLACE_TARGET_STILL_AIR
 ```
 
 메시지가 없어도 성공으로 추정하지 않습니다. WorldGuard가 PlayerInteract 단계에서 거부해 BlockPlace/Break가 발생하지 않을 수도 있으므로, 이벤트가 없다는 이유만으로 거부 성공을 판정하지 않습니다. 실제 시도 영상/표시·올바른 도달 거리·전후 블록을 대조하고 근거 부족은 미판정으로 남깁니다. 합성 이벤트/API 판정으로 P1~P6를 통과 처리하지 않습니다.
@@ -107,7 +107,7 @@ execute in hearth_verify:restart_a run if block 3 64 2 minecraft:air run say A_P
 
 ## 현재 판정
 
-인증된 클라이언트가 확보되지 않아 준비까지만 수행했습니다. P1~P6·임시 OP 정리·이동/발판·관측 코드의 실제 클라이언트 실행·수동 runner의 TTY 동작은 **미실행**입니다. 기존 자동 회귀 성공과 혼동하지 않습니다. 게임 구현/DB/운영 환경을 확장하지 않았고 S4 전체는 진행 중입니다.
+최초 준비 당시에는 클라이언트가 없어 미실행이었습니다. 이후 실제 인증 한 명으로 위 P1~P3의 대표 동작과 P5/P6 일부를 검증했습니다. 독립240초 도구 전체를 실행한 것이 아니라 세션/DB 동반600초 도구의 실제 TTY·이벤트·저장·재시작 경로를 사용했습니다. P4와 P5/P6 남은 항목이 있어 S4-3 전체 완료는 아니며 전체 S4도 진행 중입니다.
 
 ## 문서·보안 검사
 

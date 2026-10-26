@@ -2,6 +2,8 @@
 
 확인일: 2026-10-26. 시작 main/HEAD/origin/main은 `ad8c601790dfe0a4fd136d19935952a116b9fd19`, 작업 트리·스테이징은 깨끗했습니다. 이 기록은 기존 S4-9~11 이후의 승인된 최소 세션 연동이며 **실제 인증 플레이어 검증이나 S4 전체 완료가 아닙니다**. 이전 상세 결과는 [S4-11](s4-11-verification.md), 이번 수치/시도별 증거는 [세션 JSON](../verification/player-session-result.json)을 따릅니다.
 
+후속 실제 인증 한 명의 보호·세션·두 JVM 시험을 수행했습니다. **현재 실제 행동 판정은 [수동 기록](player-session-manual-test.md)과 [관측 JSON](../verification/player-session-manual-result.json)**을 따릅니다. 아래 자동 검증 당시의 실제 플레이어 미실행 설명과 실패 이력은 그 시점의 기록으로 보존합니다.
+
 ## 후속 최종 JAR 재검증 — 2026-10-26
 
 기준 `6b96b01f7fe69b8d10f9b9a46ab4b9e6c6d90ae9`, main/작업 트리/스테이징이 깨끗하고 origin/main과 일치한 상태에서 이어갔습니다. 이전 실패·세 번째 실행/마지막 빌드 불일치 기록은 아래에 보존합니다. **이번 최종 소스 빌드와 실제 두 Paper JVM에 설치한 JAR SHA-256은 모두 `129ef136102fa6b2a96f173c433bad789d72244ce3ce6755818363ad036a2d05`로 일치합니다.** 실행 뒤 모든 `src/main`·Gradle 입력 해시가 불변임을 다시 대조했습니다. [최종 증거](../verification/player-session-final-result.json)를 현재 결과로 사용합니다.

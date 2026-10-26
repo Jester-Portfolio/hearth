@@ -23,9 +23,11 @@ def available_kib():
     raise RuntimeError('Cannot measure available memory')
 
 
-def port_free():
+def port_free(port=25585):
     with socket.socket() as probe:
-        probe.bind(('127.0.0.1', 25585))
+        # 종료된 연결의 TIME_WAIT는 재사용 가능하지만 실제 LISTEN 소켓은 계속 거부합니다.
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        probe.bind(('127.0.0.1', port))
 
 
 def permitted_manual_command(command):
@@ -39,11 +41,14 @@ def permitted_manual_command(command):
     coordinate = r'-?\d+(?:\.\d+)?'
     xyz = rf'{coordinate} {coordinate} {coordinate}'
     block = r'minecraft:(?:stone|air|cobblestone)'
-    actions = [rf'tp {name} {xyz}', rf'fill {xyz} {xyz} {block}', rf'setblock {xyz} {block}',
-               rf'if block {xyz} {block} run say [A-Za-z0-9_ -]{{1,80}}']
-    if not any(re.fullmatch(r'execute in hearth_verify:restart_[ab] run '+action, command) for action in actions):
-        return False
-    words = command.split(' run ', 1)[1].split()
+    condition = rf'execute in hearth_verify:restart_[ab] if block {xyz} {block} run say [A-Za-z0-9_ -]{{1,80}}'
+    if re.fullmatch(condition, command):
+        words = command.split()[3:]
+    else:
+        actions = [rf'tp {name} {xyz}', rf'fill {xyz} {xyz} {block}', rf'setblock {xyz} {block}']
+        if not any(re.fullmatch(r'execute in hearth_verify:restart_[ab] run '+action, command) for action in actions):
+            return False
+        words = command.split(' run ', 1)[1].split()
     values = words[1:7] if words[0] == 'fill' else (words[2:5] if words[0] in ('tp', 'if') else words[1:4])
     for i in range(0, len(values), 3):
         x, y, z = map(float, values[i:i+3])
