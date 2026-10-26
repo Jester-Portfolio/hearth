@@ -55,7 +55,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
                 || !"hearth_s4_11".equals(endpoint.getProperty("database"))
                 || !Files.readString(root.resolve(".hearth-s45-db")).trim().equals(endpoint.getProperty("marker"))) throw new IllegalStateException("Lifecycle DB rejected");
         idleSeconds=plugin.getConfig().getLong("lifecycle-test-idle-seconds",0);
-        if (idleSeconds!=1) throw new IllegalStateException("Explicit one-second isolated test setting required");
+        if (idleSeconds!=(Boolean.getBoolean("hearth.verification.sessionManual") ? 10 : 1)) throw new IllegalStateException("Explicit isolated test idle setting required");
         var source=new PGSimpleDataSource(); source.setServerNames(new String[]{"127.0.0.1"}); source.setPortNumbers(new int[]{port});
         source.setDatabaseName("hearth_s4_11"); source.setUser("postgres"); source.setConnectTimeout(2); source.setSocketTimeout(5); source.setPrepareThreshold(0);
         store=new PostgresProgressStore(source,access,f -> log("HEARTH_LIFE_DB_ERROR "+f.operation()+" code="+f.code()));
@@ -79,7 +79,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
     private CompletionStage<Void> until(BooleanSupplier condition) { return until(condition,200); }
     private CompletionStage<Void> until(BooleanSupplier condition,int maxTicks) {
         var f=new CompletableFuture<Void>(); long end=ticks+maxTicks;
-        f.orTimeout(10,TimeUnit.SECONDS);
+        f.orTimeout(Math.max(10,(maxTicks+40)/20),TimeUnit.SECONDS);
         Bukkit.getScheduler().runTask(plugin,new Runnable() {
             long lastTick=-1;
             public void run() {
@@ -110,7 +110,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
             CompletionStage<Void> work=switch(phase) {
                 case "session-prepare" -> { if(!sessionMode) throw new IllegalStateException("Session mode disabled");yield initialize(false); }
                 case "session-resume" -> { if(!sessionMode) throw new IllegalStateException("Session mode disabled");yield initialize(true); }
-                case "session-basic", "session-race", "session-race-done", "session-prepare-quit", "session-prepare-done", "session-move-quit", "session-restored", "session-move-failure", "session-write-failure" -> {
+                case "session-personal-generation", "session-personal-generation-done", "session-inventory-generation", "session-inventory-generation-done", "session-basic", "session-race", "session-race-done", "session-prepare-quit", "session-prepare-done", "session-move-quit", "session-restored", "session-move-failure", "session-write-failure" -> {
                     if (!sessionMode || sessions==null) throw new IllegalStateException("Session fixture not ready"); yield sessions.run(phase);
                 }
                 case "prepare" -> initialize(false);
@@ -234,12 +234,12 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
         }
         CompletionStage<Void> init=deliver(store.migrate());
         if (!resume) for (Scope s:List.of(a,b)) {
-            init=init.thenCompose(v -> deliver(store.createRun(s.ctx.storyRunId(),s.shared)))
-                .thenCompose(v -> deliver(store.createPlayer(s.ctx,"p1")))
+            init=init.thenCompose(v -> deliver(store.createRun(s.ctx.storyRunId(),s.shared)));
+            if(!Boolean.getBoolean("hearth.verification.sessionManual"))init=init.thenCompose(v -> deliver(store.createPlayer(s.ctx,"p1")))
                 .thenCompose(v -> deliver(store.createInventory(s.ctx,payload(s.amount)))).thenAccept(saved -> {});
         }
         var a2=access.forVerifiedServerLink(a.ctx.storyRunId(),new UUID(49,2));
-        if (!resume) init=init.thenCompose(v -> deliver(store.createPlayer(a2,"p2"))).thenCompose(v -> deliver(store.createInventory(a2,payload(5)))).thenAccept(saved -> {});
+        if (!resume && !Boolean.getBoolean("hearth.verification.sessionManual")) init=init.thenCompose(v -> deliver(store.createPlayer(a2,"p2"))).thenCompose(v -> deliver(store.createInventory(a2,payload(5)))).thenAccept(saved -> {});
         if (sessionMode) {
             sessions=new SessionVerification(plugin,store,access,Map.of(a.placement.storyRunId(),a.lifecycle,b.placement.storyRunId(),b.lifecycle),owner,codec,this::payload);
             return init.thenCompose(v -> sessions.initialize(resume));
@@ -349,9 +349,10 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
         }).thenRun(() -> check(Bukkit.getWorld(b.placement.key())==null && b.inventoryRevision==1 && a.lifecycle.state()==WorldLifecycle.State.ERROR_HOLD,"A_hold_B_save_unload_success"));
     }
     public void fixturePlayer(String name,boolean existing) { if (!sessionMode || sessions==null) throw new IllegalStateException("Session fixture not ready");sessions.fixturePlayer(name,existing); }
+    public void playerStatus(String name) { if(!sessionMode || sessions==null)throw new IllegalStateException("Session fixture not ready");sessions.playerStatus(name); }
     private CompletionStage<Void> shutdown() {
         CompletionStage<Void> work=CompletableFuture.completedFuture(null);
-        if (sessionMode) work=sessions.shutdown().thenCompose(v -> until(() -> scopes.values().stream().allMatch(s -> s.lifecycle.state()==WorldLifecycle.State.OFFLINE || s.lifecycle.state()==WorldLifecycle.State.ERROR_HOLD)));
+        if (sessionMode) work=sessions.shutdown().thenCompose(v -> until(() -> scopes.values().stream().allMatch(s -> s.lifecycle.state()==WorldLifecycle.State.OFFLINE || s.lifecycle.state()==WorldLifecycle.State.ERROR_HOLD),300));
         for (Scope s:List.of(a,b)) if (!sessionMode && s.lifecycle.state()==WorldLifecycle.State.ACTIVE) {
             work=work.thenCompose(v -> s.drain()).thenCompose(v -> s.persistence.save());
         }

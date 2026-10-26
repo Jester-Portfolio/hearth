@@ -32,6 +32,7 @@ public final class PlayerSessions {
         private InventoryTransition transition;
         private boolean connected=true,leased,joined,closing,leaseValid=true;
         private String error;
+        private String restoreStage="waiting";
         private Session(ServerProgressAccess.Context context,WorldLifecycle world,Port port) {
             this.context=context; this.world=world; this.port=port; key=new Key(context.storyRunId(),context.playerId());
         }
@@ -41,6 +42,7 @@ public final class PlayerSessions {
         public InventorySaveSession save() { check.run(); return save; }
         public ServerProgressAccess.Context context() { return context; }
         public String error() { check.run(); return error; }
+        public String restoreStage() { check.run(); return restoreStage; }
     }
     private final ProgressStore progress;
     private final InventoryStore inventories;
@@ -75,7 +77,10 @@ public final class PlayerSessions {
             return world.reserve(s.request,ctx.playerId());
         },owner).thenComposeAsync(admission -> {
             s.admission=admission;requireAdmission(s);
-            return progress.readPersonal(ctx).thenCompose(v -> inventories.readInventory(ctx))
+            s.restoreStage="personal";
+            return progress.readPersonal(ctx).thenComposeAsync(v -> {
+                    requireAdmission(s);s.restoreStage="inventory";return inventories.readInventory(ctx);
+                },owner)
                 .thenComposeAsync(saved -> {
                     requireAdmission(s);validate.accept(saved.payload());s.snapshot=saved.payload();
                     s.save=makeSave(s,ctx,saved);

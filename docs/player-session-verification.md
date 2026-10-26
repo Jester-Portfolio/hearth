@@ -2,6 +2,25 @@
 
 확인일: 2026-10-26. 시작 main/HEAD/origin/main은 `ad8c601790dfe0a4fd136d19935952a116b9fd19`, 작업 트리·스테이징은 깨끗했습니다. 이 기록은 기존 S4-9~11 이후의 승인된 최소 세션 연동이며 **실제 인증 플레이어 검증이나 S4 전체 완료가 아닙니다**. 이전 상세 결과는 [S4-11](s4-11-verification.md), 이번 수치/시도별 증거는 [세션 JSON](../verification/player-session-result.json)을 따릅니다.
 
+## 후속 최종 JAR 재검증 — 2026-10-26
+
+기준 `6b96b01f7fe69b8d10f9b9a46ab4b9e6c6d90ae9`, main/작업 트리/스테이징이 깨끗하고 origin/main과 일치한 상태에서 이어갔습니다. 이전 실패·세 번째 실행/마지막 빌드 불일치 기록은 아래에 보존합니다. **이번 최종 소스 빌드와 실제 두 Paper JVM에 설치한 JAR SHA-256은 모두 `129ef136102fa6b2a96f173c433bad789d72244ce3ce6755818363ad036a2d05`로 일치합니다.** 실행 뒤 모든 `src/main`·Gradle 입력 해시가 불변임을 다시 대조했습니다. [최종 증거](../verification/player-session-final-result.json)를 현재 결과로 사용합니다.
+
+- Gradle build/test/check·단위/회귀37개(세션11개)가 오류/실패/스킵0으로 통과했습니다. 최초 sandbox에서 Gradle 소켓 생성이 제한됐으나 승인된 외부 실행에서 정상 수행했습니다. 시스템 설치/설정 변경은 없습니다.
+- 새 경로 `/tmp/hearth-s4-11.giq9evc0`에서 이번 예산의 **첫 묶음 통과, 81.896초**입니다. 실제30초 변경 저장·미변경 저장 생략·여러 퇴장 저장 장벽·빠른 재접속·준비/이동 중 종료·두 번째 JVM 기존 데이터 복원·이동/쓰기 실패·A HOLD/B 정상 정리를 재검증했습니다. 통과 후 소스 변경이나 추가 서버 반복 실행은 없습니다.
+- 개인 진행 응답 직후에도 owner에서 월드 세대를 검사합니다. 실제 PostgreSQL의 `player_progress` 또는 `story_inventory`를 잠근 채 해당 응답을 기다리다가 **제어 WorldLifecycle 세대를 무효화**하고 잠금을 해제했습니다. 두 경로 모두 `STALE_WORLD`, 인벤토리 적용0/이동0/참가0·수량5/revision0 보존·RECOVERY_REQUIRED/HOLD 유지·B ACTIVE를 확인했습니다. 같은 SessionVerification/PlayerSessions/DB worker를 사용하며 별도 검증 프레임워크나 물리 월드 장애는 만들지 않았습니다.
+- 실제 프로필용 수동 모드는 자동 실패 fixture를 준비하지 않으며 자동 실패 명령도 거부합니다. 프로필·TTY·사용자 준비 플래그와 별도 새 경로를 요구합니다. 명령 허용/차단13건·준비 누락 시 기동 전 거부·Python 구문 검사까지 수행했습니다. **실제 운영자 TTY 전체 실행과 실제 인증 접속/PlayerInventory/teleportAsync는 미실행**입니다. 준비·콘솔 명령·성공 판정은 [수동 절차](player-session-manual-test.md) 한곳에 정리했습니다. 사용자 대기용 서버는 시작하지 않았습니다.
+
+| 대상 | 시작 완료 | 최대 표본 RSS | 누적 CPU | 정상 종료 소요 |
+| --- | --- | --- | --- | --- |
+| 첫 Paper | 13.979초 | 1,109.31MiB | 89.96초 | 3.578초 |
+| 두 번째 Paper | 9.813초 | 899.50MiB | 30.51초 | 3.494초 |
+| DB 보조 JVM | 준비 표식 확인 | 215.91MiB | 2.29초 | 0.107초 |
+
+최소 가용 RAM 약11.302GiB, Paper2회/DB1개·localhost·기존 자원/600초 한도를 준수했습니다. 모든 시험 JVM exit0, 정상 저장 장벽/풀/worker 정리·소유 프로세스/그룹·포트 반환을 확인했습니다. DB 보조 JVM 표본은 PostgreSQL 전체 프로세스 메모리 측정이 아닙니다. TPS/MSPT·장기 성능·DB 재시작·운영 배포·전체 S4 완료를 뜻하지 않습니다.
+
+이번 변경 Markdown8개·상대 링크205개·표/제목/코드 블록·일본어/한자 혼입 검사와 `git diff --check`는 오류0건입니다. 한국어 문맥과 정책/미검증 표현도 검토했습니다. 비밀 검사는 기존 커밋/푸시 훅을 사용하며 별도 중복 스캔은 추가하지 않습니다.
+
 ## 구현 범위와 재사용
 
 [PlayerSessions](../src/main/java/io/github/jesterportfolio/hearth/session/PlayerSessions.java)은 기존 WorldLifecycle의 예약/참가·WorldPersistence 저장 장벽에 실제 연결의 수명을 연결합니다. 저장은 기존 InventorySaveSession·InventoryTransition.logout·PostgresProgressStore worker/풀/CAS를 사용합니다. 새 저장 테이블·병렬 저장 체계·계정/가입/탈퇴·파티 관리·운영 배포는 추가하지 않았습니다. 기성 보호는 기존 WorldGuard를 유지하며 [기존 플러그인 검토](plugin-suitability-review.md)의 Paper API 경로를 확장했습니다.
@@ -36,15 +55,7 @@
 
 ## 실제 클라이언트 준비
 
-[S4-3 수동 도구](s4-3-verification.md)는 최초 준비와 첫 수동 진입을 같은 JVM으로 합쳐 재시작 포함 최대 두 회·기존 240초를 유지하도록 수정했습니다. 최종 자동 묶음은 이 준비 경로의 READY까지 검증하며 실제 행동 PASS로 표시하지 않습니다. 기존 두 수동 세션의 TTY/클라이언트 조작 전체는 미실행입니다.
-
-현재 인증 클라이언트는 확인되지 않았습니다. 기존 SSH 연결 표시와 ssh 실행 파일은 있으나 sshd 유효 설정은 이 사용자에게 읽기 불가이므로 로컬 포워딩 허용을 단정하지 않았습니다. 사용자 PC에서 기존 허용 SSH 대상으로 다음 형태를 사용할 수 있는지 확인해야 합니다. SSH/방화벽/Cloudflare 설정은 변경하지 않았습니다.
-
-```sh
-ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:25586:127.0.0.1:25585 ROCKY_SSH_ALIAS
-```
-
-사용자는 정상 인증된 Java Edition 26.2 프로필 이름과 기존 접속 경로만 준비하면 됩니다. 비밀번호/토큰은 요청하지 않습니다. 보호 시험에서는 지정 구역 설치/파괴·bypass·재시작을, 세션 시험에서는 기존 인벤토리 복원·허용 변경·종료 후 즉시 재접속을 수행합니다. [OpenSSH 로컬 전달](https://man.openbsd.org/ssh#TCP_FORWARDING)은 클라이언트 쪽 후보이며 실효 허용·게임 접속은 아직 미검증입니다. 사용자의 준비를 기다리는 제한시간 서버는 기동하지 않습니다.
+현재 인증 클라이언트는 확인되지 않았으며 S4-3은 보류입니다. 기존 단독 보호 도구는 준비와 첫 수동 시험을 합쳐2 JVM/240초, 이번 세션/DB 동반 수동 모드는 같은 준비 경로를 재사용해2 JVM/600초로 구분합니다. 사용자 준비 확인·기존 SSH 전달 후보·fixture/link-existing·보호/수량/재접속/IDLE/두 번째 JVM 판정은 [인증 플레이어 수동 절차](player-session-manual-test.md)에 모았습니다. 실제 접속과 전달 허용은 미검증이며 운영 설정 변경이나 인증 정보 요청은 없습니다.
 
 ## 안전·실패 이력·미검증
 
@@ -55,7 +66,7 @@ ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:25586:127.0.0.1:25585 ROCKY_SSH_
 실제 클라이언트 전 행동, 엔더 상자/커서/GUI·추가 슬롯, 실사용 코옵 동시 접속, 재구성/포털·타 플러그인과의 전체 충돌, 임의 disable·commit 불명·강제 종료/장기 부하/누수·DB 프로세스 재시작·운영 배포는 미검증입니다. 제어된 정상 종료는 저장 장벽이 끝난 후 stop하는 경로이며 임의 종료의 무손실 보장은 없습니다. S4-3 실제 플레이어 보류와 S4 전체 진행 중을 유지합니다.
 
 
-## 최종 결과
+## `6b96b01` 작업 당시 결과
 
 두 번째 통과 후 기존 fixture 읽기 재연결과 첫 JVM의 prepare-player/READY 경로를 연결해 세 번째 묶음 `/tmp/hearth-s4-11.uoxquuud`에서도 통과했습니다. 전체 **80.912초**, Paper/DB 모두 exit0·정상 drain/worker 종료·프로세스 그룹/포트 반환을 확인했습니다. 아래는 최종 묶음의 표본입니다.
 

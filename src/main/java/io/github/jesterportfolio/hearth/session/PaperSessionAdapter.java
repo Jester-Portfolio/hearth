@@ -83,7 +83,14 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         Entry entry=entries.get(e.getPlayer().getUniqueId());
         if(entry==null || entry.player()!=e.getPlayer())return;
         entries.remove(e.getPlayer().getUniqueId(),entry);
-        sessions.disconnect(entry.session()).whenComplete((v,error) -> {if(error!=null)plugin.getLogger().warning("HEARTH_SESSION_QUIT HOLD");});
+        sessions.disconnect(entry.session()).whenComplete((v,error) -> plugin.getLogger().info("HEARTH_SESSION_QUIT "+(error==null ? "SAVED" : "HOLD")));
+    }
+    public String status(UUID player){
+        main();Entry e=entries.get(player);
+        if(e==null)return "OFFLINE";
+        var slot=e.player().getInventory().getItem(0);var save=e.session().save();
+        return "state="+e.session().state()+" playable="+allowed(e.player())+" slot0="+(slot==null?0:slot.getAmount())
+            +" revision="+(save==null?-1:save.revision())+" dirty="+(save!=null && save.dirty());
     }
     private Entry entry(Player p){Entry e=entries.get(p.getUniqueId());return e!=null && e.player()==p ? e : null;}
     private boolean allowed(Player p){Entry e=entry(p);return e!=null && sessions.playable(e.session()) && p.getWorld().getKey().toString().equals(e.link().world().mapping().worldKey());}

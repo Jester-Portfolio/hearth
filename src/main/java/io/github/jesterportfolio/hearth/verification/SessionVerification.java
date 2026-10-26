@@ -24,6 +24,9 @@ public final class SessionVerification implements AutoCloseable {
     private final PaperInventoryAutosave autosave;
     private final PlayerSessions coordinator;
     private final PaperSessionAdapter adapter;
+    private final boolean manual=Boolean.getBoolean("hearth.verification.sessionManual");
+    private final Map<String,PlayerSessions.Session> generationProbes=new HashMap<>();
+    private final Map<String,Controlled> probePorts=new HashMap<>();
     private final UUID a=new UUID(42,10),b=new UUID(42,11);
     private final ServerProgressAccess.Context a1,a2,b3;
     private Controlled oldOne,one,two,three,cancelled;
@@ -33,7 +36,7 @@ public final class SessionVerification implements AutoCloseable {
     private long started=System.nanoTime();
     public SessionVerification(JavaPlugin plugin,PostgresProgressStore store,ServerProgressAccess access,Map<UUID,WorldLifecycle> worlds,
             Executor owner,PaperInventoryCodec codec,IntFunction<InventoryPayload> fixture) {
-        this.plugin=plugin;this.store=store;this.access=access;this.worlds=worlds;this.owner=owner;this.codec=codec;this.fixture=fixture;
+        this.plugin=plugin;this.store=store;this.access=access;this.worlds=new HashMap<>(worlds);this.owner=owner;this.codec=codec;this.fixture=fixture;
         a1=ctx(a,1);a2=ctx(a,2);b3=ctx(b,3);
         autosave=new PaperInventoryAutosave(plugin,List.of(),this::refresh,() -> {
             if (!cycle) {cycle=true;log("AUTOSAVE elapsed_ms="+(System.nanoTime()-started)/1_000_000);}
@@ -55,15 +58,31 @@ public final class SessionVerification implements AutoCloseable {
     }},1);return f;}
     private void refresh(){coordinator.refreshAll();}
     public CompletionStage<Void> initialize(boolean resume){
+        if(manual)return CompletableFuture.completedFuture(null);
         CompletionStage<Void> work=CompletableFuture.completedFuture(null);
         if(!resume)work=mainResult(store.createPlayer(b3,"p3")).thenCompose(v->mainResult(store.createInventory(b3,fixture.apply(7)))).thenAccept(v->{});
         for(var context:List.of(a1,a2,b3)) work=work.thenCompose(v -> linkExisting(context));
+        for(int n:List.of(12,13)) {
+            UUID run=new UUID(42,n);var context=ctx(run,n);
+            // DB 응답 경합만 제어합니다. 이 조정자는 물리 월드를 생성/로드했다는 증거가 아닙니다.
+            var mapping=new WorldLifecycle.Mapping(run,new UUID(50,n),"hearth_verify:controlled_"+n,
+                worlds.get(a).mapping().directory().resolveSibling("controlled_"+n));
+            worlds.put(run,new WorldLifecycle(mapping,new WorldLifecycle.Operations(){
+                public CompletionStage<Void> loadAndPrepare(){return CompletableFuture.completedFuture(null);}
+                public CompletionStage<Void> quiesce(){return coordinator.barrier(run);}
+                public CompletionStage<Void> save(){return CompletableFuture.completedFuture(null);}
+                public CompletionStage<Boolean> unload(){return CompletableFuture.completedFuture(true);}
+            },owner,SessionVerification::main,(delay,action)->()->{},java.time.Duration.ofSeconds(1),4,state->{}));
+            if(!resume)work=work.thenCompose(v->mainResult(store.createRun(run,"generation-boundary")))
+                .thenCompose(v->mainResult(store.createPlayer(context,"probe")))
+                .thenCompose(v->mainResult(store.createInventory(context,fixture.apply(5)))).thenAccept(v->{});
+        }
         return work.thenRun(()->check(true,"fixture_prepared_no_login_provisioning"));
     }
     private Location destination(UUID run){
         main();World w=Objects.requireNonNull(Bukkit.getWorld(NamespacedKey.fromString(worlds.get(run).mapping().worldKey())));
         // 새 격리 fixture의 도착 발판만 준비합니다. 일반 월드 건축/복귀 정책이 아닙니다.
-        for(int x=1;x<=3;x++)for(int z=1;z<=3;z++)w.getBlockAt(x,63,z).setType(Material.STONE,false);
+        for(int x=1;x<=(manual?15:3);x++)for(int z=1;z<=(manual?15:3);z++)w.getBlockAt(x,63,z).setType(Material.STONE,false);
         return new Location(w,2.5,64,2.5);
     }
     private final class Controlled implements PlayerSessions.Port {
@@ -80,7 +99,13 @@ public final class SessionVerification implements AutoCloseable {
         log("STATE run="+ctx.storyRunId()+" player="+ctx.playerId()+" count="+codec.decode(saved.payload())[0].getAmount()+" revision="+saved.revision());
         check(saved.revision()==revision && Arrays.equals(codec.decode(saved.payload()),codec.decode(fixture.apply(count))),"restored_"+ctx.storyRunId()+"_"+ctx.playerId()+"_count"+count+"_r"+revision);
     });}
-    public CompletionStage<Void> run(String phase){return switch(phase){
+    public CompletionStage<Void> run(String phase){
+        if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
+        return switch(phase){
+        case "session-personal-generation" -> generationPending("personal",12);
+        case "session-personal-generation-done" -> generationDone("personal",12);
+        case "session-inventory-generation" -> generationPending("inventory",13);
+        case "session-inventory-generation-done" -> generationDone("inventory",13);
         case "session-basic" -> basic();case "session-race" -> race();case "session-race-done" -> raceDone();
         case "session-prepare-quit" -> preparingQuit();case "session-prepare-done" -> preparingDone();case "session-move-quit" -> movingQuit();
         case "session-restored" -> restored();case "session-move-failure" -> moveFailure();case "session-write-failure" -> writeFailure();
@@ -130,14 +155,33 @@ public final class SessionVerification implements AutoCloseable {
         check(s1.save().dirty() && s1.save().revision()==3 && s1.state()==PlayerSessions.State.HOLD && s2.state()==PlayerSessions.State.HOLD,"write_failure_dirty_revision_HOLD_preserved");
         expectedHold=true;
     }).thenCompose(v -> expect(connect(a1,new Controlled()).ready(),"23514")).thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.ERROR_HOLD)).thenRun(()->check(worlds.get(b).state()==WorldLifecycle.State.ACTIVE,"A_hold_B_active"));}
+    private CompletionStage<Void> generationPending(String stage,int n){
+        UUID run=new UUID(42,n);var port=new Controlled();var session=connect(ctx(run,n),port);
+        generationProbes.put(stage,session);probePorts.put(stage,port);
+        return until(()->stage.equals(session.restoreStage())).thenCompose(v->later(()->{
+            check(!session.ready().toCompletableFuture().isDone() && port.applies==0 && port.moves==0,"pending_"+stage+"_before_world_invalidation");
+            worlds.get(run).invalidate("injected_"+stage+"_response_epoch");
+        }));
+    }
+    private CompletionStage<Void> generationDone(String stage,int n){
+        var session=generationProbes.get(stage);var port=probePorts.get(stage);var world=worlds.get(new UUID(42,n));
+        return expect(session.ready(),"STALE_WORLD").thenCompose(v->verify(ctx(new UUID(42,n),n),5,0)).thenRun(()->{
+            check(port.applies==0 && port.moves==0 && world.participantCount()==0 && world.pendingCount()==0
+                && session.state()==PlayerSessions.State.HOLD && world.state()==WorldLifecycle.State.RECOVERY_REQUIRED,
+                stage+"_world_generation_rejects_apply_move_commit_original_preserved");
+            check(worlds.get(b).state()==WorldLifecycle.State.ACTIVE,"generation_probe_other_run_active");
+        });
+    }
     public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run);}
     public boolean canUnload(UUID run){return coordinator.canUnload(run);}
     public CompletionStage<Void> shutdown(){
+        if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
         autosave.close();adapter.close();
         CompletionStage<Void> other=s3==null ? CompletableFuture.completedFuture(null) : coordinator.disconnect(s3);
         return mainResult(other).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
             if(error!=null && !(expectedHold && "23514".equals(s1.error()) && "MOVE_FAILED".equals(s2.error())
-                    && Set.of("23514","MOVE_FAILED").contains(LifecycleFailure.code(error))))throw new CompletionException(error);
+                    && generationProbes.size()==2 && generationProbes.values().stream().allMatch(s->s.state()==PlayerSessions.State.HOLD && "STALE_WORLD".equals(s.error()))
+                    && Set.of("23514","MOVE_FAILED","STALE_WORLD").contains(LifecycleFailure.code(error))))throw new CompletionException(error);
             log("DRAIN "+(error==null ? "PASS" : "EXPECTED_HOLD_PRESERVED"));return null;
         },owner));
     }
@@ -148,12 +192,21 @@ public final class SessionVerification implements AutoCloseable {
         });
     }
     public void fixturePlayer(String name,boolean existing){
-        main();var player=Bukkit.getWhitelistedPlayers().stream().filter(p->name.equals(p.getName())).findFirst().orElseThrow(()->new IllegalArgumentException("Whitelist profile required"));
+        main();if(!manual)throw new IllegalStateException("실제 프로필은 별도 수동 시험 환경에서만 준비합니다");
+        var player=Bukkit.getWhitelistedPlayers().stream().filter(p->name.equals(p.getName())).findFirst().orElseThrow(()->new IllegalArgumentException("Whitelist profile required"));
         var context=access.forVerifiedServerLink(a,player.getUniqueId());
         CompletionStage<?> work=existing ? CompletableFuture.completedFuture(null) : mainResult(store.createPlayer(context,"fixture"))
             .thenCompose(v -> mainResult(store.createInventory(context,fixture.apply(32))));
         work.thenCompose(v -> linkExisting(context)).thenRun(()->log("FIXTURE READY"))
             .exceptionally(error->{log("FIXTURE HOLD "+LifecycleFailure.code(error));return null;});
+    }
+    public void playerStatus(String name){
+        main();if(!manual)throw new IllegalStateException("수동 시험 전용입니다");
+        var profile=Bukkit.getWhitelistedPlayers().stream().filter(p->name.equals(p.getName())).findFirst().orElseThrow();
+        var context=access.forVerifiedServerLink(a,profile.getUniqueId());
+        log("MANUAL "+adapter.status(profile.getUniqueId())+" world_state="+worlds.get(a).state()+" world_epoch="+worlds.get(a).generation());
+        mainResult(store.readInventory(context)).thenAccept(saved->log("MANUAL_DB count="+codec.decode(saved.payload())[0].getAmount()+" revision="+saved.revision()))
+            .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
     @Override public void close(){autosave.close();adapter.close();}
 }

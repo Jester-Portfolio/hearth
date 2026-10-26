@@ -23,3 +23,5 @@
 
 
 최소 세션 자동 검증은 `verify-lifecycle.py --sessions`로 기존 감시/DB 도구를 재사용합니다. 최초 포함 최대3묶음의 기록과 개발 모드 게이트·사용자 접속 준비는 [세션 기록](../docs/player-session-verification.md)을 따릅니다. `verify-s4-2.py --manual-player`는 준비와 첫 수동 시험을 합쳐 총2 JVM/240초이며 실제 행동 판정은 자동으로 만들지 않습니다. 사용자의 클라이언트 준비 대기 중 서버를 먼저 기동하지 않습니다.
+
+세션/DB를 동반하는 인증 플레이어 시험은 기존 `verify-lifecycle.py --sessions --manual-player --operator-ready --profile PROFILE_NAME`을 사용합니다. 새 경로/DB에서 자동 실패 fixture를 제외하고 fixture/link-existing·상태 조회를 연결합니다. 준비·전체 콘솔 명령과 판정은 [수동 절차](../docs/player-session-manual-test.md)를 따릅니다. 이 모드의 수동 두 JVM 전체 경로는 미실행이며 `MANUAL_CLOSED_UNVERIFIED`를 실제 행동 PASS로 취급하지 않습니다. 기존 단독 S4-3의240초와 구분해 세션 시험은600초 한도이며 사용자 준비 후에만 기동합니다.

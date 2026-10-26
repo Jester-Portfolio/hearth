@@ -1,0 +1,405 @@
+{
+  "기준_커밋": "6b96b01f7fe69b8d10f9b9a46ab4b9e6c6d90ae9",
+  "확인일": "2026-10-26",
+  "새_실행_묶음": 1,
+  "허용_최대_묶음": 3,
+  "단위_회귀": {
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "수동_도구_준비_검사": {
+    "허용_차단_명령": 13,
+    "TTY_프로필_준비_누락시_기동전_거부": "PASS",
+    "실제_운영자_TTY_전체_경로": "미실행"
+  },
+  "최종_JAR": {
+    "plugin_sha256": "129ef136102fa6b2a96f173c433bad789d72244ce3ce6755818363ad036a2d05",
+    "inputs": [
+      {
+        "path": "build.gradle.kts",
+        "sha256": "d6be3d63d1fb0fc05b803f0476506d584cbd30e902b937fe6f0135b1fd42fc4b"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/HearthPlugin.java",
+        "sha256": "53cb38d7d3167c935d1941c68bda965704d739dda46ce0cfb0aef4eee8de2700"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryAutosave.java",
+        "sha256": "45f248c7f865fe8e23b866f649bdbeb582984adf47c843b7a955eca500825463"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryPayload.java",
+        "sha256": "8ff879502e58f73ec5088fbcd8573af4204b1cf4367db72b853fb2b6131e2e00"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventorySaveSession.java",
+        "sha256": "8e612bd8ff6dbf58c3f067ed6069f6c8acf8fe53c8155e9bd2d3a91edb6fdae1"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryTransition.java",
+        "sha256": "46a9d0446de17a5d4eb3bc99fc29301f9ab048cf77a957d479c124a04acfaf71"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryAutosave.java",
+        "sha256": "8b2a9dbffdfca427e61c4049159069e4716d3c2fe29d4a81cdc85c1b02950bb5"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryCodec.java",
+        "sha256": "d48daed9f3c948fd58391683816fded7e2633f29132afe4ebf1b0cb01e6cdd94"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/LifecycleFailure.java",
+        "sha256": "ff1fcca716d8d6c8696749e89a4de8104eff35102d62bdc2869f55d54f7706b0"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary.java",
+        "sha256": "c276e62a12f6f8d8702ad2a121385888297a48262726b0402b0f5171320f8f35"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldLifecycle.java",
+        "sha256": "b33868a5bdd87e956c3147793ecf52d9ac15f39e42eb1b766d00590c9df45925"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldPersistence.java",
+        "sha256": "bc947ff843c46cdea35e80743474acd196b5be70e81804f2c200f0a25fcfda12"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/InventoryStore.java",
+        "sha256": "07dc183985f058b45da0901a2e7a19f1e3f52e4a5b0a978667161b57a5a7eefb"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/PostgresProgressStore.java",
+        "sha256": "deaa783abbd59598c20ad6b841d4206b70733560c714e08b3d6acfd1a297b62a"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ProgressStore.java",
+        "sha256": "6671c08210d54ae01a9e568e652d951d8718dab3dd8eea711baf13d3c00b168f"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/SchemaMigration.java",
+        "sha256": "16dccb678fef3ecc40ba1d3602c7789aaeb6754426d5223198a1ed3bd2a5b783"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ServerProgressAccess.java",
+        "sha256": "b938fe1e8e18ea5fe9d997f092a5655260fefd11d0678563765a9d753867aae2"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/StorageFailure.java",
+        "sha256": "2648853231e00e70ee7ceba5809da1eda1aeb4134509fab9e623bd62f3d8a9fb"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/session/PaperSessionAdapter.java",
+        "sha256": "e7ab7de4dbe7669bdbe42348450b937cd39c407761062e488b23ffe1ed74f74b"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/session/PlayerSessions.java",
+        "sha256": "2a6fede944d8e36f8cebdc75fe8e622da80ad63e14cc1effba62fb40776f8684"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/verification/DatabaseVerification.java",
+        "sha256": "a9ccf7a3506b31e5689ee7d7ee627b4b6d1ac45bc7c6f1922879a182b4a71ff4"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/verification/InventoryVerification.java",
+        "sha256": "a1a94f421841a19b5406c2e9651278d9a9752baf47c6bd338a0063a4cb4ab300"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/verification/LifecycleVerification.java",
+        "sha256": "934b5cd83d80c5e1bbc18a1ecac5223d76d3735c4625586d3f7dc46e7e170994"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/verification/PlayerActionObserver.java",
+        "sha256": "f0c85f4a4151d6f0d179dc57202d563b5b370e53dc986805132bf3966964d802"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/verification/RestartVerification.java",
+        "sha256": "17fecf78ad0a14a980a683de475b923dbdad896976455a5d0ddc393ab7c2b782"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java",
+        "sha256": "5c72eef09d92b574a1741a0c65a0d22af0f3e5fbf1b513742cf90b5053ec7a53"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SmokeVerification.java",
+        "sha256": "2ec3647a00f3f66328923591eacdbf20ee976b21c256cbdeb2b3e2190e8c4370"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/world/PaperWorldBackend.java",
+        "sha256": "b46a5acbc7f43b03ab25f523982f8110bb3c7942bbb77fafed7ef6cf1685e1ca"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/world/TemplateStore.java",
+        "sha256": "d27b4d777c72c8968136855267e496c35bd138134ef2cfe32a1daa5df18c26b1"
+      },
+      {
+        "path": "src/main/java/io/github/jesterportfolio/hearth/world/WorldBackend.java",
+        "sha256": "bf9d5742a8a955aeb754f5eb70510cf75d6b38ff7e371864058135d02303b42e"
+      },
+      {
+        "path": "src/main/resources/config.yml",
+        "sha256": "2793ed8d6d6d4a269e7309329dfda0729d4f8132de579f8307577e1df87838e2"
+      },
+      {
+        "path": "src/main/resources/db/migration/V001__progress.sql",
+        "sha256": "9cfd301837659e3d303f5c7c81ed7b4f2b884bb3160a638cffcaf37d35520c4a"
+      },
+      {
+        "path": "src/main/resources/db/migration/V002__story_inventory.sql",
+        "sha256": "b04a0051a12bfd56c5c5d993eb988ee3a760cdc270a53d54d89e1048f74a5c16"
+      },
+      {
+        "path": "src/main/resources/plugin.yml",
+        "sha256": "7b1e28ca3679d5938b88e207ca1a4442b47fac1da722c11b1eee884ce656ece5"
+      }
+    ],
+    "installed_plugin_sha256": "129ef136102fa6b2a96f173c433bad789d72244ce3ce6755818363ad036a2d05",
+    "source_inputs_unchanged_after_runtime": true,
+    "build_and_runtime_match": true
+  },
+  "경계_구분": {
+    "실제_Paper_PostgreSQL": "두 JVM·기존 A/B 월드·구역·공유/개인 상태·41슬롯 ItemStack·30초 경로·CAS·종료/빠른 재접속 저장 장벽 재검증",
+    "세대_무효화": "기존 SessionVerification의 제어 WorldLifecycle/입장·이동 포트와 실제 PG player_progress/story_inventory 잠금으로 응답 대기를 만들었습니다. 두 경우 STALE_WORLD, 적용0/이동0/참가0·기존 수량5/revision0·RECOVERY_REQUIRED/HOLD 보존·B ACTIVE를 확인했습니다. 추가 물리 월드 생성/장애나 실제 Player 성공 증거가 아닙니다.",
+    "실제_인증_플레이어": "미실행: 인증 접속·PlayerInventory·teleportAsync·보호/입력·수동 두 JVM 전체 경로",
+    "수동_격리": "--manual-player --operator-ready --profile과 TTY가 필요하며 자동 실패 fixture와 다른 새 경로/DB를 사용합니다. 초기 개인 행은 session-fixture, 두 번째 JVM은 session-link-existing만 사용합니다."
+  },
+  "원시_결과_SHA256": "e3b4b23f336123c547f113ab28fc64b3c29e60090892eca4169d51772a5c6293",
+  "runtime": {
+    "outcome": "PASS",
+    "failure": null,
+    "cleanup_errors": [],
+    "workspace": "/tmp/hearth-s4-11.giq9evc0",
+    "duration_seconds": 81.896,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "processes": {
+      "database": {
+        "pid": 1176885,
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 81.199,
+        "shutdown_seconds": 0.107,
+        "max_sampled_rss_kib": 221092,
+        "observed_cpu_seconds": 2.29,
+        "min_sampled_host_available_kib": 11850804,
+        "sample_count": 1196,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-prepare": {
+        "pid": 1176941,
+        "exit_code": 0,
+        "ready_seconds": 13.979,
+        "duration_seconds": 60.303,
+        "shutdown_seconds": 3.578,
+        "max_sampled_rss_kib": 1135932,
+        "observed_cpu_seconds": 89.96,
+        "min_sampled_host_available_kib": 11850804,
+        "sample_count": 810,
+        "checks": [
+          "region_isolation_hearth_verify:restart_b",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "world_IO_pool_closed"
+        ],
+        "timings": [
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=1338",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=1336",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=197",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=200",
+          "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=103",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=103",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=28650",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=995",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=149",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING elapsed_ms=149",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING elapsed_ms=100",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=249",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=100",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=349",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=350",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE elapsed_ms=31147",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=101",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE elapsed_ms=998",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING elapsed_ms=50",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=998",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=49",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING elapsed_ms=150",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING elapsed_ms=150",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING elapsed_ms=99",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING elapsed_ms=100"
+        ],
+        "states": [
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE"
+        ]
+      },
+      "paper-resume": {
+        "pid": 1177268,
+        "exit_code": 0,
+        "ready_seconds": 9.813,
+        "duration_seconds": 17.954,
+        "shutdown_seconds": 3.494,
+        "max_sampled_rss_kib": 921084,
+        "observed_cpu_seconds": 30.51,
+        "min_sampled_host_available_kib": 12117468,
+        "sample_count": 333,
+        "checks": [
+          "region_isolation_hearth_verify:restart_b",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "world_IO_pool_closed"
+        ],
+        "timings": [
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=529",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=527",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=247",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=250",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=102",
+          "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=103",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=398",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=997",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=49",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE elapsed_ms=2297",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE elapsed_ms=997",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING elapsed_ms=50",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING elapsed_ms=149",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING elapsed_ms=100"
+        ],
+        "states": [
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000a state=ERROR_HOLD",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE"
+        ]
+      }
+    },
+    "all_owned_processes_and_ports_closed": true,
+    "plugin_sha256": "129ef136102fa6b2a96f173c433bad789d72244ce3ce6755818363ad036a2d05",
+    "session_checks": [
+      "fixture_prepared_no_login_provisioning",
+      "no_apply_or_admission_before_prepare",
+      "all_sessions_active_after_move",
+      "NBT_roundtrip_semantically_unchanged",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count31_r1",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_count5_r0",
+      "restored_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000003_count7_r0",
+      "real_30_second_session_path",
+      "duplicate_quit_same_future",
+      "all_departing_saves_in_barrier_reconnect_waits",
+      "world_unload_waits_for_quit_save",
+      "fresh_session_after_final_save_old_callback_not_applied",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count29_r3",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_count4_r1",
+      "run_counts_and_other_run_preserved",
+      "DB_restore_pending",
+      "reconnect_during_prepare_waits",
+      "cancelled_prepare_never_applies",
+      "quit_during_move_keeps_reservation",
+      "stale_move_does_not_commit_or_remove_new_session",
+      "fixture_prepared_no_login_provisioning",
+      "no_apply_or_admission_before_prepare",
+      "all_sessions_active_after_move",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count29_r3",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_count4_r1",
+      "restored_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000003_count7_r0",
+      "rejected_MOVE_FAILED",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_count4_r1",
+      "move_failure_hold_original_preserved",
+      "rejected_23514",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count29_r3",
+      "write_failure_dirty_revision_HOLD_preserved",
+      "rejected_23514",
+      "A_hold_B_active",
+      "pending_personal_before_world_invalidation",
+      "rejected_STALE_WORLD",
+      "restored_00000000-0000-002a-0000-00000000000c_00000000-0000-0031-0000-00000000000c_count5_r0",
+      "personal_world_generation_rejects_apply_move_commit_original_preserved",
+      "generation_probe_other_run_active",
+      "pending_inventory_before_world_invalidation",
+      "rejected_STALE_WORLD",
+      "restored_00000000-0000-002a-0000-00000000000d_00000000-0000-0031-0000-00000000000d_count5_r0",
+      "inventory_world_generation_rejects_apply_move_commit_original_preserved",
+      "generation_probe_other_run_active"
+    ],
+    "sessions_mode": true,
+    "manual_player_mode": false,
+    "installed_plugin_sha256": "129ef136102fa6b2a96f173c433bad789d72244ce3ce6755818363ad036a2d05",
+    "snapshots": [],
+    "runtime_library_jars": [
+      "libraries/com/zaxxer/HikariCP/7.1.0/HikariCP-7.1.0.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+      "libraries/org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar",
+      "libraries/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar"
+    ],
+    "not_executed": [
+      "실제 인증 플레이어/로그인·텔레포트",
+      "PostgreSQL 프로세스 재시작",
+      "실제 파일시스템 저장 장애·강제 종료 복구",
+      "TPS/MSPT·장기 부하·메모리 누수",
+      "운영 배포·경제 realm"
+    ]
+  },
+  "보안_검사_정정": "커밋 훅이 ServerProgressAccess.java 파일의 SHA-256을 generic-api-key로 탐지했습니다. 실제 소스 바이트에서 계산한 해시와 일치함을 확인하고 경로/sha256 필드를 분리했습니다. 검사 규칙·훅·예외 목록은 변경하지 않았습니다."
+}

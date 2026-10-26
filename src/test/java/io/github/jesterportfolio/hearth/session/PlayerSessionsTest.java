@@ -15,10 +15,11 @@ final class PlayerSessionsTest {
     static class Store implements InventoryStore,ProgressStore {
         final List<CompletableFuture<Stored>> reads=new ArrayList<>(),writes=new ArrayList<>();
         final List<InventoryPayload> snapshots=new ArrayList<>();
+        CompletableFuture<State> personal=CompletableFuture.completedFuture(new State("p",0));
         public CompletionStage<Stored> readInventory(ServerProgressAccess.Context c) { var f=new CompletableFuture<Stored>();reads.add(f);return f; }
         public CompletionStage<Stored> createInventory(ServerProgressAccess.Context c,InventoryPayload p) { throw new AssertionError("No creation"); }
         public CompletionStage<Stored> saveInventory(ServerProgressAccess.Context c,long r,InventoryPayload p) { var f=new CompletableFuture<Stored>();writes.add(f);snapshots.add(p);return f; }
-        public CompletionStage<State> readPersonal(ServerProgressAccess.Context c) { return CompletableFuture.completedFuture(new State("p",0)); }
+        public CompletionStage<State> readPersonal(ServerProgressAccess.Context c) { return personal; }
         public CompletionStage<State> readShared(ServerProgressAccess.Context c){return CompletableFuture.completedFuture(new State("r",0));}
         public CompletionStage<Void> migrate(){throw new AssertionError();} public CompletionStage<Void> createRun(UUID id,String v){throw new AssertionError();}
         public CompletionStage<Void> createPlayer(ServerProgressAccess.Context c,String v){throw new AssertionError();}
@@ -100,6 +101,14 @@ final class PlayerSessionsTest {
         f.world.invalidate("injected_world_epoch");f.read(0,1,0);
         assertEquals(0,port.applies);assertEquals(0,port.moves);assertEquals(PlayerSessions.State.HOLD,session.state());
         assertEquals("STALE_WORLD",session.error());assertEquals(WorldLifecycle.State.RECOVERY_REQUIRED,f.world.state());assertTrue(f.store.writes.isEmpty());
+    }
+    @Test void invalidatedWorldGenerationRejectsPendingPersonalBeforeInventoryRead() {
+        var f=new Fixture();f.store.personal=new CompletableFuture<>();var port=new Port();var session=f.open(UUID.randomUUID(),port);
+        f.loaded.complete(null);f.pump();assertEquals("personal",session.restoreStage());assertTrue(f.store.reads.isEmpty());
+        f.world.invalidate("injected_personal_epoch");f.store.personal.complete(new ProgressStore.State("p",0));f.pump();
+        assertEquals(0,port.applies);assertEquals(0,port.moves);assertEquals(0,f.world.participantCount());
+        assertEquals("STALE_WORLD",session.error());assertEquals(PlayerSessions.State.HOLD,session.state());
+        assertTrue(f.store.reads.isEmpty());assertTrue(f.store.writes.isEmpty());
     }
     @Test void equivalentSerializedFormsDoNotBecomeDirty() {
         var f=new Fixture();var coordinator=new PlayerSessions(f.store,f.store,f.queue::add,() -> {},p -> {},

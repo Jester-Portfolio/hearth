@@ -66,6 +66,9 @@ public final class HearthPlugin extends JavaPlugin {
             } else if (args.length == 2 && (args[0].equals("session-fixture") || args[0].equals("session-link-existing")) && lifecycleVerification != null) {
                 try { lifecycleVerification.fixturePlayer(args[1],args[0].equals("session-link-existing")); }
                 catch (RuntimeException e) { sender.sendMessage("격리 fixture 준비 거부: "+e.getMessage()); }
+            } else if (args.length == 2 && args[0].equals("session-status") && lifecycleVerification != null) {
+                try { lifecycleVerification.playerStatus(args[1]); }
+                catch (RuntimeException e) { sender.sendMessage("격리 상태 조회 거부: "+e.getMessage()); }
             } else if (args.length == 2 && args[0].equals("lifecycle") && lifecycleVerification != null) {
                 lifecycleVerification.start(args[1]);
             } else if (args.length == 2 && args[0].equals("inventory") && inventoryVerification != null) {

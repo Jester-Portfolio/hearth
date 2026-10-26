@@ -50,10 +50,10 @@ public final class S45DatabaseFixture {
                         admin.close(); admin=null;
                         pg.close(); pg=null;
                     } else if (command.equals("finish")) { break; }
-                    else if (command.equals("lock")) {
+                    else if ((command.equals("lock") || command.equals("lock-personal"))) {
                         if (lock!=null) throw new IllegalStateException("Already locked");
                         lock=ds.getConnection(); lock.setAutoCommit(false);
-                        try (var st=lock.createStatement()) { st.setQueryTimeout(3); st.execute("LOCK TABLE hearth_progress."+(inventory ? "story_inventory" : "story_run")+" IN ACCESS EXCLUSIVE MODE"); }
+                        try (var st=lock.createStatement()) { st.setQueryTimeout(3); st.execute("LOCK TABLE hearth_progress."+(command.equals("lock-personal") ? "player_progress" : inventory ? "story_inventory" : "story_run")+" IN ACCESS EXCLUSIVE MODE"); }
                     } else if (command.equals("unlock")) {
                         Objects.requireNonNull(lock).rollback(); lock.close(); lock=null;
                     } else {
