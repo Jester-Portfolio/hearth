@@ -2,7 +2,10 @@
 
 | 문서 | 역할 |
 | --- | --- |
-| [PROJECT_STATUS.md](PROJECT_STATUS.md) | 현재 단계·완료 근거·환경·미결정 및 미검증 항목 |
+| [PROJECT_STATUS.md](PROJECT_STATUS.md) | 빠른 현재 상태·미검증·다음 작업 (필요할 때만 읽기) |
+| [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md) | 작업별 최소 파일 읽기·변경 위험도별 검증·출력/문서 비용 절감 |
+| [PROJECT_STATUS-archive-2026-10-27.md](PROJECT_STATUS-archive-2026-10-27.md) | 이전 장문 상태·정책·검증 역사 보존 |
+| [ROADMAP-archive-2026-10-27.md](ROADMAP-archive-2026-10-27.md) | 이전 상세 단계·검증 이력 보존 |
 | [stack-build-verification.md](stack-build-verification.md) | S2 빌드·API 참조 컴파일·계약 검토와 미검증 런타임 범위 |
 | [s4-1-verification.md](s4-1-verification.md) | S4-1 빌드/파일·격리 서버 smoke 결과, 초기 오류/수정·자원·미검증 범위 |
 | [s4-2-verification.md](s4-2-verification.md) | 두 JVM 영속성·자연 피스톤 이벤트·API 판정, 접속 플레이어 미실행·자원/오류 |
@@ -41,7 +44,7 @@
 
 문서에는 확정된 요구사항, 제안, 미정 사항을 구분합니다. 주요 결정은 의사결정 기록을 남기고 관련 설계 문서에 반영합니다. 실제 운영 구성을 확인하지 않은 내용은 검증된 사실로 기록하지 않습니다.
 
-작업 시작 시 현황·로드맵·관련 ADR을 확인합니다. 현재 사실, 단계별 계획, 주요 이력과 확정 설계의 역할을 구분하고 상세 내용은 해당 문서로 연결합니다. 문서 갱신과 두 환경 간 인계·커밋 규칙은 [AGENTS.md](../AGENTS.md)를 따릅니다.
+작업 시작 시 모든 문서를 읽지 않습니다. **작업에 영향을 주는 자료만** 선택하여 확인합니다. 장문 문서·검증 기록은 관련성이 확인된 경우에만 일부 읽으며 기준은 [개발·검증 최적화](DEVELOPMENT_WORKFLOW.md)와 [AGENTS.md](../AGENTS.md)를 따릅니다.
 
 - [ADR-0004: 공동체·퀘스트·장별 따라잡기와 스킵](decisions/0004-community-quests-and-chapter-skip.md) — 승인된 운영 정책. 구현·런타임 시험 미완료.
 
