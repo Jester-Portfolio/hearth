@@ -15,3 +15,6 @@ session-verification-enabled: false
 
 # 세션 격리 모드와 별도의 JVM 게이트가 모두 필요합니다.
 quest-verification-enabled: false
+
+# 탐험·일지·지도는 기존 세션/퀘스트 격리 게이트와 별도의 JVM 플래그를 추가 요구합니다.
+exploration-verification-enabled: false

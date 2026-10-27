@@ -1,6 +1,7 @@
 package io.github.jesterportfolio.hearth.quest;
 
 import io.github.jesterportfolio.hearth.session.*;
+import io.github.jesterportfolio.hearth.exploration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
@@ -49,8 +50,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         long id=++requestId;requests.put(p.getUniqueId(),id);
         work.whenCompleteAsync((view,failure)->{
             if(!Objects.equals(requests.get(p.getUniqueId()),id))return;
-            requests.remove(p.getUniqueId());if(closed || players.current(p)!=session)return;if(failure!=null){error(p);return;}
-            try{quests.requireListDisplay(session.context(),view.states());showHud(p,view);show.accept(view);}catch(RuntimeException e){error(p);}
+            requests.remove(p.getUniqueId());if(closed || players.current(p)!=session)return;if(failure!=null){Throwable cause=failure;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();if(cause instanceof IllegalStateException&&Set.of("JOURNAL_BUSY","QUEST_LIST_BUSY").contains(Objects.toString(cause.getMessage(),""))){dirty.add(p.getUniqueId());return;}error(p);return;}
+            try{journal.requireView(session.context(),view);showHud(p,view);show.accept(view);}catch(RuntimeException e){error(p);}
         },owner);
     }
     private void open(Player p,PlayerSessions.Session s,QuestJournal.View view,String page,String quest,int offset){
@@ -77,6 +78,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             String action=button.action();
             if(action.equals("track"))request(p,s,journal.track(s.context(),s,()->players.current(p)==s,button.quest(),button.revision()==1),v->open(p,s,v,"detail",button.quest(),0));
             else if(action.equals("hud"))request(p,s,journal.hud(s.context(),s,()->players.current(p)==s,button.revision()==1),v->open(p,s,v,"settings",null,0));
+            else if(action.startsWith("setting:"))request(p,s,journal.setting(s.context(),s,()->players.current(p)==s,action.substring(8),button.revision()==1),v->open(p,s,v,"settings",null,0));
+            else if(action.equals("place-notice"))request(p,s,journal.readPlaceNotice(s.context(),s,()->players.current(p)==s,button.quest()),v->open(p,s,v,"place",button.quest(),0));
             else if(action.equals("read-all"))request(p,s,journal.readAll(s.context(),s,()->players.current(p)==s),v->open(p,s,v,"notices",null,0));
             else if(action.equals("notice"))request(p,s,journal.readNotice(s.context(),s,()->players.current(p)==s,button.quest(),button.revision()),v->open(p,s,v,"detail",button.quest(),0));
             else load(p,s,v->open(p,s,v,action,button.quest(),(int)button.revision()));

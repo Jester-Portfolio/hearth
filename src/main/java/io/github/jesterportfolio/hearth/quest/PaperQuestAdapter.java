@@ -28,6 +28,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final PersonalQuest quests;
     private final QuestCatalog catalog;
     private final QuestDialogue dialogues;
+    private final QuestJournal journal;
     private final Executor owner;
     private final Set<UUID> worldIds;
     private final NamespacedKey tag;
@@ -36,7 +37,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final PaperQuestUI ui;
     private boolean closed;
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
-        this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;dialogues=new QuestDialogue(catalog);
+        this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         Bukkit.getPluginManager().registerEvents(this,plugin);players.questCommand(this::command);
@@ -98,7 +99,9 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         Player p=e.getPlayer();var session=players.current(p);UUID entity=e.getRightClicked().getUniqueId();
         if(session==null || !near(p,npc,entity))return;
         var tickets=dialogues.options(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc);
-        quests.list(session.context(),session,()->players.current(p)==session).whenCompleteAsync((rows,error)->{
+        journal.interactPlace(session.context(),session,()->players.current(p)==session,"npc:"+npc,p.getX(),p.getY(),p.getZ())
+            .handleAsync((v,error)->{if(error!=null)plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;},owner)
+            .thenComposeAsync(v->{if(tickets.stream().anyMatch(t->!current(p,session,t)))throw new IllegalStateException("STALE_DIALOGUE");return quests.list(session.context(),session,()->players.current(p)==session);},owner).whenCompleteAsync((rows,error)->{
             if(tickets.stream().anyMatch(t->!current(p,session,t)))return;
             if(error!=null){unavailable(p);return;}
             try {quests.requireListDisplay(session.context(),rows);var messages=selectionMessages(catalog,dialogues,tickets,rows);
@@ -183,12 +186,19 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         var p=e.getPlayer();var session=players.current(p);var to=e.getTo();
         if(session==null || !worldIds.contains(p.getWorld().getUID()))return;
         var from=e.getFrom();
+        journal.enterPlaces(session.context(),session,()->players.current(p)==session,from.getX(),from.getY(),from.getZ(),to.getX(),to.getY(),to.getZ()).exceptionally(error->{plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;});
         for(QuestContent c:catalog.all())quests.enter(session.context(),c,session,()->players.current(p)==session,
             from.getX(),from.getY(),from.getZ(),to.getX(),to.getY(),to.getZ()).thenAcceptAsync(saved->{
                 if(players.current(p)!=session || saved.isEmpty())return;
                 String key=switch(saved.get().phase()){case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";default->throw new IllegalStateException("Unexpected movement result");};
                 p.sendMessage(Component.text(c.guidance(saved.get())));
             },owner).exceptionally(error->null);
+    }
+    @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void object(org.bukkit.event.player.PlayerInteractEvent e){
+        if(e.getHand()!=EquipmentSlot.HAND || e.getAction()!=org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK || e.getClickedBlock()==null)return;
+        var p=e.getPlayer();var session=players.current(p);var block=e.getClickedBlock();
+        if(session==null || !worldIds.contains(p.getWorld().getUID()) || p.getLocation().distanceSquared(block.getLocation())>36)return;
+        journal.interactPlace(session.context(),session,()->players.current(p)==session,"block:"+block.getX()+":"+block.getY()+":"+block.getZ()+":"+block.getType().name(),p.getX(),p.getY(),p.getZ()).exceptionally(error->{plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;});
     }
     private void unavailable(Player p){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다."));plugin.getLogger().info("HEARTH_QUEST_REQUEST_UNAVAILABLE");}
     private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}

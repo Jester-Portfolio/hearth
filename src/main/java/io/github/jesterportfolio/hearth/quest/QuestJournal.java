@@ -1,21 +1,37 @@
 package io.github.jesterportfolio.hearth.quest;
 
 import io.github.jesterportfolio.hearth.persistence.*;
+import io.github.jesterportfolio.hearth.exploration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 
 /** 기존 quest list/worker/owner에 연결한 작은 개인 UI 조정자입니다. */
 public final class QuestJournal {
-    public record View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal){public View{states=Map.copyOf(states);}}
+    public record View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal,ExplorationView exploration){
+        public View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal){this(states,journal,ExplorationView.empty());}
+        public View{states=Map.copyOf(states);}
+    }
     private record Key(UUID run,UUID player){}
     private final QuestJournalStore store;private final PersonalQuest quests;private final QuestCatalog catalog;private final Executor owner;private final Runnable check;
     private final Map<Key,CompletableFuture<Void>> pending=new HashMap<>();private final Set<Key> holds=new HashSet<>();private boolean closed;private Consumer<ServerProgressAccess.Context> changed=c->{};
+    private ExplorationStore explorationStore;private ExplorationContent content;private CommunityBoundary community;
+    private record DiscoveryKey(UUID run,UUID player,String place,boolean discover){}
+    private record DiscoveryJob(Object token,CompletableFuture<View> result){}
+    private final Map<DiscoveryKey,DiscoveryJob> discoveries=new HashMap<>();
+    public void exploration(ExplorationStore store,ExplorationContent definitions,CommunityBoundary boundary){check.run();explorationStore=store;content=definitions;community=boundary;}
+    public void requireView(ServerProgressAccess.Context ctx,View view){
+        check.run();quests.requireListDisplay(ctx,view.states());
+        if(community!=null && (!community.members(ctx).equals(view.exploration().members()) || !community.status(ctx,view.exploration().story(),view.exploration().members()).equals(view.exploration().conditions())))throw new IllegalStateException("STALE_COMMUNITY");
+    }
     public void changed(Consumer<ServerProgressAccess.Context> listener){check.run();changed=listener;}
     public QuestJournal(QuestJournalStore store,PersonalQuest quests,QuestCatalog catalog,Executor owner,Runnable check){this.store=store;this.quests=quests;this.catalog=catalog;this.owner=owner;this.check=check;}
     private void valid(BooleanSupplier valid){check.run();if(closed || !valid.getAsBoolean())throw new IllegalStateException("STALE_JOURNAL");}
     private CompletionStage<View> read(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){
-        return quests.list(ctx,token,valid).thenCompose(rows->store.readJournal(ctx).thenApplyAsync(data->{valid(valid);quests.requireListDisplay(ctx,rows);return new View(rows,data);},owner));
+        return quests.list(ctx,token,valid).thenCompose(rows->store.readJournal(ctx).thenCompose(data->{
+            if(content==null)return CompletableFuture.completedFuture(new View(rows,data));
+            return explorationStore.readExploration(ctx).thenApplyAsync(raw->{valid(valid);var members=community.members(ctx);return new View(rows,data,ExplorationView.build(content,raw,members,community.status(ctx,raw.story(),members)));},owner);
+        })).thenApplyAsync(view->{valid(valid);requireView(ctx,view);return view;},owner);
     }
     private CompletionStage<View> perform(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,Function<View,CompletionStage<Void>> write){
         check.run();var key=new Key(ctx.storyRunId(),ctx.playerId());
@@ -45,9 +61,42 @@ public final class QuestJournal {
     public CompletionStage<View> hud(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,boolean enabled){return perform(ctx,token,valid,v->store.hud(ctx,v.journal().preferences(),enabled));}
     public CompletionStage<View> readAll(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){return perform(ctx,token,valid,v->store.readAllNotices(ctx));}
     public CompletionStage<View> readNotice(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String quest,long revision){return perform(ctx,token,valid,v->{
-        if(v.journal().notices().stream().noneMatch(n->n.quest().equals(quest)&&n.revision()==revision) || QuestListView.detail(catalog,v.states(),quest).isEmpty())throw new IllegalArgumentException("Notice unavailable");
+        if(v.journal().notices().stream().noneMatch(n->n.type().equals("QUEST")&&n.quest().equals(quest)&&n.revision()==revision) || QuestListView.detail(catalog,v.states(),quest).isEmpty())throw new IllegalArgumentException("Notice unavailable");
         return store.readNotice(ctx,quest,revision);
     });}
+    public CompletionStage<View> setting(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String key,boolean enabled){return perform(ctx,token,valid,v->{v.journal().preferences().flag(key);return store.setting(ctx,v.journal().preferences(),key,enabled);});}
+    public CompletionStage<View> readPlaceNotice(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String place){return perform(ctx,token,valid,v->{
+        if(v.exploration().place(place).filter(ExplorationView.Place::discovered).isEmpty() || v.journal().notices().stream().noneMatch(n->n.type().equals("PLACE")&&n.quest().equals(place)))throw new IllegalArgumentException("Notice unavailable");return store.readPlaceNotice(ctx,place);
+    });}
+    private CompletionStage<View> afterCurrent(ServerProgressAccess.Context ctx,BooleanSupplier valid,Supplier<CompletionStage<View>> operation){
+        valid(valid);var pendingWork=pending.get(new Key(ctx.storyRunId(),ctx.playerId()));
+        if(pendingWork==null){
+            if(!quests.settled(ctx.storyRunId()))return quests.barrier(ctx.storyRunId()).thenComposeAsync(v->afterCurrent(ctx,valid,operation),owner);
+            return operation.get();
+        }
+        return pendingWork.handle((v,e)->null).thenComposeAsync(v->afterCurrent(ctx,valid,operation),owner);
+    }
+    private CompletionStage<View> observe(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,ExplorationContent.Place place,boolean discover){
+        check.run();var key=new DiscoveryKey(ctx.storyRunId(),ctx.playerId(),place.id(),discover);var existing=discoveries.get(key);
+        if(existing!=null){if(existing.token()==token)return existing.result();return existing.result().handle((v,e)->null).thenComposeAsync(v->observe(ctx,token,valid,place,discover),owner);}
+        var result=new CompletableFuture<View>();var job=new DiscoveryJob(token,result);discoveries.put(key,job);
+        CompletionStage<View> work;
+        try{work=CompletableFuture.completedFuture(null).thenComposeAsync(v->afterCurrent(ctx,valid,()->perform(ctx,token,valid,view->explorationStore.recordPlace(ctx,place,place.fact()==null?null:content.facts().get(place.fact()),discover,true).thenAccept(first->{}))),owner);}
+        catch(RuntimeException e){work=CompletableFuture.failedFuture(e);}
+        work.whenCompleteAsync((view,error)->{discoveries.remove(key,job);if(error==null)result.complete(view);else result.completeExceptionally(error);},owner);
+        return result;
+    }
+    public CompletionStage<Void> enterPlaces(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,double fx,double fy,double fz,double tx,double ty,double tz){
+        check.run();if(content==null || Math.floor(fx)==Math.floor(tx)&&Math.floor(fy)==Math.floor(ty)&&Math.floor(fz)==Math.floor(tz))return CompletableFuture.completedFuture(null);
+        var work=new ArrayList<CompletableFuture<?>>();
+        for(var place:content.places().values())if(place.bounds().entered(fx,fy,fz,tx,ty,tz))work.add(observe(ctx,token,valid,place,place.discovery()==ExplorationContent.Discovery.ENTRY).toCompletableFuture());
+        return CompletableFuture.allOf(work.toArray(CompletableFuture[]::new));
+    }
+    public CompletionStage<Void> interactPlace(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String reference,double x,double y,double z){
+        check.run();if(content==null)return CompletableFuture.completedFuture(null);var work=new ArrayList<CompletableFuture<?>>();
+        for(var place:content.places().values())if(place.discovery()==ExplorationContent.Discovery.INTERACTION && Objects.equals(reference,place.interaction()) && place.bounds().contains(x,y,z))work.add(observe(ctx,token,valid,place,true).toCompletableFuture());
+        return CompletableFuture.allOf(work.toArray(CompletableFuture[]::new));
+    }
     public List<String> hudLines(View view){
         if(!view.journal().preferences().hudEnabled())return List.of();var lines=new ArrayList<String>();
         for(String id:new TreeSet<>(view.journal().tracked())){
@@ -55,7 +104,12 @@ public final class QuestJournal {
             if(state.phase()==QuestStore.Phase.ACTIVE || state.phase()==QuestStore.Phase.REPORT_READY)lines.add(catalog.quest(id).title()+" — "+catalog.quest(id).guidance(state));
         }return List.copyOf(lines);
     }
-    public CompletionStage<Void> barrier(UUID run){check.run();var work=new ArrayList<CompletableFuture<?>>();pending.forEach((key,value)->{if(key.run().equals(run))work.add(value);});if(holds.stream().anyMatch(k->k.run().equals(run)))return CompletableFuture.failedFuture(new IllegalStateException("JOURNAL_HOLD"));return CompletableFuture.allOf(work.toArray(CompletableFuture[]::new));}
-    public boolean settled(UUID run){check.run();return pending.keySet().stream().noneMatch(k->k.run().equals(run)) && holds.stream().noneMatch(k->k.run().equals(run));}
-    public CompletionStage<Void> shutdown(){check.run();closed=true;return CompletableFuture.allOf(pending.values().toArray(CompletableFuture[]::new));}
+    private CompletableFuture<Void> discoveryDrain(DiscoveryJob job){return job.result().handle((view,error)->{
+        if(error==null)return (Void)null;Throwable cause=error;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();
+        if(cause instanceof IllegalStateException && Set.of("STALE_JOURNAL","STALE_QUEST_LIST","STALE_COMMUNITY","QUEST_LIST_BUSY","JOURNAL_BUSY").contains(Objects.toString(cause.getMessage(),"")))return null;
+        throw new CompletionException(error);
+    });}
+    public CompletionStage<Void> barrier(UUID run){check.run();var work=new ArrayList<CompletableFuture<?>>();pending.forEach((key,value)->{if(key.run().equals(run))work.add(value);});discoveries.forEach((key,job)->{if(key.run().equals(run))work.add(discoveryDrain(job));});if(holds.stream().anyMatch(k->k.run().equals(run)))return CompletableFuture.failedFuture(new IllegalStateException("JOURNAL_HOLD"));return CompletableFuture.allOf(work.toArray(CompletableFuture[]::new));}
+    public boolean settled(UUID run){check.run();return discoveries.keySet().stream().noneMatch(k->k.run().equals(run)) && pending.keySet().stream().noneMatch(k->k.run().equals(run)) && holds.stream().noneMatch(k->k.run().equals(run));}
+    public CompletionStage<Void> shutdown(){check.run();closed=true;var work=new ArrayList<CompletableFuture<?>>();work.addAll(pending.values());discoveries.values().forEach(job->work.add(discoveryDrain(job)));return CompletableFuture.allOf(work.toArray(CompletableFuture[]::new)).thenRun(()->{if(!holds.isEmpty())throw new IllegalStateException("JOURNAL_HOLD");});}
 }

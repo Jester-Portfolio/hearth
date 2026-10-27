@@ -1,0 +1,85 @@
+# 공개 합성 탐험 콘텐츠. 기존 파일·월드·NPC·지형을 덮어쓰거나 배치하지 않습니다.
+format: 1
+regions:
+  - id: public_fields
+    name: 공개 시험 평원
+    public: true
+  - id: survey_valley
+    name: 공개 시험 계곡
+    public: false
+journal:
+  - id: village_record
+    category: EXPLORATION
+    title: 공개 거점 방문
+    summary: 공개 시험 거점을 직접 확인했습니다.
+    detail: 이 기록은 합성 장소 발견 시험용이며 실제 서사가 아닙니다.
+    version: 1
+    important: true
+  - id: marker_record
+    category: EXPLORATION
+    title: 공개 조사 표지 발견
+    summary: 별도 조사 표지를 확인했습니다.
+    detail: 개인 발견 정보를 공동체 다른 플레이어에게 자동 공유하지 않습니다.
+    version: 1
+    important: true
+  - id: guide_record
+    category: PERSON
+    title: 공개 안내원 정보
+    summary: 안내원과 조사 정보를 확인했습니다.
+    detail: 중요한 상호작용에 대한 공개 합성 인물 기록입니다.
+    version: 1
+    important: true
+  - id: route_record
+    category: STORY
+    title: 공개 경로 조사 기록
+    summary: 공개 연속 경로 조사를 완료했습니다.
+    detail: 퀘스트 완료 조건을 충족한 개인에게만 자동 기록합니다.
+    version: 1
+    important: true
+    quest-completed: route_marker
+places:
+  - id: public_village
+    marker-key: marker_public
+    name: 공개 시험 거점
+    region: public_fields
+    category: 거점
+    visibility: PUBLIC
+    discovery: ENTRY
+    hub: true
+    bounds: {min-x: 1, max-x: 3, min-y: 64, max-y: 67, min-z: 1, max-z: 3}
+    location: {kind: EXACT, x: 2, y: 64, z: 2}
+    journal: village_record
+  - id: survey_place
+    marker-key: marker_hidden
+    name: 개인 조사 표지
+    region: survey_valley
+    category: 조사 장소
+    visibility: HIDDEN
+    discovery: ENTRY
+    hub: false
+    bounds: {min-x: 20, max-x: 22, min-y: 64, max-y: 67, min-z: 20, max-z: 22}
+    location: {kind: EXACT, x: 21, y: 64, z: 21}
+    journal: marker_record
+  - id: hint_place
+    marker-key: marker_question
+    name: 공개 추가 조사 지점
+    region: survey_valley
+    category: 조사 장소
+    visibility: QUESTION
+    discovery: ENTRY
+    hub: false
+    bounds: {min-x: 36, max-x: 38, min-y: 64, max-y: 67, min-z: 36, max-z: 38}
+    location: {kind: EXACT, x: 37, y: 64, z: 37}
+    unknown-location: {kind: AREA, min-x: 28, max-x: 48, min-y: 60, max-y: 80, min-z: 28, max-z: 48}
+  - id: guide_place
+    marker-key: marker_guide
+    name: 안내원 조사 지점
+    region: public_fields
+    category: 인물 조사
+    visibility: HIDDEN
+    discovery: INTERACTION
+    interaction: npc:survey_guide
+    hub: false
+    bounds: {min-x: 2, max-x: 5, min-y: 64, max-y: 67, min-z: 4, max-z: 7}
+    location: {kind: EXACT, x: 3.5, y: 64, z: 5.5}
+    journal: guide_record

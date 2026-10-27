@@ -5,6 +5,7 @@ import io.github.jesterportfolio.hearth.lifecycle.*;
 import io.github.jesterportfolio.hearth.persistence.*;
 import io.github.jesterportfolio.hearth.session.*;
 import io.github.jesterportfolio.hearth.quest.*;
+import io.github.jesterportfolio.hearth.exploration.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -37,7 +38,11 @@ public final class SessionVerification implements AutoCloseable {
     private boolean cycle,expectedHold;
     private PersonalQuest quests;
     private QuestJournal journal;
+    private ExplorationContent explorationContent;
+    private final Map<UUID,CommunityBoundary.Condition> explorationConditions=new HashMap<>();
     private PaperQuestAdapter questAdapter;
+    private CompletionStage<Void> exploreWrite,exploreDuplicate,exploreBarrier;
+    private Map<String,ExplorationStore.PlaceState> exploreBefore;
     private QuestContent content;
     private QuestCatalog catalog;
     private PersonalQuest.Session multiOne,multiTwo;
@@ -92,6 +97,13 @@ public final class SessionVerification implements AutoCloseable {
             content=catalog.all().stream().filter(c->c.id().equals("survey_marker")).findFirst().orElse(catalog.all().iterator().next());
             quests=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);
             journal=new QuestJournal(store,quests,catalog,owner,SessionVerification::main);
+            if(plugin.getConfig().getBoolean("exploration-verification-enabled")){
+                if(!Boolean.getBoolean("hearth.verification.exploration"))throw new IllegalStateException("Exploration gate missing");
+                var file=new java.io.File(plugin.getDataFolder(),"exploration-demo.yml");if(!file.exists())plugin.saveResource("exploration-demo.yml",false);
+                explorationContent=ExplorationContent.parse(YamlConfiguration.loadConfiguration(file).getValues(false),catalog);
+                var bindings=new HashMap<String,ExplorationContent.Fact>();explorationContent.questFacts().forEach((quest,fact)->bindings.put(quest,explorationContent.facts().get(fact)));store.configureQuestDiary(bindings);
+                journal.exploration(store,explorationContent,new CommunityBoundary(adapter::community,(ctx,online)->Optional.ofNullable(explorationConditions.get(ctx.storyRunId()))));
+            }
             questAdapter=new PaperQuestAdapter(plugin,adapter,quests,catalog,journal,owner,
                 Set.of(worlds.get(a).mapping().physicalId(),worlds.get(b).mapping().physicalId()));
         }
@@ -173,6 +185,14 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "explore-prepare" -> explorePrepare();
+        case "explore-pending" -> explorePending();
+        case "explore-discover" -> exploreDiscover();
+        case "explore-ui" -> exploreUi();
+        case "explore-cycle" -> exploreCycle();
+        case "explore-resume" -> openAll().thenRun(this::npcCheck).thenCompose(v->exploreRestored());
+        case "explore-complete" -> exploreComplete();
+        case "explore-failure" -> exploreFailure();
         case "batch-prepare" -> batchPrepare();
         case "batch-ui" -> batchUi();
         case "batch-cycle" -> batchCycle();
@@ -424,6 +444,80 @@ public final class SessionVerification implements AutoCloseable {
             check(quests.list(a1,s1,()->true).toCompletableFuture().isCompletedExceptionally(),"list_duplicate_read_limited");
             listToken=new Object();check(true,"list_controlled_session_token_replaced");
         });
+    }
+    private CompletionStage<QuestJournal.View> exploreView(ServerProgressAccess.Context ctx,Object token){return journal.load(ctx,token,()->true);}
+    private CompletionStage<Void> exploreEntry(double x,double z){return journal.enterPlaces(a1,s1,()->coordinator.playable(s1),-10,64,-10,x,64,z);}
+    private ExplorationContent.Fact sharedFact(){return new ExplorationContent.Fact("shared_test_event","STORY","공개 공동 기록","합성 공유 사건","실제 스토리 엔진이 아닌 격리 저장 인터페이스 시험입니다.",1,true);}
+    private ExplorationContent.Fact updatedGuide(){var f=explorationContent.facts().get("guide_record");return new ExplorationContent.Fact(f.id(),f.category(),f.title(),"공개 새 조사 사실","공개 합성 사실 버전 2입니다.",2,true);}
+    private CompletionStage<Void> explorePrepare(){
+        if(explorationContent==null)throw new IllegalStateException("Exploration disabled");
+        var legacy=ctx(new UUID(42,99),99);
+        return openAll().thenRun(this::npcCheck)
+            .thenCompose(v->mainResult(store.readQuest(legacy,"survey_marker"))).thenAccept(row->check(row.equals(new QuestStore.Saved(QuestStore.Phase.COMPLETED,2,0)),"explore_V004_upgrade_legacy_quest_unchanged"))
+            .thenCompose(v->mainResult(store.readJournal(legacy))).thenAccept(data->check(!data.preferences().hudEnabled() && data.preferences().minimapEnabled() && data.preferences().questMarker() && data.preferences().npcMarker() && data.preferences().playerMarker() && data.preferences().placeMarker() && data.notices().size()==1 && data.notices().getFirst().type().equals("QUEST"),"explore_V005_preserves_legacy_HUD_notice_new_flags_default_true"))
+            .thenCompose(v->exploreView(a1,s1)).thenAccept(view->{var e=view.exploration();String visible=e.places().toString();
+                check(e.regions().size()==1 && e.places().size()==2 && !visible.contains("survey_place") && !visible.contains("21.0") && !visible.contains("37.0") && !visible.contains("공개 추가 조사 지점"),"explore_PUBLIC_QUESTION_HIDDEN_safe_DTO_coordinates");
+                check(e.place("marker_question").orElseThrow().name().equals("?") && e.place("marker_question").orElseThrow().location().contains("28.0") && !e.place("public_village").orElseThrow().visited() && !e.place("public_village").orElseThrow().hubUnlocked(),"explore_map_publication_not_visit_or_hub_unlock");
+                check(e.members().size()==2 && e.members().stream().allMatch(m->Set.of(a1.playerId(),a2.playerId()).contains(m.player())) && e.members().stream().anyMatch(CommunityBoundary.Member::self) && e.story().stage()==null && !e.conditions().registered(),"explore_verified_partial_roster_same_run_no_invented_stage");
+            });
+    }
+    private CompletionStage<Void> explorePending(){
+        exploreWrite=exploreEntry(2,2);exploreDuplicate=exploreEntry(2,2);exploreBarrier=journal.barrier(a);
+        return later(()->check(!exploreWrite.toCompletableFuture().isDone() && !exploreDuplicate.toCompletableFuture().isDone() && !exploreBarrier.toCompletableFuture().isDone(),"explore_discovery_coalesced_pending_in_save_barrier_main_tick_alive"));
+    }
+    private CompletionStage<Void> exploreDiscover(){return mainResult(exploreWrite).thenCompose(v->mainResult(exploreDuplicate)).thenCompose(v->mainResult(exploreBarrier))
+        .thenCompose(v->exploreView(a1,s1)).thenAccept(view->check(view.exploration().place("public_village").orElseThrow().hubUnlocked() && view.journal().notices().size()==1 && view.exploration().facts().size()==1 && view.exploration().events().size()==1,"explore_first_verified_visit_atomic_discovery_notice_diary_hub"))
+        .thenCompose(v->exploreEntry(2,2)).thenCompose(v->mainResult(store.readExploration(a1))).thenAccept(data->{check(data.places().get("public_village").revision()==1,"explore_repeated_visit_no_revision_change");})
+        .thenCompose(v->exploreEntry(21,21)).thenCompose(v->exploreEntry(3.5,5.5))
+        .thenCompose(v->mainResult(store.readExploration(a1))).thenAccept(data->check(data.places().get("guide_place").visited()!=null && data.places().get("guide_place").discovered()==null,"explore_interaction_place_visit_separate_from_discovery"))
+        .thenCompose(v->journal.interactPlace(a1,s1,()->true,"npc:wrong",3.5,64,5.5))
+        .thenCompose(v->journal.interactPlace(a1,s1,()->true,"npc:survey_guide",3.5,64,5.5))
+        .thenCompose(v->journal.interactPlace(a1,s1,()->true,"npc:survey_guide",3.5,64,5.5))
+        .thenCompose(v->mainResult(store.recordFact(a1,updatedGuide(),false))).thenAccept(changed->check(changed,"explore_new_fact_version_updates_detail"))
+        .thenCompose(v->mainResult(store.recordFact(a1,sharedFact(),true))).thenAccept(changed->check(changed,"explore_shared_writer_interface_fixture_only"))
+        .thenCompose(v->mainResult(store.saveStory(a1,new ExplorationStore.Story(null,null,null,-1),"public_test_stage","공개 합성 단계",true)))
+        .thenCompose(v->exploreView(a1,s1)).thenAccept(view->check(view.exploration().places().size()==4 && view.exploration().facts().size()==4 && view.exploration().events().size()==5 && view.journal().notices().size()==3 && view.journal().notices().stream().allMatch(n->n.type().equals("PLACE")) && !view.exploration().conditions().registered(),"explore_3_discoveries_4_current_facts_5_history_no_diary_or_shared_notice"))
+        .thenCompose(v->exploreView(a2,s2)).thenAccept(view->check(view.exploration().places().size()==2 && view.exploration().facts().size()==1 && view.exploration().facts().getFirst().shared() && view.journal().notices().isEmpty() && Boolean.TRUE.equals(view.exploration().story().explorationOpen()),"explore_P2_shared_fact_story_only_personal_discovery_notice_isolated"))
+        .thenCompose(v->exploreView(ctx(b,1),new Object())).thenAccept(view->check(view.exploration().places().size()==2 && view.exploration().facts().isEmpty() && view.exploration().story().stage()==null && view.journal().notices().isEmpty(),"explore_same_player_run_B_isolated"));}
+    private CompletionStage<Void> exploreUi(){
+        CompletionStage<?> work=CompletableFuture.completedFuture(null);
+        for(String key:List.of("hud","minimap","quest_marker","npc_marker","player_marker","place_marker"))work=work.thenCompose(v->journal.setting(a1,s1,()->true,key,false));
+        return work.thenCompose(v->exploreView(a1,s1)).thenAccept(view->{var before=one.capture();
+            for(String page:List.of("home","map","region","place","diary","STORY","PERSON","EXPLORATION","CHRONICLE","fact","event","community","members","story","conditions","settings","notices")){
+                String id=switch(page){case "region"->"survey_valley";case "place"->"survey_place";case "fact"->"P:guide_record";case "event"->"P:guide_record:1";default->null;};
+                var rows=QuestScreens.screen(catalog,view,page,id,0);var screen=new PaperQuestUI.Screen(a1.playerId(),s1,rows,page,id,0);
+                check(screen.getInventory().getSize()==54 && screen.getInventory().getHolder()==screen && codec.equivalent(before,one.capture()),"explore_Paper_GUI_54_slots_inventory_unchanged_"+page);
+            }
+            check(QuestScreens.screen(catalog,view,"notices",null,0).stream().filter(row->row.action().equals("place-notice")).count()==3,"explore_notification_map_detail_links");
+            check(!view.journal().preferences().hudEnabled() && !view.journal().preferences().minimapEnabled() && !view.journal().preferences().questMarker() && !view.journal().preferences().npcMarker() && !view.journal().preferences().playerMarker() && !view.journal().preferences().placeMarker(),"explore_six_personal_flags_off");
+        }).thenCompose(v->journal.readPlaceNotice(a1,s1,()->true,"survey_place"))
+        .thenCompose(v->journal.readAll(a1,s1,()->true)).thenAccept(view->check(view.journal().notices().stream().allMatch(QuestJournalStore.Notice::read),"explore_place_notice_read_one_and_all"))
+        .thenCompose(v->mainResult(store.readExploration(a1))).thenAccept(data->exploreBefore=data.places());
+    }
+    private CompletionStage<Void> exploreCycle(){UUID physical=worlds.get(a).mapping().physicalId();return mainResult(coordinator.disconnect(s1)).thenCompose(v->mainResult(coordinator.disconnect(s2)))
+        .thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE)).thenRun(()->check(Bukkit.getWorld(physical)==null && !questAdapter.tracks(physical),"explore_idle_unload_old_NPC_refs_cleared"))
+        .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return mainResult(s1.ready()).thenCompose(x->mainResult(s2.ready()));})
+        .thenRun(this::npcCheck).thenCompose(v->exploreRestored());}
+    private CompletionStage<Void> exploreRestored(){return exploreView(a1,s1).thenAccept(view->check(view.exploration().facts().size()==4 && view.exploration().events().size()==5 && view.journal().notices().size()==3 && view.journal().notices().stream().allMatch(QuestJournalStore.Notice::read) && !view.journal().preferences().hudEnabled() && !view.journal().preferences().placeMarker() && view.exploration().place("public_village").orElseThrow().hubUnlocked() && view.exploration().story().revision()==0,"explore_restore_places_facts_history_notices_flags_shared_state"))
+        .thenCompose(v->mainResult(store.readExploration(a1))).thenAccept(data->{if(exploreBefore!=null)check(data.places().equals(exploreBefore),"explore_read_and_setting_preserve_place_revisions");})
+        .thenCompose(v->verify(a1,32,0));}
+    private CompletionStage<Void> exploreComplete(){var c=catalog.quest("route_marker");return exploreEntry(37,37)
+        .thenCompose(v->quests.open(a1,c.id(),s1,()->true)).thenCompose(q->{batchRoute=q;return quests.accept(q,c);})
+        .thenCompose(v->batchGoal(quests,batchRoute,c,0)).thenCompose(v->batchGoal(quests,batchRoute,c,1)).thenCompose(v->batchGoal(quests,batchRoute,c,2)).thenCompose(v->quests.advance(batchRoute,QuestStore.Phase.COMPLETED))
+        .thenCompose(v->exploreView(a1,s1)).thenAccept(view->check(view.exploration().facts().size()==5 && view.exploration().events().size()==6 && view.journal().notices().size()==9 && view.journal().notices().stream().filter(n->n.type().equals("PLACE")).count()==4 && view.states().get("route_marker").phase()==QuestStore.Phase.COMPLETED,"explore_quest_COMPLETED_configured_story_fact_no_extra_diary_alert"))
+        .thenCompose(v->mainResult(store.recordFact(a1,updatedGuide(),false))).thenAccept(changed->check(!changed,"explore_identical_fact_version_no_duplicate"))
+        .thenCompose(v->mainResult(store.recordFact(a2,sharedFact(),true))).thenAccept(changed->check(!changed,"explore_shared_event_same_version_no_duplicate"))
+        .thenCompose(v->expect(store.saveStory(a2,new ExplorationStore.Story(null,null,null,-1),"other_stage","다른 시험",false),"REVISION_CONFLICT"))
+        .thenCompose(v->exploreView(a2,s2)).thenAccept(view->check(view.exploration().facts().size()==1 && view.journal().notices().isEmpty() && view.states().get("route_marker").phase()==QuestStore.Phase.NOT_ACCEPTED,"explore_quest_diary_notice_P2_isolation"))
+        .thenCompose(v->{explorationConditions.put(a,new CommunityBoundary.Condition("public_test_stage",Map.of()));return exploreView(a1,s1);}).thenAccept(view->check(view.exploration().conditions().registered() && view.exploration().conditions().lines().equals(List.of("현재 접속 검사 대상 없음")),"explore_condition_provider_only_current_online_targets_controlled_no_fake_players"));}
+    private CompletionStage<Void> exploreFailure(){
+        var probe=new QuestJournal(store,quests,catalog,owner,SessionVerification::main);probe.exploration(store,explorationContent,new CommunityBoundary(adapter::community,(c,ids)->Optional.empty()));
+        return expect(probe.enterPlaces(a2,s2,()->true,-10,64,-10,21,64,21),"23514")
+            .thenRun(()->check(!probe.settled(a) && probe.barrier(a).toCompletableFuture().isCompletedExceptionally(),"explore_failed_discovery_HOLD_save_barrier_preserved"))
+            .thenCompose(v->mainResult(store.readExploration(a2))).thenAccept(data->check(data.places().isEmpty() && data.facts().size()==1 && data.facts().getFirst().shared() && data.events().size()==1,"explore_diary_event_failure_rolls_back_place_fact_timeline"))
+            .thenCompose(v->mainResult(store.readJournal(a2))).thenAccept(data->check(data.notices().isEmpty(),"explore_failed_discovery_no_false_notice_success"))
+            .thenCompose(v->exploreView(a1,s1)).thenAccept(view->check(view.exploration().facts().size()==5 && view.journal().notices().size()==9,"explore_failure_other_player_existing_values_unchanged"))
+            .thenCompose(v->exploreView(ctx(b,1),new Object())).thenAccept(view->check(view.exploration().facts().isEmpty() && view.journal().notices().isEmpty(),"explore_failure_other_run_unaffected"));
     }
     private CompletionStage<QuestStore.Saved> batchGoal(PersonalQuest owner,PersonalQuest.Session q,QuestContent c,int index){var area=c.goals().get(index).area();return owner.reach(q,c,(area.minX()+area.maxX())/2,area.minY(),(area.minZ()+area.maxZ())/2);}
     private CompletionStage<Void> batchPrepare(){

@@ -45,3 +45,6 @@
 개인 선행 조건 검사는 `verify-lifecycle.py --sessions --quests --quest-requires` 단독 모드를 사용합니다. 새 후속 콘텐츠를 포함한 한 JVM/DB에서 비동기 잠금 필터·NPC/지역 시작·개인 격리·조회 실패/HOLD·stale를 확인합니다. 이전 자동 모드는 새 경로에서 기존 고정 fixture를 유지하고 수동 모드는 새 콘텐츠 전체를 사용합니다. 실제 클라이언트 시험은 아닙니다.
 
 통합 배치는 `verify-lifecycle.py --sessions --quests --quest-batch` 단독 모드입니다. 새 DB에 V003 fixture를 준비한 뒤 V004·두 JVM 단계/추적/알림/설정 복원·GUI/HUD 객체/표시 데이터·대표 실패를 검사합니다. 기존 고정 콘텐츠 모드와 혼합하지 않습니다. [실제 시험 범위](../docs/s4-quest-batch-verification.md)를 따르며 실제 클라이언트/GUI 클릭은 보류입니다.
+
+
+탐험 통합은 `verify-lifecycle.py --sessions --quests --explore-batch` 단독 모드로 V004 fixture→V005·개인 발견/지도 DTO·개인/공유 일지·알림·설정·GUI 객체·두 JVM 복원·대표 실패를 검사합니다. 새 소유 경로와 기존 stageLifecycleRuntime/아티팩트/자원 한도를 재사용합니다. 실제 플레이어 접속·클릭을 자동 성공으로 판단하지 않으며 [탐험 배치 기록](../docs/s4-exploration-batch-verification.md)을 따릅니다.

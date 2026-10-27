@@ -213,7 +213,7 @@ public final class PersonalQuest {
         queries.forEach((reader,q)->{if(reader.run().equals(run))tasks.add(q.drained);});
         movements.forEach((key,drain)->{if(key.run().equals(run))tasks.add(drain);});
         return CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new));}
-    public boolean settled(UUID run){check.run();return movements.keySet().stream().noneMatch(key->key.run().equals(run)) && queries.keySet().stream().noneMatch(reader->reader.run().equals(run)) && sessions.values().stream().filter(s->s.key.run().equals(run)).allMatch(s->!s.hold && s.io.toCompletableFuture().isDone() && !s.io.toCompletableFuture().isCompletedExceptionally());}
+    public boolean settled(UUID run){check.run();return movements.keySet().stream().noneMatch(key->key.run().equals(run)) && queries.keySet().stream().noneMatch(reader->reader.run().equals(run)) && sessions.values().stream().filter(s->s.key.run().equals(run)).allMatch(s->!s.busy && !s.hold && s.io.toCompletableFuture().isDone() && !s.io.toCompletableFuture().isCompletedExceptionally());}
     public void release(UUID run){check.run();if(!settled(run))throw new IllegalStateException("QUEST_HOLD");sessions.entrySet().removeIf(e->e.getKey().run().equals(run));}
     public CompletionStage<Void> shutdown(){check.run();closed=true;var tasks=new ArrayList<CompletableFuture<?>>();
         sessions.values().forEach(s->tasks.add(s.io.toCompletableFuture()));queries.values().forEach(q->tasks.add(q.drained));movements.values().forEach(tasks::add);

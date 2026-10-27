@@ -1,6 +1,7 @@
 package io.github.jesterportfolio.hearth.session;
 
 import io.github.jesterportfolio.hearth.inventory.*;
+import io.github.jesterportfolio.hearth.exploration.CommunityBoundary;
 import io.github.jesterportfolio.hearth.lifecycle.WorldLifecycle;
 import io.github.jesterportfolio.hearth.persistence.ServerProgressAccess;
 import io.papermc.paper.event.player.AsyncPlayerSpawnLocationEvent;
@@ -31,6 +32,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private final Map<UUID,Entry> entries=new HashMap<>();
     private final Map<UUID,Player> moving=new HashMap<>();
     private final Set<Entry> samples=Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Map<UUID,String> knownNames=new HashMap<>();
     private boolean closed;
     private BiPredicate<Player,String> questCommand=(p,c)->false;
     private BiPredicate<Player,Inventory> developerInventory=(p,i)->false;
@@ -44,6 +46,12 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     public void fixture(Link link) {
         main();if (links.putIfAbsent(link.context().playerId(),link)!=null) throw new IllegalStateException("Fixture link already exists");
     }
+    /** 현재 서버가 검증한 연결 범위입니다. 저장된 전체 구성원 명단으로 취급하지 않습니다. */
+    public List<CommunityBoundary.Ref> community(ServerProgressAccess.Context ctx){
+        main();return links.values().stream().filter(l->l.context().storyRunId().equals(ctx.storyRunId())).map(l->{
+            UUID id=l.context().playerId();var e=entries.get(id);return new CommunityBoundary.Ref(l.context().storyRunId(),id,knownNames.get(id),e!=null&&e.player().isOnline());
+        }).toList();
+    }
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("Not main thread");}
     @EventHandler public void spawn(AsyncPlayerSpawnLocationEvent e) {
         // 비동기에서는 이벤트 값만 설정합니다. 장소는 main에서 준비한 시험 전용 스냅샷입니다.
@@ -53,6 +61,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         try { connectPlayer(e.getPlayer()); } catch (RuntimeException error) { e.getPlayer().kick(Component.text("격리 세션 연결 거부"));plugin.getLogger().warning("HEARTH_SESSION_CONNECT_REJECTED"); }
     }
     private void connectPlayer(Player player) {
+        knownNames.put(player.getUniqueId(),player.getName());
         Link link=links.get(player.getUniqueId());
         if (closed || link==null || !Bukkit.getOnlineMode() || !player.isWhitelisted()) { player.kick(Component.text("준비된 격리 시험 프로필이 필요합니다."));return; }
         var session=sessions.connect(link.context(),link.world(),new PlayerSessions.Port(){
