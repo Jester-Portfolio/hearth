@@ -110,7 +110,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
             CompletionStage<Void> work=switch(phase) {
                 case "session-prepare" -> { if(!sessionMode) throw new IllegalStateException("Session mode disabled");yield initialize(false); }
                 case "session-resume" -> { if(!sessionMode) throw new IllegalStateException("Session mode disabled");yield initialize(true); }
-                case "quest-multi-ready", "quest-multi-inflight", "quest-multi-done", "quest-first", "quest-restored", "quest-cycle", "quest-failure", "session-personal-generation", "session-personal-generation-done", "session-inventory-generation", "session-inventory-generation-done", "session-basic", "session-race", "session-race-done", "session-prepare-quit", "session-prepare-done", "session-move-quit", "session-restored", "session-move-failure", "session-write-failure" -> {
+                case "quest-list-prepare", "quest-list-check", "quest-list-restored", "quest-list-pending", "quest-list-pending-done", "quest-list-error", "quest-multi-ready", "quest-multi-inflight", "quest-multi-done", "quest-first", "quest-restored", "quest-cycle", "quest-failure", "session-personal-generation", "session-personal-generation-done", "session-inventory-generation", "session-inventory-generation-done", "session-basic", "session-race", "session-race-done", "session-prepare-quit", "session-prepare-done", "session-move-quit", "session-restored", "session-move-failure", "session-write-failure" -> {
                     if (!sessionMode || sessions==null) throw new IllegalStateException("Session fixture not ready"); yield sessions.run(phase);
                 }
                 case "prepare" -> initialize(false);

@@ -45,6 +45,9 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<Void> multiBarrier;
     private final java.util.concurrent.atomic.AtomicBoolean multiValid=new java.util.concurrent.atomic.AtomicBoolean(true);
     private PersonalQuest.Session qa,qb;
+    private Object listToken=new Object();
+    private CompletionStage<Map<String,QuestStore.Saved>> pendingList;
+    private CompletionStage<Void> listBarrier;
     private long started=System.nanoTime();
     public SessionVerification(JavaPlugin plugin,PostgresProgressStore store,ServerProgressAccess access,Map<UUID,WorldLifecycle> worlds,
             Executor owner,PaperInventoryCodec codec,IntFunction<InventoryPayload> fixture) {
@@ -75,7 +78,7 @@ public final class SessionVerification implements AutoCloseable {
         if(yaml.isSet("id") && !yaml.isSet("format")) {
             // 기존 파일을 덮어쓰지 않고 단일 콘텐츠의 옛 형식을 초기 로딩합니다.
             var npc=new HashMap<String,Object>(Objects.requireNonNull(yaml.getConfigurationSection("npc"),"Missing legacy NPC").getValues(false));npc.put("id","survey_guide");
-            return QuestCatalog.parse(List.of(npc),List.of(Map.of("id",Objects.requireNonNull(yaml.get("id")),"npc-id","survey_guide",
+            return QuestCatalog.parse(List.of(npc),List.of(Map.of("id",Objects.requireNonNull(yaml.get("id")),"title",Objects.requireNonNull(yaml.get("title"),"Missing legacy content title"),"npc-id","survey_guide",
                 "objective",Objects.requireNonNull(yaml.getConfigurationSection("objective"),"Missing legacy goal").getValues(false),
                 "text",Objects.requireNonNull(yaml.getConfigurationSection("text"),"Missing legacy dialogue").getValues(false))));
         }
@@ -140,6 +143,12 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "quest-list-prepare" -> listPrepare();
+        case "quest-list-check" -> listCheck();
+        case "quest-list-restored" -> openAll().thenCompose(v->listCheck());
+        case "quest-list-pending" -> listPending();
+        case "quest-list-pending-done" -> expectQuestCode(pendingList,"STALE_QUEST_LIST").thenCompose(v->mainResult(listBarrier)).thenCompose(v->listCheck());
+        case "quest-list-error" -> expect(quests.list(a1,s1,()->coordinator.playable(s1)),"42P01");
         case "quest-first" -> questFirst().thenCompose(v->multiFirst());
         case "quest-multi-ready" -> multiReady();
         case "quest-multi-inflight" -> multiInflight();
@@ -255,6 +264,58 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->rejectQuest(store.readQuest(ctx(a,99),content.id())))
             .thenCompose(v->rejectQuest(store.advanceQuest(a1,content.id(),new QuestStore.Saved(QuestStore.Phase.ACTIVE,0),QuestStore.Phase.REPORT_READY)))
             .thenRun(()->check(true,"quest_personal_A1_A2_B1_isolation_CAS"));
+    }
+    private CompletionStage<Void> seedList(ServerProgressAccess.Context c,String id,QuestStore.Phase phase) {
+        CompletionStage<QuestStore.Saved> work=mainResult(store.readQuest(c,id));
+        for(int step=1;step<=phase.ordinal();step++) {
+            final QuestStore.Phase next=QuestStore.Phase.values()[step];
+            work=work.thenCompose(row->mainResult(store.advanceQuest(c,id,row,next)));
+        }
+        return work.thenAccept(row->check(row.phase()==phase,"list_fixture_"+id+"_"+phase));
+    }
+    private CompletionStage<Void> listPrepare() {
+        return openAll().thenCompose(v->mainResult(store.createPlayer(ctx(b,2),"list-empty")))
+            .thenCompose(v->seedList(a1,"survey_marker",QuestStore.Phase.COMPLETED))
+            .thenCompose(v->seedList(a1,"path_marker",QuestStore.Phase.ACTIVE))
+            .thenCompose(v->seedList(a2,"survey_marker",QuestStore.Phase.REPORT_READY))
+            .thenCompose(v->seedList(ctx(b,1),"survey_marker",QuestStore.Phase.ACTIVE))
+            .thenCompose(v->listCheck());
+    }
+    private CompletionStage<Map<String,QuestStore.Saved>> listSnapshot(ServerProgressAccess.Context c) {
+        CompletionStage<Map<String,QuestStore.Saved>> work=CompletableFuture.completedFuture(new HashMap<>());
+        for(String id:new TreeSet<>(catalog.questIds()))work=work.thenCompose(rows->mainResult(store.readQuest(c,id)).thenApply(row->{rows.put(id,row);return rows;}));
+        return work;
+    }
+    private CompletionStage<Void> listOwner(ServerProgressAccess.Context c,Map<String,QuestStore.Saved> expected) {
+        BooleanSupplier valid=()->worlds.get(c.storyRunId()).state()==WorldLifecycle.State.ACTIVE;
+        return listSnapshot(c).thenCompose(before->{
+            check(before.equals(expected),"list_existing_rows_"+c.storyRunId()+"_"+c.playerId());
+            return quests.list(c,new Object(),valid).thenCompose(rows->{
+                check(rows.equals(expected),"list_owner_isolation_"+c.storyRunId()+"_"+c.playerId());
+                var entries=QuestListView.entries(catalog,rows);var lines=QuestListView.lines(entries);
+                long count=expected.values().stream().filter(row->row.phase()!=QuestStore.Phase.NOT_ACCEPTED).count();
+                check(entries.size()==count,"list_unaccepted_filtered_"+c.storyRunId()+"_"+c.playerId());
+                if(count==0)check(lines.equals(List.of("수락한 퀘스트가 없습니다")),"list_normal_empty_exact_message");
+                for(var e:entries)check(lines.contains("["+e.status()+"] "+catalog.quest(e.questId()).title()),"list_Korean_display_"+e.status());
+                return listSnapshot(c).thenAccept(after->check(before.equals(after),"list_DB_rows_revisions_unchanged_"+c.storyRunId()+"_"+c.playerId()));
+            });
+        });
+    }
+    private CompletionStage<Void> listCheck() {
+        var missing=new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1);
+        return listOwner(a1,Map.of("survey_marker",new QuestStore.Saved(QuestStore.Phase.COMPLETED,2),"path_marker",new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)))
+            .thenCompose(v->listOwner(a2,Map.of("survey_marker",new QuestStore.Saved(QuestStore.Phase.REPORT_READY,1),"path_marker",missing)))
+            .thenCompose(v->listOwner(ctx(b,1),Map.of("survey_marker",new QuestStore.Saved(QuestStore.Phase.ACTIVE,0),"path_marker",missing)))
+            .thenCompose(v->listOwner(ctx(b,2),Map.of("survey_marker",missing,"path_marker",missing)));
+    }
+    private CompletionStage<Void> listPending() {
+        Object captured=listToken;
+        pendingList=quests.list(a1,s1,()->listToken==captured && coordinator.playable(s1));listBarrier=quests.barrier(a);
+        return later(()->{
+            check(!pendingList.toCompletableFuture().isDone() && !listBarrier.toCompletableFuture().isDone(),"list_async_read_barrier_waits_without_main_block");
+            check(quests.list(a1,s1,()->true).toCompletableFuture().isCompletedExceptionally(),"list_duplicate_read_limited");
+            listToken=new Object();check(true,"list_controlled_session_token_replaced");
+        });
     }
     private CompletionStage<Void> matrix() {
         return questRead(a1,"survey_marker",QuestStore.Phase.COMPLETED,2)

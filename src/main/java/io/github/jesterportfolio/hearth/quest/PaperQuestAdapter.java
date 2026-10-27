@@ -114,6 +114,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private boolean command(Player p,String command){
         if(!command.startsWith("/hearthquest"))return false;
         var session=players.current(p);if(session==null)return true;
+        if(command.equals("/hearthquest list")){list(p,session);return true;}
         final QuestDialogue.Request request;final QuestDialogue.Ticket ticket;
         try {
             request=QuestDialogue.Request.parse(command);
@@ -130,6 +131,14 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
                 p.sendMessage(Component.text(content.text().get(saved.phase()==QuestStore.Phase.ACTIVE?"active":"completed")));
             },owner);
         return true;
+    }
+    private void list(Player p,PlayerSessions.Session session) {
+        quests.list(session.context(),session,()->players.current(p)==session).whenCompleteAsync((states,error)->{
+            if(players.current(p)!=session)return;
+            if(error!=null){p.sendMessage(Component.text("퀘스트 목록을 확인할 수 없습니다. 저장 처리 또는 오류 상태를 확인해 주세요."));plugin.getLogger().info("HEARTH_QUEST_LIST_REJECTED");return;}
+            try {quests.requireListDisplay(session.context(),states);for(String line:QuestListView.lines(QuestListView.entries(catalog,states)))p.sendMessage(Component.text(line));}
+            catch(RuntimeException failure){p.sendMessage(Component.text("퀘스트 목록을 확인할 수 없습니다."));plugin.getLogger().warning("HEARTH_QUEST_LIST_INVALID_RESPONSE");}
+        },owner);
     }
     @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void move(PlayerMoveEvent e){
         if(e instanceof PlayerTeleportEvent || e.getTo()==null)return;

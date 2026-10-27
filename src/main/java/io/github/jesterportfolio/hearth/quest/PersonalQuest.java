@@ -8,6 +8,11 @@ import java.util.function.BooleanSupplier;
 /** 기존 bounded DB worker/owner를 사용합니다. DB 결과 불명/실패는 자동 재시도하지 않습니다. */
 public final class PersonalQuest {
     private record Key(UUID run,UUID player,String quest) {}
+    private record Reader(UUID run,UUID player) {}
+    private final class Query {
+        final CompletableFuture<Map<String,QuestStore.Saved>> result=new CompletableFuture<>();
+        final CompletableFuture<Void> drained=new CompletableFuture<>();
+    }
     public final class Session {
         final ServerProgressAccess.Context context;
         final Key key;
@@ -29,6 +34,7 @@ public final class PersonalQuest {
     private final Executor owner;
     private final Runnable check;
     private final Map<Key,Session> sessions=new HashMap<>();
+    private final Map<Reader,Query> queries=new HashMap<>();
     private boolean closed;
     public PersonalQuest(QuestStore store,String id,Executor owner,Runnable check){this(store,Set.of(id),owner,check);}
     public PersonalQuest(QuestStore store,Collection<String> ids,Executor owner,Runnable check){
@@ -77,9 +83,60 @@ public final class PersonalQuest {
         },owner);
         return result;
     }
-    public CompletionStage<Void> barrier(UUID run){check.run();return CompletableFuture.allOf(sessions.values().stream()
-        .filter(s->s.key.run().equals(run)).map(s->s.io.toCompletableFuture()).toArray(CompletableFuture[]::new));}
-    public boolean settled(UUID run){check.run();return sessions.values().stream().filter(s->s.key.run().equals(run)).allMatch(s->!s.hold && s.io.toCompletableFuture().isDone() && !s.io.toCompletableFuture().isCompletedExceptionally());}
+    /** DB를 읽기만 합니다. 조회로 Session/open/수락 행을 만들거나 상태를 덮어쓰지 않습니다. */
+    public CompletionStage<Map<String,QuestStore.Saved>> list(ServerProgressAccess.Context context,Object token,BooleanSupplier valid) {
+        check.run();Reader reader=new Reader(context.storyRunId(),context.playerId());
+        if(closed || token==null || !valid.getAsBoolean())return rejected("STALE_QUEST_LIST");
+        if(queries.containsKey(reader))return rejected("QUEST_LIST_BUSY");
+        var before=new HashMap<Key,CompletionStage<Void>>();
+        try { listable(context); } catch(RuntimeException error){return CompletableFuture.failedFuture(error);}
+        for(String id:ids){Key key=new Key(reader.run(),reader.player(),id);Session s=sessions.get(key);before.put(key,s==null?null:s.io);}
+        var query=new Query();queries.put(reader,query);
+        CompletionStage<Map<String,QuestStore.Saved>> read=CompletableFuture.completedFuture(new LinkedHashMap<>());
+        // 같은 bounded worker를 순차 사용해 목록 조회가 큐를 한꺼번에 채우지 않게 합니다.
+        for(String id:new TreeSet<>(ids))read=read.thenComposeAsync(rows->{
+            if(closed || !valid.getAsBoolean())throw new IllegalStateException("STALE_QUEST_LIST");
+            return store.readQuest(context,id).thenApply(row->{rows.put(id,row);return rows;});
+        },owner);
+        read.whenCompleteAsync((rows,error)->{
+            Map<String,QuestStore.Saved> value=null;RuntimeException failed=null;
+            try {
+                if(closed || queries.get(reader)!=query || !valid.getAsBoolean())throw new IllegalStateException("STALE_QUEST_LIST");
+                if(error!=null)throw new CompletionException(error);
+                listable(context);
+                for(var entry:before.entrySet()) {
+                    Session s=sessions.get(entry.getKey());
+                    if((s==null?null:s.io)!=entry.getValue())throw new IllegalStateException("QUEST_LIST_CHANGED");
+                }
+                value=Map.copyOf(rows);
+            } catch(RuntimeException failure){failed=failure;}
+            queries.remove(reader,query);query.drained.complete(null);
+            if(failed==null)query.result.complete(value);else query.result.completeExceptionally(failed);
+        },owner);
+        return query.result;
+    }
+    /** 조회 완료와 실제 표시 사이에도 쓰기/HOLD·새 revision이 끼어들지 않았는지 owner에서 확인합니다. */
+    public void requireListDisplay(ServerProgressAccess.Context context,Map<String,QuestStore.Saved> rows) {
+        check.run();if(closed || !rows.keySet().equals(ids))throw new IllegalStateException("STALE_QUEST_LIST");
+        listable(context);
+        for(String id:ids){Session s=sessions.get(new Key(context.storyRunId(),context.playerId(),id));
+            if(s!=null && s.valid.getAsBoolean() && s.saved!=null && !s.saved.equals(rows.get(id)))throw new IllegalStateException("QUEST_LIST_CHANGED");
+        }
+    }
+    private void listable(ServerProgressAccess.Context context) {
+        for(String id:ids){Session s=sessions.get(new Key(context.storyRunId(),context.playerId(),id));
+            if(s==null)continue;
+            if(s.hold || s.io.toCompletableFuture().isCompletedExceptionally())throw new IllegalStateException("QUEST_LIST_HOLD");
+            if(s.busy || !s.io.toCompletableFuture().isDone())throw new IllegalStateException("QUEST_LIST_BUSY");
+        }
+    }
+    public CompletionStage<Void> barrier(UUID run){check.run();var tasks=new ArrayList<CompletableFuture<?>>();
+        sessions.values().stream().filter(s->s.key.run().equals(run)).forEach(s->tasks.add(s.io.toCompletableFuture()));
+        queries.forEach((reader,q)->{if(reader.run().equals(run))tasks.add(q.drained);});
+        return CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new));}
+    public boolean settled(UUID run){check.run();return queries.keySet().stream().noneMatch(reader->reader.run().equals(run)) && sessions.values().stream().filter(s->s.key.run().equals(run)).allMatch(s->!s.hold && s.io.toCompletableFuture().isDone() && !s.io.toCompletableFuture().isCompletedExceptionally());}
     public void release(UUID run){check.run();if(!settled(run))throw new IllegalStateException("QUEST_HOLD");sessions.entrySet().removeIf(e->e.getKey().run().equals(run));}
-    public CompletionStage<Void> shutdown(){check.run();closed=true;return CompletableFuture.allOf(sessions.values().stream().map(s->s.io.toCompletableFuture()).toArray(CompletableFuture[]::new));}
+    public CompletionStage<Void> shutdown(){check.run();closed=true;var tasks=new ArrayList<CompletableFuture<?>>();
+        sessions.values().forEach(s->tasks.add(s.io.toCompletableFuture()));queries.values().forEach(q->tasks.add(q.drained));
+        return CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new));}
 }

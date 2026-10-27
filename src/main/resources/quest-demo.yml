@@ -13,6 +13,7 @@ npcs:
     z: 3.5
 quests:
   - id: survey_marker
+    title: 시험 지점 방문 조사
     npc-id: survey_guide
     objective:
       min-x: 12.0
@@ -30,6 +31,7 @@ quests:
       completed: '방문 조사 보고가 완료되었습니다. 완료 기록이 유지됩니다.'
       failure: '방문 조사 처리를 확인할 수 없습니다. 관리자 확인이 필요할 수 있습니다.'
   - id: path_marker
+    title: 시험 경로 확인
     npc-id: path_guide
     objective:
       min-x: 12.0

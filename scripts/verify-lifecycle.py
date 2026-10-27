@@ -75,6 +75,7 @@ def main():
     parser.add_argument('--plugin', required=True, type=Path)
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--quest-list', action='store_true', help='기존 세션/DB 도구로 읽기 전용 개인 목록만 검사합니다')
     parser.add_argument('--quests', action='store_true', help='격리 개인 방문 퀘스트/NPC와 기존 세션을 검증합니다')
     parser.add_argument('--sessions', action='store_true', help='새 격리 환경에서 최소 세션 어댑터/저장 장벽을 검증합니다')
     parser.add_argument('--manual-player', action='store_true', help='인증 클라이언트가 준비된 뒤에만 사용하는 별도 수동 데이터/두 JVM 모드')
@@ -85,6 +86,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.quest_list and (not args.quests or not args.sessions or args.manual_player):
+        parser.error("--quest-list는 자동 --sessions --quests 모드에서만 사용합니다")
     if args.quests and not args.sessions:
         parser.error("--quests는 --sessions가 필요합니다")
     root = args.workspace.resolve(strict=True)
@@ -179,7 +182,11 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.quests:
+                        if args.quest_list:
+                            monitor.action(name,'quest-list-prepare')
+                            monitor.db('lock-quest'); monitor.action(name,'quest-list-pending'); monitor.db('unlock')
+                            monitor.action(name,'quest-list-pending-done')
+                        elif args.quests:
                             monitor.action(name,'quest-first'); monitor.action(name,'quest-multi-ready')
                             monitor.db('lock-quest'); monitor.action(name,'quest-multi-inflight'); monitor.db('unlock')
                             monitor.action(name,'quest-multi-done'); monitor.action(name,'quest-cycle')
@@ -207,6 +214,10 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.quest_list:
+                        monitor.action(name,'session-resume'); monitor.action(name,'quest-list-restored')
+                        monitor.db('table-hide'); monitor.action(name,'quest-list-error'); monitor.db('table-show')
+                        monitor.action(name,'quest-list-check')
                     elif args.quests:
                         monitor.action(name,'session-resume'); monitor.action(name,'quest-restored')
                         monitor.db('quest-fail-on'); monitor.action(name,'quest-failure'); monitor.db('quest-fail-off')
@@ -249,7 +260,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    sessions_mode=args.sessions, quests_mode=args.quests, manual_player_mode=args.manual_player,
+                    sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

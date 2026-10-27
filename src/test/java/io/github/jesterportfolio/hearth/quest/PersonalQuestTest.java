@@ -12,9 +12,15 @@ final class PersonalQuestTest {
         final Map<Key,Saved> rows=new HashMap<>();
         final List<CompletableFuture<Saved>> pending=new ArrayList<>();
         final List<Runnable> commit=new ArrayList<>();int reads;
+        boolean deferReads;
+        final List<CompletableFuture<Saved>> readResults=new ArrayList<>();final List<Saved> readSnapshots=new ArrayList<>();
         Key key(ServerProgressAccess.Context c){return key(c,"survey_marker");}
         Key key(ServerProgressAccess.Context c,String id){return new Key(c.storyRunId(),c.playerId(),id);}
-        public CompletionStage<Saved> readQuest(ServerProgressAccess.Context c,String id){reads++;return CompletableFuture.completedFuture(rows.getOrDefault(key(c,id),new Saved(Phase.NOT_ACCEPTED,-1)));}
+        public CompletionStage<Saved> readQuest(ServerProgressAccess.Context c,String id){
+            reads++;var row=rows.getOrDefault(key(c,id),new Saved(Phase.NOT_ACCEPTED,-1));
+            if(!deferReads)return CompletableFuture.completedFuture(row);
+            var f=new CompletableFuture<Saved>();readResults.add(f);readSnapshots.add(row);return f;
+        }
         public CompletionStage<Saved> advanceQuest(ServerProgressAccess.Context c,String id,Saved before,Phase next){
             var f=new CompletableFuture<Saved>();pending.add(f);commit.add(()->{
                 if(!rows.getOrDefault(key(c,id),new Saved(Phase.NOT_ACCEPTED,-1)).equals(before)){f.completeExceptionally(new IllegalStateException("CAS"));return;}
@@ -118,6 +124,53 @@ final class PersonalQuestTest {
         var added=expanded.open(c,"path_marker",new Object(),()->true);f.pump();
         assertEquals(new QuestStore.Saved(QuestStore.Phase.COMPLETED,2),restored.toCompletableFuture().join().saved());
         assertEquals(QuestStore.Phase.NOT_ACCEPTED,added.toCompletableFuture().join().saved().phase());assertEquals(3,f.store.pending.size());
+    }
+    @Test void listsAreReadOnlyAndIsolatedForPlayerRunAndQuest() {
+        var f=new Fixture(true);var c=f.ctx(f.a,f.p);var other=f.ctx(f.a,f.p2);var otherRun=f.ctx(f.b,f.p);
+        f.store.rows.put(f.store.key(c,"survey_marker"),new QuestStore.Saved(QuestStore.Phase.COMPLETED,2));
+        f.store.rows.put(f.store.key(other,"path_marker"),new QuestStore.Saved(QuestStore.Phase.REPORT_READY,1));
+        f.store.rows.put(f.store.key(otherRun,"survey_marker"),new QuestStore.Saved(QuestStore.Phase.ACTIVE,0));
+        var before=Map.copyOf(f.store.rows);
+        var one=f.quests.list(c,new Object(),()->true);var two=f.quests.list(other,new Object(),()->true);var three=f.quests.list(otherRun,new Object(),()->true);f.pump();
+        assertEquals(QuestStore.Phase.COMPLETED,one.toCompletableFuture().join().get("survey_marker").phase());
+        assertEquals(QuestStore.Phase.NOT_ACCEPTED,one.toCompletableFuture().join().get("path_marker").phase());
+        assertEquals(QuestStore.Phase.REPORT_READY,two.toCompletableFuture().join().get("path_marker").phase());
+        assertEquals(QuestStore.Phase.ACTIVE,three.toCompletableFuture().join().get("survey_marker").phase());
+        assertEquals(before,f.store.rows);assertTrue(f.store.pending.isEmpty());
+    }
+    @Test void listDistinguishesEmptyFromErrorAndLimitsDuplicateReads() {
+        var f=new Fixture(true);var c=f.ctx(f.a,f.p);f.store.deferReads=true;
+        var first=f.quests.list(c,new Object(),()->true);f.pump();int reads=f.store.reads;
+        assertTrue(f.quests.list(c,new Object(),()->true).toCompletableFuture().isCompletedExceptionally());assertEquals(reads,f.store.reads);
+        f.store.readResults.getFirst().completeExceptionally(new StorageFailure("read_quest","08006"));f.pump();
+        assertTrue(first.toCompletableFuture().isCompletedExceptionally());assertTrue(f.quests.settled(f.a));
+        f.store.deferReads=false;var empty=f.quests.list(c,new Object(),()->true);f.pump();
+        assertTrue(empty.toCompletableFuture().join().values().stream().allMatch(row->row.phase()==QuestStore.Phase.NOT_ACCEPTED));assertTrue(f.store.rows.isEmpty());
+    }
+    @Test void listRejectsWritingHoldAndChangesDuringRead() {
+        var f=new Fixture(true);var c=f.ctx(f.a,f.p);var q=f.open(c,"survey_marker",new Object());
+        f.store.deferReads=true;var query=f.quests.list(c,new Object(),()->true);f.pump();
+        f.quests.advance(q,QuestStore.Phase.ACTIVE);assertTrue(f.quests.list(c,new Object(),()->true).toCompletableFuture().isCompletedExceptionally());f.commit(0);
+        f.store.readResults.get(0).complete(f.store.readSnapshots.get(0));f.pump();f.store.readResults.get(1).complete(f.store.readSnapshots.get(1));f.pump();
+        assertTrue(query.toCompletableFuture().isCompletedExceptionally());
+        f.quests.advance(q,QuestStore.Phase.REPORT_READY);f.store.pending.get(1).completeExceptionally(new StorageFailure("quest","23514"));f.pump();
+        int before=f.store.reads;assertTrue(f.quests.list(c,new Object(),()->true).toCompletableFuture().isCompletedExceptionally());assertEquals(before,f.store.reads);
+        assertEquals(QuestStore.Phase.ACTIVE,q.saved().phase());
+    }
+    @Test void logoutSessionReplacementAndShutdownSuppressLateListAndDrainReads() {
+        var f=new Fixture(true);var c=f.ctx(f.a,f.p);f.store.deferReads=true;
+        var result=f.quests.list(c,new Object(),()->f.valid);f.pump();var barrier=f.quests.barrier(f.a);assertFalse(barrier.toCompletableFuture().isDone());
+        f.valid=false;f.store.readResults.get(0).complete(f.store.readSnapshots.get(0));f.pump();
+        assertTrue(result.toCompletableFuture().isCompletedExceptionally());assertTrue(barrier.toCompletableFuture().isDone());
+        f.valid=true;var next=f.quests.list(c,new Object(),()->f.valid);f.pump();var closing=f.quests.shutdown();assertFalse(closing.toCompletableFuture().isDone());
+        f.store.readResults.get(1).complete(f.store.readSnapshots.get(1));f.pump();assertTrue(next.toCompletableFuture().isCompletedExceptionally());assertTrue(closing.toCompletableFuture().isDone());
+    }
+    @Test void aWriteBetweenQueryCompletionAndDisplayRejectsOldOutput() {
+        var f=new Fixture(true);var c=f.ctx(f.a,f.p);var q=f.open(c,"survey_marker",new Object());
+        var query=f.quests.list(c,new Object(),()->true);f.pump();var rows=query.toCompletableFuture().join();
+        assertDoesNotThrow(()->f.quests.requireListDisplay(c,rows));
+        f.quests.advance(q,QuestStore.Phase.ACTIVE);assertThrows(IllegalStateException.class,()->f.quests.requireListDisplay(c,rows));
+        f.commit(0);assertThrows(IllegalStateException.class,()->f.quests.requireListDisplay(c,rows));
     }
 
 }

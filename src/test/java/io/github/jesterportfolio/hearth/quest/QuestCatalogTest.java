@@ -8,7 +8,7 @@ final class QuestCatalogTest {
     static Map<String,Object> npc(String id,int x){return new HashMap<>(Map.of("id",id,"name","공개 시험 안내원","x",x,"y",64,"z",3));}
     static Map<String,Object> quest(String id,String npc){
         var text=new HashMap<String,Object>();for(String k:List.of("offer","accept","active","report-ready","report","completed","failure"))text.put(k,"공개 시험 문구");
-        return new HashMap<>(Map.of("id",id,"npc-id",npc,"objective",new HashMap<>(Map.of("min-x",12,"max-x",14,"min-y",64,"max-y",67,"min-z",12,"max-z",14)),"text",text));
+        return new HashMap<>(Map.of("id",id,"title","공개 시험 "+id,"npc-id",npc,"objective",new HashMap<>(Map.of("min-x",12,"max-x",14,"min-y",64,"max-y",67,"min-z",12,"max-z",14)),"text",text));
     }
     static QuestCatalog catalog(){return QuestCatalog.parse(List.of(npc("survey_guide",3),npc("path_guide",10)),List.of(quest("survey_marker","survey_guide"),quest("path_marker","path_guide")));}
     @Test void explicitLinksAndBoundsAreImmutable(){
