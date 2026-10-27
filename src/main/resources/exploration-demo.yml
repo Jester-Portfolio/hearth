@@ -7,6 +7,9 @@ regions:
   - id: survey_valley
     name: 공개 시험 계곡
     public: false
+  - id: story_content_area
+    name: 공개 콘텐츠 접근 시험 구역
+    public: false
 # 정의만으로 공유 단계를 활성화하지 않습니다. DB의 현재 단계와 일치할 때만 표시합니다.
 shared-stages:
   - id: public_test_stage
@@ -41,6 +44,41 @@ journal:
     version: 1
     important: true
     quest-completed: route_marker
+  - id: story_arrival
+    category: STORY
+    title: 공동 조사 준비 확정
+    summary: 공개 합성 공동 진행 시험입니다.
+    detail: 확정된 해당 진행에서만 공유하며 개인 퀘스트나 보상을 변경하지 않습니다.
+    version: 1
+    important: true
+  - id: story_vote
+    category: STORY
+    title: 공동 경로 선택 단계
+    summary: 공개 합성 공동 진행 시험입니다.
+    detail: 확정된 해당 진행에서만 공유하며 개인 퀘스트나 보상을 변경하지 않습니다.
+    version: 1
+    important: true
+  - id: story_open
+    category: STORY
+    title: 공유 자유 탐험 개방
+    summary: 공개 합성 공동 진행 시험입니다.
+    detail: 확정된 해당 진행에서만 공유하며 개인 퀘스트나 보상을 변경하지 않습니다.
+    version: 1
+    important: true
+  - id: story_route_one
+    category: STORY
+    title: 공개 경로 하나 확정
+    summary: 공개 합성 공동 진행 시험입니다.
+    detail: 확정된 해당 진행에서만 공유하며 개인 퀘스트나 보상을 변경하지 않습니다.
+    version: 1
+    important: true
+  - id: story_route_two
+    category: STORY
+    title: 공개 경로 둘 확정
+    summary: 공개 합성 공동 진행 시험입니다.
+    detail: 확정된 해당 진행에서만 공유하며 개인 퀘스트나 보상을 변경하지 않습니다.
+    version: 1
+    important: true
 places:
   - id: public_village
     marker-key: marker_public

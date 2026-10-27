@@ -1,0 +1,45 @@
+# 공개 합성 공유 단계입니다. 실제 챕터·개방 시점을 정의하지 않습니다.
+format: 1
+first: trial_arrival
+stages:
+  - id: trial_arrival
+    title: 공개 공동 조사 준비
+    next-goal: 접속한 시험 참가자의 조사 완료를 확인합니다.
+    entry: [survey_marker]
+    complete: [survey_marker]
+    next: trial_vote
+    journal: story_arrival
+  - id: trial_vote
+    title: 공개 공동 경로 선택
+    next-goal: 접속 참가자의 길목 조사를 확인한 뒤 경로를 투표합니다.
+    entry: [survey_marker]
+    complete: [path_marker]
+    journal: story_vote
+    choices:
+      - id: route_one
+        label: 공개 경로 하나
+        next: trial_open
+        journal: story_route_one
+      - id: route_two
+        label: 공개 경로 둘
+        next: trial_open
+        journal: story_route_two
+  - id: trial_open
+    title: 공개 자유 탐험 시험
+    next-goal: 공개 탐험 지역과 공유 기록을 확인합니다.
+    entry: [path_marker]
+    complete: [path_marker]
+    opens-exploration: true
+    journal: story_open
+regions:
+  - id: survey_valley
+    policy: ENTRY
+    requires-stage: trial_open
+    bounds: {min-x: 20, max-x: 22, min-y: 64, max-y: 67, min-z: 20, max-z: 22}
+  - id: story_content_area
+    policy: CONTENT
+    requires-stage: trial_open
+    bounds: {min-x: 20, max-x: 22, min-y: 64, max-y: 67, min-z: 2, max-z: 14}
+  - id: public_fields
+    policy: OPEN
+    bounds: {min-x: 1, max-x: 3, min-y: 64, max-y: 67, min-z: 1, max-z: 3}

@@ -1,0 +1,629 @@
+{
+  "확인일": "2026-10-27",
+  "기준_커밋": "4220232ba5f67d6d37e6a7d30718d4305a3dcb7b",
+  "상태": "PASS",
+  "전체_S4": "진행 중",
+  "자동_묶음_사용": 2,
+  "자동_묶음_최대": 3,
+  "단위_결과": [
+    {
+      "범위": "공유 배치 전체 단위/회귀",
+      "tests": 119,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "범위": "공개 경계 보완 후 관련 단위",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "범위": "요청 fingerprint 필드 길이 보완 후 관련 단위",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "단위_판정_설명": "전체119개 통과 후 공개 경계 보완과 새2개를 포함한 공유11개, 요청 fingerprint 구분자 충돌 회귀를 추가한 최종 공유12개가 통과. 총122개의 논리 시험 근거이며 변경 없는 전체 시험을 재실행하지 않음.",
+  "런타임": {
+    "outcome": "PASS",
+    "failure": null,
+    "cleanup_errors": [],
+    "workspace": "/tmp/hearth-s4-11.rqkazjye",
+    "duration_seconds": 58.103,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "processes": {
+      "database": {
+        "pid": 1372781,
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 57.398,
+        "shutdown_seconds": 0.108,
+        "max_sampled_rss_kib": 221360,
+        "observed_cpu_seconds": 2.29,
+        "min_sampled_host_available_kib": 11915208,
+        "sample_count": 955,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-prepare": {
+        "pid": 1372837,
+        "exit_code": 0,
+        "ready_seconds": 13.704,
+        "duration_seconds": 36.161,
+        "shutdown_seconds": 3.66,
+        "max_sampled_rss_kib": 1057052,
+        "observed_cpu_seconds": 67.71,
+        "min_sampled_host_available_kib": 11915208,
+        "sample_count": 577,
+        "checks": [
+          "region_isolation_hearth_verify:restart_b",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "world_IO_pool_closed"
+        ],
+        "timings": [
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=1930",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=1929",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=196",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=200",
+          "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=102",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=102",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=4647",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=999",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=50",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING elapsed_ms=152",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING elapsed_ms=96",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=49",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=250",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=100",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE elapsed_ms=6898",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=601",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE elapsed_ms=997",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING elapsed_ms=50",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=997",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=49",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING elapsed_ms=150",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING elapsed_ms=149",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING elapsed_ms=100",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING elapsed_ms=100"
+        ],
+        "states": [
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE"
+        ]
+      },
+      "paper-resume": {
+        "pid": 1373105,
+        "exit_code": 0,
+        "ready_seconds": 8.874,
+        "duration_seconds": 18.243,
+        "shutdown_seconds": 3.573,
+        "max_sampled_rss_kib": 980812,
+        "observed_cpu_seconds": 33.4,
+        "min_sampled_host_available_kib": 11994708,
+        "sample_count": 324,
+        "checks": [
+          "region_isolation_hearth_verify:restart_b",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "world_IO_pool_closed"
+        ],
+        "timings": [
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=879",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=877",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=563",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=566",
+          "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=37",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=37",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE elapsed_ms=2799",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=2848",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE elapsed_ms=996",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING elapsed_ms=51",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=999",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=48",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING elapsed_ms=150",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING elapsed_ms=151",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING elapsed_ms=98",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING elapsed_ms=98"
+        ],
+        "states": [
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE"
+        ]
+      }
+    },
+    "all_owned_processes_and_ports_closed": true,
+    "plugin_sha256": "963ac678bb5d0a932badbc6bc84f3c36fc871d8cd4226873808152432ecd57bb",
+    "session_checks": [
+      "fixture_prepared_no_login_provisioning",
+      "no_apply_or_admission_before_prepare",
+      "all_sessions_active_after_move",
+      "story_V005_rows_preserved_after_V006",
+      "list_fixture_survey_marker_COMPLETED",
+      "multi_rejected_CONDITIONS_UNMET",
+      "story_P2_blocks_first_stage_ENTRY_CONTENT_OPEN_separate",
+      "list_fixture_survey_marker_COMPLETED",
+      "multi_rejected_STORY_BUSY_OR_HOLD",
+      "story_single_initial_CAS_shared_state",
+      "story_completion_history_and_next_stage",
+      "list_fixture_path_marker_COMPLETED",
+      "multi_rejected_CONDITIONS_UNMET",
+      "list_fixture_path_marker_COMPLETED",
+      "list_fixture_route_marker_ACTIVE",
+      "story_online_conditions_public_booleans_only",
+      "story_locked_accepted_quest_and_map_content_hidden",
+      "story_30sec_two_online_targets",
+      "multi_rejected_DUPLICATE_VOTE",
+      "story_tie_timeout_no_automatic_branch",
+      "multi_rejected_STALE_VOTE",
+      "story_OPEN_roster_change_new_vote_id_old_input_rejected",
+      "story_DB_pending_no_branch_or_exploration_apply_main_tick_alive",
+      "story_INPUT_CLOSED_disconnect_keeps_frozen_result",
+      "story_committed_branch_revision2_shared_exploration_open",
+      "story_region_cache_A_unlocked_B_unchanged",
+      "story_P1_P2_same_confirmed_shared_result",
+      "story_no_community_or_diary_personal_notifications",
+      "story_confirmed_branch_shared_diary_chronicle_once",
+      "story_Paper_GUI_41slot_unchanged_quests",
+      "story_Paper_GUI_41slot_unchanged_branches",
+      "story_Paper_GUI_41slot_unchanged_map",
+      "story_Paper_GUI_41slot_unchanged_diary",
+      "story_Paper_GUI_41slot_unchanged_STORY",
+      "story_Paper_GUI_41slot_unchanged_CHRONICLE",
+      "story_Paper_GUI_41slot_unchanged_community",
+      "story_Paper_GUI_41slot_unchanged_story",
+      "story_Paper_GUI_41slot_unchanged_conditions",
+      "story_unlocked_map_and_quest_projection_refresh",
+      "story_shared_open_does_not_complete_personal_quest",
+      "story_run_B_no_shared_changes",
+      "story_idle_unload_saved_barrier_complete",
+      "story_existing_world_UUID_reloaded",
+      "story_reentry_new_JVM_shared_branch_diary_personal_state_restored",
+      "story_completed_stage_history_persisted_no_recreation",
+      "story_shared_exploration_not_personal_visit_or_hub",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count32_r0",
+      "fixture_prepared_no_login_provisioning",
+      "no_apply_or_admission_before_prepare",
+      "all_sessions_active_after_move",
+      "story_reentry_new_JVM_shared_branch_diary_personal_state_restored",
+      "story_completed_stage_history_persisted_no_recreation",
+      "story_shared_exploration_not_personal_visit_or_hub",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count32_r0",
+      "story_same_request_id_idempotent_no_revision_change",
+      "rejected_REQUEST_MISMATCH",
+      "rejected_REVISION_CONFLICT",
+      "rejected_REVISION_CONFLICT",
+      "rejected_ENGINE_OWNED_STORY",
+      "list_fixture_survey_marker_COMPLETED",
+      "rejected_COMMIT_UNKNOWN",
+      "multi_rejected_RESULT_STILL_UNKNOWN",
+      "multi_rejected_STORY_BUSY_OR_HOLD",
+      "story_absent_receipt_stays_unknown_no_new_branch",
+      "list_fixture_survey_marker_COMPLETED",
+      "list_fixture_path_marker_COMPLETED",
+      "rejected_COMMIT_UNKNOWN",
+      "story_committed_SQL_unknown_response_no_early_cache_or_effect",
+      "story_same_request_receipt_positive_resolve_once_not_real_world_effect",
+      "multi_rejected_NO_UNKNOWN_REQUEST",
+      "list_fixture_survey_marker_COMPLETED",
+      "rejected_23514",
+      "story_SQL_failure_probe_HOLD_preserved",
+      "story_SQL_failure_no_false_stage_branch_or_completion",
+      "story_SQL_failure_no_partial_shared_diary",
+      "story_failed_run_other_run_A_unchanged",
+      "story_failed_run_other_run_B_unchanged"
+    ],
+    "story_batch_mode": true,
+    "explore_batch_mode": false,
+    "sessions_mode": true,
+    "quests_mode": true,
+    "quest_list_mode": false,
+    "quest_info_mode": false,
+    "quest_auto_mode": false,
+    "quest_npc_mode": false,
+    "quest_start_mode": false,
+    "quest_requires_mode": false,
+    "quest_batch_mode": false,
+    "manual_player_mode": false,
+    "installed_plugin_sha256": "963ac678bb5d0a932badbc6bc84f3c36fc871d8cd4226873808152432ecd57bb",
+    "snapshots": [],
+    "runtime_library_jars": [
+      "libraries/com/zaxxer/HikariCP/7.1.0/HikariCP-7.1.0.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+      "libraries/org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar",
+      "libraries/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar"
+    ],
+    "player_actions_verdict": "NOT_RUN",
+    "not_executed": [
+      "실제 인증 플레이어/로그인·텔레포트",
+      "PostgreSQL 프로세스 재시작",
+      "실제 파일시스템 저장 장애·강제 종료 복구",
+      "TPS/MSPT·장기 부하·메모리 누수",
+      "운영 배포·경제 realm"
+    ]
+  },
+  "소스_입력": [
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/HearthPlugin.java",
+      "sha256": "2058d655fb84b4eb4d9e4fcb7855e764ffdcb88c0eba4bf297fe0e8bd1884853"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/exploration/CommunityBoundary.java",
+      "sha256": "0d1862cc2dc17fd5f5e76aada02b2c4d1ab5ddb4e5700cb1a6d69f2165e07a07"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/exploration/ExplorationContent.java",
+      "sha256": "8996a498aa2be2719eea745e75a696b2b1a8596944ee66381c0b65be1db22c8a"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/exploration/ExplorationView.java",
+      "sha256": "e13bacdb91edecd284668892578642a6334544c802eb3e350de058c276311590"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryAutosave.java",
+      "sha256": "45f248c7f865fe8e23b866f649bdbeb582984adf47c843b7a955eca500825463"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryPayload.java",
+      "sha256": "8ff879502e58f73ec5088fbcd8573af4204b1cf4367db72b853fb2b6131e2e00"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventorySaveSession.java",
+      "sha256": "8e612bd8ff6dbf58c3f067ed6069f6c8acf8fe53c8155e9bd2d3a91edb6fdae1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryTransition.java",
+      "sha256": "46a9d0446de17a5d4eb3bc99fc29301f9ab048cf77a957d479c124a04acfaf71"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryAutosave.java",
+      "sha256": "8b2a9dbffdfca427e61c4049159069e4716d3c2fe29d4a81cdc85c1b02950bb5"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryCodec.java",
+      "sha256": "d48daed9f3c948fd58391683816fded7e2633f29132afe4ebf1b0cb01e6cdd94"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/LifecycleFailure.java",
+      "sha256": "ff1fcca716d8d6c8696749e89a4de8104eff35102d62bdc2869f55d54f7706b0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary.java",
+      "sha256": "c276e62a12f6f8d8702ad2a121385888297a48262726b0402b0f5171320f8f35"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldLifecycle.java",
+      "sha256": "b33868a5bdd87e956c3147793ecf52d9ac15f39e42eb1b766d00590c9df45925"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldPersistence.java",
+      "sha256": "bc947ff843c46cdea35e80743474acd196b5be70e81804f2c200f0a25fcfda12"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ExplorationStore.java",
+      "sha256": "5ad1fbd05f226a66da72c0d1b8de1dbbeb2dfc1dbb00cc088426818c1bcd153c"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/InventoryStore.java",
+      "sha256": "07dc183985f058b45da0901a2e7a19f1e3f52e4a5b0a978667161b57a5a7eefb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/PostgresProgressStore.java",
+      "sha256": "908bfaff9f2f3c440f195b20e97b30fff63fa23de06e1cfab4e79182515cf4d0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ProgressStore.java",
+      "sha256": "6671c08210d54ae01a9e568e652d951d8718dab3dd8eea711baf13d3c00b168f"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/QuestJournalStore.java",
+      "sha256": "349a2a0ec70c21b6ef6208ce2a98c9e68cdd853381c9cb5ac2765ead4059a01c"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/QuestStore.java",
+      "sha256": "300c87011d752879bbc390cc7f71f3f90e99630d493aeb321306a66661b82cfa"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/SchemaMigration.java",
+      "sha256": "190e36d1611c206a8a29efbe81018150fa52f754085cfbcd2355722ff7db924e"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ServerProgressAccess.java",
+      "sha256": "b938fe1e8e18ea5fe9d997f092a5655260fefd11d0678563765a9d753867aae2"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/StorageFailure.java",
+      "sha256": "2648853231e00e70ee7ceba5809da1eda1aeb4134509fab9e623bd62f3d8a9fb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/StoryStore.java",
+      "sha256": "13f8721113d88c7bb75b52fb9a5ec8934fe75fd2b991be53fee7371102086a6e"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PaperQuestAdapter.java",
+      "sha256": "728e94f2bf1e8869de90ba1ccc63f9be3d8cb528091ffd9b0154b6478bb06eb7"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PaperQuestUI.java",
+      "sha256": "d80c4597d5d081f91a585c5347d1247971a28fdaf2f7371f88cef84d1d123b20"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PersonalQuest.java",
+      "sha256": "11821ac357bae75a11d94a5bd9268e2c42f5c8681c36d3e1d5bebbea639df81b"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestCatalog.java",
+      "sha256": "318a4fdedd96566f2c4905b5d0a53a75ab6d0b70426e14e79ccbb7bdbbc9804e"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestContent.java",
+      "sha256": "1593d9113e2c06c515570a8faa9edac2946ef1b2fdf85055fd3e68587f631ec5"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestDialogue.java",
+      "sha256": "b1bb546f8a906b6e3ab5787be98d52f7b87e055b0d824500e46a9b195627fda0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestJournal.java",
+      "sha256": "e69ceb5b16b501042b40c949bd6501d849048e38f9c92e125ab5d492defed22f"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestListView.java",
+      "sha256": "f3411048f1c3b84e53310b571f055a19a19e23c6bd7087586ce3e2487e3c07f6"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestScreens.java",
+      "sha256": "94af3d550982571a58f2d21137c9a8b8e8685d82a9c20fef40e8b4a778c4645b"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PaperSessionAdapter.java",
+      "sha256": "3ae15cd5c0cae0209289960f9ac77ca1db76a12bd5eec0433a990a86667e416e"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PlayerSessions.java",
+      "sha256": "2a6fede944d8e36f8cebdc75fe8e622da80ad63e14cc1effba62fb40776f8684"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/story/PaperStoryAdapter.java",
+      "sha256": "31db0597faea32424cc42f673898104ff88414728da11350fa63a9e262263243"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/story/SharedStory.java",
+      "sha256": "56cdc196c262a72b0ee600cef8924eb13b3314954825863f0b37e6eac27d609e"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/story/StoryAccess.java",
+      "sha256": "3e3874b4f6dfda275168464e7e2e52cd080d7afaa8dc3558bfd1170fdb6b4edb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/story/StoryContent.java",
+      "sha256": "8945c100198a98b86e079be0446e7dc5bcdfac10a068ef139c9aaddeffeab94d"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/DatabaseVerification.java",
+      "sha256": "a9ccf7a3506b31e5689ee7d7ee627b4b6d1ac45bc7c6f1922879a182b4a71ff4"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/InventoryVerification.java",
+      "sha256": "a1a94f421841a19b5406c2e9651278d9a9752baf47c6bd338a0063a4cb4ab300"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/LifecycleVerification.java",
+      "sha256": "9d1debce7ab6b466bf5fc9cdbdb6d178aafbb78704c5f3db7b97de0eaa601d6a"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/PlayerActionObserver.java",
+      "sha256": "f0c85f4a4151d6f0d179dc57202d563b5b370e53dc986805132bf3966964d802"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/RestartVerification.java",
+      "sha256": "17fecf78ad0a14a980a683de475b923dbdad896976455a5d0ddc393ab7c2b782"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java",
+      "sha256": "828f50903023a3d9ce05f3c65c735c1db0adc8098b17e92f04f689812bf45f2b"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SmokeVerification.java",
+      "sha256": "2ec3647a00f3f66328923591eacdbf20ee976b21c256cbdeb2b3e2190e8c4370"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/PaperWorldBackend.java",
+      "sha256": "b46a5acbc7f43b03ab25f523982f8110bb3c7942bbb77fafed7ef6cf1685e1ca"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/TemplateStore.java",
+      "sha256": "d27b4d777c72c8968136855267e496c35bd138134ef2cfe32a1daa5df18c26b1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/WorldBackend.java",
+      "sha256": "bf9d5742a8a955aeb754f5eb70510cf75d6b38ff7e371864058135d02303b42e"
+    },
+    {
+      "path": "src/main/resources/config.yml",
+      "sha256": "896c74c520d671709829c9e13a92198e3f1012f85456aa47b89d94ea2fba2976"
+    },
+    {
+      "path": "src/main/resources/db/migration/V001__progress.sql",
+      "sha256": "9cfd301837659e3d303f5c7c81ed7b4f2b884bb3160a638cffcaf37d35520c4a"
+    },
+    {
+      "path": "src/main/resources/db/migration/V002__story_inventory.sql",
+      "sha256": "b04a0051a12bfd56c5c5d993eb988ee3a760cdc270a53d54d89e1048f74a5c16"
+    },
+    {
+      "path": "src/main/resources/db/migration/V003__personal_quest.sql",
+      "sha256": "3c9799d3665d81697245be21149375f4a4365fe696df9a5a6e40909c32a34cc6"
+    },
+    {
+      "path": "src/main/resources/db/migration/V004__quest_steps_and_journal.sql",
+      "sha256": "e129a86b26c72b5882bfd33b6a4817b86892c29e77af25215503cb32e88e0545"
+    },
+    {
+      "path": "src/main/resources/db/migration/V005__exploration_diary_and_markers.sql",
+      "sha256": "060da4a5caa210040c06db779bcf0aaa9ffd70365e134a3f4a5da1940858e82b"
+    },
+    {
+      "path": "src/main/resources/db/migration/V006__shared_story_requests_and_branches.sql",
+      "sha256": "b2c6c53774c5e2ecb33ce0de8213f38180962ce14cd5618c00dfee5f6d1dd45c"
+    },
+    {
+      "path": "src/main/resources/exploration-demo.yml",
+      "sha256": "578d1c84c9b3717f285200b726497d2f3ce1ab8d82ca053793f54763c702f3f0"
+    },
+    {
+      "path": "src/main/resources/plugin.yml",
+      "sha256": "054f53930c649bbed6b7b9bc73d49b064a9fa542a60f0ca9b95a7ba5d315c2df"
+    },
+    {
+      "path": "src/main/resources/quest-demo.yml",
+      "sha256": "fcf13b1322ffa11dd45ea1e8514e32a79d0e50634618b1c8d9aca6542f8dcf2a"
+    },
+    {
+      "path": "src/main/resources/story-demo.yml",
+      "sha256": "045621d78498740410d5a1a0b184912b5e226904cb457ac8eb1906294c498ae1"
+    },
+    {
+      "path": "build.gradle.kts",
+      "sha256": "d6be3d63d1fb0fc05b803f0476506d584cbd30e902b937fe6f0135b1fd42fc4b"
+    },
+    {
+      "path": "settings.gradle.kts",
+      "sha256": "3c65ec08315b00dea23f54b6db4b985cb1f763ddfc1b936d5193235730742570"
+    }
+  ],
+  "증거": [
+    {
+      "path": "/tmp/hearth-s4-11.rqkazjye/run-result.json",
+      "sha256": "9f204e60781af1eb3d41fe78476c6a071746d72152737d8eef3e99712d871b71"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.rqkazjye/build-inputs.json",
+      "sha256": "139571a6e1dbc5a86d54f2545cd143d4065994cc65fd60b40e740d4c5f631427"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.rqkazjye/database-console.log",
+      "sha256": "ca33f61ae91f86837bbb7b6a06f3d4b79db635f0ce05ca23f5122aeac28c91dc"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.rqkazjye/paper-prepare-console.log",
+      "sha256": "5b976102c7989c8a273ad53a238b4f4aed36942fa1f1df861e67a098f1b1b66b"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.rqkazjye/paper-resume-console.log",
+      "sha256": "df2348368f3d65791a3b28cf9d093fa5e4ccfe779796c9856eae05bb41531270"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.rqkazjye/database-resources.json",
+      "sha256": "6da20ed49b985130e51e798d260c971229f1c0563c1f12171cf365330219ff9b"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.rqkazjye/paper-prepare-resources.json",
+      "sha256": "dca2a13c162f418d2aaad6b4c919cf7b3a4f6b8750d463d760e64fb6a7f4bd2c"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.rqkazjye/paper-resume-resources.json",
+      "sha256": "69aa6c18f5bbcb43493a176a76edaab909f999c70b36bc7f5c47edb02d9e6bce"
+    }
+  ],
+  "최종_소스_JAR_일치": true,
+  "V001_V005_바이트_보존": true,
+  "기존_검증_증거_보존": true,
+  "시험_경계": {
+    "실제_Paper_PG": "V005 fixture→V006, 조건 판정·공유 단계/CAS, 과반수·타이/시간 만료·명단 취소/재투표·중복 거부, 입력 마감 후 DB 잠금 대기·명단 변화, 확정 분기·공유 일지·탐험 개방·run 격리, 같은 요청 재전달/경쟁 요청, 실제 SQL 트리거 실패·다른 run 보존, IDLE/새 JVM 복원·정상 종료",
+    "제어_입력": "P1/P2 온라인 상태와 세션 토큰은 서버 내부 시험 컨텍스트이며 실제 Player/인증 접속이 아님. 만료는 제어 시계를30초 전진시켜 검사했고 사용자 모드는 System.nanoTime과30초를 사용함.",
+    "commit_불명": "요청 미전달 모형과 실제 PostgreSQL commit 성공 후 응답을 불명으로 만드는 제어 저장 경계. 실제 네트워크 장애/PG 강제 종료 시험이 아님. 동일 요청 receipt 없음은 미확정으로 유지, 존재·fingerprint 일치 때만 복원.",
+    "UI_지역": "실제 54슬롯 InventoryHolder와 공개 DTO/조건/접근 정책 객체를 확인. 실제 채팅 수신·클릭·PlayerMoveEvent/teleportAsync 보호 성공을 뜻하지 않음.",
+    "세계_효과": "안전한 비동기 Effects 인터페이스와 장벽만 제공. 기본 NOT_IMPLEMENTED, DB·파일의 원자성/실제 콘텐츠 효과 적용을 주장하지 않음."
+  },
+  "제한": [
+    "초기 조건은 현재 온라인 대상 전원의 개인 퀘스트 COMPLETED 목록만 지원. 조건 생략은 미등록·진행 거부.",
+    "현재 프로토타입의 분기 대상 단계들은 동일한 진입 조건을 가져야 하며 불일치는 콘텐츠 오류로 거부.",
+    "불명 요청에 receipt가 없으면 자동 실패/새 요청으로 바꾸지 않고 관리자 확인이 필요한 보류를 유지."
+  ],
+  "미실행": [
+    "실제 인증 클라이언트·채팅 입력/수신·GUI/이동/텔레포트",
+    "실제 컷신/보스/공동체 전체 퀘스트 엔진·아이템 조건·보상",
+    "실제 콘텐츠 세계 변화·빠른 이동·스마트폰 아이템·지도/미니맵 렌더러",
+    "PG 재시작/네트워크 단절·강제 종료 복구·장기 부하/누수·운영 배포"
+  ],
+  "앞선_성공_묶음": {
+    "workspace": "/tmp/hearth-s4-11.thcsckeq",
+    "duration_seconds": 57.835,
+    "plugin_sha256": "8bee0c6bf4ac9e98cc8b44be69ffc3ea5d41e74b655ee62424540c3f4b5492d2",
+    "outcome": "PASS",
+    "all_owned_processes_and_ports_closed": true,
+    "원시_결과_SHA256": "13e4328b5ea61cd80299171af49fc3a4ef30d514240052d1bab09f7b6f457a3a",
+    "재검증_이유": "요청 fingerprint의 문자열 구분자 충돌 가능성을 길이 지정 형식으로 보완해 최종 JAR을 새 경로에서 검사"
+  }
+}

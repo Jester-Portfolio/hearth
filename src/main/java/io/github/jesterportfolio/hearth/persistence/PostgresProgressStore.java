@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import javax.sql.DataSource;
 
 /** Bukkit API/메인 스레드 대기가 없는 최소 JDBC 저장 모듈. 플러그인 부팅에는 아직 연결하지 않습니다. */
-public final class PostgresProgressStore implements ProgressStore, InventoryStore, QuestStore, QuestJournalStore, ExplorationStore {
+public final class PostgresProgressStore implements ProgressStore, InventoryStore, QuestStore, QuestJournalStore, ExplorationStore, StoryStore {
     private volatile Map<String,ExplorationContent.Fact> questDiary=Map.of();
     public void configureQuestDiary(Map<String,ExplorationContent.Fact> bindings){questDiary=Map.copyOf(bindings);}
     public record Failure(String operation, UUID storyRunId, UUID playerId, String code) {}
@@ -317,9 +317,48 @@ public final class PostgresProgressStore implements ProgressStore, InventoryStor
     });}
     @Override public CompletionStage<Void> saveStory(ServerProgressAccess.Context ctx,ExplorationStore.Story expected,String stage,String title,Boolean open){return submit("save_community_story",ctx,()->{
         if((stage==null)!=(title==null) || stage!=null && !stage.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid shared stage");
-        try(var c=pool.getConnection()){playerExists(c,ctx);String sql=expected.revision()==-1?"INSERT INTO hearth_progress.community_story(story_run_id,stage_id,stage_title,exploration_open) VALUES (?,?,?,?) ON CONFLICT DO NOTHING":"UPDATE hearth_progress.community_story SET stage_id=?,stage_title=?,exploration_open=?,revision=revision+1 WHERE story_run_id=? AND revision=?";
+        try(var c=pool.getConnection()){playerExists(c,ctx);
+            try(var guard=c.prepareStatement("SELECT 1 FROM hearth_progress.community_story_request WHERE story_run_id=? LIMIT 1")){guard.setObject(1,ctx.storyRunId());try(var rows=guard.executeQuery()){if(rows.next())throw new StorageFailure("community","ENGINE_OWNED_STORY");}}
+            String sql=expected.revision()==-1?"INSERT INTO hearth_progress.community_story(story_run_id,stage_id,stage_title,exploration_open) VALUES (?,?,?,?) ON CONFLICT DO NOTHING":"UPDATE hearth_progress.community_story SET stage_id=?,stage_title=?,exploration_open=?,revision=revision+1 WHERE story_run_id=? AND revision=?";
             try(var st=c.prepareStatement(sql)){if(expected.revision()==-1){st.setObject(1,ctx.storyRunId());st.setString(2,stage);st.setString(3,title);st.setObject(4,open,Types.BOOLEAN);}else{st.setString(1,stage);st.setString(2,title);st.setObject(3,open,Types.BOOLEAN);st.setObject(4,ctx.storyRunId());st.setLong(5,expected.revision());}if(st.executeUpdate()!=1)throw new StorageFailure("community","REVISION_CONFLICT");}return null;
         }
+    });}
+
+    private StoryStore.Snapshot storySnapshot(Connection c,ServerProgressAccess.Context ctx)throws SQLException{
+        var story=new ExplorationStore.Story(null,null,null,-1);var complete=new HashSet<String>();var branches=new HashMap<String,StoryStore.Branch>();
+        try(var st=c.prepareStatement("SELECT stage_id,stage_title,exploration_open,revision FROM hearth_progress.community_story WHERE story_run_id=?")){st.setObject(1,ctx.storyRunId());try(var rs=st.executeQuery()){if(rs.next())story=new ExplorationStore.Story(rs.getString(1),rs.getString(2),rs.getObject(3,Boolean.class),rs.getLong(4));}}
+        try(var st=c.prepareStatement("SELECT stage_id FROM hearth_progress.community_story_completion WHERE story_run_id=?")){st.setObject(1,ctx.storyRunId());try(var rs=st.executeQuery()){while(rs.next())complete.add(rs.getString(1));}}
+        try(var st=c.prepareStatement("SELECT stage_id,choice_id,choice_label,request_id FROM hearth_progress.community_story_branch WHERE story_run_id=?")){st.setObject(1,ctx.storyRunId());try(var rs=st.executeQuery()){while(rs.next())branches.put(rs.getString(1),new StoryStore.Branch(rs.getString(1),rs.getString(2),rs.getString(3),rs.getObject(4,UUID.class)));}}
+        return new StoryStore.Snapshot(story,complete,branches);
+    }
+    @Override public CompletionStage<StoryStore.Snapshot> readStory(ServerProgressAccess.Context ctx){return submit("read_story",ctx,()->{try(var c=pool.getConnection()){playerExists(c,ctx);c.setAutoCommit(false);try{c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);var result=storySnapshot(c,ctx);c.commit();return result;}catch(Exception e){c.rollback();throw e;}finally{c.setAutoCommit(true);}}});}
+    private Map<UUID,Boolean> conditionRows(Connection c,ServerProgressAccess.Context ctx,Set<UUID> players,Set<String> quests)throws SQLException{
+        var result=new HashMap<UUID,Boolean>();for(UUID player:players){boolean met=true;
+            try(var st=c.prepareStatement("SELECT 1 FROM hearth_progress.player_progress WHERE story_run_id=? AND player_uuid=?")){st.setObject(1,ctx.storyRunId());st.setObject(2,player);try(var rs=st.executeQuery()){if(!rs.next())throw new StorageFailure("story","MISSING_PLAYER");}}
+            for(String quest:quests){questAccess(ctx,quest);try(var st=c.prepareStatement("SELECT phase FROM hearth_progress.personal_quest WHERE story_run_id=? AND player_uuid=? AND quest_id=? FOR SHARE")){st.setObject(1,ctx.storyRunId());st.setObject(2,player);st.setString(3,quest);try(var rs=st.executeQuery()){met&=rs.next()&&rs.getString(1).equals("COMPLETED");}}}result.put(player,met);
+        }return Map.copyOf(result);
+    }
+    @Override public CompletionStage<Map<UUID,Boolean>> storyConditions(ServerProgressAccess.Context ctx,Set<UUID> players,Set<String> quests){return submit("story_conditions",ctx,()->{try(var c=pool.getConnection()){playerExists(c,ctx);return conditionRows(c,ctx,players,quests);}});}
+    private Optional<String> receipt(Connection c,ServerProgressAccess.Context ctx,UUID id)throws SQLException{try(var st=c.prepareStatement("SELECT fingerprint FROM hearth_progress.community_story_request WHERE story_run_id=? AND request_id=?")){st.setObject(1,ctx.storyRunId());st.setObject(2,id);try(var rs=st.executeQuery()){return rs.next()?Optional.of(rs.getString(1)):Optional.empty();}}}
+    @Override public CompletionStage<Optional<String>> storyReceipt(ServerProgressAccess.Context ctx,UUID id){return submit("story_receipt",ctx,()->{try(var c=pool.getConnection()){playerExists(c,ctx);return receipt(c,ctx,id);}});}
+    @Override public CompletionStage<StoryStore.Snapshot> commitStory(ServerProgressAccess.Context ctx,StoryStore.Request r,java.util.function.BooleanSupplier fence){return submit("commit_story",ctx,()->{
+        questAccess(ctx,r.to());if(r.from()!=null)questAccess(ctx,r.from());if(r.choice()!=null)questAccess(ctx,r.choice());validateValue(r.title());if(r.label()!=null)validateValue(r.label());String hash=StoryStore.fingerprint(r);
+        try(var c=pool.getConnection()){playerExists(c,ctx);c.setAutoCommit(false);boolean committing=false;try{
+            try(var st=c.prepareStatement("SELECT pg_advisory_xact_lock(hashtextextended(?,7006))")){st.setString(1,ctx.storyRunId().toString());st.execute();}
+            var previous=receipt(c,ctx,r.id());if(previous.isPresent()){if(!previous.get().equals(hash))throw new StorageFailure("story","REQUEST_MISMATCH");var result=storySnapshot(c,ctx);c.rollback();return result;}
+            var before=storySnapshot(c,ctx);if(before.story().revision()!=r.revision()||!Objects.equals(before.story().stage(),r.from()))throw new StorageFailure("story","REVISION_CONFLICT");
+            if(r.from()!=null&&before.completed().contains(r.from())||r.choice()!=null&&before.branches().containsKey(r.from()))throw new StorageFailure("story","ALREADY_FINAL");
+            if(r.players().isEmpty()||conditionRows(c,ctx,r.players(),r.required()).values().stream().anyMatch(v->!v))throw new StorageFailure("story","CONDITIONS_UNMET");
+            if(!fence.getAsBoolean())throw new StorageFailure("story","STALE_ROSTER");
+            boolean open=Boolean.TRUE.equals(before.story().explorationOpen())||r.open();long next=r.revision()+1;
+            try(var st=c.prepareStatement("INSERT INTO hearth_progress.community_story_request(story_run_id,request_id,fingerprint,resulting_revision) VALUES (?,?,?,?)")){st.setObject(1,ctx.storyRunId());st.setObject(2,r.id());st.setString(3,hash);st.setLong(4,next);st.executeUpdate();}
+            String sql=r.revision()==-1?"INSERT INTO hearth_progress.community_story(story_run_id,stage_id,stage_title,exploration_open) VALUES (?,?,?,?)":"UPDATE hearth_progress.community_story SET stage_id=?,stage_title=?,exploration_open=?,revision=revision+1 WHERE story_run_id=? AND revision=?";
+            try(var st=c.prepareStatement(sql)){if(r.revision()==-1){st.setObject(1,ctx.storyRunId());st.setString(2,r.to());st.setString(3,r.title());st.setBoolean(4,open);}else{st.setString(1,r.to());st.setString(2,r.title());st.setBoolean(3,open);st.setObject(4,ctx.storyRunId());st.setLong(5,r.revision());}if(st.executeUpdate()!=1)throw new StorageFailure("story","REVISION_CONFLICT");}
+            if(r.from()!=null)try(var st=c.prepareStatement("INSERT INTO hearth_progress.community_story_completion(story_run_id,stage_id,request_id) VALUES (?,?,?)")){st.setObject(1,ctx.storyRunId());st.setString(2,r.from());st.setObject(3,r.id());st.executeUpdate();}
+            if(r.choice()!=null)try(var st=c.prepareStatement("INSERT INTO hearth_progress.community_story_branch(story_run_id,stage_id,choice_id,choice_label,request_id) VALUES (?,?,?,?,?)")){st.setObject(1,ctx.storyRunId());st.setString(2,r.from());st.setString(3,r.choice());st.setString(4,r.label());st.setObject(5,r.id());st.executeUpdate();}
+            for(var fact:r.facts())writeFact(c,ctx,fact,true);var result=storySnapshot(c,ctx);
+            if(!fence.getAsBoolean())throw new StorageFailure("story","STALE_ROSTER");committing=true;c.commit();return result;
+        }catch(Exception error){try{c.rollback();}catch(SQLException ignored){}if(committing&&error instanceof SQLException)throw new StorageFailure("story","COMMIT_UNKNOWN");throw error;}finally{c.setAutoCommit(true);}}
     });}
 
     private static void validateValue(String value) {

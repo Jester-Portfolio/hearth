@@ -63,7 +63,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         if(command.equals("/hearthphone")){load(p,s,v->open(p,s,v,"home",null,0));return true;}
         String[] args=command.split(" ",-1);
         if(args.length==2 && args[0].equals("/hearthquest") && args[1].equals("tracked")){
-            load(p,s,v->{var lines=journal.hudLines(new QuestJournal.View(v.states(),new io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Journal(v.journal().tracked(),new io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Preferences(true,0),v.journal().notices())));if(lines.isEmpty())p.sendMessage(Component.text("추적 중인 퀘스트가 없습니다."));else lines.forEach(x->p.sendMessage(Component.text(x)));});return true;
+            load(p,s,v->{var lines=journal.hudLines(new QuestJournal.View(v.states(),new io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Journal(v.journal().tracked(),new io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Preferences(true,0),v.journal().notices()),v.exploration()));if(lines.isEmpty())p.sendMessage(Component.text("추적 중인 퀘스트가 없습니다."));else lines.forEach(x->p.sendMessage(Component.text(x)));});return true;
         }
         if(args.length==3 && args[0].equals("/hearthquest") && Set.of("track","untrack").contains(args[1]) && args[2].matches("[a-z][a-z0-9_]{0,63}")){
             request(p,s,journal.track(s.context(),s,()->players.current(p)==s,args[2],args[1].equals("track")),v->p.sendMessage(Component.text("퀘스트 추적 설정을 저장했습니다.")));return true;

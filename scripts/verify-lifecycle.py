@@ -75,6 +75,7 @@ def main():
     parser.add_argument('--plugin', required=True, type=Path)
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--story-batch', action='store_true', help='두 JVM에서 공유 단계·채팅 투표 제어 경계·분기·접근·복원을 검사합니다')
     parser.add_argument('--explore-batch', action='store_true', help='두 JVM에서 탐험·일지·공동체·발견 알림·설정과 V005를 검사합니다')
     parser.add_argument('--quest-batch', action='store_true', help='두 JVM에서 다단계/추적/알림/설정/GUI·HUD 데이터와 V004를 검사합니다')
     parser.add_argument('--quest-requires', action='store_true', help='한 JVM에서 개인 선행 완료 조건·잠금 비노출·시작 경합을 검사합니다')
@@ -93,6 +94,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.story_batch and (not args.quests or not args.sessions or args.manual_player or any([args.explore_batch,args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
+        parser.error('--story-batch는 자동 --sessions --quests 단독 공유 진행 검증 모드입니다')
     if args.explore_batch and (not args.quests or not args.sessions or args.manual_player or any([args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
         parser.error('--explore-batch는 자동 --sessions --quests 단독 탐험 검증 모드에서만 사용합니다')
     if args.quest_batch and (not args.quests or not args.sessions or args.manual_player or args.quest_requires or args.quest_start or args.quest_npc or args.quest_auto or args.quest_info or args.quest_list):
@@ -139,7 +142,7 @@ def main():
         shutil.copyfile(root/name,plugins/name)
     shutil.copyfile(args.plugin,plugins/'Hearth.jar')
     (plugins/'Hearth').mkdir()
-    if args.quests and not args.manual_player and not args.quest_batch and not args.explore_batch:
+    if args.quests and not args.manual_player and not args.quest_batch and not args.explore_batch and not args.story_batch:
         # 기존 읽기 전용 모드의 고정 두 퀘스트 fixture를 보존합니다. 새 경로에만 기록합니다.
         with zipfile.ZipFile(args.plugin) as jar:
             content=jar.read('quest-demo.yml').decode('utf-8')
@@ -147,9 +150,12 @@ def main():
         (plugins/'Hearth/quest-demo.yml').write_text(content.partition(cut)[0])
     idle_seconds=10 if args.manual_player else 1
     (plugins/'Hearth/config.yml').write_text(f"quest-verification-enabled: {str(args.quests).lower()}\n"+'verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
-    if args.explore_batch:
+    if args.explore_batch or args.story_batch:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('exploration-verification-enabled: true\n')
+    if args.story_batch:
+        with (plugins/'Hearth/config.yml').open('a') as config:
+            config.write('story-verification-enabled: true\n')
     if args.sessions:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('session-verification-enabled: true\ninventory-autosave-seconds: 30\n')
@@ -180,19 +186,21 @@ motd=Hearth isolated S4-11 verification
                 'io.github.jesterportfolio.hearth.persistence.S45DatabaseFixture',str(root),'--lifecycle']
         monitor.launch('database',helper,root)
         monitor.wait('database','HEARTH_S45_DB READY',seconds=30)
-        if args.quest_batch or args.explore_batch:
+        if args.quest_batch or args.explore_batch or args.story_batch:
             legacy=root/'legacy-migrations'; legacy.mkdir()
             with zipfile.ZipFile(args.plugin) as jar:
-                for file in (['V001__progress.sql','V002__story_inventory.sql','V003__personal_quest.sql']+(['V004__quest_steps_and_journal.sql'] if args.explore_batch else [])):
+                for file in (['V001__progress.sql','V002__story_inventory.sql','V003__personal_quest.sql']+(['V004__quest_steps_and_journal.sql'] if args.explore_batch or args.story_batch else [])+(['V005__exploration_diary_and_markers.sql'] if args.story_batch else [])):
                     (legacy/file).write_bytes(jar.read('db/migration/'+file))
-            monitor.db('explore-legacy' if args.explore_batch else 'quest-legacy')
+            monitor.db('story-legacy' if args.story_batch else 'explore-legacy' if args.explore_batch else 'quest-legacy')
         paper=[str(args.java.resolve()),'-Xms256m','-Xmx1536m','-XX:ActiveProcessorCount=2',
                '-Dhearth.verification.root='+str(runtime),'-Dhearth.verification.lifecycle=true',
                '-jar',str(root/'paper-26.2-134.jar'),'--nogui']
         if args.sessions:
             paper.insert(-3,'-Dhearth.verification.sessions=true')
             paper.insert(-3,'-Dhearth.verification.players=true')
-        if args.explore_batch:
+        if args.story_batch:
+            paper.insert(-3,'-Dhearth.verification.sharedStory=true')
+        if args.explore_batch or args.story_batch:
             paper.insert(-3,'-Dhearth.verification.exploration=true')
         if args.quests:
             paper.insert(-3,'-Dhearth.verification.quests=true')
@@ -220,7 +228,11 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.explore_batch:
+                        if args.story_batch:
+                            monitor.action(name,'story-prepare'); monitor.action(name,'story-vote')
+                            monitor.db('lock-story'); monitor.action(name,'story-persist-start'); monitor.db('unlock')
+                            monitor.action(name,'story-persist-done'); monitor.action(name,'story-cycle')
+                        elif args.explore_batch:
                             monitor.action(name,'explore-prepare')
                             monitor.db('lock-quest'); monitor.action(name,'explore-pending'); monitor.db('unlock')
                             monitor.action(name,'explore-discover'); monitor.action(name,'explore-ui'); monitor.action(name,'explore-cycle')
@@ -295,6 +307,10 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.story_batch:
+                        monitor.action(name,'session-resume'); monitor.action(name,'story-resume'); monitor.action(name,'story-replay')
+                        monitor.action(name,'story-unknown')
+                        monitor.db('story-fail-on'); monitor.action(name,'story-failure'); monitor.db('story-fail-off')
                     elif args.explore_batch:
                         monitor.action(name,'session-resume'); monitor.action(name,'explore-resume'); monitor.action(name,'explore-complete')
                         monitor.db('diary-event-fail-on'); monitor.action(name,'explore-failure'); monitor.db('diary-event-fail-off')
@@ -352,7 +368,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

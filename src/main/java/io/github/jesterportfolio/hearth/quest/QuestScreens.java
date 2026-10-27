@@ -16,13 +16,14 @@ public final class QuestScreens {
             for(int i=0;i<MENUS.size();i++)out.add(new Button(i,MENUS.get(i),destinations[i],null,0));return List.copyOf(out);
         }
         out.add(new Button(45,"이전 화면","home",null,0));
-        if(view.exploration().registered() && Set.of("map","place","region","diary","STORY","PERSON","EXPLORATION","CHRONICLE","fact","event","community","members","story","conditions").contains(page))return explore(view.exploration(),page,id,offset);
+        if(view.exploration().registered() && Set.of("map","place","region","diary","STORY","PERSON","EXPLORATION","CHRONICLE","fact","event","community","members","story","conditions","branches").contains(page))return explore(view.exploration(),page,id,offset);
         if(page.equals("quests")){
-            var entries=QuestListView.entries(catalog,view.states());int end=Math.min(entries.size(),offset+36);
+            var entries=QuestListView.entries(catalog,view.states()).stream().filter(q->!view.exploration().blockedQuests().contains(q.questId())).toList();int end=Math.min(entries.size(),offset+36);
             for(int i=offset;i<end;i++){var q=entries.get(i);out.add(new Button(i-offset,"["+q.status()+"] "+q.title(),"detail",q.questId(),0));}
             navigation(out,offset,entries.size(),"quests");
+            out.add(new Button(49,"확정된 공동체 분기","branches",null,0));
         }else if(page.equals("detail")){
-            var detail=QuestListView.detail(catalog,view.states(),id);
+            var detail=view.exploration().blockedQuests().contains(id)?Optional.<QuestListView.Detail>empty():QuestListView.detail(catalog,view.states(),id);
             if(detail.isEmpty())out.add(new Button(0,QuestListView.UNAVAILABLE,"none",null,0));
             else{
                 int slot=0;for(String line:QuestListView.detailLines(detail))out.add(new Button(slot++,line,"none",null,0));
@@ -31,7 +32,7 @@ public final class QuestScreens {
                 out.removeIf(b->b.slot()==45);out.add(new Button(45,"퀘스트 목록","quests",null,0));
             }
         }else if(page.equals("notices")){
-            var rows=view.journal().notices().stream().filter(n->n.type().equals("PLACE")?view.exploration().place(n.quest()).filter(ExplorationView.Place::discovered).isPresent():QuestListView.detail(catalog,view.states(),n.quest()).isPresent()).toList();
+            var rows=view.journal().notices().stream().filter(n->n.type().equals("PLACE")?view.exploration().place(n.quest()).filter(ExplorationView.Place::discovered).isPresent():!view.exploration().blockedQuests().contains(n.quest())&&QuestListView.detail(catalog,view.states(),n.quest()).isPresent()).toList();
             int end=Math.min(rows.size(),offset+36);for(int i=offset;i<end;i++){var n=rows.get(i);out.add(new Button(i-offset,(n.read()?"[읽음] ":"[안 읽음] ")+(n.type().equals("PLACE")?view.exploration().place(n.quest()).orElseThrow().name():catalog.quest(n.quest()).title())+" · "+notice(n.kind()),n.type().equals("PLACE")?"place-notice":"notice",n.quest(),n.revision()));}
             out.add(new Button(49,"미확인 "+rows.stream().filter(n->!n.read()).count()+"개 · 모두 읽음","read-all",null,0));navigation(out,offset,rows.size(),"notices");
         }else if(page.equals("settings")){
@@ -48,7 +49,7 @@ public final class QuestScreens {
     private static List<Button> explore(ExplorationView view,String page,String id,int offset){
         var rows=new ArrayList<Button>();String back="home";
         switch(page){
-            case "map"->{for(var r:view.regions())rows.add(new Button(0,"지역: "+r.name(),"region",r.id(),0));for(var p:view.places())rows.add(new Button(0,p.name()+" · "+p.status(),"place",p.key(),0));}
+            case "map"->{for(var r:view.regions())rows.add(new Button(0,"지역: "+r.name()+" · "+r.access(),"region",r.id(),0));for(var p:view.places())rows.add(new Button(0,p.name()+" · "+p.status(),"place",p.key(),0));}
             case "region"->{back="map";var region=view.regions().stream().filter(r->r.id().equals(id)).findFirst();
                 if(region.isEmpty())rows.add(line(0,"조회할 수 있는 지역이 없습니다."));else{rows.add(line(0,region.get().name()));for(var p:view.places())if(p.region().equals(region.get().name()))rows.add(new Button(0,p.name()+" · "+p.status(),"place",p.key(),0));}}
             case "place"->{back="map";var p=view.place(id);if(p.isEmpty())rows.add(line(0,"조회할 수 있는 장소가 없습니다."));else{
@@ -62,6 +63,7 @@ public final class QuestScreens {
             case "community"->{rows.add(new Button(0,"구성원","members",null,0));rows.add(new Button(0,"스토리 진행","story",null,0));rows.add(new Button(0,"진행 조건","conditions",null,0));}
             case "members"->{back="community";rows.add(line(0,"현재 서버에서 확인한 진행 연결 · 전체 명단 아님"));for(var m:view.members())rows.add(line(0,(m.online()?"[온라인] ":"[오프라인] ")+m.name()+(m.self()?" (본인)":"")));}
             case "story"->{back="community";rows.add(line(0,view.story().title()==null?"현재 공유 단계 미등록":"현재 공유 단계: "+view.story().title()));rows.add(line(0,view.nextGoal()==null?"다음 공유 목표 미등록":"다음 공유 목표: "+view.nextGoal()));rows.add(line(0,view.story().explorationOpen()==null?"자유 탐험 개방 상태 미등록":view.story().explorationOpen()?"공유 자유 탐험 개방":"공유 자유 탐험 미개방"));}
+            case "branches"->{back="quests";for(String branch:view.branches())rows.add(line(0,"확정 분기: "+branch));}
             case "conditions"->{back="community";view.conditions().lines().forEach(x->rows.add(line(0,x)));}
             default->throw new IllegalArgumentException("Unknown exploration screen");
         }

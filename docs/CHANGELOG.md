@@ -2,6 +2,12 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-27 — S4 공동체 공유 단계·조건·분기 투표 통합
+
+- V001~V005를 보존한 V006 요청 ID/완료/불변 분기와 기존 community_story CAS·공유 일지 트랜잭션을 추가했습니다. 온라인 전원 조건·30초 과반수 채팅 투표·명단 변경·입력 마감·불명 결과 확인·실패 HOLD를 구현했습니다.
+- 합성 콘텐츠의 공유 탐험 개방·지역 ENTRY/CONTENT/OPEN·확정 분기/스마트폰/일지를 연결했습니다. 일반 서버 비활성과 실제 클라이언트 보류·물리 효과 NOT_IMPLEMENTED를 유지합니다.
+- [기록](s4-shared-story-batch-verification.md)·[결과](../verification/s4-shared-story-batch-result.json): 전체119개 및 최종 필터·fingerprint 보완 후 관련12개 PASS, 최종 두 JVM/PG58.103초 PASS·정상 정리. 전체 S4는 진행 중입니다.
+
 ## 2026-10-27 — 공동체의 등록된 다음 공유 목표 연결
 
 - 직전 탐험 통합 배치를 재사용하고 선택적 콘텐츠 shared-stages/next-goal·현재 단계 전용 공개 DTO·공동체 GUI를 연결했습니다. 미등록은 명시하고 미래 목표는 노출하지 않습니다. V001~V005·기존 데이터/증거를 보존했습니다.

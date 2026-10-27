@@ -49,7 +49,7 @@ final class InventoryPostgresTest {
             store=new PostgresProgressStore(ds,access,f -> {}); await(store.migrate()); await(store.migrate());
             assertEquals("v001-preserved",await(store.readShared(a1)).value());
             try (var c=ds.getConnection(); var st=c.createStatement(); var rows=st.executeQuery("SELECT version,checksum FROM hearth_progress.schema_version ORDER BY version")) {
-                assertTrue(rows.next()); assertEquals(1,rows.getInt(1)); assertEquals(hash,rows.getString(2)); assertTrue(rows.next()); assertEquals(2,rows.getInt(1)); assertTrue(rows.next()); assertEquals(3,rows.getInt(1)); assertTrue(rows.next()); assertEquals(4,rows.getInt(1)); assertTrue(rows.next()); assertEquals(5,rows.getInt(1)); assertFalse(rows.next());
+                assertTrue(rows.next()); assertEquals(1,rows.getInt(1)); assertEquals(hash,rows.getString(2)); assertTrue(rows.next()); assertEquals(2,rows.getInt(1)); assertTrue(rows.next()); assertEquals(3,rows.getInt(1)); assertTrue(rows.next()); assertEquals(4,rows.getInt(1)); assertTrue(rows.next()); assertEquals(5,rows.getInt(1)); assertTrue(rows.next()); assertEquals(6,rows.getInt(1)); assertFalse(rows.next());
             }
             await(store.createRun(runB,"b")); for (var ctx:List.of(a1,a2,b1)) await(store.createPlayer(ctx,"player"));
             await(store.createInventory(a1,payload(1))); await(store.createInventory(a2,payload(2))); await(store.createInventory(b1,payload(3)));

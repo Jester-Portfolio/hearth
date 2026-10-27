@@ -18,3 +18,6 @@ quest-verification-enabled: false
 
 # 탐험·일지·지도는 기존 세션/퀘스트 격리 게이트와 별도의 JVM 플래그를 추가 요구합니다.
 exploration-verification-enabled: false
+
+# 기존 격리 세션·탐험 모드와 별도 sharedStory JVM 게이트를 추가 요구합니다.
+story-verification-enabled: false

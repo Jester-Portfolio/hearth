@@ -33,6 +33,11 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private final Map<UUID,Player> moving=new HashMap<>();
     private final Set<Entry> samples=Collections.newSetFromMap(new IdentityHashMap<>());
     private final Map<UUID,String> knownNames=new HashMap<>();
+    private Consumer<ServerProgressAccess.Context> onlineChanged=c->{};
+    private BiPredicate<ServerProgressAccess.Context,Location> entryAccess=(c,l)->true;
+    public void onlineChanged(Consumer<ServerProgressAccess.Context> listener){main();onlineChanged=listener;}
+    public void entryAccess(BiPredicate<ServerProgressAccess.Context,Location> access){main();entryAccess=access;}
+    public Map<UUID,Object> onlineContexts(ServerProgressAccess.Context ctx){main();var found=new HashMap<UUID,Object>();for(var e:entries.values())if(e.player().isOnline()&&e.link().context().storyRunId().equals(ctx.storyRunId()))found.put(e.player().getUniqueId(),e.session());return Map.copyOf(found);}
     private boolean closed;
     private BiPredicate<Player,String> questCommand=(p,c)->false;
     private BiPredicate<Player,Inventory> developerInventory=(p,i)->false;
@@ -85,7 +90,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
                 return result;
             }
         });
-        var entry=new Entry(player,session,link);entries.put(player.getUniqueId(),entry);
+        var entry=new Entry(player,session,link);entries.put(player.getUniqueId(),entry);onlineChanged.accept(link.context());
         session.ready().whenComplete((v,error) -> owner.execute(() -> {
             if (entries.get(player.getUniqueId())!=entry || !player.isOnline()) return;
             if (error!=null) player.kick(Component.text("격리 세션 준비 실패: "+session.error()));
@@ -96,7 +101,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler public void quit(PlayerQuitEvent e){
         Entry entry=entries.get(e.getPlayer().getUniqueId());
         if(entry==null || entry.player()!=e.getPlayer())return;
-        entries.remove(e.getPlayer().getUniqueId(),entry);
+        entries.remove(e.getPlayer().getUniqueId(),entry);onlineChanged.accept(entry.link().context());
         sessions.disconnect(entry.session()).whenComplete((v,error) -> plugin.getLogger().info("HEARTH_SESSION_QUIT "+(error==null ? "SAVED" : "HOLD")));
     }
     public String status(UUID player){
@@ -112,9 +117,10 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         samples.remove(e);if(entries.get(p.getUniqueId())==e)sessions.refresh(e.session());
     },1);}
     @EventHandler(priority=EventPriority.HIGHEST) public void move(PlayerMoveEvent e){
-        if(!allowed(e.getPlayer()) && !(e instanceof PlayerTeleportEvent)) e.setTo(e.getFrom());
+        if(!(e instanceof PlayerTeleportEvent)&&(!allowed(e.getPlayer())||e.getTo()!=null&&!canEnter(e.getPlayer(),e.getTo())))e.setTo(e.getFrom());
     }
-    @EventHandler(priority=EventPriority.HIGHEST) public void teleport(PlayerTeleportEvent e){if(moving.get(e.getPlayer().getUniqueId())!=e.getPlayer())e.setCancelled(true);}
+    private boolean canEnter(Player p,Location target){var e=entry(p);return e!=null&&target.getWorld()!=null&&target.getWorld().getUID().equals(e.link().world().mapping().physicalId())&&entryAccess.test(e.link().context(),target);}
+    @EventHandler(priority=EventPriority.HIGHEST) public void teleport(PlayerTeleportEvent e){if(moving.get(e.getPlayer().getUniqueId())!=e.getPlayer()||e.getTo()==null||!canEnter(e.getPlayer(),e.getTo()))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){if(e.getPlayer() instanceof Player p && e.getInventory().getType()!=InventoryType.CRAFTING && e.getInventory().getType()!=InventoryType.PLAYER && (!allowed(p) || !developerInventory.test(p,e.getInventory())))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){if(e.getWhoClicked() instanceof Player)e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void drag(InventoryDragEvent e){if(e.getWhoClicked() instanceof Player)e.setCancelled(true);}

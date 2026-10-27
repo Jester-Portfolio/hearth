@@ -8,7 +8,7 @@ import java.util.*;
 
 /** V001을 보존하는 순차 트랜잭션 마이그레이션. 미상 버전·기존 테이블의 자동 재설정은 금지합니다. */
 final class SchemaMigration {
-    private static final List<String> FILES=List.of("V001__progress.sql","V002__story_inventory.sql","V003__personal_quest.sql","V004__quest_steps_and_journal.sql","V005__exploration_diary_and_markers.sql");
+    private static final List<String> FILES=List.of("V001__progress.sql","V002__story_inventory.sql","V003__personal_quest.sql","V004__quest_steps_and_journal.sql","V005__exploration_diary_and_markers.sql","V006__shared_story_requests_and_branches.sql");
     private static void validateTables(Connection c,int version) throws SQLException {
         try (var st=c.createStatement()) {
             st.executeQuery("SELECT story_run_id,state_value,revision FROM hearth_progress.story_run LIMIT 0").close();
@@ -26,6 +26,11 @@ final class SchemaMigration {
                 st.executeQuery("SELECT minimap_enabled,quest_marker,npc_marker,player_marker,place_marker FROM hearth_progress.quest_preferences LIMIT 0").close();
                 for(String scope:List.of("personal","shared"))for(String type:List.of("fact","event"))st.executeQuery("SELECT entry_id,version,title,summary,detail FROM hearth_progress.diary_"+scope+"_"+type+" LIMIT 0").close();
                 st.executeQuery("SELECT stage_id,stage_title,exploration_open,revision FROM hearth_progress.community_story LIMIT 0").close();
+            }
+            if(version>=6){
+                st.executeQuery("SELECT story_run_id,request_id,fingerprint,resulting_revision FROM hearth_progress.community_story_request LIMIT 0").close();
+                st.executeQuery("SELECT story_run_id,stage_id,request_id FROM hearth_progress.community_story_completion LIMIT 0").close();
+                st.executeQuery("SELECT story_run_id,stage_id,choice_id,choice_label,request_id FROM hearth_progress.community_story_branch LIMIT 0").close();
             }
             if (version>=2) st.executeQuery("SELECT story_run_id,player_uuid,payload,revision FROM hearth_progress.story_inventory LIMIT 0").close();
         }

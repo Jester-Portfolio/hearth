@@ -35,6 +35,8 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     // World/Entity 객체 대신 물리 식별자만 보관합니다. 개인 저장 소유권은 논리 진행 키입니다.
     private final Map<UUID,Map<String,UUID>> npcs=new HashMap<>();
     private final PaperQuestUI ui;
+    private io.github.jesterportfolio.hearth.story.PaperStoryAdapter story;
+    public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;}
     private boolean closed;
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
@@ -98,13 +100,14 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         e.setCancelled(true);if(e.getHand()!=EquipmentSlot.HAND)return;
         Player p=e.getPlayer();var session=players.current(p);UUID entity=e.getRightClicked().getUniqueId();
         if(session==null || !near(p,npc,entity))return;
+        if(story!=null&&!story.access().content(session.context().storyRunId(),p.getX(),p.getY(),p.getZ()))return;
         var tickets=dialogues.options(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc);
         journal.interactPlace(session.context(),session,()->players.current(p)==session,"npc:"+npc,p.getX(),p.getY(),p.getZ())
             .handleAsync((v,error)->{if(error!=null)plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;},owner)
             .thenComposeAsync(v->{if(tickets.stream().anyMatch(t->!current(p,session,t)))throw new IllegalStateException("STALE_DIALOGUE");return quests.list(session.context(),session,()->players.current(p)==session);},owner).whenCompleteAsync((rows,error)->{
             if(tickets.stream().anyMatch(t->!current(p,session,t)))return;
             if(error!=null){unavailable(p);return;}
-            try {quests.requireListDisplay(session.context(),rows);var messages=selectionMessages(catalog,dialogues,tickets,rows);
+            try {quests.requireListDisplay(session.context(),rows);var messages=selectionMessages(catalog,dialogues,tickets.stream().filter(t->journal.questAllowed(session.context(),t.quest())).toList(),rows);
                 if(messages.isEmpty())p.sendMessage(Component.text("현재 대화할 퀘스트가 없습니다."));else messages.forEach(p::sendMessage);
             }catch(RuntimeException failure){unavailable(p);}
         },owner);
@@ -128,6 +131,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         return List.of(message);
     }
     private boolean command(Player p,String command){
+        if(story!=null&&story.command(p,command))return true;
         if(ui.command(p,command))return true;
         if(!command.startsWith("/hearthquest"))return false;
         var session=players.current(p);if(session==null)return true;
@@ -145,6 +149,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             ticket=dialogues.authorize(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),e.getUniqueId(),request);
         } catch(IllegalArgumentException error){plugin.getLogger().info("HEARTH_QUEST_REQUEST_REJECTED");return true;}
         QuestContent content=catalog.quest(ticket.quest());
+        if(!journal.questAllowed(session.context(),content.id())){unavailable(p);return true;}
         if(request.action().equals("select")) {
             quests.list(session.context(),session,()->players.current(p)==session).thenComposeAsync(rows->{
                 if(!current(p,session,ticket))throw new IllegalStateException("STALE_DIALOGUE");
@@ -152,15 +157,15 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
                 return quests.open(session.context(),content.id(),session,()->players.current(p)==session);
             },owner).whenCompleteAsync((q,error)->{
                 if(!current(p,session,ticket))return;
-                if(error!=null){unavailable(p);return;}
+                if(error!=null||!journal.questAllowed(session.context(),content.id())){unavailable(p);return;}
                 try {for(Component message:dialogueMessages(content,quests.requireDialogue(q),dialogues,ticket))p.sendMessage(message);}
                 catch(RuntimeException invalid){unavailable(p);}
             },owner);
         } else quests.open(session.context(),content.id(),session,()->players.current(p)==session)
-            .thenComposeAsync(q->{if(!current(p,session,ticket))throw new IllegalStateException("STALE_DIALOGUE");return request.action().equals("accept")?quests.accept(q,content):quests.advance(q,QuestStore.Phase.COMPLETED);},owner)
+            .thenComposeAsync(q->{if(!current(p,session,ticket)||!journal.questAllowed(session.context(),content.id()))throw new IllegalStateException("STALE_DIALOGUE");return request.action().equals("accept")?quests.accept(q,content):quests.advance(q,QuestStore.Phase.COMPLETED);},owner)
             .whenCompleteAsync((saved,error)->{
                 if(!current(p,session,ticket))return;
-                if(error!=null){unavailable(p);return;}
+                if(error!=null||!journal.questAllowed(session.context(),content.id())){unavailable(p);return;}
                 p.sendMessage(Component.text(content.text().get(saved.phase()==QuestStore.Phase.ACTIVE?"active":"completed")));
             },owner);
         return true;
@@ -177,7 +182,8 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         quests.list(session.context(),session,()->players.current(p)==session).whenCompleteAsync((states,error)->{
             if(players.current(p)!=session)return;
             if(error!=null){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다. 저장 처리 또는 오류 상태를 확인해 주세요."));plugin.getLogger().info("HEARTH_QUEST_READ_REJECTED");return;}
-            try {quests.requireListDisplay(session.context(),states);for(Component message:questId==null?listMessages(catalog,states):infoMessages(catalog,states,questId))p.sendMessage(message);}
+            try {quests.requireListDisplay(session.context(),states);if(questId==null){var entries=QuestListView.entries(catalog,states).stream().filter(q->journal.questAllowed(session.context(),q.questId())).toList();if(entries.isEmpty())p.sendMessage(Component.text("수락한 퀘스트가 없습니다"));else for(var row:entries)p.sendMessage(Component.text("["+row.status()+"] "+row.title()).clickEvent(ClickEvent.runCommand(QuestListView.infoCommand(row))));}
+                else for(Component message:journal.blocked(session.context()).contains(questId)?List.of(Component.text(QuestListView.UNAVAILABLE)):infoMessages(catalog,states,questId))p.sendMessage(message);}
             catch(RuntimeException failure){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다."));plugin.getLogger().warning("HEARTH_QUEST_READ_INVALID_RESPONSE");}
         },owner);
     }
@@ -187,9 +193,9 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(session==null || !worldIds.contains(p.getWorld().getUID()))return;
         var from=e.getFrom();
         journal.enterPlaces(session.context(),session,()->players.current(p)==session,from.getX(),from.getY(),from.getZ(),to.getX(),to.getY(),to.getZ()).exceptionally(error->{plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;});
-        for(QuestContent c:catalog.all())quests.enter(session.context(),c,session,()->players.current(p)==session,
+        for(QuestContent c:catalog.all())if(journal.questAllowed(session.context(),c.id()))quests.enter(session.context(),c,session,()->players.current(p)==session,
             from.getX(),from.getY(),from.getZ(),to.getX(),to.getY(),to.getZ()).thenAcceptAsync(saved->{
-                if(players.current(p)!=session || saved.isEmpty())return;
+                if(players.current(p)!=session || saved.isEmpty()||!journal.questAllowed(session.context(),c.id()))return;
                 String key=switch(saved.get().phase()){case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";default->throw new IllegalStateException("Unexpected movement result");};
                 p.sendMessage(Component.text(c.guidance(saved.get())));
             },owner).exceptionally(error->null);

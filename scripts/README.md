@@ -48,3 +48,6 @@
 
 
 탐험 통합은 `verify-lifecycle.py --sessions --quests --explore-batch` 단독 모드로 V004 fixture→V005·개인 발견/지도 DTO·개인/공유 일지·알림·설정·GUI 객체·두 JVM 복원·대표 실패를 검사합니다. 새 소유 경로와 기존 stageLifecycleRuntime/아티팩트/자원 한도를 재사용합니다. 실제 플레이어 접속·클릭을 자동 성공으로 판단하지 않으며 [탐험 배치 기록](../docs/s4-exploration-batch-verification.md)을 따릅니다.
+
+
+공유 단계 통합은 `verify-lifecycle.py --sessions --quests --story-batch` 단독 모드입니다. 새 DB의 V005 fixture→V006·온라인 조건/채팅 투표 제어 경계·실제 CAS/receipt·DB 대기/실패/불명 응답·공유 탐험/지역 접근·두 JVM 복원을 검사합니다. 기존 stage/자원 감시·새 소유 경로만 재사용하며 다른 자동/수동 모드와 혼합하지 않습니다. 투표 만료는 제어 시계, 실제 채팅·이동/텔레포트는 미실행입니다. [공유 배치 기록](../docs/s4-shared-story-batch-verification.md)을 따릅니다.
