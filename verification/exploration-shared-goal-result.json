@@ -1,0 +1,159 @@
+{
+  "확인일": "2026-10-27",
+  "사용자_기준": "6139e686d7d25474ce95c766b6f85bda0adbe0cc",
+  "실제_시작_커밋": "f2104c754fb1c9041c87ce927a6afde1a69ee4cc",
+  "변경": "기존 통합 배치를 재사용하고 현재 공유 단계의 콘텐츠 등록 next-goal만 공개 DTO/GUI에 연결. 신규 DB 쓰기·스키마·단계 활성화 없음.",
+  "단위_관련_회귀": {
+    "tests": 73,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "기존_재사용": "직전 108개 통과 근거 중 영향 없는 비퀘스트37개와 기존 배치의 구현/검증 기록 보존. 전체110개를 이번에 새로 실행했다고 해석하지 않음.",
+  "런타임_결과": "PASS",
+  "자동_묶음_사용": 1,
+  "자동_묶음_상한": 3,
+  "모드": "--sessions --quests --explore-batch",
+  "실행_시간_초": 70.427,
+  "프로세스": {
+    "database": {
+      "pid": 1361595,
+      "ready_seconds": null,
+      "duration_seconds": 69.726,
+      "max_sampled_rss_kib": 212368,
+      "observed_cpu_seconds": 2.34,
+      "shutdown_seconds": 0.107,
+      "min_sampled_host_available_kib": 11822256,
+      "exit_code": 0
+    },
+    "paper-prepare": {
+      "pid": 1361675,
+      "ready_seconds": 14.213,
+      "duration_seconds": 46.536,
+      "max_sampled_rss_kib": 1200308,
+      "observed_cpu_seconds": 80.74,
+      "shutdown_seconds": 3.677,
+      "min_sampled_host_available_kib": 11822256,
+      "exit_code": 0
+    },
+    "paper-resume": {
+      "pid": 1361937,
+      "ready_seconds": 9.697,
+      "duration_seconds": 20.268,
+      "max_sampled_rss_kib": 960812,
+      "observed_cpu_seconds": 34.36,
+      "shutdown_seconds": 3.475,
+      "min_sampled_host_available_kib": 12052528,
+      "exit_code": 0
+    }
+  },
+  "적용_한도": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "정리_오류": [],
+  "소유_프로세스_포트_정리": true,
+  "확인_목록": [
+    "explore_V004_upgrade_legacy_quest_unchanged",
+    "explore_V005_preserves_legacy_HUD_notice_new_flags_default_true",
+    "explore_PUBLIC_QUESTION_HIDDEN_safe_DTO_coordinates",
+    "explore_map_publication_not_visit_or_hub_unlock",
+    "explore_verified_partial_roster_same_run_no_invented_stage",
+    "explore_discovery_coalesced_pending_in_save_barrier_main_tick_alive",
+    "explore_first_verified_visit_atomic_discovery_notice_diary_hub",
+    "explore_repeated_visit_no_revision_change",
+    "explore_interaction_place_visit_separate_from_discovery",
+    "explore_new_fact_version_updates_detail",
+    "explore_shared_writer_interface_fixture_only",
+    "explore_3_discoveries_4_current_facts_5_history_no_diary_or_shared_notice",
+    "explore_P2_shared_fact_story_only_personal_discovery_notice_isolated",
+    "explore_same_player_run_B_isolated",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_home",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_map",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_region",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_place",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_diary",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_STORY",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_PERSON",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_EXPLORATION",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_CHRONICLE",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_fact",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_event",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_community",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_members",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_story",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_conditions",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_settings",
+    "explore_Paper_GUI_54_slots_inventory_unchanged_notices",
+    "explore_notification_map_detail_links",
+    "explore_registered_next_goal_GUI_only_current_shared_stage",
+    "explore_six_personal_flags_off",
+    "explore_place_notice_read_one_and_all",
+    "explore_idle_unload_old_NPC_refs_cleared",
+    "explore_restore_places_facts_history_notices_flags_shared_state",
+    "explore_read_and_setting_preserve_place_revisions",
+    "explore_restore_places_facts_history_notices_flags_shared_state",
+    "explore_quest_COMPLETED_configured_story_fact_no_extra_diary_alert",
+    "explore_identical_fact_version_no_duplicate",
+    "explore_shared_event_same_version_no_duplicate",
+    "explore_quest_diary_notice_P2_isolation",
+    "explore_condition_provider_only_current_online_targets_controlled_no_fake_players",
+    "explore_failed_discovery_HOLD_save_barrier_preserved",
+    "explore_diary_event_failure_rolls_back_place_fact_timeline",
+    "explore_failed_discovery_no_false_notice_success",
+    "explore_failure_other_player_existing_values_unchanged",
+    "explore_failure_other_run_unaffected"
+  ],
+  "실제_Paper_PG_체크_수": 101,
+  "최종_JAR_SHA256": "6f696671e477a59629b62ad293df0f1ab3826f3ae4fd804e678853acb557b6e3",
+  "설치_JAR_SHA256": "6f696671e477a59629b62ad293df0f1ab3826f3ae4fd804e678853acb557b6e3",
+  "소스_입력_일치": true,
+  "V001_V005_및_기존_검증_증거_보존": true,
+  "증거": [
+    {
+      "path": "/tmp/hearth-s4-11.ye1djbzc/run-result.json",
+      "sha256": "18c20738c2d7783e002ade60a00631043488263d48185edf5230193c683d8875"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.ye1djbzc/build-inputs.json",
+      "sha256": "f0d8c58b61461daf4c6969ae5aa4f47c242947fb33d8920e923530e5b2e3018c"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.ye1djbzc/database-console.log",
+      "sha256": "d64c96360ad0ac8e1ea0a79d34c1c56a068f861097dcff6db04eb6fb9d654d5d"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.ye1djbzc/paper-prepare-console.log",
+      "sha256": "c222f6602ce2139c7c65945bc5ad32826cb89bda2168b263b6222101b6040b09"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.ye1djbzc/paper-resume-console.log",
+      "sha256": "f751d3293351aa07865eedac4c4366d96242bf951ee986a2ed78dcfc26d593f0"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.ye1djbzc/database-resources.json",
+      "sha256": "509e54479d0b69fde6c0a46cc2068277153c537fab854e06c78510b25f9469b2"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.ye1djbzc/paper-prepare-resources.json",
+      "sha256": "41d32421b45db4f808d20385fd967293d5ceccf340c2852e0bc9a820950ebf9b"
+    },
+    {
+      "path": "/tmp/hearth-s4-11.ye1djbzc/paper-resume-resources.json",
+      "sha256": "3edbc183321dce18ab802ba72bb365a9e0153f1229a24d821cc98e787a78ca3d"
+    }
+  ],
+  "미검증": [
+    "실제 클라이언트 이동·NPC/오브젝트/GUI 클릭·화면 표시·인벤토리 행동",
+    "지형 지도 렌더러·원형 미니맵·실제 빠른 이동·스마트폰 아이템",
+    "공동체 중요 단계/투표 엔진·실제 챕터와 개방 시점",
+    "PG 프로세스 재시작·부하/누수·운영 배포"
+  ],
+  "전체_S4": "진행 중"
+}

@@ -61,7 +61,7 @@ public final class QuestScreens {
             case "event"->{back="CHRONICLE";var e=view.events().stream().filter(x->(scope(x.shared())+x.id()+":"+x.version()).equals(id)).findFirst();if(e.isEmpty())rows.add(line(0,"기록을 확인할 수 없습니다."));else{var x=e.get();for(String text:List.of(x.title(),x.summary(),x.detail(),"확인 시각: "+x.time(),x.shared()?"공동체 공유 기록":"개인 기록"))rows.add(line(0,text));}}
             case "community"->{rows.add(new Button(0,"구성원","members",null,0));rows.add(new Button(0,"스토리 진행","story",null,0));rows.add(new Button(0,"진행 조건","conditions",null,0));}
             case "members"->{back="community";rows.add(line(0,"현재 서버에서 확인한 진행 연결 · 전체 명단 아님"));for(var m:view.members())rows.add(line(0,(m.online()?"[온라인] ":"[오프라인] ")+m.name()+(m.self()?" (본인)":"")));}
-            case "story"->{back="community";rows.add(line(0,view.story().title()==null?"현재 공유 단계 미등록":"현재 공유 단계: "+view.story().title()));rows.add(line(0,view.story().explorationOpen()==null?"자유 탐험 개방 상태 미등록":view.story().explorationOpen()?"공유 자유 탐험 개방":"공유 자유 탐험 미개방"));}
+            case "story"->{back="community";rows.add(line(0,view.story().title()==null?"현재 공유 단계 미등록":"현재 공유 단계: "+view.story().title()));rows.add(line(0,view.nextGoal()==null?"다음 공유 목표 미등록":"다음 공유 목표: "+view.nextGoal()));rows.add(line(0,view.story().explorationOpen()==null?"자유 탐험 개방 상태 미등록":view.story().explorationOpen()?"공유 자유 탐험 개방":"공유 자유 탐험 미개방"));}
             case "conditions"->{back="community";view.conditions().lines().forEach(x->rows.add(line(0,x)));}
             default->throw new IllegalArgumentException("Unknown exploration screen");
         }

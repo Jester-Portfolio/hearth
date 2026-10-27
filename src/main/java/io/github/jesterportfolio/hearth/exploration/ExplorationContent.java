@@ -4,7 +4,7 @@ import io.github.jesterportfolio.hearth.quest.*;
 import java.util.*;
 
 /** 서버 전용 정의입니다. 이 객체/좌표를 화면이나 AI DTO로 전달하지 않습니다. */
-public record ExplorationContent(Map<String,Region> regions,Map<String,Place> places,Map<String,Fact> facts,Map<String,String> questFacts){
+public record ExplorationContent(Map<String,Region> regions,Map<String,Place> places,Map<String,Fact> facts,Map<String,String> questFacts,Map<String,String> sharedGoals){
     public record Region(String id,String name,boolean published){}
     public enum Visibility{PUBLIC,HIDDEN,QUESTION}
     public enum Discovery{ENTRY,INTERACTION}
@@ -12,7 +12,7 @@ public record ExplorationContent(Map<String,Region> regions,Map<String,Place> pl
     public record Place(String id,String marker,String name,String region,String category,Visibility visibility,Discovery discovery,
             QuestContent.Area bounds,Location location,Location unknownLocation,boolean hub,String interaction,String fact){}
     public record Fact(String id,String category,String title,String summary,String detail,int version,boolean important){}
-    public ExplorationContent{regions=Map.copyOf(regions);places=Map.copyOf(places);facts=Map.copyOf(facts);questFacts=Map.copyOf(questFacts);}
+    public ExplorationContent{regions=Map.copyOf(regions);places=Map.copyOf(places);facts=Map.copyOf(facts);questFacts=Map.copyOf(questFacts);sharedGoals=Map.copyOf(sharedGoals);}
     public static ExplorationContent parse(Map<?,?> root,QuestCatalog quests){
         if(!(root.get("format") instanceof Number n) || n.doubleValue()!=1)throw new IllegalArgumentException("Unsupported exploration format");
         var regions=new LinkedHashMap<String,Region>();var facts=new LinkedHashMap<String,Fact>();var places=new LinkedHashMap<String,Place>();var bindings=new HashMap<String,String>();
@@ -23,6 +23,10 @@ public record ExplorationContent(Map<String,Region> regions,Map<String,Place> pl
             var fact=new Fact(id,category,text(row,"title"),text(row,"summary"),text(row,"detail"),version,bool(row,"important"));
             if(facts.putIfAbsent(id,fact)!=null)throw new IllegalArgumentException("Duplicate fact");
             if(row.containsKey("quest-completed")){String quest=id(row,"quest-completed");if(!quests.questIds().contains(quest))throw new IllegalArgumentException("Unknown quest diary binding");if(bindings.putIfAbsent(quest,id)!=null)throw new IllegalArgumentException("Duplicate quest diary binding");}
+        }
+        var sharedGoals=new HashMap<String,String>();
+        if(root.containsKey("shared-stages"))for(var row:list(root,"shared-stages")){
+            String stage=id(row,"id");if(sharedGoals.putIfAbsent(stage,text(row,"next-goal"))!=null)throw new IllegalArgumentException("Duplicate shared stage");
         }
         var markers=new HashSet<String>();
         for(var row:list(root,"places")){
@@ -35,7 +39,7 @@ public record ExplorationContent(Map<String,Region> regions,Map<String,Place> pl
             if(places.putIfAbsent(id,place)!=null)throw new IllegalArgumentException("Duplicate place");
         }
         if(markers.stream().anyMatch(places::containsKey))throw new IllegalArgumentException("Marker shadows place id");
-        if(regions.isEmpty())throw new IllegalArgumentException("No regions");return new ExplorationContent(regions,places,facts,bindings);
+        if(regions.isEmpty())throw new IllegalArgumentException("No regions");return new ExplorationContent(regions,places,facts,bindings,sharedGoals);
     }
     private static Location location(Object value){
         if(value==null)return new Location("NONE","위치 비공개");var m=map(value);String kind=text(m,"kind");

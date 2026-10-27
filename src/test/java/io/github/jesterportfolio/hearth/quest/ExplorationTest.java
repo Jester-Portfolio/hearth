@@ -87,4 +87,20 @@ final class ExplorationTest {
         for(String flag:List.of("hud","minimap","quest_marker","npc_marker","player_marker","place_marker"))assertTrue(view.journal().preferences().flag(flag));
         assertEquals(5,QuestScreens.screen(q,view,"settings",null,0).stream().filter(b->b.action().startsWith("setting:")).count());
     }
+    @Test void onlyRegisteredCurrentSharedGoalIsPublicAndOldContentRemainsUnregistered(){
+        var raw=root();raw.put("shared-stages",List.of(Map.of("id","current_stage","next-goal","공개 현재 목표"),Map.of("id","future_stage","next-goal","미공개 미래 목표")));
+        var content=ExplorationContent.parse(raw,QuestCatalogTest.catalog());var conditions=new CommunityBoundary.Status(false,List.of("진행 조건 미등록"));
+        var absent=ExplorationView.build(content,empty(),List.of(),conditions);assertNull(absent.nextGoal());assertFalse(absent.toString().contains("미공개 미래 목표"));
+        var data=new ExplorationStore.Data(Map.of(),List.of(),List.of(),new ExplorationStore.Story("current_stage","공개 현재 단계",null,3));
+        var active=ExplorationView.build(content,data,List.of(),conditions);assertEquals("공개 현재 목표",active.nextGoal());assertFalse(active.toString().contains("미공개 미래 목표"));
+        var view=new QuestJournal.View(Map.of(),new QuestJournalStore.Journal(Set.of(),new QuestJournalStore.Preferences(true,-1),List.of()),active);
+        assertTrue(QuestScreens.screen(QuestCatalogTest.catalog(),view,"story",null,0).stream().anyMatch(b->b.label().equals("다음 공유 목표: 공개 현재 목표")));
+        assertNull(ExplorationView.build(content(),data,List.of(),conditions).nextGoal());assertEquals(3,data.story().revision());
+        var unknown=new ExplorationStore.Data(Map.of(),List.of(),List.of(),new ExplorationStore.Story("other_stage","다른 현재 단계",null,4));assertNull(ExplorationView.build(content,unknown,List.of(),conditions).nextGoal());
+    }
+    @Test void malformedAndDuplicateSharedGoalDefinitionsFailBeforeActivation(){
+        for(Object rows:List.of("not-a-list",List.of(Map.of("id","stage","next-goal","")),List.of(Map.of("id","../stage","next-goal","목표")),List.of(Map.of("id","stage","next-goal","하나"),Map.of("id","stage","next-goal","둘")))){
+            var raw=root();raw.put("shared-stages",rows);assertThrows(IllegalArgumentException.class,()->ExplorationContent.parse(raw,QuestCatalogTest.catalog()));
+        }
+    }
 }

@@ -7,6 +7,10 @@ regions:
   - id: survey_valley
     name: 공개 시험 계곡
     public: false
+# 정의만으로 공유 단계를 활성화하지 않습니다. DB의 현재 단계와 일치할 때만 표시합니다.
+shared-stages:
+  - id: public_test_stage
+    next-goal: 공개 시험 기록을 확인하세요.
 journal:
   - id: village_record
     category: EXPLORATION
