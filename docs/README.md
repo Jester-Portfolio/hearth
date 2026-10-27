@@ -15,7 +15,7 @@
 | [s4-9-verification.md](s4-9-verification.md) | 수명주기·예약·IDLE·세대 단위 조건 통과와 실제 시험 경계 |
 | [s4-10-verification.md](s4-10-verification.md) | 저장 순서·실패 보존 단위 및 실제 기존 월드 재진입/대표 거부 검증 |
 | [s4-11-verification.md](s4-11-verification.md) | watchdog 실패 이력·수정본 두 JVM 재검증 통과·자원/정리와 미실행 경계 |
-| [personal-quest-verification.md](personal-quest-verification.md) | 격리 주민·개인 방문 퀘스트 구현, 실DB/두 JVM 검증과 실제 클릭 미실행 |
+| [personal-quest-verification.md](personal-quest-verification.md) | 다중 NPC·개인 방문 퀘스트, 대화/저장 격리·실DB/두 JVM 검증·실제 클릭 보류 |
 | [player-session-manual-test.md](player-session-manual-test.md) | 실제 인증 한 명의 보호·복원·빠른 재접속·IDLE·두 JVM 결과 및 수동 절차 |
 | [player-session-verification.md](player-session-verification.md) | 격리 세션 이벤트/저장·빠른 재접속·다중 장벽 자동 검사와 후속 실제 기록 연결 |
 | [plugin-suitability-review.md](plugin-suitability-review.md) | S4 사전 조사: WorldGuard/WorldEdit 의존성·버전 근거, Multiverse-Core/Paper API 비교와 미실행 시험 계획 |

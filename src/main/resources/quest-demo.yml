@@ -1,22 +1,48 @@
-# 공개 시험 콘텐츠만 포함합니다. 운영 퀘스트/서사가 아닙니다.
-id: survey_marker
-npc:
-  name: 시험 안내원
-  x: 3.5
-  y: 64.0
-  z: 5.5
-objective:
-  min-x: 12.0
-  max-x: 14.0
-  min-y: 64.0
-  max-y: 67.0
-  min-z: 12.0
-  max-z: 14.0
-text:
-  offer: '시험 지점 (12~14, 64~67, 12~14)을 방문한 뒤 돌아와 주세요. 보상과 아이템 소모는 없습니다.'
-  accept: '[수락]'
-  active: '수락했습니다. 지정 지점을 방문해 주세요.'
-  report-ready: '방문을 확인했습니다. 시험 안내원에게 보고해 주세요.'
-  report: '[보고]'
-  completed: '보고가 완료되었습니다. 완료 기록이 유지됩니다.'
-  failure: '퀘스트 처리를 확인할 수 없습니다. 완료로 처리하지 않았습니다. 관리자 확인이 필요할 수 있습니다.'
+# 공개 시험 콘텐츠. 초기 로딩만 지원하며 기존 서버 파일을 자동으로 덮어쓰지 않습니다.
+format: 2
+npcs:
+  - id: survey_guide
+    name: 시험 안내원
+    x: 3.5
+    y: 64.0
+    z: 5.5
+  - id: path_guide
+    name: 경로 안내원
+    x: 10.5
+    y: 64.0
+    z: 3.5
+quests:
+  - id: survey_marker
+    npc-id: survey_guide
+    objective:
+      min-x: 12.0
+      max-x: 14.0
+      min-y: 64.0
+      max-y: 67.0
+      min-z: 12.0
+      max-z: 14.0
+    text:
+      offer: '시험 지점 (12~14, 64~67, 12~14)을 방문한 뒤 돌아와 주세요. 보상과 아이템 소모는 없습니다.'
+      accept: '[방문 조사 수락]'
+      active: '방문 조사를 수락했습니다. 지정 지점을 방문해 주세요.'
+      report-ready: '방문 조사를 마쳤습니다. 시험 안내원에게 보고해 주세요.'
+      report: '[방문 조사 보고]'
+      completed: '방문 조사 보고가 완료되었습니다. 완료 기록이 유지됩니다.'
+      failure: '방문 조사 처리를 확인할 수 없습니다. 관리자 확인이 필요할 수 있습니다.'
+  - id: path_marker
+    npc-id: path_guide
+    objective:
+      min-x: 12.0
+      max-x: 14.0
+      min-y: 64.0
+      max-y: 67.0
+      min-z: 2.0
+      max-z: 4.0
+    text:
+      offer: '경로 지점 (12~14, 64~67, 2~4)을 방문한 뒤 돌아와 주세요. 보상과 아이템 소모는 없습니다.'
+      accept: '[경로 확인 수락]'
+      active: '경로 확인을 수락했습니다. 경로 지점을 방문해 주세요.'
+      report-ready: '경로 확인을 마쳤습니다. 경로 안내원에게 보고해 주세요.'
+      report: '[경로 확인 보고]'
+      completed: '경로 확인 보고가 완료되었습니다. 완료 기록이 유지됩니다.'
+      failure: '경로 확인 처리를 확인할 수 없습니다. 관리자 확인이 필요할 수 있습니다.'

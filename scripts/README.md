@@ -29,3 +29,5 @@
 포트 반환 검사는 종료 연결의 TIME_WAIT와 실제 리스너를 구분하도록 SO_REUSEADDR bind를 사용합니다. 실제 리스너는 여전히 거부하며 소유 PID/그룹 종료 검사도 유지합니다. 수동 행동은 자동 판정하지 않으므로 `player_actions_verdict=NOT_AUTOMATICALLY_ASSESSED`와 관측별 판정을 구분합니다.
 
 개인 방문 퀘스트 자동 검증은 `verify-lifecycle.py --sessions --quests`로 같은 격리/자원 감시·두 JVM/DB 도구를 사용합니다. 수동 시험은 기존 `--manual-player --operator-ready --profile PROFILE_NAME`을 추가하며 사용자가 준비되기 전 서버를 실행하지 않습니다. 실제 클릭과 내부 호출의 판정·명령·콘텐츠 위치는 [개인 퀘스트 기록](../docs/personal-quest-verification.md)을 따릅니다.
+
+2026-10-27 `--sessions --quests`는 두 콘텐츠·두 퀘스트 저장 잠금/해제·다중 장벽/stale·새 JVM 복원을 같은 실행 도구로 검사합니다. 실제 클라이언트 시험은 사용자 별도 요청 전 보류하며 준비·접속·TTY를 요청하지 않습니다. 과거 수동 명령 예시는 현재 실행 요청이 아닙니다.

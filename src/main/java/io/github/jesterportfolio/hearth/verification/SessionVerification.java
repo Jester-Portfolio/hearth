@@ -38,11 +38,21 @@ public final class SessionVerification implements AutoCloseable {
     private PersonalQuest quests;
     private PaperQuestAdapter questAdapter;
     private QuestContent content;
+    private QuestCatalog catalog;
+    private PersonalQuest.Session multiOne,multiTwo;
+    private CompletionStage<QuestStore.Saved> multiWriteOne,multiWriteTwo;
+    private CompletionStage<PersonalQuest.Session> multiReopen;
+    private CompletionStage<Void> multiBarrier;
+    private final java.util.concurrent.atomic.AtomicBoolean multiValid=new java.util.concurrent.atomic.AtomicBoolean(true);
     private PersonalQuest.Session qa,qb;
     private long started=System.nanoTime();
     public SessionVerification(JavaPlugin plugin,PostgresProgressStore store,ServerProgressAccess access,Map<UUID,WorldLifecycle> worlds,
             Executor owner,PaperInventoryCodec codec,IntFunction<InventoryPayload> fixture) {
         this.plugin=plugin;this.store=store;this.access=access;this.worlds=new HashMap<>(worlds);this.owner=owner;this.codec=codec;this.fixture=fixture;
+        if(plugin.getConfig().getBoolean("quest-verification-enabled")) {
+            if(!Boolean.getBoolean("hearth.verification.quests"))throw new IllegalStateException("Quest gate missing");
+            catalog=loadCatalog(plugin);
+        }
         a1=ctx(a,1);a2=ctx(a,2);b3=ctx(b,3);
         autosave=new PaperInventoryAutosave(plugin,List.of(),this::refresh,() -> {
             if (!cycle) {cycle=true;log("AUTOSAVE elapsed_ms="+(System.nanoTime()-started)/1_000_000);}
@@ -51,16 +61,29 @@ public final class SessionVerification implements AutoCloseable {
         World waiting=Bukkit.getWorlds().getFirst();
         for (int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)waiting.getBlockAt(x,63,z).setType(Material.STONE,false);
         adapter=new PaperSessionAdapter(plugin,coordinator,owner,codec,new Location(waiting,0.5,64,0.5));
-        if(plugin.getConfig().getBoolean("quest-verification-enabled")) {
-            if(!Boolean.getBoolean("hearth.verification.quests"))throw new IllegalStateException("Quest gate missing");
-            java.io.File file=new java.io.File(plugin.getDataFolder(),"quest-demo.yml");
-            if(!file.exists())plugin.saveResource("quest-demo.yml",false);
-            content=QuestContent.load(YamlConfiguration.loadConfiguration(file));
-            quests=new PersonalQuest(store,content.id(),owner,SessionVerification::main);
-            questAdapter=new PaperQuestAdapter(plugin,adapter,quests,content,owner,
+        if(catalog!=null) {
+            content=catalog.all().stream().filter(c->c.id().equals("survey_marker")).findFirst().orElse(catalog.all().iterator().next());
+            quests=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);
+            questAdapter=new PaperQuestAdapter(plugin,adapter,quests,catalog,owner,
                 Set.of(worlds.get(a).mapping().physicalId(),worlds.get(b).mapping().physicalId()));
         }
     }
+    private static QuestCatalog loadCatalog(JavaPlugin plugin) {
+        java.io.File file=new java.io.File(plugin.getDataFolder(),"quest-demo.yml");
+        if(!file.exists())plugin.saveResource("quest-demo.yml",false);
+        var yaml=YamlConfiguration.loadConfiguration(file);
+        if(yaml.isSet("id") && !yaml.isSet("format")) {
+            // 기존 파일을 덮어쓰지 않고 단일 콘텐츠의 옛 형식을 초기 로딩합니다.
+            var npc=new HashMap<String,Object>(Objects.requireNonNull(yaml.getConfigurationSection("npc"),"Missing legacy NPC").getValues(false));npc.put("id","survey_guide");
+            return QuestCatalog.parse(List.of(npc),List.of(Map.of("id",Objects.requireNonNull(yaml.get("id")),"npc-id","survey_guide",
+                "objective",Objects.requireNonNull(yaml.getConfigurationSection("objective"),"Missing legacy goal").getValues(false),
+                "text",Objects.requireNonNull(yaml.getConfigurationSection("text"),"Missing legacy dialogue").getValues(false))));
+        }
+        if(!(yaml.get("format") instanceof Number n) || n.doubleValue()!=2 || !(yaml.get("npcs") instanceof List<?> npcs) || !(yaml.get("quests") instanceof List<?> rows))
+            throw new IllegalArgumentException("Unsupported or malformed quest content format");
+        return QuestCatalog.parse(npcs,rows);
+    }
+
     private ServerProgressAccess.Context ctx(UUID run,int player){return access.forVerifiedServerLink(run,new UUID(49,player));}
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("Not main thread");}
     private void log(String s){plugin.getLogger().info("HEARTH_SESSION_"+s);}
@@ -117,7 +140,10 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
-        case "quest-first" -> questFirst();
+        case "quest-first" -> questFirst().thenCompose(v->multiFirst());
+        case "quest-multi-ready" -> multiReady();
+        case "quest-multi-inflight" -> multiInflight();
+        case "quest-multi-done" -> multiDone();
         case "quest-restored" -> questRestored();
         case "quest-cycle" -> questCycle();
         case "quest-failure" -> questFailure();
@@ -195,12 +221,15 @@ public final class SessionVerification implements AutoCloseable {
         for(UUID run:List.of(a,b)) {
             World w=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));
             questAdapter.ensure(w);questAdapter.ensure(w);
-            check(questAdapter.count(w)==1 && questAdapter.dialogueAllowed(w),"quest_npc_single_interaction_flag_"+run);
+            for(QuestContent c:catalog.all())check(questAdapter.count(w,c.npcId())==1 && questAdapter.dialogueAllowed(w,c),"quest_npc_single_interaction_flag_"+run+"_"+c.npcId());
         }
         check(content.contains(13,64,13) && !content.contains(2,64,2),"quest_content_visit_bounds");
     }
     private CompletionStage<Void> questRead(ServerProgressAccess.Context ctx,QuestStore.Phase phase,long revision) {
-        return mainResult(store.readQuest(ctx,content.id())).thenAccept(row->check(row.phase()==phase && row.revision()==revision,"quest_row_"+ctx.storyRunId()+"_"+ctx.playerId()+"_"+phase+"_r"+revision));
+        return questRead(ctx,content.id(),phase,revision);
+    }
+    private CompletionStage<Void> questRead(ServerProgressAccess.Context ctx,String id,QuestStore.Phase phase,long revision) {
+        return mainResult(store.readQuest(ctx,id)).thenAccept(row->check(row.phase()==phase && row.revision()==revision,"quest_row_"+ctx.storyRunId()+"_"+ctx.playerId()+"_"+id+"_"+phase+"_r"+revision));
     }
     private CompletionStage<Void> rejectQuest(CompletionStage<?> stage) {
         return mainResult(stage.handle((v,e)->{if(e==null)throw new IllegalStateException("Quest accepted invalid operation");return null;})).thenRun(()->check(true,"quest_invalid_or_duplicate_rejected"));
@@ -208,7 +237,7 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<Void> questFirst() {
         if(quests==null)throw new IllegalStateException("Quest disabled");
         return openAll().thenRun(this::npcCheck)
-            .thenCompose(v->quests.open(a1,s1,()->coordinator.playable(s1)))
+            .thenCompose(v->quests.open(a1,content.id(),s1,()->coordinator.playable(s1)))
             .thenCompose(q->{qa=q;return rejectQuest(quests.advance(q,QuestStore.Phase.REPORT_READY));})
             .thenCompose(v->questRead(a1,QuestStore.Phase.NOT_ACCEPTED,-1))
             .thenCompose(v->{var first=quests.advance(qa,QuestStore.Phase.ACTIVE);var duplicate=rejectQuest(quests.advance(qa,QuestStore.Phase.ACTIVE));return first.thenCombine(duplicate,(row,ignored)->row);})
@@ -218,7 +247,7 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->questRead(a1,QuestStore.Phase.COMPLETED,2))
             .thenCompose(v->questRead(a2,QuestStore.Phase.NOT_ACCEPTED,-1))
             .thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1))
-            .thenCompose(v->quests.open(a2,s2,()->coordinator.playable(s2)))
+            .thenCompose(v->quests.open(a2,content.id(),s2,()->coordinator.playable(s2)))
             .thenCompose(q->{qb=q;return quests.advance(q,QuestStore.Phase.ACTIVE);})
             .thenCompose(v->quests.advance(qb,QuestStore.Phase.REPORT_READY))
             .thenCompose(v->questRead(a1,QuestStore.Phase.COMPLETED,2))
@@ -227,35 +256,89 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->rejectQuest(store.advanceQuest(a1,content.id(),new QuestStore.Saved(QuestStore.Phase.ACTIVE,0),QuestStore.Phase.REPORT_READY)))
             .thenRun(()->check(true,"quest_personal_A1_A2_B1_isolation_CAS"));
     }
+    private CompletionStage<Void> matrix() {
+        return questRead(a1,"survey_marker",QuestStore.Phase.COMPLETED,2)
+            .thenCompose(v->questRead(a1,"path_marker",QuestStore.Phase.ACTIVE,0))
+            .thenCompose(v->questRead(a2,"survey_marker",QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(a2,"path_marker",QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->questRead(ctx(b,1),"survey_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->questRead(ctx(b,1),"path_marker",QuestStore.Phase.REPORT_READY,1));
+    }
+    private CompletionStage<Void> multiFirst() {
+        check(catalog.questIds().equals(Set.of("survey_marker","path_marker")),"multi_fixture_two_explicit_ids");
+        var d=new QuestDialogue(catalog);Object session=new Object();UUID world=worlds.get(a).mapping().physicalId(),entity=UUID.randomUUID();
+        var ticket=d.begin(a1.playerId(),session,a,world,entity,"survey_guide","survey_marker");
+        var request=QuestDialogue.Request.parse(d.command(ticket,"accept"));
+        try {d.authorize(a1.playerId(),session,a,world,entity,new QuestDialogue.Request("accept","path_guide","path_marker",request.nonce()));throw new AssertionError("Wrong link allowed");}
+        catch(IllegalArgumentException good){check(true,"multi_wrong_NPC_quest_request_rejected");}
+        d.authorize(a1.playerId(),session,a,world,entity,request);
+        try {d.authorize(a1.playerId(),session,a,world,entity,request);throw new AssertionError("Duplicate allowed");}
+        catch(IllegalArgumentException good){check(true,"multi_duplicate_request_rejected");}
+        return questRead(a1,"path_marker",QuestStore.Phase.NOT_ACCEPTED,-1)
+            .thenCompose(v->questRead(a2,"path_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->questRead(ctx(b,1),"path_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->quests.open(a1,"path_marker",s1,()->coordinator.playable(s1)))
+            .thenCompose(q->quests.advance(q,QuestStore.Phase.ACTIVE))
+            .thenCompose(v->quests.open(a2,"path_marker",s2,()->coordinator.playable(s2)))
+            .thenCompose(q->quests.advance(q,QuestStore.Phase.ACTIVE))
+            .thenCompose(v->quests.open(ctx(b,1),"path_marker",new Object(),()->worlds.get(b).state()==WorldLifecycle.State.ACTIVE))
+            .thenCompose(q->quests.advance(q,QuestStore.Phase.ACTIVE).thenCompose(v->quests.advance(q,QuestStore.Phase.REPORT_READY)))
+            .thenCompose(v->questRead(a1,"survey_marker",QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(a2,"survey_marker",QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->questRead(ctx(b,1),"survey_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenRun(()->check(true,"multi_A1_A2_B1_two_quest_isolation"));
+    }
+    private CompletionStage<Void> multiReady() {
+        return quests.open(a2,"survey_marker",new Object(),multiValid::get).thenCompose(q->{multiOne=q;return quests.open(a2,"path_marker",new Object(),multiValid::get);})
+            .thenAccept(q->multiTwo=q);
+    }
+    private CompletionStage<Void> multiInflight() {
+        multiWriteOne=quests.advance(multiOne,QuestStore.Phase.COMPLETED);
+        multiWriteTwo=quests.advance(multiTwo,QuestStore.Phase.REPORT_READY);
+        multiBarrier=quests.barrier(a);
+        check(!multiWriteOne.toCompletableFuture().isDone() && !multiWriteTwo.toCompletableFuture().isDone() && !multiBarrier.toCompletableFuture().isDone(),"multi_two_inflight_barrier_waits");
+        multiValid.set(false);
+        multiReopen=quests.open(a2,"survey_marker",new Object(),()->true);
+        check(!multiReopen.toCompletableFuture().isDone(),"multi_reconnect_waits_old_quest_write");
+        return CompletableFuture.completedFuture(null);
+    }
+    private CompletionStage<Void> expectQuestCode(CompletionStage<?> work,String code) {
+        return mainResult(work.handle((v,e)->{
+            if(e==null)throw new IllegalStateException("Expected quest rejection");
+            while(e instanceof CompletionException || e instanceof ExecutionException)e=e.getCause();
+            if(!code.equals(e.getMessage()))throw new IllegalStateException("Unexpected quest rejection");return null;
+        })).thenRun(()->check(true,"multi_rejected_"+code));
+    }
+    private CompletionStage<Void> multiDone() {
+        return expectQuestCode(multiWriteOne,"STALE_QUEST").thenCompose(v->expectQuestCode(multiWriteTwo,"STALE_QUEST"))
+            .thenCompose(v->mainResult(multiBarrier)).thenCompose(v->mainResult(multiReopen))
+            .thenAccept(q->{check(q.saved().phase()==QuestStore.Phase.COMPLETED && multiOne.saved().phase()==QuestStore.Phase.REPORT_READY
+                && multiTwo.saved().phase()==QuestStore.Phase.ACTIVE,"multi_stale_callbacks_no_old_memory_apply");})
+            .thenCompose(v->matrix());
+    }
     private CompletionStage<Void> questRestored() {
-        return openAll().thenRun(this::npcCheck)
-            .thenCompose(v->questRead(a1,QuestStore.Phase.COMPLETED,2))
-            .thenCompose(v->questRead(a2,QuestStore.Phase.REPORT_READY,1))
-            .thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1))
-            .thenCompose(v->quests.open(a1,s1,()->coordinator.playable(s1)))
+        return openAll().thenRun(this::npcCheck).thenCompose(v->matrix())
+            .thenCompose(v->quests.open(a1,content.id(),s1,()->coordinator.playable(s1)))
             .thenCompose(q->{qa=q;return rejectQuest(quests.advance(q,QuestStore.Phase.COMPLETED));})
             .thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0))
-            .thenRun(()->check(true,"quest_new_JVM_completed_without_recreation"));
+            .thenRun(()->check(true,"multi_new_JVM_completed_without_recreation"));
     }
     private CompletionStage<Void> questCycle() {
         UUID physical=worlds.get(a).mapping().physicalId();
         return mainResult(coordinator.disconnect(s1)).thenCompose(v->mainResult(coordinator.disconnect(s2)))
             .thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
-            .thenRun(()->check(Bukkit.getWorld(physical)==null && !questAdapter.tracks(physical),"quest_NPC_unloaded_no_world_reference"))
+            .thenRun(()->check(Bukkit.getWorld(physical)==null && !questAdapter.tracks(physical),"multi_NPC_unloaded_no_world_reference"))
             .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return mainResult(s1.ready()).thenCompose(x->mainResult(s2.ready()));})
-            .thenRun(this::npcCheck)
-            .thenCompose(v->quests.open(a1,s1,()->coordinator.playable(s1)))
-            .thenAccept(q->{qa=q;check(q.saved().phase()==QuestStore.Phase.COMPLETED && q.saved().revision()==2,"quest_reconnect_reload_completed_retained");});
+            .thenRun(this::npcCheck).thenCompose(v->matrix())
+            .thenCompose(v->quests.open(a1,content.id(),s1,()->coordinator.playable(s1)))
+            .thenAccept(q->{qa=q;check(q.saved().phase()==QuestStore.Phase.COMPLETED && q.saved().revision()==2,"multi_reconnect_reload_completed_retained");});
     }
     private CompletionStage<Void> questFailure() {
-        // 같은 실DB의 결정적 SQL 실패를 별도 제어 세션에 주입합니다. 실제 플레이어 실패가 아닙니다.
-        var probe=new PersonalQuest(store,content.id(),owner,SessionVerification::main);
-        return probe.open(a2,new Object(),()->true).thenCompose(q->rejectQuest(probe.advance(q,QuestStore.Phase.COMPLETED))
-            .thenRun(()->check(q.held() && q.saved().phase()==QuestStore.Phase.REPORT_READY && q.saved().revision()==1,"quest_SQL_failure_HOLD_old_state_preserved"))
+        var probe=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);
+        return probe.open(a2,"path_marker",new Object(),()->true).thenCompose(q->rejectQuest(probe.advance(q,QuestStore.Phase.COMPLETED))
+            .thenRun(()->check(q.held() && q.saved().phase()==QuestStore.Phase.REPORT_READY && q.saved().revision()==1,"multi_SQL_failure_HOLD_old_state_preserved"))
             .thenCompose(v->rejectQuest(probe.barrier(a))))
-            .thenCompose(v->questRead(a2,QuestStore.Phase.REPORT_READY,1))
-            .thenCompose(v->questRead(a1,QuestStore.Phase.COMPLETED,2))
-            .thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1));
+            .thenCompose(v->matrix());
     }
     public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run),owner);}
     public boolean canUnload(UUID run){return coordinator.canUnload(run) && (quests==null || quests.settled(run));}
@@ -290,7 +373,7 @@ public final class SessionVerification implements AutoCloseable {
         main();if(!manual)throw new IllegalStateException("수동 시험 전용입니다");
         var profile=Bukkit.getWhitelistedPlayers().stream().filter(p->name.equals(p.getName())).findFirst().orElseThrow();
         var context=access.forVerifiedServerLink(a,profile.getUniqueId());
-        if(quests!=null)mainResult(store.readQuest(context,content.id())).thenAccept(row->log("MANUAL_QUEST phase="+row.phase()+" revision="+row.revision()))
+        if(quests!=null)for(QuestContent c:catalog.all())mainResult(store.readQuest(context,c.id())).thenAccept(row->log("MANUAL_QUEST id="+c.id()+" phase="+row.phase()+" revision="+row.revision()))
             .exceptionally(error->{log("MANUAL_QUEST HOLD "+LifecycleFailure.code(error));return null;});
         log("MANUAL "+adapter.status(profile.getUniqueId())+" world_state="+worlds.get(a).state()+" world_epoch="+worlds.get(a).generation());
         mainResult(store.readInventory(context)).thenAccept(saved->log("MANUAL_DB count="+codec.decode(saved.payload())[0].getAmount()+" revision="+saved.revision()))

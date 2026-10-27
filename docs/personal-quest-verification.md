@@ -1,5 +1,47 @@
 # 격리 개인 방문 퀘스트·NPC 검증
 
+## 다중 콘텐츠 확장 — 2026-10-27
+
+기준 `129f98296a89c1e3a584a94658ca358999cd4526`, main·작업 트리/스테이징 깨끗함, fetch 후 origin/main과 일치한 상태에서 시작했습니다. **실제 클라이언트 시험은 사용자의 별도 요청 전까지 보류**하며 준비·접속·TTY 조작을 요청하지 않고 독립적인 구현·자동 검증을 계속합니다. 앞서 만든 수동 준비 경로에는 서버/DB를 실행하지 않았고 이번에도 재사용하지 않았습니다.
+
+[콘텐츠 파일](../src/main/resources/quest-demo.yml)의 `format: 2`는 NPC 목록과 퀘스트 목록을 구분합니다. 각 퀘스트의 `npc-id`가 NPC와 명시적으로 연결됩니다. 이번 프로토타입은 NPC 하나당 독립 방문 퀘스트 하나를 지원하며 그 이상의 연결은 모호하게 처리하지 않고 거부합니다. 기존 `survey_marker` ID·V003·완료 기록을 유지하고 `path_marker`만 추가했습니다. 새 경로에는 기본 두 콘텐츠를 복사하며 기존 서버 파일을 덮어쓰거나 hot reload·자동 콘텐츠 이관을 하지 않습니다. 옛 단일 형식의 초기 로더도 유지하되 실제 Paper의 옛 YAML 경로는 이번에 실행하지 않았습니다.
+
+| NPC ID | 퀘스트 ID | NPC 위치 | 목표 구역 |
+| --- | --- | --- | --- |
+| survey_guide | survey_marker |3.5,64,5.5|x/z 12~14, y 64~67|
+| path_guide | path_marker |10.5,64,3.5|x 12~14, z 2~4, y 64~67|
+
+`QuestCatalog`가 전체 목록의 ID·중복·존재하지 않는/중복 연결·누락 대사·잘못된 수치/구역·겹친 NPC 좌표를 검증한 뒤 세션/엔티티를 활성화합니다. 허용되지 않은 퀘스트 ID는 저장 조회 전에 거부합니다. NPC 배치·대화·목표는 코드 밖 데이터입니다. 외부 NPC 플랫폼의 새 채택은 없으며 [기존 공식 자료 비교](plugin-suitability-review.md#격리-npc개인-방문-퀘스트-검토--2026-10-26)의 좁은 Paper 어댑터를 재사용했습니다.
+
+채팅 선택에는 서버 발급 현재 대화 nonce·NPC ID·quest_id를 포함합니다. 서버가 알고 있는 플레이어/세션·story_run_id·실제 월드·NPC 엔티티·거리와 대화를 함께 확인합니다. 다른 NPC를 클릭하거나 종료/월드 언로드하면 옛 선택은 무효이고 같은 선택의 중복 실행을 차단합니다. 클라이언트가 진행 ID를 선택하지 않습니다. 저장 요청 후 UI 대화가 바뀌어도 이미 진행한 DB 쓰기를 롤백했다고 주장하지 않으며, 저장 대상 키는 고정하고 옛 화면 콜백은 적용하지 않습니다.
+
+기존 `PersonalQuest`의 메모리 키에도 quest_id를 추가했습니다. 단일 저장 worker/CAS·일반 인벤토리/세션 제한을 유지하고 진행별 장벽·HOLD·해제·종료는 모든 퀘스트 키를 포함합니다. NPC별 엔티티/WorldGuard 구역을 구분하고 언로드 때 대화/추적을 정리합니다. 원래 안내원의 `hearth_demo_dialogue` 구역 ID도 유지합니다. 일반 서버 비활성, 보상·공유/선행 퀘스트·실패/재시작·경제·컷신·스마트폰·AI 제외 경계는 그대로입니다.
+
+| 자동 완료 조건 | 결과·시험 경계 |
+| --- | --- |
+| 한 퀘스트 완료의 다른 퀘스트 영향 없음 | 실DB에서 A/P1 survey_marker 완료 후 path_marker 미수락 유지, 이후 독립 수락 확인 |
+| A/P2·B/P1 두 퀘스트 격리 | 실제 Paper/DB에서 아래 6개 상태를 개별 조회·두 JVM 복원 |
+| 중복·잘못된 대상/현재 대화 거부 | 실제 어댑터가 사용하는 순수 Java 대화 검사 단위 및 Paper 제어 호출. 실제 클릭은 미실행 |
+| 종료/재접속·새 JVM 복원 | 기존 내부 세션·IDLE 언로드/재입장·두 번째 Paper JVM에서 재생성 없이 조회 |
+| 한 퀘스트 저장 실패의 다른 값 보존 | 실DB path_marker 완료 UPDATE를 SQLSTATE23514로 거부, REPORT_READY/r1·다른 퀘스트 값 유지 |
+| 다중 in-flight 장벽·stale·NPC 수명주기 | 실제 DB 테이블 잠금으로 두 쓰기 대기·장벽 미완료 확인, 새 세션은 옛 쓰기 후 복원/옛 메모리 적용 거부, 실제 NPC별 하나·언로드 추적 정리 |
+
+최종 상태: **A/P1 = COMPLETED/r2·ACTIVE/r0, A/P2 = COMPLETED/r2·REPORT_READY/r1, B/P1 = NOT_ACCEPTED/r-1·REPORT_READY/r1** (`survey_marker`, `path_marker` 순). 제어 시험 컨텍스트이며 실제 로그인/클릭 성공이 아닙니다.
+
+Gradle `build test check`·단위/회귀 **56개, 실패/오류/skip 0**입니다. 새 `/tmp/hearth-s4-11.l5bpfgc0`의 기존 도구 `--sessions --quests` 첫 묶음이 **52.476초 PASS**, 자동 한도 3묶음 중 1묶음을 사용했습니다. 최종 실행/설치 JAR SHA-256은 `ed36ba131cbbab58edcfb77af59e2567176564f036da000bfe9fea6b90da4e27`이며 실행 후 빌드 입력과 일치합니다. V001~V003·기존 증거도 불변입니다. [다중 결과 JSON](../verification/multi-quest-result.json)에 원시 해시·판정·자원을 기록했습니다.
+
+| 대상 | 시작 완료 | 최대 표본 RSS | CPU 시간 | 종료 |
+| --- | --- | --- | --- | --- |
+| 첫 Paper |13.270초|1,015.08MiB|57.38초|3.668초|
+| 두 번째 Paper |8.965초|951.02MiB|33.90초|3.476초|
+| DB 보조 JVM |준비 표식 확인|217.89MiB|2.36초|0.208초|
+
+최소 표본 가용 RAM 약11.185GiB, Paper 순차 2회/PG 1개·Xmx1536MiB·RSS2.5GiB 중단·가용6GiB/디스크4GiB·CPU2/nice+10·localhost·600초 한도를 지켰습니다. 모든 소유 프로세스/포트를 반환했습니다. DB 보조 JVM RSS는 PG 자식 전체 메모리가 아니며 TPS/MSPT·장기 부하·누수·DB 재시작·운영 배포는 미검증입니다. 실제 클릭·채팅·이동과 S4-3 잔여 범위는 보류하며 전체 S4는 진행 중입니다.
+
+최종 문서 검사는 변경 Markdown 8개·상대 링크 227개에서 오류 0건입니다. 표/제목/코드 블록·일본어/한자 혼입과 `git diff --check`도 통과했습니다. Python/JSON·최종 JAR/입력·기존 SQL/증거 불변을 확인했으며 비밀 검사는 기존 Git 훅을 사용합니다.
+
+아래는 2026-10-26 단일 콘텐츠 구현·검증 당시 기록입니다. 현재 다중 설정과 다음 작업은 위 확장 기록을 우선합니다.
+
 기준 커밋은 `37cc064f1291bac6de8e1aae38c5261644713241`입니다. 시작 시 main·작업 트리·스테이징이 깨끗했고 `git fetch origin` 후 origin/main과 일치했습니다. 이번 범위는 승인된 최소 개인 퀘스트이며 S4 전체 완료나 운영 배포가 아닙니다. [플러그인 비교](plugin-suitability-review.md#격리-npc개인-방문-퀘스트-검토--2026-10-26)의 근거로 별도 외부 플랫폼을 채택하지 않고 Paper 주민 하나와 기존 저장 경로를 연결했습니다.
 
 ## 구현한 플레이 흐름과 저장 경계
@@ -60,9 +102,9 @@ Gradle `build test check` 및 JUnit **43개(새 퀘스트 6개 포함), 실패/�
 
 문서 검사는 변경 Markdown 8개·상대 링크 219개에서 오류 0건, 표/제목/코드 블록·일본어/한자 혼입 오류 0건입니다. `git diff --check`, Python 구문·결과 JSON·최종 빌드 입력 및 기존 검증 증거 불변도 확인했습니다. 비밀 검사는 기존 Git 커밋/푸시 훅을 사용합니다.
 
-## 실제 클라이언트 후속 절차
+## 보류된 실제 클라이언트 절차
 
-사용자 준비를 확인하기 전에는 제한시간 서버를 시작하지 않습니다. [기존 수동 절차](player-session-manual-test.md)의 새 경로 생성·`stageLifecycleRuntime`·프로필/SSH 준비를 그대로 사용하되 실행 인자에 `--quests`를 추가합니다. 자동 시험의 실패/HOLD 데이터는 사용하지 않습니다.
+사용자가 별도로 실제 클라이언트 시험을 요청하기 전에는 이 절차를 실행하거나 준비·접속·TTY 조작을 요청하지 않습니다. 아래는 요청 후 참고할 절차이며 현재 다음 작업이 아닙니다. [기존 수동 절차](player-session-manual-test.md)의 새 경로 생성·`stageLifecycleRuntime`·프로필/SSH 준비를 그대로 사용하되 실행 인자에 `--quests`를 추가합니다. 자동 시험의 실패/HOLD 데이터는 사용하지 않습니다.
 
 ```sh
 python3 scripts/verify-lifecycle.py --workspace "$HEARTH_MANUAL_ROOT" --java /home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java --plugin build/libs/Hearth-0.1.0-SNAPSHOT.jar --artifact-source /tmp/hearth-s4-2.vnd2kki4 --accept-eula --sessions --quests --manual-player --operator-ready --profile PROFILE_NAME

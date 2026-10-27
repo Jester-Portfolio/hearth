@@ -21,111 +21,129 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/** 콘텐츠 주민 하나의 격리 어댑터. NPC 플랫폼/퀘스트 엔진을 일반 서버에 설치하지 않습니다. */
+/** 초기 검증한 콘텐츠만 사용하는 격리 어댑터. 일반 서버에는 활성화하지 않습니다. */
 public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final JavaPlugin plugin;
     private final PaperSessionAdapter players;
     private final PersonalQuest quests;
-    private final QuestContent content;
+    private final QuestCatalog catalog;
+    private final QuestDialogue dialogues;
     private final Executor owner;
     private final Set<UUID> worldIds;
     private final NamespacedKey tag;
-    // World/Entity 참조를 보존하지 않습니다.
-    private final Map<UUID,UUID> npcs=new HashMap<>();
-    private final Map<UUID,PlayerSessions.Session> conversations=new HashMap<>();
+    // World/Entity 객체 대신 물리 식별자만 보관합니다. 개인 저장 소유권은 논리 진행 키입니다.
+    private final Map<UUID,Map<String,UUID>> npcs=new HashMap<>();
     private boolean closed;
-    public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestContent content,Executor owner,Set<UUID> worldIds) {
-        this.plugin=plugin;this.players=players;this.quests=quests;this.content=content;this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
+    public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,Executor owner,Set<UUID> worldIds) {
+        this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;dialogues=new QuestDialogue(catalog);
+        this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         Bukkit.getPluginManager().registerEvents(this,plugin);players.questCommand(this::command);
         for(World w:Bukkit.getWorlds())ensure(w);
     }
     public void ensure(World w) {
         if(closed || !worldIds.contains(w.getUID()))return;
-        dialogueRegion(w);
-        w.getChunkAt((int)Math.floor(content.x())>>4,(int)Math.floor(content.z())>>4);
-        List<Entity> existing=w.getEntities().stream().filter(this::tagged).toList();
-        UUID current=npcs.get(w.getUID());
-        if(current!=null && existing.size()==1 && existing.getFirst().getUniqueId().equals(current))return;
-        existing.forEach(Entity::remove);
-        var npc=w.spawn(new Location(w,content.x(),content.y(),content.z()),Villager.class,v->{
-            v.setAI(false);v.setGravity(false);v.setInvulnerable(true);v.setSilent(true);v.setCollidable(false);
-            v.setPersistent(false);v.customName(Component.text(content.name()));v.setCustomNameVisible(true);
-            v.getPersistentDataContainer().set(tag,PersistentDataType.STRING,content.id());
-        });
-        npcs.put(w.getUID(),npc.getUniqueId());
+        for(QuestContent content:catalog.all())dialogueRegion(w,content);
+        var tracked=npcs.computeIfAbsent(w.getUID(),id->new HashMap<>());
+        for(QuestContent content:catalog.all()) {
+            w.getChunkAt(chunk(content.x()),chunk(content.z()));
+            List<Entity> existing=w.getEntities().stream().filter(e->content.npcId().equals(npcId(e))).toList();
+            UUID current=tracked.get(content.npcId());
+            if(current!=null && existing.size()==1 && existing.getFirst().getUniqueId().equals(current))continue;
+            existing.forEach(Entity::remove);
+            var npc=w.spawn(new Location(w,content.x(),content.y(),content.z()),Villager.class,v->{
+                v.setAI(false);v.setGravity(false);v.setInvulnerable(true);v.setSilent(true);v.setCollidable(false);
+                v.setPersistent(false);v.customName(Component.text(content.name()));v.setCustomNameVisible(true);
+                v.getPersistentDataContainer().set(tag,PersistentDataType.STRING,content.npcId());
+            });
+            tracked.put(content.npcId(),npc.getUniqueId());
+        }
     }
-    private void dialogueRegion(World w) {
+    private static int chunk(double coordinate){return (int)Math.floor(coordinate)>>4;}
+    private static String regionId(QuestContent c){return c.npcId().equals("survey_guide")?"hearth_demo_dialogue":"hearth_demo_dialogue_"+c.npcId();}
+    private void dialogueRegion(World w,QuestContent c) {
         var manager=Objects.requireNonNull(WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(w)),"Missing WG manager");
-        var point=BlockVector3.at(Math.floor(content.x()),Math.floor(content.y()),Math.floor(content.z()));
-        var top=point.add(0,1,0);
-        var existing=manager.getRegion("hearth_demo_dialogue");
+        var point=BlockVector3.at(Math.floor(c.x()),Math.floor(c.y()),Math.floor(c.z()));var top=point.add(0,1,0);
+        var existing=manager.getRegion(regionId(c));
         if(existing==null) {
-            var region=new ProtectedCuboidRegion("hearth_demo_dialogue",point,top);
-            region.setPriority(30);region.setFlag(Flags.PASSTHROUGH,StateFlag.State.ALLOW);
-            region.setFlag(Flags.INTERACT,StateFlag.State.ALLOW);manager.addRegion(region);
+            var region=new ProtectedCuboidRegion(regionId(c),point,top);region.setPriority(30);
+            region.setFlag(Flags.PASSTHROUGH,StateFlag.State.ALLOW);region.setFlag(Flags.INTERACT,StateFlag.State.ALLOW);manager.addRegion(region);
         } else if(!existing.getMinimumPoint().equals(point) || !existing.getMaximumPoint().equals(top)
                 || existing.getPriority()!=30 || existing.getFlag(Flags.INTERACT)!=StateFlag.State.ALLOW
                 || existing.getFlag(Flags.PASSTHROUGH)!=StateFlag.State.ALLOW)
             throw new IllegalStateException("Existing dialogue region mismatch; preserve original");
     }
-    public boolean dialogueAllowed(World w) {
+    public boolean dialogueAllowed(World w,QuestContent c) {
         var manager=Objects.requireNonNull(WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(w)));
-        return manager.getApplicableRegions(BlockVector3.at(content.x(),content.y(),content.z())).queryState(null,Flags.INTERACT)==StateFlag.State.ALLOW;
+        return manager.getApplicableRegions(BlockVector3.at(c.x(),c.y(),c.z())).queryState(null,Flags.INTERACT)==StateFlag.State.ALLOW;
     }
     @EventHandler public void chunkLoad(ChunkLoadEvent e){
-        if(!worldIds.contains(e.getWorld().getUID()) || e.getChunk().getX()!=((int)Math.floor(content.x())>>4) || e.getChunk().getZ()!=((int)Math.floor(content.z())>>4))return;
-        UUID id=e.getWorld().getUID();
-        Bukkit.getScheduler().runTaskLater(plugin,()->{World w=Bukkit.getWorld(id);if(w!=null && w.isChunkLoaded((int)Math.floor(content.x())>>4,(int)Math.floor(content.z())>>4))ensure(w);},1);
+        if(!worldIds.contains(e.getWorld().getUID()) || catalog.all().stream().noneMatch(c->e.getChunk().getX()==chunk(c.x()) && e.getChunk().getZ()==chunk(c.z())))return;
+        UUID id=e.getWorld().getUID();int x=e.getChunk().getX(),z=e.getChunk().getZ();
+        Bukkit.getScheduler().runTaskLater(plugin,()->{World w=Bukkit.getWorld(id);if(w!=null && w.isChunkLoaded(x,z))ensure(w);},1);
     }
-    private boolean tagged(Entity e){return content.id().equals(e.getPersistentDataContainer().get(tag,PersistentDataType.STRING));}
-    public int count(World w){return (int)w.getEntities().stream().filter(this::tagged).count();}
+    private String npcId(Entity e){return e.getPersistentDataContainer().get(tag,PersistentDataType.STRING);}
+    public int count(World w,String npc){return (int)w.getEntities().stream().filter(e->npc.equals(npcId(e))).count();}
     public boolean tracks(UUID world){return npcs.containsKey(world);}
-    private boolean near(Player p){UUID id=npcs.get(p.getWorld().getUID());Entity e=id==null?null:p.getWorld().getEntity(id);return e!=null && e.isValid() && p.getLocation().distanceSquared(e.getLocation())<=16;}
+    private Entity entity(World w,String npc){var map=npcs.get(w.getUID());UUID id=map==null?null:map.get(npc);return id==null?null:w.getEntity(id);}
+    private boolean near(Player p,String npc,UUID id){Entity e=entity(p.getWorld(),npc);return e!=null && e.isValid() && e.getUniqueId().equals(id) && p.getLocation().distanceSquared(e.getLocation())<=16;}
+    private boolean current(Player p,PlayerSessions.Session session,QuestDialogue.Ticket t){return dialogues.current(t) && players.current(p)==session && p.getWorld().getUID().equals(t.world()) && near(p,t.npc(),t.entity());}
     @EventHandler public void load(WorldLoadEvent e){UUID id=e.getWorld().getUID();Bukkit.getScheduler().runTaskLater(plugin,()->{World w=Bukkit.getWorld(id);if(w!=null)ensure(w);},1);}
-    @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){npcs.remove(e.getWorld().getUID());}
-    @EventHandler public void quit(PlayerQuitEvent e){conversations.remove(e.getPlayer().getUniqueId());}
+    @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){npcs.remove(e.getWorld().getUID());dialogues.clearWorld(e.getWorld().getUID());}
+    @EventHandler public void quit(PlayerQuitEvent e){dialogues.clear(e.getPlayer().getUniqueId());}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void click(PlayerInteractAtEntityEvent e){
-        if(!tagged(e.getRightClicked()))return;
-        e.setCancelled(true); // 주민 거래 GUI/기존 아이템 변경을 열지 않습니다.
-        if(e.getHand()!=EquipmentSlot.HAND)return;
-        Player p=e.getPlayer();var session=players.current(p);
-        if(session==null || !near(p))return;
-        conversations.put(p.getUniqueId(),session);
-        quests.open(session.context(),session,()->players.current(p)==session).whenCompleteAsync((q,error)->{
-            if(players.current(p)!=session)return;
-            if(error!=null){failure(p,error);return;}
+        String npc=npcId(e.getRightClicked());if(npc==null)return;
+        e.setCancelled(true);if(e.getHand()!=EquipmentSlot.HAND)return;
+        Player p=e.getPlayer();var session=players.current(p);UUID entity=e.getRightClicked().getUniqueId();
+        if(session==null || !near(p,npc,entity))return;
+        QuestContent content=catalog.npc(npc);
+        var ticket=dialogues.begin(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc,content.id());
+        quests.open(session.context(),content.id(),session,()->players.current(p)==session).whenCompleteAsync((q,error)->{
+            if(!current(p,session,ticket))return;
+            if(error!=null){failure(p,content);return;}
             switch(q.saved().phase()) {
-                case NOT_ACCEPTED -> p.sendMessage(Component.text(content.text().get("offer")).append(Component.newline()).append(Component.text(content.text().get("accept")).clickEvent(ClickEvent.runCommand("/hearthquest accept"))));
+                case NOT_ACCEPTED -> offer(p,content,"offer","accept",ticket);
                 case ACTIVE -> p.sendMessage(Component.text(content.text().get("active")));
-                case REPORT_READY -> p.sendMessage(Component.text(content.text().get("report-ready")).append(Component.newline()).append(Component.text(content.text().get("report")).clickEvent(ClickEvent.runCommand("/hearthquest report"))));
+                case REPORT_READY -> offer(p,content,"report-ready","report",ticket);
                 case COMPLETED -> p.sendMessage(Component.text(content.text().get("completed")));
             }
         },owner);
     }
+    private void offer(Player p,QuestContent c,String text,String action,QuestDialogue.Ticket t){
+        p.sendMessage(Component.text(c.text().get(text)).append(Component.newline()).append(Component.text(c.text().get(action)).clickEvent(ClickEvent.runCommand(dialogues.command(t,action)))));
+    }
     private boolean command(Player p,String command){
-        if(!command.equals("/hearthquest accept") && !command.equals("/hearthquest report"))return false;
-        var session=players.current(p);
-        if(session==null || conversations.get(p.getUniqueId())!=session || !near(p))return true;
-        act(p,session,command.endsWith("accept")?QuestStore.Phase.ACTIVE:QuestStore.Phase.COMPLETED);return true;
+        if(!command.startsWith("/hearthquest"))return false;
+        var session=players.current(p);if(session==null)return true;
+        final QuestDialogue.Request request;final QuestDialogue.Ticket ticket;
+        try {
+            request=QuestDialogue.Request.parse(command);
+            Entity e=entity(p.getWorld(),request.npc());
+            if(e==null || !near(p,request.npc(),e.getUniqueId()))throw new IllegalArgumentException("NPC unavailable");
+            ticket=dialogues.authorize(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),e.getUniqueId(),request);
+        } catch(IllegalArgumentException error){plugin.getLogger().info("HEARTH_QUEST_REQUEST_REJECTED");return true;}
+        QuestContent content=catalog.quest(ticket.quest());
+        quests.open(session.context(),content.id(),session,()->players.current(p)==session)
+            .thenComposeAsync(q->{if(!current(p,session,ticket))throw new IllegalStateException("STALE_DIALOGUE");return quests.advance(q,request.action().equals("accept")?QuestStore.Phase.ACTIVE:QuestStore.Phase.COMPLETED);},owner)
+            .whenCompleteAsync((saved,error)->{
+                if(!current(p,session,ticket))return;
+                if(error!=null){failure(p,content);return;}
+                p.sendMessage(Component.text(content.text().get(saved.phase()==QuestStore.Phase.ACTIVE?"active":"completed")));
+            },owner);
+        return true;
     }
     @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void move(PlayerMoveEvent e){
         if(e instanceof PlayerTeleportEvent || e.getTo()==null)return;
         var p=e.getPlayer();var session=players.current(p);var to=e.getTo();
-        if(session==null || !worldIds.contains(p.getWorld().getUID()) || !content.contains(to.getX(),to.getY(),to.getZ()))return;
-        quests.open(session.context(),session,()->players.current(p)==session).thenAcceptAsync(q->{
-            if(players.current(p)==session && !q.busy() && !q.held() && q.saved().phase()==QuestStore.Phase.ACTIVE)act(p,session,QuestStore.Phase.REPORT_READY);
-        },owner).exceptionally(error->null);
+        if(session==null || !worldIds.contains(p.getWorld().getUID()))return;
+        for(QuestContent c:catalog.all())if(c.contains(to.getX(),to.getY(),to.getZ())) {
+            quests.open(session.context(),c.id(),session,()->players.current(p)==session).thenComposeAsync(q->{
+                if(players.current(p)==session && !q.busy() && !q.held() && q.saved().phase()==QuestStore.Phase.ACTIVE)
+                    return quests.advance(q,QuestStore.Phase.REPORT_READY).thenAcceptAsync(saved->{if(players.current(p)==session)p.sendMessage(Component.text(c.text().get("report-ready")));},owner);
+                return java.util.concurrent.CompletableFuture.completedFuture(null);
+            },owner).exceptionally(error->null);
+        }
     }
-    private void act(Player p,PlayerSessions.Session session,QuestStore.Phase target){
-        quests.open(session.context(),session,()->players.current(p)==session)
-            .thenComposeAsync(q->quests.advance(q,target),owner).whenCompleteAsync((saved,error)->{
-                if(players.current(p)!=session)return;
-                if(error!=null){failure(p,error);return;}
-                String key=switch(saved.phase()){case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";default->throw new IllegalStateException();};
-                p.sendMessage(Component.text(content.text().get(key)));
-            },owner);
-    }
-    private void failure(Player p,Throwable error){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}
-    @Override public void close(){closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);conversations.clear();
-        for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(this::tagged).forEach(Entity::remove);}npcs.clear();}
+    private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}
+    @Override public void close(){closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
+        for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(e->npcId(e)!=null).forEach(Entity::remove);}npcs.clear();}
 }

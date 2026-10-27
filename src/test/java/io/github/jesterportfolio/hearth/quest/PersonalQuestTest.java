@@ -8,27 +8,31 @@ import static org.junit.jupiter.api.Assertions.*;
 
 final class PersonalQuestTest {
     static class Store implements QuestStore {
-        record Key(UUID run,UUID player){}
+        record Key(UUID run,UUID player,String quest){}
         final Map<Key,Saved> rows=new HashMap<>();
         final List<CompletableFuture<Saved>> pending=new ArrayList<>();
         final List<Runnable> commit=new ArrayList<>();int reads;
-        Key key(ServerProgressAccess.Context c){return new Key(c.storyRunId(),c.playerId());}
-        public CompletionStage<Saved> readQuest(ServerProgressAccess.Context c,String id){reads++;return CompletableFuture.completedFuture(rows.getOrDefault(key(c),new Saved(Phase.NOT_ACCEPTED,-1)));}
+        Key key(ServerProgressAccess.Context c){return key(c,"survey_marker");}
+        Key key(ServerProgressAccess.Context c,String id){return new Key(c.storyRunId(),c.playerId(),id);}
+        public CompletionStage<Saved> readQuest(ServerProgressAccess.Context c,String id){reads++;return CompletableFuture.completedFuture(rows.getOrDefault(key(c,id),new Saved(Phase.NOT_ACCEPTED,-1)));}
         public CompletionStage<Saved> advanceQuest(ServerProgressAccess.Context c,String id,Saved before,Phase next){
             var f=new CompletableFuture<Saved>();pending.add(f);commit.add(()->{
-                if(!rows.getOrDefault(key(c),new Saved(Phase.NOT_ACCEPTED,-1)).equals(before)){f.completeExceptionally(new IllegalStateException("CAS"));return;}
-                var row=new Saved(next,before.revision()+1);rows.put(key(c),row);f.complete(row);
+                if(!rows.getOrDefault(key(c,id),new Saved(Phase.NOT_ACCEPTED,-1)).equals(before)){f.completeExceptionally(new IllegalStateException("CAS"));return;}
+                var row=new Saved(next,before.revision()+1);rows.put(key(c,id),row);f.complete(row);
             });return f;
         }
     }
     static class Fixture {
         final Store store=new Store();final ArrayDeque<Runnable> queue=new ArrayDeque<>();
-        final PersonalQuest quests=new PersonalQuest(store,"survey_marker",queue::add,()->{});
+        final PersonalQuest quests;
+        Fixture(){this(false);}
+        Fixture(boolean multi){quests=new PersonalQuest(store,multi?Set.of("survey_marker","path_marker"):Set.of("survey_marker"),queue::add,()->{});}
         final ServerProgressAccess access=new ServerProgressAccess();final UUID a=UUID.randomUUID(),b=UUID.randomUUID(),p=UUID.randomUUID(),p2=UUID.randomUUID();
         boolean valid=true;
         ServerProgressAccess.Context ctx(UUID run,UUID player){return access.forVerifiedServerLink(run,player);}
         void pump(){int n=100;while(!queue.isEmpty()){assertTrue(n-->0);queue.remove().run();}}
         PersonalQuest.Session open(ServerProgressAccess.Context c,Object token){var f=quests.open(c,token,()->valid);pump();return f.toCompletableFuture().join();}
+        PersonalQuest.Session open(ServerProgressAccess.Context c,String id,Object token){var f=quests.open(c,id,token,()->valid);pump();return f.toCompletableFuture().join();}
         void commit(int i){store.commit.get(i).run();pump();}
     }
     @Test void orderAndDuplicateReportWaitForConfirmedDB() {
@@ -78,5 +82,42 @@ final class PersonalQuestTest {
         var closed=f.quests.shutdown();assertFalse(closed.toCompletableFuture().isDone());f.commit(0);
         assertTrue(writing.toCompletableFuture().isCompletedExceptionally());assertEquals(QuestStore.Phase.NOT_ACCEPTED,q.saved().phase());assertTrue(closed.toCompletableFuture().isDone());
         assertTrue(f.quests.open(f.ctx(f.a,f.p),new Object(),()->true).toCompletableFuture().isCompletedExceptionally());
+    }    @Test void multipleQuestsShareBarrierWithoutSharingState() {
+        var f=new Fixture(true);var c=f.ctx(f.a,f.p);var q1=f.open(c,"survey_marker",new Object());var q2=f.open(c,"path_marker",new Object());
+        var other=f.open(f.ctx(f.a,f.p2),"path_marker",new Object());var otherRun=f.open(f.ctx(f.b,f.p),"survey_marker",new Object());
+        f.quests.advance(q1,QuestStore.Phase.ACTIVE);f.commit(0);
+        f.quests.advance(q1,QuestStore.Phase.REPORT_READY);f.commit(1);
+        f.quests.advance(q1,QuestStore.Phase.COMPLETED);f.commit(2);
+        assertEquals(QuestStore.Phase.NOT_ACCEPTED,q2.saved().phase());assertEquals(QuestStore.Phase.NOT_ACCEPTED,other.saved().phase());assertEquals(QuestStore.Phase.NOT_ACCEPTED,otherRun.saved().phase());
+        f.quests.advance(q2,QuestStore.Phase.ACTIVE);f.quests.advance(other,QuestStore.Phase.ACTIVE);
+        var barrier=f.quests.barrier(f.a);f.commit(3);assertFalse(barrier.toCompletableFuture().isDone());f.commit(4);assertTrue(barrier.toCompletableFuture().isDone());
+        assertEquals(QuestStore.Phase.COMPLETED,q1.saved().phase());
     }
+    @Test void multipleQuestStaleWritesReconnectAndFailureAreScoped() {
+        var f=new Fixture(true);var c=f.ctx(f.a,f.p);var q1=f.open(c,"survey_marker",new Object());var q2=f.open(c,"path_marker",new Object());
+        var w1=f.quests.advance(q1,QuestStore.Phase.ACTIVE);var w2=f.quests.advance(q2,QuestStore.Phase.ACTIVE);var barrier=f.quests.barrier(f.a);
+        var fresh=f.quests.open(c,"survey_marker",new Object(),()->true);f.pump();assertFalse(fresh.toCompletableFuture().isDone());
+        f.commit(0);assertTrue(w1.toCompletableFuture().isCompletedExceptionally());assertEquals(QuestStore.Phase.NOT_ACCEPTED,q1.saved().phase());
+        assertEquals(QuestStore.Phase.ACTIVE,fresh.toCompletableFuture().join().saved().phase());assertFalse(barrier.toCompletableFuture().isDone());
+        f.store.pending.get(1).completeExceptionally(new StorageFailure("quest","23514"));f.pump();
+        assertTrue(w2.toCompletableFuture().isCompletedExceptionally());assertTrue(barrier.toCompletableFuture().isCompletedExceptionally());
+        assertTrue(q2.held());assertEquals(QuestStore.Phase.ACTIVE,f.store.rows.get(f.store.key(c,"survey_marker")).phase());assertFalse(f.store.rows.containsKey(f.store.key(c,"path_marker")));
+    }
+    @Test void unknownQuestCannotReadOrWriteAndImplicitSelectionIsRejected() {
+        var f=new Fixture(true);var c=f.ctx(f.a,f.p);
+        assertTrue(f.quests.open(c,"missing",new Object(),()->true).toCompletableFuture().isCompletedExceptionally());
+        assertTrue(f.quests.open(c,new Object(),()->true).toCompletableFuture().isCompletedExceptionally());assertEquals(0,f.store.reads);assertTrue(f.store.pending.isEmpty());
+    }
+    @Test void completedLegacyIdRestoresAfterAddingSecondContentWithoutRecreation() {
+        var f=new Fixture();var c=f.ctx(f.a,f.p);var old=f.open(c,new Object());
+        f.quests.advance(old,QuestStore.Phase.ACTIVE);f.commit(0);
+        f.quests.advance(old,QuestStore.Phase.REPORT_READY);f.commit(1);
+        f.quests.advance(old,QuestStore.Phase.COMPLETED);f.commit(2);
+        var expanded=new PersonalQuest(f.store,Set.of("survey_marker","path_marker"),f.queue::add,()->{});
+        var restored=expanded.open(c,"survey_marker",new Object(),()->true);
+        var added=expanded.open(c,"path_marker",new Object(),()->true);f.pump();
+        assertEquals(new QuestStore.Saved(QuestStore.Phase.COMPLETED,2),restored.toCompletableFuture().join().saved());
+        assertEquals(QuestStore.Phase.NOT_ACCEPTED,added.toCompletableFuture().join().saved().phase());assertEquals(3,f.store.pending.size());
+    }
+
 }

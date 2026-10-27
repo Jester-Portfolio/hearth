@@ -180,7 +180,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.manual_session(name)
                     else:
                         if args.quests:
-                            monitor.action(name,'quest-first'); monitor.action(name,'quest-cycle')
+                            monitor.action(name,'quest-first'); monitor.action(name,'quest-multi-ready')
+                            monitor.db('lock-quest'); monitor.action(name,'quest-multi-inflight'); monitor.db('unlock')
+                            monitor.action(name,'quest-multi-done'); monitor.action(name,'quest-cycle')
                         else:
                             automatic_first(monitor,name)
                 else:
