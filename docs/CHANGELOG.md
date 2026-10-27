@@ -2,6 +2,11 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-27 — 한 NPC의 다중 개인 퀘스트 선택
+
+- NPC별 여러 quest_id·채팅 선택·선택/수락/보고의 일회용 토큰을 지원합니다. 기존 저장·완료 방식과 ID는 유지하며 기존 콘텐츠 파일을 자동 변경하지 않습니다.
+- [기록](personal-quest-verification.md#한-npc의-다중-개인-퀘스트--2026-10-27)·[결과](../verification/quest-npc-result.json): 단위80개·수정 후 Paper/PG 한 JVM38.684초 PASS. 최초 컴파일/무접속 NPC 시험 실패를 보존했습니다. 실제 클릭은 보류하며 전체 S4는 진행 중입니다.
+
 ## 2026-10-27 — 콘텐츠별 개인 퀘스트 자동 완료
 
 - `completion-mode` 생략/report는 기존 NPC 보고, automatic은 목표 도달 후 DB 성공 시 직접 완료합니다. 기존 저장 상태·ID·스키마는 보존합니다.

@@ -6,11 +6,6 @@ npcs:
     x: 3.5
     y: 64.0
     z: 5.5
-  - id: path_guide
-    name: 경로 안내원
-    x: 10.5
-    y: 64.0
-    z: 3.5
 quests:
   - id: survey_marker
     completion-mode: report
@@ -34,7 +29,7 @@ quests:
   - id: path_marker
     completion-mode: automatic
     title: 시험 경로 확인
-    npc-id: path_guide
+    npc-id: survey_guide
     objective:
       min-x: 12.0
       max-x: 14.0
@@ -46,7 +41,7 @@ quests:
       offer: '경로 지점 (12~14, 64~67, 2~4)을 방문하면 자동 완료됩니다. 보상과 아이템 소모는 없습니다.'
       accept: '[경로 확인 수락]'
       active: '경로 확인을 수락했습니다. 경로 지점을 방문해 주세요.'
-      report-ready: '경로 확인을 마쳤습니다. 경로 안내원에게 보고해 주세요.'
+      report-ready: '경로 확인을 마쳤습니다. 시험 안내원에게 보고해 주세요.'
       report: '[경로 확인 보고]'
       completed: '경로 확인이 자동 완료되었습니다. 완료 기록이 유지됩니다.'
       failure: '경로 확인 처리를 확인할 수 없습니다. 관리자 확인이 필요할 수 있습니다.'

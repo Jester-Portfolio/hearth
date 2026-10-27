@@ -20,10 +20,12 @@ final class QuestCatalogTest {
         assertThrows(IllegalArgumentException.class,()->QuestCatalog.parse(List.of(npc("one",3),npc("one",10)),List.of(quest("q1","one"))));
         assertThrows(IllegalArgumentException.class,()->QuestCatalog.parse(List.of(npc("one",3),npc("two",10)),List.of(quest("q1","one"),quest("q1","two"))));
     }
-    @Test void missingUnusedAndAmbiguousLinksAreRejected(){
+    @Test void missingAndUnusedLinksAreRejected(){
         assertThrows(IllegalArgumentException.class,()->QuestCatalog.parse(List.of(npc("one",3)),List.of(quest("q1","missing"))));
         assertThrows(IllegalArgumentException.class,()->QuestCatalog.parse(List.of(npc("one",3),npc("unused",10)),List.of(quest("q1","one"))));
-        assertThrows(IllegalArgumentException.class,()->QuestCatalog.parse(List.of(npc("one",3)),List.of(quest("q1","one"),quest("q2","one"))));
+        var c=QuestCatalog.parse(List.of(npc("one",3)),List.of(quest("q1","one"),quest("q2","one")));
+        assertEquals(2,c.forNpc("one").size());assertEquals(1,c.npcs().size());assertTrue(c.linked("one","q2"));
+        assertThrows(UnsupportedOperationException.class,()->c.forNpc("one").clear());
     }
     @Test void malformedNumbersBoundsAndTextAreRejected(){
         for(Object value:List.of("64",Double.NaN,Double.POSITIVE_INFINITY)){

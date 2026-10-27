@@ -92,6 +92,9 @@ public final class PersonalQuest {
         },owner);
         return result;
     }
+    public QuestStore.Saved requireDialogue(Session s){
+        require(s);if(s.busy || s.hold || s.saved==null)throw new IllegalStateException("QUEST_BUSY_OR_HOLD");return s.saved;
+    }
     /** DB를 읽기만 합니다. 조회로 Session/open/수락 행을 만들거나 상태를 덮어쓰지 않습니다. */
     public CompletionStage<Map<String,QuestStore.Saved>> list(ServerProgressAccess.Context context,Object token,BooleanSupplier valid) {
         check.run();Reader reader=new Reader(context.storyRunId(),context.playerId());

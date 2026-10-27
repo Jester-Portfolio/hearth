@@ -42,9 +42,9 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     }
     public void ensure(World w) {
         if(closed || !worldIds.contains(w.getUID()))return;
-        for(QuestContent content:catalog.all())dialogueRegion(w,content);
+        for(QuestContent content:catalog.npcs())dialogueRegion(w,content);
         var tracked=npcs.computeIfAbsent(w.getUID(),id->new HashMap<>());
-        for(QuestContent content:catalog.all()) {
+        for(QuestContent content:catalog.npcs()) {
             w.getChunkAt(chunk(content.x()),chunk(content.z()));
             List<Entity> existing=w.getEntities().stream().filter(e->content.npcId().equals(npcId(e))).toList();
             UUID current=tracked.get(content.npcId());
@@ -95,21 +95,22 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         e.setCancelled(true);if(e.getHand()!=EquipmentSlot.HAND)return;
         Player p=e.getPlayer();var session=players.current(p);UUID entity=e.getRightClicked().getUniqueId();
         if(session==null || !near(p,npc,entity))return;
-        QuestContent content=catalog.npc(npc);
-        var ticket=dialogues.begin(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc,content.id());
-        quests.open(session.context(),content.id(),session,()->players.current(p)==session).whenCompleteAsync((q,error)->{
-            if(!current(p,session,ticket))return;
-            if(error!=null){failure(p,content);return;}
-            switch(q.saved().phase()) {
-                case NOT_ACCEPTED -> offer(p,content,"offer","accept",ticket);
-                case ACTIVE -> p.sendMessage(Component.text(content.text().get("active")));
-                case REPORT_READY -> offer(p,content,"report-ready","report",ticket);
-                case COMPLETED -> p.sendMessage(Component.text(content.text().get("completed")));
-            }
-        },owner);
+        for(Component message:selectionMessages(catalog,dialogues,dialogues.options(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc)))p.sendMessage(message);
     }
-    private void offer(Player p,QuestContent c,String text,String action,QuestDialogue.Ticket t){
-        p.sendMessage(Component.text(c.text().get(text)).append(Component.newline()).append(Component.text(c.text().get(action)).clickEvent(ClickEvent.runCommand(dialogues.command(t,action)))));
+    public static List<Component> selectionMessages(QuestCatalog catalog,QuestDialogue dialogues,List<QuestDialogue.Ticket> tickets){
+        return tickets.stream().map(t->(Component)Component.text("["+catalog.quest(t.quest()).title()+"]").clickEvent(ClickEvent.runCommand(dialogues.command(t,"select")))).toList();
+    }
+    /** 인증된 선택의 현재 상태만 표시합니다. 선택용 nonce를 수락/보고에 재사용하지 않습니다. */
+    public static List<Component> dialogueMessages(QuestContent c,QuestStore.Saved saved,QuestDialogue dialogues,QuestDialogue.Ticket selected){
+        if(!dialogues.current(selected) || !c.id().equals(selected.quest()))throw new IllegalArgumentException("Stale dialogue response");
+        String text=switch(saved.phase()){case NOT_ACCEPTED->"offer";case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";};
+        Component message=Component.text(c.text().get(text));
+        if(saved.phase()==QuestStore.Phase.NOT_ACCEPTED || saved.phase()==QuestStore.Phase.REPORT_READY){
+            String action=saved.phase()==QuestStore.Phase.NOT_ACCEPTED?"accept":"report";
+            var next=dialogues.action(selected,action);
+            message=message.append(Component.newline()).append(Component.text(c.text().get(action)).clickEvent(ClickEvent.runCommand(dialogues.command(next,action))));
+        }
+        return List.of(message);
     }
     private boolean command(Player p,String command){
         if(!command.startsWith("/hearthquest"))return false;
@@ -128,7 +129,14 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             ticket=dialogues.authorize(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),e.getUniqueId(),request);
         } catch(IllegalArgumentException error){plugin.getLogger().info("HEARTH_QUEST_REQUEST_REJECTED");return true;}
         QuestContent content=catalog.quest(ticket.quest());
-        quests.open(session.context(),content.id(),session,()->players.current(p)==session)
+        if(request.action().equals("select")) {
+            quests.open(session.context(),content.id(),session,()->players.current(p)==session).whenCompleteAsync((q,error)->{
+                if(!current(p,session,ticket))return;
+                if(error!=null){failure(p,content);return;}
+                try {for(Component message:dialogueMessages(content,quests.requireDialogue(q),dialogues,ticket))p.sendMessage(message);}
+                catch(RuntimeException invalid){failure(p,content);}
+            },owner);
+        } else quests.open(session.context(),content.id(),session,()->players.current(p)==session)
             .thenComposeAsync(q->{if(!current(p,session,ticket))throw new IllegalStateException("STALE_DIALOGUE");return quests.advance(q,request.action().equals("accept")?QuestStore.Phase.ACTIVE:QuestStore.Phase.COMPLETED);},owner)
             .whenCompleteAsync((saved,error)->{
                 if(!current(p,session,ticket))return;

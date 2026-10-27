@@ -4,18 +4,24 @@ import java.util.*;
 
 /** 목록을 끝까지 검증한 뒤에만 공개합니다. 초기 로딩 전용이며 게임 정책/자동 이관 엔진이 아닙니다. */
 public final class QuestCatalog {
-    private final Map<String,QuestContent> quests,npcs;
-    private QuestCatalog(Map<String,QuestContent> quests,Map<String,QuestContent> npcs){this.quests=Map.copyOf(quests);this.npcs=Map.copyOf(npcs);}
+    private final Map<String,QuestContent> quests;
+    private final Map<String,List<QuestContent>> npcs;
+    private QuestCatalog(Map<String,QuestContent> quests,Map<String,List<QuestContent>> npcs){
+        this.quests=Collections.unmodifiableMap(new LinkedHashMap<>(quests));
+        var groups=new LinkedHashMap<String,List<QuestContent>>();npcs.forEach((id,rows)->groups.put(id,List.copyOf(rows)));this.npcs=Collections.unmodifiableMap(groups);
+    }
     public Collection<QuestContent> all(){return quests.values();}
     public Set<String> questIds(){return quests.keySet();}
     public QuestContent quest(String id){return Objects.requireNonNull(quests.get(id),"Unknown quest");}
-    public QuestContent npc(String id){return Objects.requireNonNull(npcs.get(id),"Unknown NPC");}
-    public boolean linked(String npc,String quest){var c=npcs.get(npc);return c!=null && c.id().equals(quest);}
+    public List<QuestContent> forNpc(String id){return Objects.requireNonNull(npcs.get(id),"Unknown NPC");}
+    /** NPC 위치·표시는 동일 정의에서 온 대표값만 사용합니다. */
+    public Collection<QuestContent> npcs(){return npcs.values().stream().map(List::getFirst).toList();}
+    public boolean linked(String npc,String quest){var c=quests.get(quest);return c!=null && c.npcId().equals(npc);}
     public static QuestCatalog parse(List<?> npcRows,List<?> questRows){
         if(npcRows.isEmpty() || questRows.isEmpty())throw new IllegalArgumentException("Empty quest/NPC content");
         var rawNpcs=new LinkedHashMap<String,Map<?,?>>();
         for(Object row:npcRows){var npc=map(row);String id=id(npc,"id");if(rawNpcs.putIfAbsent(id,npc)!=null)throw new IllegalArgumentException("Duplicate NPC id");}
-        var quests=new LinkedHashMap<String,QuestContent>();var npcs=new LinkedHashMap<String,QuestContent>();
+        var quests=new LinkedHashMap<String,QuestContent>();var npcs=new LinkedHashMap<String,List<QuestContent>>();
         for(Object row:questRows){
             var quest=map(row);String id=id(quest,"id"),npcId=id(quest,"npc-id");var npc=rawNpcs.get(npcId);
             if(npc==null)throw new IllegalArgumentException("Unknown NPC link");
@@ -29,11 +35,11 @@ public final class QuestCatalog {
                 throw new IllegalArgumentException("Position outside supported test world bounds");
             var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,Map.copyOf(messages));
             if(quests.putIfAbsent(id,content)!=null)throw new IllegalArgumentException("Duplicate quest id");
-            if(npcs.putIfAbsent(npcId,content)!=null)throw new IllegalArgumentException("This prototype supports one visit quest per NPC");
+            npcs.computeIfAbsent(npcId,key->new ArrayList<>()).add(content);
         }
         if(npcs.size()!=rawNpcs.size())throw new IllegalArgumentException("NPC without quest link");
         var positions=new HashSet<List<Double>>();
-        for(var c:quests.values())if(!positions.add(List.of(Math.floor(c.x()),Math.floor(c.y()),Math.floor(c.z()))))throw new IllegalArgumentException("Overlapping NPC positions");
+        for(var rows:npcs.values()){var c=rows.getFirst();if(!positions.add(List.of(Math.floor(c.x()),Math.floor(c.y()),Math.floor(c.z()))))throw new IllegalArgumentException("Overlapping NPC positions");}
         return new QuestCatalog(quests,npcs);
     }
     private static Map<?,?> map(Object o){if(!(o instanceof Map<?,?> m))throw new IllegalArgumentException("Expected content mapping");return m;}

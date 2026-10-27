@@ -37,3 +37,5 @@
 상세 조회의 최소 자동 연동 검사는 `verify-lifecycle.py --sessions --quests --quest-info`를 사용합니다. 같은 도구에서 Paper 한 JVM만 실행해 상세/목록 클릭 Component·개인 격리·DB 불변·조회 오류/stale를 검사합니다. `--quest-list`와 동시에 사용하지 않으며 복원 경계가 그대로인 두 번째 JVM 전체 검사를 반복하지 않습니다. 실제 클라이언트는 사용하지 않습니다.
 
 자동/보고 완료의 최소 검사는 `verify-lifecycle.py --sessions --quests --quest-auto`로 실행합니다. 기존 격리 도구에서 한 Paper JVM으로 목표 도달 제어 경계·revision·중복/SQL 실패·세션 교체·목록/상세를 확인합니다. `--quest-info`/`--quest-list`/수동 모드와 함께 사용하지 않으며 실제 플레이어 시험이 아닙니다.
+
+한 NPC의 다중 퀘스트 검사는 `verify-lifecycle.py --sessions --quests --quest-npc`로 실행합니다. 단독 모드이며 한 JVM에서 두 선택지·동작별 nonce·개인 상태/DB 불변·지연 응답·자동/보고 완료·NPC 언로드/재로드를 확인합니다. 무접속 조회 동안에만 시험용 NPC 청크 티켓을 유지하고 해제합니다. 실제 클릭/채팅/거리 행동 시험은 아닙니다.

@@ -49,6 +49,10 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<QuestStore.Saved> autoWrite,autoStaleWrite;
     private CompletionStage<PersonalQuest.Session> autoFresh;
     private final java.util.concurrent.atomic.AtomicBoolean autoValid=new java.util.concurrent.atomic.AtomicBoolean(true);
+    private QuestDialogue npcDialogue;
+    private QuestDialogue.Ticket npcPendingTicket;
+    private PersonalQuest npcProbe;
+    private CompletionStage<PersonalQuest.Session> npcPendingRead;
     private Object listToken=new Object();
     private CompletionStage<Map<String,QuestStore.Saved>> pendingList;
     private CompletionStage<Void> listBarrier;
@@ -149,6 +153,10 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "quest-npc-check" -> npcChoices();
+        case "quest-npc-pending" -> npcPending();
+        case "quest-npc-pending-done" -> npcPendingDone();
+        case "quest-npc-cycle" -> npcCycle();
         case "quest-auto-prepare" -> autoPrepare();
         case "quest-auto-save-start" -> autoSaveStart();
         case "quest-auto-save-done" -> autoSaveDone();
@@ -368,6 +376,86 @@ public final class SessionVerification implements AutoCloseable {
             listToken=new Object();check(true,"list_controlled_session_token_replaced");
         });
     }
+    private void npcChunks(boolean hold){
+        for(UUID run:List.of(a,b)){
+            World w=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));
+            if(hold){w.addPluginChunkTicket(0,0,plugin);questAdapter.ensure(w);}else w.removePluginChunkTicket(0,0,plugin);
+        }
+    }
+    private UUID npcEntity(UUID run){
+        World w=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));
+        log("NPC_FIXTURE run="+run+" chunk_loaded="+w.isChunkLoaded(0,0)+" count="+questAdapter.count(w,"survey_guide"));
+        check(catalog.npcs().size()==1 && questAdapter.count(w,"survey_guide")==1,"npc_one_entity_for_two_quests");
+        return w.getEntitiesByClass(org.bukkit.entity.Villager.class).iterator().next().getUniqueId();
+    }
+    private CompletionStage<Void> npcChoices(){
+        npcChunks(true);
+        return later(()->{}).thenCompose(v->npcChoicesLoaded()).whenCompleteAsync((v,error)->npcChunks(false),owner);
+    }
+    private CompletionStage<Void> npcChoicesLoaded(){
+        npcCheck();UUID world=worlds.get(a).mapping().physicalId(),entity=npcEntity(a);var d=new QuestDialogue(catalog);
+        var tickets=d.options(a1.playerId(),s1,a,world,entity,"survey_guide");
+        var messages=PaperQuestAdapter.selectionMessages(catalog,d,tickets);
+        check(tickets.size()==2 && messages.size()==2,"npc_two_quest_chat_choices");
+        for(int i=0;i<tickets.size();i++)check(messages.get(i).clickEvent().equals(net.kyori.adventure.text.event.ClickEvent.runCommand(d.command(tickets.get(i),"select"))),"npc_choice_command_"+tickets.get(i).quest());
+        var first=tickets.getFirst();
+        try {d.authorize(a1.playerId(),s1,a,world,entity,new QuestDialogue.Request("select",first.npc(),tickets.getLast().quest(),first.nonce()));throw new AssertionError("Forged sibling accepted");}
+        catch(IllegalArgumentException expected){check(true,"npc_sibling_quest_forgery_rejected");}
+        var selected=d.authorize(a1.playerId(),s1,a,world,entity,QuestDialogue.Request.parse(d.command(first,"select")));
+        var action=d.action(selected,"report");
+        try {d.authorize(a1.playerId(),s1,a,world,entity,new QuestDialogue.Request("accept",action.npc(),action.quest(),action.nonce()));throw new AssertionError("Forged action accepted");}
+        catch(IllegalArgumentException expected){check(true,"npc_action_nonce_is_bound");}
+        var request=QuestDialogue.Request.parse(d.command(action,"report"));d.authorize(a1.playerId(),s1,a,world,entity,request);
+        try {d.authorize(a1.playerId(),s1,a,world,entity,request);throw new AssertionError("Duplicate action accepted");}
+        catch(IllegalArgumentException expected){check(d.current(tickets.getLast()),"npc_duplicate_rejected_sibling_still_current");}
+        CompletionStage<Void> work=CompletableFuture.completedFuture(null);
+        for(var context:List.of(a1,a2,ctx(b,1))){
+            Object token=context.equals(a1)?s1:context.equals(a2)?s2:new Object();
+            work=work.thenCompose(v->listSnapshot(context).thenCompose(before->{
+                var dialogue=new QuestDialogue(catalog);UUID physical=worlds.get(context.storyRunId()).mapping().physicalId(),id=npcEntity(context.storyRunId());
+                var options=dialogue.options(context.playerId(),token,context.storyRunId(),physical,id,"survey_guide");
+                CompletionStage<Void> views=CompletableFuture.completedFuture(null);
+                for(var t:options)views=views.thenCompose(x->{
+                    dialogue.authorize(context.playerId(),token,context.storyRunId(),physical,id,QuestDialogue.Request.parse(dialogue.command(t,"select")));
+                    return quests.open(context,t.quest(),token,()->true).thenAccept(q->{
+                        var saved=quests.requireDialogue(q);var c=catalog.quest(t.quest());var lines=PaperQuestAdapter.dialogueMessages(c,saved,dialogue,t);
+                        String key=switch(saved.phase()){case NOT_ACCEPTED->"offer";case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";};
+                        check(((net.kyori.adventure.text.TextComponent)lines.getFirst()).content().equals(c.text().get(key)),"npc_personal_dialogue_"+context.storyRunId()+"_"+context.playerId()+"_"+t.quest()+"_"+saved.phase());
+                    });
+                });
+                return views.thenCompose(x->listSnapshot(context)).thenAccept(after->check(before.equals(after),"npc_selection_rows_revisions_unchanged"));
+            }));
+        }
+        return work;
+    }
+    private CompletionStage<Void> npcPending(){
+        npcChunks(true);
+        UUID world=worlds.get(a).mapping().physicalId(),entity=npcEntity(a);Object token=new Object();npcDialogue=new QuestDialogue(catalog);
+        npcPendingTicket=npcDialogue.options(a1.playerId(),token,a,world,entity,"survey_guide").getFirst();
+        npcDialogue.authorize(a1.playerId(),token,a,world,entity,QuestDialogue.Request.parse(npcDialogue.command(npcPendingTicket,"select")));
+        npcProbe=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);
+        npcPendingRead=npcProbe.open(a1,npcPendingTicket.quest(),token,()->true);
+        return later(()->{
+            check(!npcPendingRead.toCompletableFuture().isDone(),"npc_selection_read_waits_async");
+            npcDialogue.options(a1.playerId(),new Object(),a,world,entity,"survey_guide");
+            check(!npcDialogue.current(npcPendingTicket),"npc_old_selection_invalid_after_session_conversation_change");
+        });
+    }
+    private CompletionStage<Void> npcPendingDone(){return mainResult(npcPendingRead).thenAccept(q->{
+        try {PaperQuestAdapter.dialogueMessages(catalog.quest(npcPendingTicket.quest()),npcProbe.requireDialogue(q),npcDialogue,npcPendingTicket);throw new AssertionError("Stale dialogue displayed");}
+        catch(IllegalArgumentException expected){check(true,"npc_late_response_no_display");}
+    }).thenCompose(v->npcProbe.shutdown()).whenCompleteAsync((v,error)->npcChunks(false),owner);}
+    private CompletionStage<Void> npcCycle(){
+        UUID physical=worlds.get(a).mapping().physicalId();
+        return mainResult(coordinator.disconnect(s1)).thenCompose(v->mainResult(coordinator.disconnect(s2)))
+            .thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
+            .thenRun(()->check(Bukkit.getWorld(physical)==null && !questAdapter.tracks(physical),"npc_unload_clears_world_entity_references"))
+            .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return mainResult(s1.ready()).thenCompose(x->mainResult(s2.ready()));})
+            .thenRun(this::npcCheck)
+            .thenCompose(v->questRead(a1,"survey_marker",QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(a1,"path_marker",QuestStore.Phase.COMPLETED,1))
+            .thenCompose(v->questRead(a2,"path_marker",QuestStore.Phase.COMPLETED,1));
+    }
     private CompletionStage<QuestStore.Saved> visit(PersonalQuest owner,PersonalQuest.Session session,QuestContent c) {
         return owner.reach(session,c,(c.minX()+c.maxX())/2,c.minY(),(c.minZ()+c.maxZ())/2);
     }
@@ -454,7 +542,9 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<Void> multiFirst() {
         check(catalog.questIds().equals(Set.of("survey_marker","path_marker")),"multi_fixture_two_explicit_ids");
         var d=new QuestDialogue(catalog);Object session=new Object();UUID world=worlds.get(a).mapping().physicalId(),entity=UUID.randomUUID();
-        var ticket=d.begin(a1.playerId(),session,a,world,entity,"survey_guide","survey_marker");
+        var selected=d.options(a1.playerId(),session,a,world,entity,"survey_guide").stream().filter(t->t.quest().equals("survey_marker")).findFirst().orElseThrow();
+        d.authorize(a1.playerId(),session,a,world,entity,QuestDialogue.Request.parse(d.command(selected,"select")));
+        var ticket=d.action(selected,"accept");
         var request=QuestDialogue.Request.parse(d.command(ticket,"accept"));
         try {d.authorize(a1.playerId(),session,a,world,entity,new QuestDialogue.Request("accept","path_guide","path_marker",request.nonce()));throw new AssertionError("Wrong link allowed");}
         catch(IllegalArgumentException good){check(true,"multi_wrong_NPC_quest_request_rejected");}
