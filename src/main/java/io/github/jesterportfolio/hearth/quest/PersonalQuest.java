@@ -35,6 +35,7 @@ public final class PersonalQuest {
     private final Runnable check;
     private final Map<Key,Session> sessions=new HashMap<>();
     private final Map<Reader,Query> queries=new HashMap<>();
+    private final Map<Key,CompletableFuture<Void>> movements=new HashMap<>();
     private boolean closed;
     public PersonalQuest(QuestStore store,String id,Executor owner,Runnable check){this(store,Set.of(id),owner,check);}
     public PersonalQuest(QuestStore store,Collection<String> ids,Executor owner,Runnable check){
@@ -67,6 +68,36 @@ public final class PersonalQuest {
     private void require(Session s){check.run();if(!current(s))throw new IllegalStateException("STALE_QUEST");}
     private static <T> CompletionStage<T> rejected(String code){return CompletableFuture.failedFuture(new IllegalStateException(code));}
     public CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target) { return advance(s,target,false); }
+    public CompletionStage<QuestStore.Saved> accept(Session s,QuestContent c){
+        check.run();if(!s.key.quest().equals(c.id()) || c.startMode()!=QuestContent.StartMode.NPC)return rejected("QUEST_START_MODE");return advance(s,QuestStore.Phase.ACTIVE);
+    }
+    public CompletionStage<QuestStore.Saved> start(Session s,QuestContent c,double x,double y,double z){
+        check.run();if(!s.key.quest().equals(c.id()) || !c.startsAt(x,y,z) || s.saved==null || s.saved.phase()!=QuestStore.Phase.NOT_ACCEPTED)return rejected("QUEST_START_AREA");return advance(s,QuestStore.Phase.ACTIVE);
+    }
+    /** 블록 이동·구역 진입에만 읽기를 요청하고 진행 중 요청은 합칩니다. */
+    public CompletionStage<Optional<QuestStore.Saved>> enter(ServerProgressAccess.Context context,QuestContent c,Object token,BooleanSupplier valid,
+            double fx,double fy,double fz,double tx,double ty,double tz){
+        check.run();if(closed || !valid.getAsBoolean())return rejected("STALE_QUEST");
+        if(Math.floor(fx)==Math.floor(tx) && Math.floor(fy)==Math.floor(ty) && Math.floor(fz)==Math.floor(tz))return CompletableFuture.completedFuture(Optional.empty());
+        boolean start=c.startMode()==QuestContent.StartMode.AUTOMATIC && c.startArea().entered(fx,fy,fz,tx,ty,tz);
+        boolean goal=c.contains(tx,ty,tz);
+        if(!start && !goal)return CompletableFuture.completedFuture(Optional.empty());
+        Key key=new Key(context.storyRunId(),context.playerId(),c.id());
+        if(movements.containsKey(key))return CompletableFuture.completedFuture(Optional.empty());
+        var drain=new CompletableFuture<Void>();movements.put(key,drain);var result=new CompletableFuture<Optional<QuestStore.Saved>>();
+        open(context,c.id(),token,valid).thenComposeAsync(q->{
+            require(q);if(q.hold)throw new IllegalStateException("QUEST_HOLD");if(q.busy)return CompletableFuture.completedFuture(Optional.<QuestStore.Saved>empty());
+            // 시작과 목표가 겹쳐도 이 진입은 시작만 수행합니다.
+            if(start && q.saved.phase()==QuestStore.Phase.NOT_ACCEPTED)return start(q,c,tx,ty,tz).thenApply(Optional::of);
+            return goal && q.saved.phase()==QuestStore.Phase.ACTIVE?reach(q,c,tx,ty,tz).thenApply(Optional::of):CompletableFuture.completedFuture(Optional.<QuestStore.Saved>empty());
+        },owner).whenCompleteAsync((saved,error)->{
+            movements.remove(key,drain);
+            Throwable cause=error;while(cause instanceof CompletionException && cause.getCause()!=null)cause=cause.getCause();
+            if(cause==null || cause instanceof IllegalStateException && "STALE_QUEST".equals(cause.getMessage()))drain.complete(null);else drain.completeExceptionally(error);
+            if(error==null)result.complete(saved);else result.completeExceptionally(error);
+        },owner);
+        return result;
+    }
     /** 목표 도달만 automatic의 보고 생략을 허용합니다. 일반 보고 명령으로 목표를 건너뛸 수 없습니다. */
     public CompletionStage<QuestStore.Saved> reach(Session s,QuestContent content,double x,double y,double z) {
         check.run();
@@ -145,10 +176,11 @@ public final class PersonalQuest {
     public CompletionStage<Void> barrier(UUID run){check.run();var tasks=new ArrayList<CompletableFuture<?>>();
         sessions.values().stream().filter(s->s.key.run().equals(run)).forEach(s->tasks.add(s.io.toCompletableFuture()));
         queries.forEach((reader,q)->{if(reader.run().equals(run))tasks.add(q.drained);});
+        movements.forEach((key,drain)->{if(key.run().equals(run))tasks.add(drain);});
         return CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new));}
-    public boolean settled(UUID run){check.run();return queries.keySet().stream().noneMatch(reader->reader.run().equals(run)) && sessions.values().stream().filter(s->s.key.run().equals(run)).allMatch(s->!s.hold && s.io.toCompletableFuture().isDone() && !s.io.toCompletableFuture().isCompletedExceptionally());}
+    public boolean settled(UUID run){check.run();return movements.keySet().stream().noneMatch(key->key.run().equals(run)) && queries.keySet().stream().noneMatch(reader->reader.run().equals(run)) && sessions.values().stream().filter(s->s.key.run().equals(run)).allMatch(s->!s.hold && s.io.toCompletableFuture().isDone() && !s.io.toCompletableFuture().isCompletedExceptionally());}
     public void release(UUID run){check.run();if(!settled(run))throw new IllegalStateException("QUEST_HOLD");sessions.entrySet().removeIf(e->e.getKey().run().equals(run));}
     public CompletionStage<Void> shutdown(){check.run();closed=true;var tasks=new ArrayList<CompletableFuture<?>>();
-        sessions.values().forEach(s->tasks.add(s.io.toCompletableFuture()));queries.values().forEach(q->tasks.add(q.drained));
+        sessions.values().forEach(s->tasks.add(s.io.toCompletableFuture()));queries.values().forEach(q->tasks.add(q.drained));movements.values().forEach(tasks::add);
         return CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new));}
 }

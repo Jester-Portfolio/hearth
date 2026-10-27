@@ -49,6 +49,10 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<QuestStore.Saved> autoWrite,autoStaleWrite;
     private CompletionStage<PersonalQuest.Session> autoFresh;
     private final java.util.concurrent.atomic.AtomicBoolean autoValid=new java.util.concurrent.atomic.AtomicBoolean(true);
+    private CompletionStage<Optional<QuestStore.Saved>> entryWrite,entryStaleWrite;
+    private CompletionStage<PersonalQuest.Session> entryFresh;
+    private final java.util.concurrent.atomic.AtomicBoolean entryValid=new java.util.concurrent.atomic.AtomicBoolean(true);
+    private PersonalQuest.Session entryOld;
     private QuestDialogue npcDialogue;
     private QuestDialogue.Ticket npcPendingTicket;
     private PersonalQuest npcProbe;
@@ -89,6 +93,8 @@ public final class SessionVerification implements AutoCloseable {
             var quest=new HashMap<String,Object>(Map.of("id",Objects.requireNonNull(yaml.get("id")),"title",Objects.requireNonNull(yaml.get("title"),"Missing legacy content title"),"npc-id","survey_guide",
                 "objective",Objects.requireNonNull(yaml.getConfigurationSection("objective"),"Missing legacy goal").getValues(false),
                 "text",Objects.requireNonNull(yaml.getConfigurationSection("text"),"Missing legacy dialogue").getValues(false)));
+            if(yaml.isSet("start-mode"))quest.put("start-mode",yaml.get("start-mode"));
+            if(yaml.isSet("start-area"))quest.put("start-area",Objects.requireNonNull(yaml.getConfigurationSection("start-area")).getValues(false));
             if(yaml.isSet("completion-mode"))quest.put("completion-mode",yaml.get("completion-mode"));
             return QuestCatalog.parse(List.of(npc),List.of(quest));
         }
@@ -153,6 +159,14 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "quest-entry-prepare" -> entryPrepare();
+        case "quest-entry-start" -> entryStart();
+        case "quest-entry-start-done" -> entryStartDone();
+        case "quest-entry-failure" -> entryFailure();
+        case "quest-entry-stale-ready" -> quests.open(a2,"entry_marker",new Object(),entryValid::get).thenAccept(q->entryOld=q);
+        case "quest-entry-stale" -> entryStale();
+        case "quest-entry-stale-done" -> entryStaleDone();
+        case "quest-entry-check" -> entryCheck();
         case "quest-npc-check" -> npcChoices();
         case "quest-npc-pending" -> npcPending();
         case "quest-npc-pending-done" -> npcPendingDone();
@@ -376,6 +390,82 @@ public final class SessionVerification implements AutoCloseable {
             listToken=new Object();check(true,"list_controlled_session_token_replaced");
         });
     }
+    private CompletionStage<Optional<QuestStore.Saved>> entry(PersonalQuest owner,ServerProgressAccess.Context ctx,QuestContent c,Object token,BooleanSupplier valid,boolean goal){
+        return owner.enter(ctx,c,token,valid,2,64,2,goal?(c.minX()+c.maxX())/2:(c.startArea().minX()+c.startArea().maxX())/2,64,goal?(c.minZ()+c.maxZ())/2:(c.startArea().minZ()+c.startArea().maxZ())/2);
+    }
+    private CompletionStage<Void> entryPrepare(){
+        return openAll().thenRun(this::npcCheck)
+            .thenCompose(v->quests.open(a1,"entry_marker",s1,()->coordinator.playable(s1)))
+            .thenCompose(q->rejectQuest(quests.accept(q,catalog.quest("entry_marker"))))
+            .thenCompose(v->questRead(a1,"entry_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->entry(quests,a1,catalog.quest("entry_marker"),s1,()->true,true))
+            .thenAccept(row->check(row.isEmpty(),"entry_goal_before_start_no_progress"))
+            .thenCompose(v->questRead(a1,"survey_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->questRead(a1,"path_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->questRead(a2,"entry_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->questRead(ctx(b,1),"entry_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenRun(()->{
+                var d=new QuestDialogue(catalog);var w=worlds.get(a).mapping().physicalId();
+                var tickets=d.options(a1.playerId(),s1,a,w,UUID.randomUUID(),"survey_guide");
+                check(PaperQuestAdapter.selectionMessages(catalog,d,tickets).size()==3,"entry_existing_NPC_three_choices");
+                var t=tickets.stream().filter(x->x.quest().equals("entry_marker")).findFirst().orElseThrow();
+                d.authorize(a1.playerId(),s1,a,w,t.entity(),QuestDialogue.Request.parse(d.command(t,"select")));
+                var message=PaperQuestAdapter.dialogueMessages(catalog.quest(t.quest()),new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1),d,t).getFirst();
+                check(message.children().isEmpty(),"entry_NPC_no_accept_button");
+            });
+    }
+    private CompletionStage<Void> entryStart(){
+        entryWrite=entry(quests,a1,catalog.quest("entry_marker"),s1,()->coordinator.playable(s1),false);
+        return entry(quests,a1,catalog.quest("entry_marker"),s1,()->true,false).thenAccept(row->{
+            check(row.isEmpty() && !entryWrite.toCompletableFuture().isDone() && !quests.barrier(a).toCompletableFuture().isDone(),"entry_pending_no_success_duplicate_bounded_barrier_waits");
+        });
+    }
+    private CompletionStage<Void> entryStartDone(){
+        return mainResult(entryWrite).thenAccept(row->check(row.orElseThrow().equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)),"entry_start_DB_success_revision0"))
+            .thenCompose(v->entry(quests,a1,catalog.quest("entry_marker"),s1,()->true,false))
+            .thenAccept(row->check(row.isEmpty(),"entry_reentry_no_duplicate_write"))
+            .thenCompose(v->questRead(a1,"entry_marker",QuestStore.Phase.ACTIVE,0))
+            .thenCompose(v->entry(quests,a1,catalog.quest("entry_marker"),s1,()->true,true))
+            .thenAccept(row->check(row.orElseThrow().equals(new QuestStore.Saved(QuestStore.Phase.REPORT_READY,1)),"entry_report_completion_waits_for_NPC"))
+            .thenCompose(v->quests.open(a1,"entry_marker",s1,()->true))
+            .thenCompose(q->quests.advance(q,QuestStore.Phase.COMPLETED))
+            .thenCompose(v->questRead(a1,"entry_marker",QuestStore.Phase.COMPLETED,2));
+    }
+    private CompletionStage<Void> entryFailure(){
+        var probe=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);var context=ctx(b,1);Object token=new Object();
+        return probe.open(context,"entry_marker",token,()->true).thenCompose(q->expect(entry(probe,context,catalog.quest("entry_marker"),token,()->true,false),"23514")
+            .thenRun(()->check(q.held() && q.saved().equals(new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1)),"entry_insert_failure_HOLD_no_start_success"))
+            .thenCompose(v->rejectQuest(entry(probe,context,catalog.quest("entry_marker"),token,()->true,false))))
+            .thenCompose(v->questRead(context,"entry_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->questRead(a1,"entry_marker",QuestStore.Phase.COMPLETED,2));
+    }
+    private CompletionStage<Void> entryStale(){
+        // 위 준비 단계와 같은 token 대신, 준비된 세션을 직접 시작해 DB 대기 경계를 만듭니다.
+        entryStaleWrite=quests.start(entryOld,catalog.quest("entry_marker"),6,64,9).thenApply(Optional::of);
+        entryValid.set(false);entryFresh=quests.open(a2,"entry_marker",new Object(),()->true);
+        check(!entryStaleWrite.toCompletableFuture().isDone() && !entryFresh.toCompletableFuture().isDone(),"entry_new_session_waits_pending_insert");
+        return CompletableFuture.completedFuture(null);
+    }
+    private CompletionStage<Void> entryStaleDone(){return expectQuestCode(entryStaleWrite,"STALE_QUEST").thenCompose(v->mainResult(entryFresh))
+        .thenAccept(q->check(q.saved().equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)) && entryOld.saved().phase()==QuestStore.Phase.NOT_ACCEPTED,"entry_old_response_no_start_message_new_session_reads_confirmed_row"));}
+    private CompletionStage<Void> entryCheck(){
+        var c=catalog.quest("entry_marker");
+        var automatic=new QuestContent(c.id(),c.title(),c.npcId(),c.name(),c.x(),c.y(),c.z(),c.minX(),c.maxX(),c.minY(),c.maxY(),c.minZ(),c.maxZ(),QuestContent.CompletionMode.AUTOMATIC,c.startMode(),c.startArea(),c.text());
+        Object token=new Object();var context=ctx(b,1);
+        return entry(quests,context,automatic,token,()->true,false)
+            .thenAccept(row->check(row.orElseThrow().phase()==QuestStore.Phase.ACTIVE,"entry_auto_completion_variant_starts_only"))
+            .thenCompose(v->entry(quests,context,automatic,token,()->true,true))
+            .thenAccept(row->check(row.orElseThrow().equals(new QuestStore.Saved(QuestStore.Phase.COMPLETED,1)),"entry_automatic_completion_variant_revision1"))
+            .thenCompose(v->entry(quests,context,automatic,token,()->true,false)).thenAccept(row->check(row.isEmpty(),"entry_completed_reentry_no_write"))
+            .thenCompose(v->quests.open(a1,"survey_marker",s1,()->true)).thenCompose(q->quests.accept(q,catalog.quest("survey_marker")).thenCompose(x->visit(quests,q,catalog.quest("survey_marker"))).thenCompose(x->quests.advance(q,QuestStore.Phase.COMPLETED)))
+            .thenCompose(v->quests.open(a1,"path_marker",s1,()->true)).thenCompose(q->quests.accept(q,catalog.quest("path_marker")).thenCompose(x->visit(quests,q,catalog.quest("path_marker"))))
+            .thenCompose(v->questRead(a1,"survey_marker",QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(a1,"path_marker",QuestStore.Phase.COMPLETED,1))
+            .thenCompose(v->questRead(a1,"entry_marker",QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(a2,"entry_marker",QuestStore.Phase.ACTIVE,0))
+            .thenCompose(v->questRead(context,"entry_marker",QuestStore.Phase.COMPLETED,1))
+            .thenCompose(v->quests.list(a1,s1,()->true)).thenAccept(rows->{quests.requireListDisplay(a1,rows);check(PaperQuestAdapter.listMessages(catalog,rows).size()==3 && PaperQuestAdapter.infoMessages(catalog,rows,"entry_marker").size()==4,"entry_list_info_three_accepted_states");});
+    }
     private void npcChunks(boolean hold){
         for(UUID run:List.of(a,b)){
             World w=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));
@@ -396,7 +486,7 @@ public final class SessionVerification implements AutoCloseable {
         npcCheck();UUID world=worlds.get(a).mapping().physicalId(),entity=npcEntity(a);var d=new QuestDialogue(catalog);
         var tickets=d.options(a1.playerId(),s1,a,world,entity,"survey_guide");
         var messages=PaperQuestAdapter.selectionMessages(catalog,d,tickets);
-        check(tickets.size()==2 && messages.size()==2,"npc_two_quest_chat_choices");
+        check(tickets.size()==catalog.forNpc("survey_guide").size() && messages.size()==tickets.size(),"npc_two_quest_chat_choices");
         for(int i=0;i<tickets.size();i++)check(messages.get(i).clickEvent().equals(net.kyori.adventure.text.event.ClickEvent.runCommand(d.command(tickets.get(i),"select"))),"npc_choice_command_"+tickets.get(i).quest());
         var first=tickets.getFirst();
         try {d.authorize(a1.playerId(),s1,a,world,entity,new QuestDialogue.Request("select",first.npc(),tickets.getLast().quest(),first.nonce()));throw new AssertionError("Forged sibling accepted");}
@@ -540,7 +630,7 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->questRead(ctx(b,1),"path_marker",QuestStore.Phase.REPORT_READY,1));
     }
     private CompletionStage<Void> multiFirst() {
-        check(catalog.questIds().equals(Set.of("survey_marker","path_marker")),"multi_fixture_two_explicit_ids");
+        check(catalog.questIds().containsAll(Set.of("survey_marker","path_marker")),"multi_fixture_two_explicit_ids");
         var d=new QuestDialogue(catalog);Object session=new Object();UUID world=worlds.get(a).mapping().physicalId(),entity=UUID.randomUUID();
         var selected=d.options(a1.playerId(),session,a,world,entity,"survey_guide").stream().filter(t->t.quest().equals("survey_marker")).findFirst().orElseThrow();
         d.authorize(a1.playerId(),session,a,world,entity,QuestDialogue.Request.parse(d.command(selected,"select")));

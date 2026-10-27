@@ -75,6 +75,7 @@ def main():
     parser.add_argument('--plugin', required=True, type=Path)
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--quest-start', action='store_true', help='한 JVM에서 지역 진입 자동 시작·NPC 차단·중복/실패/stale를 검사합니다')
     parser.add_argument('--quest-npc', action='store_true', help='한 NPC의 여러 개인 퀘스트 선택·nonce·지연 응답을 검사합니다')
     parser.add_argument('--quest-auto', action='store_true', help='한 JVM에서 보고형/자동 완료형의 목표·저장·중복·실패·stale를 검사합니다')
     parser.add_argument('--quest-info', action='store_true', help='한 JVM에서 퀘스트 상세/목록 클릭 데이터와 기존 읽기 경계를 검사합니다')
@@ -89,6 +90,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.quest_start and (not args.quests or not args.sessions or args.manual_player or args.quest_npc or args.quest_auto or args.quest_info or args.quest_list):
+        parser.error("--quest-start는 자동 --sessions --quests 단독 시작 검증 모드에서만 사용합니다")
     if args.quest_npc and (not args.quests or not args.sessions or args.manual_player or args.quest_auto or args.quest_info or args.quest_list):
         parser.error("--quest-npc는 자동 --sessions --quests 단독 NPC 선택 검증 모드에서만 사용합니다")
     if args.quest_auto and (not args.quests or not args.sessions or args.manual_player or args.quest_info or args.quest_list):
@@ -127,6 +130,11 @@ def main():
         shutil.copyfile(root/name,plugins/name)
     shutil.copyfile(args.plugin,plugins/'Hearth.jar')
     (plugins/'Hearth').mkdir()
+    if args.quest_info or args.quest_list:
+        # 기존 읽기 전용 모드의 고정 두 퀘스트 fixture를 보존합니다. 새 경로에만 기록합니다.
+        with zipfile.ZipFile(args.plugin) as jar:
+            content=jar.read('quest-demo.yml').decode('utf-8')
+        (plugins/'Hearth/quest-demo.yml').write_text(content.partition('  - id: entry_marker\n')[0])
     idle_seconds=10 if args.manual_player else 1
     (plugins/'Hearth/config.yml').write_text(f"quest-verification-enabled: {str(args.quests).lower()}\n"+'verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
     if args.sessions:
@@ -169,7 +177,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.quests=true')
         if args.manual_player:
             paper.insert(-3,'-Dhearth.verification.sessionManual=true')
-        for phase in (['prepare'] if args.quest_info or args.quest_auto or args.quest_npc else ['prepare','resume']):
+        for phase in (['prepare'] if args.quest_info or args.quest_auto or args.quest_npc or args.quest_start else ['prepare','resume']):
             s42.port_free()
             name='paper-'+phase
             monitor.launch(name,paper,runtime)
@@ -191,7 +199,15 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.quest_auto or args.quest_npc:
+                        if args.quest_start:
+                            monitor.action(name,'quest-entry-prepare')
+                            monitor.db('lock-quest'); monitor.action(name,'quest-entry-start'); monitor.db('unlock')
+                            monitor.action(name,'quest-entry-start-done')
+                            monitor.db('quest-fail-on'); monitor.action(name,'quest-entry-failure'); monitor.db('quest-fail-off')
+                            monitor.action(name,'quest-entry-stale-ready')
+                            monitor.db('lock-quest'); monitor.action(name,'quest-entry-stale'); monitor.db('unlock')
+                            monitor.action(name,'quest-entry-stale-done'); monitor.action(name,'quest-entry-check')
+                        elif args.quest_auto or args.quest_npc:
                             monitor.action(name,'quest-auto-prepare')
                             if args.quest_npc: monitor.action(name,'quest-npc-check')
                             monitor.db('lock-quest'); monitor.action(name,'quest-auto-save-start'); monitor.db('unlock')
@@ -284,11 +300,11 @@ motd=Hearth isolated S4-11 verification
             outcome='FAIL'
         result=dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, workspace=str(root),
                     duration_seconds=round(time.monotonic()-monitor.started,3), limits=dict(total_seconds=600,work_seconds=550,
-                    paper_starts_max=1 if args.quest_info or args.quest_auto or args.quest_npc else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
+                    paper_starts_max=1 if args.quest_info or args.quest_auto or args.quest_npc or args.quest_start else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, manual_player_mode=args.manual_player,
+                    sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

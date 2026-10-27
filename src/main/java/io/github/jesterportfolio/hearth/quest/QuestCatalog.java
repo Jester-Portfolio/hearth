@@ -33,7 +33,11 @@ public final class QuestCatalog {
             if(y< -64 || y>318 || minY< -64 || maxY>320 || Math.abs(x)>29999984 || Math.abs(z)>29999984
                 || Math.abs(minX)>29999984 || Math.abs(maxX)>29999984 || Math.abs(minZ)>29999984 || Math.abs(maxZ)>29999984)
                 throw new IllegalArgumentException("Position outside supported test world bounds");
-            var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,Map.copyOf(messages));
+            var start=quest.containsKey("start-mode")?QuestContent.StartMode.parse(quest.get("start-mode")):QuestContent.StartMode.NPC;
+            QuestContent.Area startArea=null;
+            if(start==QuestContent.StartMode.AUTOMATIC){var area=map(quest.get("start-area"));startArea=area(area);}
+            else if(quest.containsKey("start-area"))throw new IllegalArgumentException("NPC start must not define start-area");
+            var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,start,startArea,Map.copyOf(messages));
             if(quests.putIfAbsent(id,content)!=null)throw new IllegalArgumentException("Duplicate quest id");
             npcs.computeIfAbsent(npcId,key->new ArrayList<>()).add(content);
         }
@@ -41,6 +45,12 @@ public final class QuestCatalog {
         var positions=new HashSet<List<Double>>();
         for(var rows:npcs.values()){var c=rows.getFirst();if(!positions.add(List.of(Math.floor(c.x()),Math.floor(c.y()),Math.floor(c.z()))))throw new IllegalArgumentException("Overlapping NPC positions");}
         return new QuestCatalog(quests,npcs);
+    }
+    private static QuestContent.Area area(Map<?,?> m){
+        var a=new QuestContent.Area(number(m,"min-x"),number(m,"max-x"),number(m,"min-y"),number(m,"max-y"),number(m,"min-z"),number(m,"max-z"));
+        if(a.minX()>a.maxX() || a.minY()>a.maxY() || a.minZ()>a.maxZ() || a.minY()< -64 || a.maxY()>320
+            || Math.abs(a.minX())>29999984 || Math.abs(a.maxX())>29999984 || Math.abs(a.minZ())>29999984 || Math.abs(a.maxZ())>29999984)throw new IllegalArgumentException("Invalid start-area bounds");
+        return a;
     }
     private static Map<?,?> map(Object o){if(!(o instanceof Map<?,?> m))throw new IllegalArgumentException("Expected content mapping");return m;}
     private static String string(Map<?,?> m,String key){if(!(m.get(key) instanceof String s) || s.isBlank())throw new IllegalArgumentException("Missing content text: "+key);return s;}

@@ -105,7 +105,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(!dialogues.current(selected) || !c.id().equals(selected.quest()))throw new IllegalArgumentException("Stale dialogue response");
         String text=switch(saved.phase()){case NOT_ACCEPTED->"offer";case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";};
         Component message=Component.text(c.text().get(text));
-        if(saved.phase()==QuestStore.Phase.NOT_ACCEPTED || saved.phase()==QuestStore.Phase.REPORT_READY){
+        if(saved.phase()==QuestStore.Phase.NOT_ACCEPTED && c.startMode()==QuestContent.StartMode.NPC || saved.phase()==QuestStore.Phase.REPORT_READY){
             String action=saved.phase()==QuestStore.Phase.NOT_ACCEPTED?"accept":"report";
             var next=dialogues.action(selected,action);
             message=message.append(Component.newline()).append(Component.text(c.text().get(action)).clickEvent(ClickEvent.runCommand(dialogues.command(next,action))));
@@ -137,7 +137,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
                 catch(RuntimeException invalid){failure(p,content);}
             },owner);
         } else quests.open(session.context(),content.id(),session,()->players.current(p)==session)
-            .thenComposeAsync(q->{if(!current(p,session,ticket))throw new IllegalStateException("STALE_DIALOGUE");return quests.advance(q,request.action().equals("accept")?QuestStore.Phase.ACTIVE:QuestStore.Phase.COMPLETED);},owner)
+            .thenComposeAsync(q->{if(!current(p,session,ticket))throw new IllegalStateException("STALE_DIALOGUE");return request.action().equals("accept")?quests.accept(q,content):quests.advance(q,QuestStore.Phase.COMPLETED);},owner)
             .whenCompleteAsync((saved,error)->{
                 if(!current(p,session,ticket))return;
                 if(error!=null){failure(p,content);return;}
@@ -165,13 +165,13 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(e instanceof PlayerTeleportEvent || e.getTo()==null)return;
         var p=e.getPlayer();var session=players.current(p);var to=e.getTo();
         if(session==null || !worldIds.contains(p.getWorld().getUID()))return;
-        for(QuestContent c:catalog.all())if(c.contains(to.getX(),to.getY(),to.getZ())) {
-            quests.open(session.context(),c.id(),session,()->players.current(p)==session).thenComposeAsync(q->{
-                if(players.current(p)==session && !q.busy() && !q.held() && q.saved().phase()==QuestStore.Phase.ACTIVE)
-                    return quests.reach(q,c,to.getX(),to.getY(),to.getZ()).thenAcceptAsync(saved->{if(players.current(p)==session)p.sendMessage(Component.text(c.text().get(saved.phase()==QuestStore.Phase.COMPLETED?"completed":"report-ready")));},owner);
-                return java.util.concurrent.CompletableFuture.completedFuture(null);
+        var from=e.getFrom();
+        for(QuestContent c:catalog.all())quests.enter(session.context(),c,session,()->players.current(p)==session,
+            from.getX(),from.getY(),from.getZ(),to.getX(),to.getY(),to.getZ()).thenAcceptAsync(saved->{
+                if(players.current(p)!=session || saved.isEmpty())return;
+                String key=switch(saved.get().phase()){case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";default->throw new IllegalStateException("Unexpected movement result");};
+                p.sendMessage(Component.text(c.text().get(key)));
             },owner).exceptionally(error->null);
-        }
     }
     private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}
     @Override public void close(){closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();

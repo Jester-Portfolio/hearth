@@ -2,6 +2,11 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-27 — 지역 진입형 개인 퀘스트 자동 시작
+
+- `start-mode` 기본 npc, automatic의 별도 시작 구역·NPC 수락 차단·진입 중복 제한·저장 장벽을 연결했습니다. 기존 ID·스키마·완료 방식을 유지합니다.
+- [기록](personal-quest-verification.md#지역-진입형-자동-시작--2026-10-27)·[결과](../verification/quest-start-result.json): 단위86개·최초 한 Paper JVM/PG33.869초 PASS. 실제 이동은 보류하고 전체 S4는 진행 중입니다.
+
 ## 2026-10-27 — 한 NPC의 다중 개인 퀘스트 선택
 
 - NPC별 여러 quest_id·채팅 선택·선택/수락/보고의 일회용 토큰을 지원합니다. 기존 저장·완료 방식과 ID는 유지하며 기존 콘텐츠 파일을 자동 변경하지 않습니다.

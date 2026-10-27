@@ -39,3 +39,5 @@
 자동/보고 완료의 최소 검사는 `verify-lifecycle.py --sessions --quests --quest-auto`로 실행합니다. 기존 격리 도구에서 한 Paper JVM으로 목표 도달 제어 경계·revision·중복/SQL 실패·세션 교체·목록/상세를 확인합니다. `--quest-info`/`--quest-list`/수동 모드와 함께 사용하지 않으며 실제 플레이어 시험이 아닙니다.
 
 한 NPC의 다중 퀘스트 검사는 `verify-lifecycle.py --sessions --quests --quest-npc`로 실행합니다. 단독 모드이며 한 JVM에서 두 선택지·동작별 nonce·개인 상태/DB 불변·지연 응답·자동/보고 완료·NPC 언로드/재로드를 확인합니다. 무접속 조회 동안에만 시험용 NPC 청크 티켓을 유지하고 해제합니다. 실제 클릭/채팅/거리 행동 시험은 아닙니다.
+
+지역 자동 시작 검사는 `verify-lifecycle.py --sessions --quests --quest-start` 단독 모드를 사용합니다. 한 JVM에서 시작 구역·NPC 수락 차단·중복/SQL 실패·세션 교체·두 완료 방식 조합을 제어 경계로 확인하며 실제 이동 시험은 아닙니다. 기존 `--quest-list`/`--quest-info`는 새 경로에 과거 두 퀘스트 fixture를 준비하고, 세 퀘스트 목록/상세는 시작 검사의 마지막 단계에서 확인합니다.
