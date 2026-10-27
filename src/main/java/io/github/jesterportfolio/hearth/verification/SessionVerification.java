@@ -36,6 +36,7 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<Void> oldClosing,barrier;
     private boolean cycle,expectedHold;
     private PersonalQuest quests;
+    private QuestJournal journal;
     private PaperQuestAdapter questAdapter;
     private QuestContent content;
     private QuestCatalog catalog;
@@ -49,6 +50,11 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<QuestStore.Saved> autoWrite,autoStaleWrite;
     private CompletionStage<PersonalQuest.Session> autoFresh;
     private final java.util.concurrent.atomic.AtomicBoolean autoValid=new java.util.concurrent.atomic.AtomicBoolean(true);
+    private PersonalQuest.Session batchRoute;
+    private CompletionStage<QuestStore.Saved> batchStep;
+    private CompletionStage<QuestJournal.View> batchUiRead;
+    private CompletionStage<Void> batchUiBarrier;
+    private final java.util.concurrent.atomic.AtomicBoolean batchValid=new java.util.concurrent.atomic.AtomicBoolean(true);
     private CompletionStage<QuestStore.Saved> prerequisiteWrite,prerequisiteStaleWrite;
     private CompletionStage<PersonalQuest.Session> prerequisiteFresh;
     private PersonalQuest prerequisiteProbe;
@@ -85,7 +91,8 @@ public final class SessionVerification implements AutoCloseable {
         if(catalog!=null) {
             content=catalog.all().stream().filter(c->c.id().equals("survey_marker")).findFirst().orElse(catalog.all().iterator().next());
             quests=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);
-            questAdapter=new PaperQuestAdapter(plugin,adapter,quests,catalog,owner,
+            journal=new QuestJournal(store,quests,catalog,owner,SessionVerification::main);
+            questAdapter=new PaperQuestAdapter(plugin,adapter,quests,catalog,journal,owner,
                 Set.of(worlds.get(a).mapping().physicalId(),worlds.get(b).mapping().physicalId()));
         }
     }
@@ -166,6 +173,15 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "batch-prepare" -> batchPrepare();
+        case "batch-ui" -> batchUi();
+        case "batch-cycle" -> batchCycle();
+        case "batch-resume" -> batchResume();
+        case "batch-complete" -> batchComplete();
+        case "batch-notice-failure" -> batchNoticeFailure();
+        case "batch-preferences-failure" -> batchPreferencesFailure();
+        case "batch-ui-pending" -> batchUiPending();
+        case "batch-ui-pending-done" -> expectQuestCode(batchUiRead,"STALE_QUEST_LIST").thenCompose(v->mainResult(batchUiBarrier));
         case "quest-prereq-prepare" -> prerequisitePrepare();
         case "quest-prereq-complete" -> prerequisiteComplete();
         case "quest-prereq-start" -> prerequisiteStart();
@@ -408,6 +424,83 @@ public final class SessionVerification implements AutoCloseable {
             check(quests.list(a1,s1,()->true).toCompletableFuture().isCompletedExceptionally(),"list_duplicate_read_limited");
             listToken=new Object();check(true,"list_controlled_session_token_replaced");
         });
+    }
+    private CompletionStage<QuestStore.Saved> batchGoal(PersonalQuest owner,PersonalQuest.Session q,QuestContent c,int index){var area=c.goals().get(index).area();return owner.reach(q,c,(area.minX()+area.maxX())/2,area.minY(),(area.minZ()+area.maxZ())/2);}
+    private CompletionStage<Void> batchPrepare(){
+        var legacy=ctx(new UUID(42,99),99);
+        return openAll().thenRun(this::npcCheck)
+            .thenCompose(v->mainResult(store.readQuest(legacy,"survey_marker"))).thenAccept(row->check(row.equals(new QuestStore.Saved(QuestStore.Phase.COMPLETED,2,0)),"batch_V003_upgrade_preserves_legacy_row"))
+            .thenCompose(v->mainResult(store.readJournal(legacy))).thenAccept(data->check(data.notices().isEmpty() && data.tracked().isEmpty(),"batch_no_legacy_notification_backfill"))
+            .thenCompose(v->quests.open(a1,"route_marker",s1,()->true)).thenCompose(q->{batchRoute=q;return quests.accept(q,catalog.quest("route_marker"));})
+            .thenCompose(v->quests.open(a2,"route_marker",s2,()->true)).thenCompose(q->quests.accept(q,catalog.quest("route_marker")))
+            .thenCompose(v->quests.open(a1,"survey_marker",s1,()->true)).thenCompose(q->quests.accept(q,catalog.quest("survey_marker")))
+            .thenCompose(v->journal.track(a1,s1,()->true,"route_marker",true))
+            .thenCompose(v->journal.track(a1,s1,()->true,"survey_marker",true))
+            .thenAccept(view->check(view.journal().tracked().size()==2 && journal.hudLines(view).size()==2,"batch_multiple_tracking_and_HUD"))
+            .thenCompose(v->rejectQuest(journal.track(a1,s1,()->true,"route_followup",true)))
+            .thenCompose(v->batchGoal(quests,batchRoute,catalog.quest("route_marker"),0))
+            .thenAccept(row->check(row.equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,1,1)),"batch_first_step_saved_index1"))
+            .thenCompose(v->rejectQuest(batchGoal(quests,batchRoute,catalog.quest("route_marker"),0)))
+            .thenCompose(v->expect(store.advanceQuest(a1,"route_marker",new QuestStore.Saved(QuestStore.Phase.ACTIVE,0,0),QuestStore.Phase.ACTIVE,1),"REVISION_CONFLICT_OR_MISSING"))
+            .thenCompose(v->journal.readNotice(a1,s1,()->true,"route_marker",0))
+            .thenCompose(v->journal.readAll(a1,s1,()->true))
+            .thenCompose(v->journal.hud(a1,s1,()->true,false))
+            .thenAccept(view->check(view.journal().notices().size()==3 && view.journal().notices().stream().allMatch(io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Notice::read) && journal.hudLines(view).isEmpty(),"batch_notifications_unique_read_all_HUD_off"));
+    }
+    private CompletionStage<Void> batchUi(){return journal.load(a1,s1,()->true).thenAccept(view->{
+        var before=one.capture();check(QuestScreens.screen(catalog,view,"home",null,0).size()==6,"batch_six_phone_menus");
+        var rows=QuestScreens.screen(catalog,view,"detail","route_marker",0);
+        check(rows.stream().anyMatch(b->b.label().contains("[2/3]")) && rows.stream().anyMatch(b->b.action().equals("track")),"batch_GUI_current_step_and_track_button");
+        var screen=new PaperQuestUI.Screen(a1.playerId(),s1,rows,"detail","route_marker",0);
+        check(screen.getInventory().getSize()==54 && screen.getInventory().getHolder()==screen && codec.equivalent(before,one.capture()),"batch_real_Paper_GUI_inventory_holder_no_41slot_change");
+        var enabled=new QuestJournal.View(view.states(),new io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Journal(view.journal().tracked(),new io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Preferences(true,0),view.journal().notices()));
+        check(PaperQuestUI.hudBars(journal.hudLines(enabled)).size()==2,"batch_Paper_BossBar_factory_multiple_lines");
+        for(String page:List.of("map","diary","community"))check(QuestScreens.screen(catalog,view,page,null,0).stream().anyMatch(b->b.label().startsWith("미구현")),"batch_no_fake_data_"+page);
+        check(QuestScreens.screen(catalog,view,"notices",null,0).stream().filter(b->b.action().equals("notice")).count()==3,"batch_notice_GUI_persistent_rows");
+    });}
+    private CompletionStage<Void> batchCycle(){
+        UUID physical=worlds.get(a).mapping().physicalId();
+        return mainResult(coordinator.disconnect(s1)).thenCompose(v->mainResult(coordinator.disconnect(s2)))
+            .thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
+            .thenRun(()->check(Bukkit.getWorld(physical)==null && !questAdapter.tracks(physical),"batch_world_offline_old_NPC_refs_cleared"))
+            .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return mainResult(s1.ready()).thenCompose(x->mainResult(s2.ready()));})
+            .thenRun(this::npcCheck).thenCompose(v->batchRestored());
+    }
+    private CompletionStage<Void> batchRestored(){return quests.open(a1,"route_marker",s1,()->true).thenAccept(q->{batchRoute=q;check(q.saved().equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,1,1)),"batch_restored_current_objective");})
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->check(view.journal().tracked().equals(Set.of("route_marker","survey_marker")) && !view.journal().preferences().hudEnabled() && view.journal().notices().size()==3,"batch_restored_tracking_settings_notifications"));}
+    private CompletionStage<Void> batchResume(){return openAll().thenRun(this::npcCheck).thenCompose(v->batchRestored()).thenCompose(v->verify(a1,32,0));}
+    private CompletionStage<Void> batchComplete(){
+        var c=catalog.quest("route_marker");var follow=catalog.quest("route_followup");
+        return batchGoal(quests,batchRoute,c,1).thenCompose(v->batchGoal(quests,batchRoute,c,2))
+            .thenAccept(row->check(row.equals(new QuestStore.Saved(QuestStore.Phase.REPORT_READY,3,2)),"batch_final_goal_report_wait_index2"))
+            .thenCompose(v->quests.advance(batchRoute,QuestStore.Phase.COMPLETED))
+            .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->check(view.journal().tracked().equals(Set.of("survey_marker")),"batch_completed_tracking_removed_atomically"))
+            .thenCompose(v->entry(quests,a1,follow,s1,()->true,false))
+            .thenCompose(v->journal.track(a1,s1,()->true,follow.id(),true))
+            .thenCompose(v->quests.open(a1,follow.id(),s1,()->true)).thenCompose(q->batchGoal(quests,q,follow,0).thenCompose(x->batchGoal(quests,q,follow,1)))
+            .thenAccept(row->check(row.equals(new QuestStore.Saved(QuestStore.Phase.COMPLETED,2,1)),"batch_followup_unlock_auto_start_multistep_auto_complete"))
+            .thenCompose(v->journal.hud(a1,s1,()->true,true))
+            .thenAccept(view->check(journal.hudLines(view).size()==1 && view.journal().notices().size()==9 && view.journal().tracked().equals(Set.of("survey_marker")),"batch_UI_latest_state_tracking_cleanup_nine_unique_notices"))
+            .thenCompose(v->journal.readAll(a1,s1,()->true)).thenAccept(view->check(view.journal().notices().stream().allMatch(io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Notice::read),"batch_mark_all_after_completion"))
+            .thenCompose(v->journal.load(a2,s2,()->true)).thenAccept(view->check(view.states().get("route_marker").equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0,0)) && view.journal().tracked().isEmpty() && view.journal().preferences().hudEnabled() && view.journal().notices().size()==1,"batch_other_player_isolated"))
+            .thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->check(view.states().get("route_marker").phase()==QuestStore.Phase.NOT_ACCEPTED && view.journal().notices().isEmpty() && view.journal().tracked().isEmpty(),"batch_same_player_other_run_isolated"));
+    }
+    private CompletionStage<Void> batchNoticeFailure(){
+        var probe=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);
+        return probe.open(a2,"route_marker",new Object(),()->true).thenCompose(q->expect(batchGoal(probe,q,catalog.quest("route_marker"),0),"23514")
+            .thenRun(()->check(q.held() && q.saved().equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0,0)),"batch_notice_failure_HOLD_original_step")))
+            .thenCompose(v->mainResult(store.readQuest(a2,"route_marker"))).thenAccept(row->check(row.equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0,0)),"batch_transaction_rollback_quest_when_notice_INSERT_fails"))
+            .thenCompose(v->mainResult(store.readJournal(a2))).thenAccept(data->check(data.notices().size()==1,"batch_no_partial_or_duplicate_notification"));
+    }
+    private CompletionStage<Void> batchPreferencesFailure(){
+        var probe=new QuestJournal(store,quests,catalog,owner,SessionVerification::main);
+        return expect(probe.hud(a2,s2,()->true,false),"23514").thenRun(()->check(!probe.settled(a),"batch_settings_failure_UI_HOLD"))
+            .thenCompose(v->mainResult(store.readJournal(a2))).thenAccept(data->check(data.preferences().hudEnabled() && data.preferences().revision()==-1,"batch_settings_failure_original_default_preserved"));
+    }
+    private CompletionStage<Void> batchUiPending(){
+        batchUiRead=journal.load(a1,s1,batchValid::get);batchUiBarrier=journal.barrier(a);
+        return later(()->{check(!batchUiRead.toCompletableFuture().isDone() && !batchUiBarrier.toCompletableFuture().isDone(),"batch_UI_read_async_in_shutdown_barrier");
+            check(journal.load(a1,s1,()->true).toCompletableFuture().isCompletedExceptionally(),"batch_duplicate_UI_read_limited");batchValid.set(false);});
     }
     private QuestContent prerequisiteContent(boolean npc,boolean automatic){
         var c=catalog.quest("followup_marker");
@@ -792,19 +885,19 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->rejectQuest(probe.barrier(a))))
             .thenCompose(v->matrix());
     }
-    public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run),owner);}
-    public boolean canUnload(UUID run){return coordinator.canUnload(run) && (quests==null || quests.settled(run));}
+    public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)),owner);}
+    public boolean canUnload(UUID run){return coordinator.canUnload(run) && (quests==null || quests.settled(run) && journal.settled(run));}
     public void releaseQuests(UUID run){if(quests!=null)quests.release(run);}
     public CompletionStage<Void> shutdown(){
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
-        autosave.close();adapter.close();
+        if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
         CompletionStage<Void> other=s3==null ? CompletableFuture.completedFuture(null) : coordinator.disconnect(s3);
         return mainResult(other).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
             if(error!=null && !(expectedHold && "23514".equals(s1.error()) && "MOVE_FAILED".equals(s2.error())
                     && generationProbes.size()==2 && generationProbes.values().stream().allMatch(s->s.state()==PlayerSessions.State.HOLD && "STALE_WORLD".equals(s.error()))
                     && Set.of("23514","MOVE_FAILED","STALE_WORLD").contains(LifecycleFailure.code(error))))throw new CompletionException(error);
             log("DRAIN "+(error==null ? "PASS" : "EXPECTED_HOLD_PRESERVED"));return null;
-        },owner)).thenCompose(v->quests==null?CompletableFuture.completedFuture(null):quests.shutdown());
+        },owner)).thenCompose(v->journal==null?CompletableFuture.completedFuture(null):journal.shutdown()).thenCompose(v->quests==null?CompletableFuture.completedFuture(null):quests.shutdown());
     }
     private CompletionStage<Void> linkExisting(ServerProgressAccess.Context context) {
         return mainResult(store.readPersonal(context)).thenCompose(v -> mainResult(store.readInventory(context))).thenAccept(saved -> {

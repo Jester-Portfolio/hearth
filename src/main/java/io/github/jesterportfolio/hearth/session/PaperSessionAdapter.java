@@ -33,6 +33,8 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private final Set<Entry> samples=Collections.newSetFromMap(new IdentityHashMap<>());
     private boolean closed;
     private BiPredicate<Player,String> questCommand=(p,c)->false;
+    private BiPredicate<Player,Inventory> developerInventory=(p,i)->false;
+    public void developerInventory(BiPredicate<Player,Inventory> handler){main();developerInventory=handler;}
     public void questCommand(BiPredicate<Player,String> handler){main();questCommand=handler;}
     public PlayerSessions.Session current(Player p){main();Entry e=entry(p);return allowed(p)?e.session():null;}
     public PaperSessionAdapter(JavaPlugin plugin,PlayerSessions sessions,Executor owner,PaperInventoryCodec codec,Location waiting) {
@@ -104,7 +106,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         if(!allowed(e.getPlayer()) && !(e instanceof PlayerTeleportEvent)) e.setTo(e.getFrom());
     }
     @EventHandler(priority=EventPriority.HIGHEST) public void teleport(PlayerTeleportEvent e){if(moving.get(e.getPlayer().getUniqueId())!=e.getPlayer())e.setCancelled(true);}
-    @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){if(e.getPlayer() instanceof Player && e.getInventory().getType()!=InventoryType.CRAFTING && e.getInventory().getType()!=InventoryType.PLAYER)e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){if(e.getPlayer() instanceof Player p && e.getInventory().getType()!=InventoryType.CRAFTING && e.getInventory().getType()!=InventoryType.PLAYER && (!allowed(p) || !developerInventory.test(p,e.getInventory())))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){if(e.getWhoClicked() instanceof Player)e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void drag(InventoryDragEvent e){if(e.getWhoClicked() instanceof Player)e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void interact(PlayerInteractEvent e){

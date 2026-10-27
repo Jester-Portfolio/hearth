@@ -60,6 +60,30 @@ public final class S45DatabaseFixture {
                         try (var st=Objects.requireNonNull(admin).createStatement()) {
                             st.setQueryTimeout(3);
                             switch (command) {
+                                case "quest-legacy" -> {
+                                    // 새 격리 DB에만 V003 상태를 준비해 실제 순차 업그레이드를 시험합니다.
+                                    admin.setAutoCommit(false);
+                                    try{
+                                        st.execute("CREATE SCHEMA hearth_progress");st.execute("CREATE TABLE hearth_progress.schema_version(version integer PRIMARY KEY,checksum text NOT NULL)");
+                                        for(int version=1;version<=3;version++){
+                                            String name=List.of("V001__progress.sql","V002__story_inventory.sql","V003__personal_quest.sql").get(version-1);
+                                            byte[] bytes=Files.readAllBytes(root.resolve("legacy-migrations").resolve(name));
+                                            for(String sql:new String(bytes,java.nio.charset.StandardCharsets.UTF_8).split(";"))if(!sql.isBlank())st.execute(sql);
+                                            try(var insert=admin.prepareStatement("INSERT INTO hearth_progress.schema_version VALUES (?,?)")){insert.setInt(1,version);insert.setString(2,HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes)));insert.executeUpdate();}
+                                        }
+                                        String run=new UUID(42,99).toString(),player=new UUID(49,99).toString();
+                                        st.execute("INSERT INTO hearth_progress.story_run(story_run_id,state_value) VALUES ('"+run+"','legacy')");
+                                        st.execute("INSERT INTO hearth_progress.player_progress(story_run_id,player_uuid,state_value) VALUES ('"+run+"','"+player+"','legacy')");
+                                        st.execute("INSERT INTO hearth_progress.personal_quest(story_run_id,player_uuid,quest_id,phase,revision) VALUES ('"+run+"','"+player+"','survey_marker','COMPLETED',2)");
+                                        admin.commit();
+                                    }catch(Exception e){admin.rollback();throw e;}finally{admin.setAutoCommit(true);}
+                                }
+                                case "notice-fail-on", "preferences-fail-on" -> {
+                                    st.execute("CREATE OR REPLACE FUNCTION hearth_progress.reject_batch() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'isolated batch failure' USING ERRCODE='23514'; END $$");
+                                    String target=command.equals("notice-fail-on")?"quest_notification":"quest_preferences";
+                                    st.execute("CREATE TRIGGER reject_batch BEFORE INSERT OR UPDATE ON hearth_progress."+target+" FOR EACH ROW EXECUTE FUNCTION hearth_progress.reject_batch()");
+                                }
+                                case "notice-fail-off", "preferences-fail-off" -> st.execute("DROP TRIGGER reject_batch ON hearth_progress."+(command.equals("notice-fail-off")?"quest_notification":"quest_preferences"));
                                 case "quest-fail-on" -> {
                                     st.execute("CREATE OR REPLACE FUNCTION hearth_progress.reject_quest() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'isolated quest write failure' USING ERRCODE='23514'; END $$");
                                     st.execute("CREATE TRIGGER reject_quest BEFORE INSERT OR UPDATE ON hearth_progress.personal_quest FOR EACH ROW EXECUTE FUNCTION hearth_progress.reject_quest()");

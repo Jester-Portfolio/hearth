@@ -100,3 +100,74 @@ quests:
       report: '[후속 조사 보고]'
       completed: '후속 조사가 완료되었습니다.'
       failure: '후속 조사 저장 상태를 확인할 수 없습니다.'
+  - id: route_marker
+    start-mode: npc
+    completion-mode: report
+    title: 공개 연속 경로 조사
+    npc-id: survey_guide
+    objectives:
+      - description: 첫 번째 공개 표지 방문
+        min-x: 20.0
+        max-x: 22.0
+        min-y: 64.0
+        max-y: 67.0
+        min-z: 2.0
+        max-z: 4.0
+      - description: 두 번째 공개 표지 방문
+        min-x: 20.0
+        max-x: 22.0
+        min-y: 64.0
+        max-y: 67.0
+        min-z: 8.0
+        max-z: 10.0
+      - description: 마지막 공개 표지 방문
+        min-x: 20.0
+        max-x: 22.0
+        min-y: 64.0
+        max-y: 67.0
+        min-z: 14.0
+        max-z: 16.0
+    text:
+      offer: '세 공개 표지를 순서대로 방문해 주세요. 보상과 아이템 소모는 없습니다.'
+      accept: '[연속 조사 수락]'
+      active: '공개 표지 조사를 진행합니다.'
+      report-ready: '모든 표지를 방문했습니다. 시험 안내원에게 보고해 주세요.'
+      report: '[연속 조사 보고]'
+      completed: '공개 연속 경로 조사가 완료되었습니다.'
+      failure: '조사 저장 상태를 확인할 수 없습니다.'
+  - id: route_followup
+    requires-completed: route_marker
+    start-mode: automatic
+    start-area:
+      min-x: 24.0
+      max-x: 26.0
+      min-y: 64.0
+      max-y: 67.0
+      min-z: 2.0
+      max-z: 4.0
+    completion-mode: automatic
+    title: 공개 후속 경로 조사
+    npc-id: survey_guide
+    objectives:
+      - description: 후속 첫 표지 방문
+        min-x: 24.0
+        max-x: 26.0
+        min-y: 64.0
+        max-y: 67.0
+        min-z: 8.0
+        max-z: 10.0
+      - description: 후속 마지막 표지 방문
+        min-x: 24.0
+        max-x: 26.0
+        min-y: 64.0
+        max-y: 67.0
+        min-z: 14.0
+        max-z: 16.0
+    text:
+      offer: '후속 구역에 진입해 두 표지를 방문해 주세요.'
+      accept: '[후속 구역 진입]'
+      active: '후속 경로 조사를 진행합니다.'
+      report-ready: '후속 경로 보고 대기'
+      report: '[후속 경로 보고]'
+      completed: '후속 경로 조사가 완료되었습니다.'
+      failure: '후속 경로 저장 상태를 확인할 수 없습니다.'

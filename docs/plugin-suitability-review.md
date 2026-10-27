@@ -151,3 +151,13 @@ PL1의 WG/WE 로딩/종료 부분은 실행했고 MV 조합은 미실행입니�
 구현 API 근거: [Paper 상호작용 이벤트](https://jd.papermc.io/paper/26.2/org/bukkit/event/player/PlayerInteractEntityEvent.html)는 세부 위치 이벤트 사용을 권고하므로 `PlayerInteractAtEntityEvent`를 사용합니다. [엔티티 비영속 설정](https://jd.papermc.io/paper/26.2/org/bukkit/entity/Entity.html#setPersistent(boolean))에 따라 시험 NPC를 월드 파일에 중복 저장하지 않습니다. [WorldGuard flags](https://worldguard.enginehub.org/en/latest/regions/flags/)의 `INTERACT`를 NPC 지점에만 허용하며 건축 권한과 구분합니다. 실제 결과와 남은 시험은 [개인 퀘스트 기록](personal-quest-verification.md)을 따릅니다.
 
 2026-10-27 후속은 동일 어댑터의 콘텐츠 목록을 두 NPC/두 개인 퀘스트로 확장한 것입니다. 외부 플랫폼 선택은 바꾸지 않았고 새 의존성을 설치하지 않았습니다. 기존 비교 근거를 유지하며 [다중 콘텐츠 기록](personal-quest-verification.md#다중-콘텐츠-확장--2026-10-27)의 범위만 구현·검증했습니다. 실제 클라이언트 시험은 사용자 별도 요청 전까지 보류합니다.
+
+## S4 통합 배치의 추적·GUI·HUD 검토 — 2026-10-27
+
+기존 Citizens/BetonQuest 비교를 재사용합니다. 이번 다단계·추적·알림은 기존 Hearth PostgreSQL 정본·세션·CAS와 연결하므로 외부 퀘스트 정본을 추가하지 않습니다. NPC 플랫폼 교체·추가 플러그인 설치는 없습니다.
+
+- [InvUI 공식 저장소](https://github.com/NichtStudioCode/InvUI)는 슬롯 GUI·페이지/탭 API와 MIT 라이선스, Minecraft26.2 대응 범위 2.2.0~2.3.2를 안내합니다. 범위별 버전 관리가 필요하며 Java25/고정 Paper build134에서의 실행·외부 의존성·메모리·동적 세션 정리는 이번에 검증하지 않았습니다. 버전 호환표만으로 Hearth 진행 격리나 41슬롯 보호가 보장되지 않습니다. GUI가 커질 때 연동 후보로 남깁니다.
+- 이번에는 [Paper InventoryHolder](https://docs.papermc.io/paper/dev/custom-inventory-holder/) 기반의 고정 54슬롯·페이지 표시 데이터를 사용합니다. 작은 읽기 중심 화면과 기존 인벤토리 접근 차단을 연동할 수 있어 추가 의존성/재배포물 없이 구현합니다. 외부 라이브러리를 재현하는 범용 GUI 엔진은 만들지 않습니다.
+- HUD는 기존 Paper가 제공하는 [Adventure BossBar](https://docs.papermc.io/adventure/bossbar/)를 재사용합니다. 해당 기능이 소유한 객체만 표시/해제하고 ActionBar·다른 플러그인의 메시지를 덮어쓰지 않습니다. 위쪽 BossBar 기반 개발 표시이며 ADR-0010의 왼쪽 고정 HUD 구현 완료가 아닙니다. 실제 클라이언트 가독성·다중 줄 한도·전투 HUD와의 배치/우선순위는 후속 시험입니다.
+
+선택 이유는 작은 어댑터와 기존 저장 경계의 재사용입니다. 발견·문서 호환성·빌드·서버 객체 생성·실제 GUI 클릭은 별도 검증이며 세부 결과는 통합 배치 기록을 따릅니다.

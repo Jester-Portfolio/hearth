@@ -33,10 +33,12 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final NamespacedKey tag;
     // World/Entity 객체 대신 물리 식별자만 보관합니다. 개인 저장 소유권은 논리 진행 키입니다.
     private final Map<UUID,Map<String,UUID>> npcs=new HashMap<>();
+    private final PaperQuestUI ui;
     private boolean closed;
-    public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,Executor owner,Set<UUID> worldIds) {
+    public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;dialogues=new QuestDialogue(catalog);
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
+        ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         Bukkit.getPluginManager().registerEvents(this,plugin);players.questCommand(this::command);
         for(World w:Bukkit.getWorlds())ensure(w);
     }
@@ -114,7 +116,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public static List<Component> dialogueMessages(QuestContent c,QuestStore.Saved saved,QuestDialogue dialogues,QuestDialogue.Ticket selected){
         if(!dialogues.current(selected) || !c.id().equals(selected.quest()))throw new IllegalArgumentException("Stale dialogue response");
         String text=switch(saved.phase()){case NOT_ACCEPTED->"offer";case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";};
-        Component message=Component.text(c.text().get(text));
+        Component message=Component.text(saved.phase()==QuestStore.Phase.ACTIVE?c.guidance(saved):c.text().get(text));
         if(saved.phase()==QuestStore.Phase.NOT_ACCEPTED && c.startMode()==QuestContent.StartMode.NPC || saved.phase()==QuestStore.Phase.REPORT_READY){
             String action=saved.phase()==QuestStore.Phase.NOT_ACCEPTED?"accept":"report";
             var next=dialogues.action(selected,action);
@@ -123,6 +125,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         return List.of(message);
     }
     private boolean command(Player p,String command){
+        if(ui.command(p,command))return true;
         if(!command.startsWith("/hearthquest"))return false;
         var session=players.current(p);if(session==null)return true;
         if(command.equals("/hearthquest list")){read(p,session,null);return true;}
@@ -184,11 +187,12 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             from.getX(),from.getY(),from.getZ(),to.getX(),to.getY(),to.getZ()).thenAcceptAsync(saved->{
                 if(players.current(p)!=session || saved.isEmpty())return;
                 String key=switch(saved.get().phase()){case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";default->throw new IllegalStateException("Unexpected movement result");};
-                p.sendMessage(Component.text(c.text().get(key)));
+                p.sendMessage(Component.text(c.guidance(saved.get())));
             },owner).exceptionally(error->null);
     }
     private void unavailable(Player p){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다."));plugin.getLogger().info("HEARTH_QUEST_REQUEST_UNAVAILABLE");}
     private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}
-    @Override public void close(){closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
+    public void stopUi(){ui.close();}
+    @Override public void close(){ui.close();closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
         for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(e->npcId(e)!=null).forEach(Entity::remove);}npcs.clear();}
 }

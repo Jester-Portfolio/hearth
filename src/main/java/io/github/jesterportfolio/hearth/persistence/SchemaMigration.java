@@ -8,12 +8,18 @@ import java.util.*;
 
 /** V001을 보존하는 순차 트랜잭션 마이그레이션. 미상 버전·기존 테이블의 자동 재설정은 금지합니다. */
 final class SchemaMigration {
-    private static final List<String> FILES=List.of("V001__progress.sql","V002__story_inventory.sql","V003__personal_quest.sql");
+    private static final List<String> FILES=List.of("V001__progress.sql","V002__story_inventory.sql","V003__personal_quest.sql","V004__quest_steps_and_journal.sql");
     private static void validateTables(Connection c,int version) throws SQLException {
         try (var st=c.createStatement()) {
             st.executeQuery("SELECT story_run_id,state_value,revision FROM hearth_progress.story_run LIMIT 0").close();
             st.executeQuery("SELECT story_run_id,player_uuid,state_value,revision FROM hearth_progress.player_progress LIMIT 0").close();
             if (version>=3) st.executeQuery("SELECT story_run_id,player_uuid,quest_id,phase,revision FROM hearth_progress.personal_quest LIMIT 0").close();
+            if(version>=4){
+                st.executeQuery("SELECT objective_index FROM hearth_progress.personal_quest LIMIT 0").close();
+                st.executeQuery("SELECT story_run_id,player_uuid,quest_id FROM hearth_progress.quest_tracking LIMIT 0").close();
+                st.executeQuery("SELECT hud_enabled,revision FROM hearth_progress.quest_preferences LIMIT 0").close();
+                st.executeQuery("SELECT quest_id,event_revision,kind,created_at,is_read FROM hearth_progress.quest_notification LIMIT 0").close();
+            }
             if (version>=2) st.executeQuery("SELECT story_run_id,player_uuid,payload,revision FROM hearth_progress.story_inventory LIMIT 0").close();
         }
     }

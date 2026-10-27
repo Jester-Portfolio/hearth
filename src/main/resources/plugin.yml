@@ -10,6 +10,8 @@ description: Hearth S4 isolated multiworld verification foundation
 commands:
   hearthquest:
     description: 격리 NPC 대화의 수락·보고 선택
+  hearthphone:
+    description: 격리 개발 모드 스마트폰 GUI
   hearthverify:
     description: Console-only isolated S4 verification
     permission: hearth.verify

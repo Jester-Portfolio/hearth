@@ -36,6 +36,9 @@ public final class PersonalQuest {
     private final Map<Key,Session> sessions=new HashMap<>();
     private final Map<Reader,Query> queries=new HashMap<>();
     private final Map<Key,CompletableFuture<Void>> movements=new HashMap<>();
+    private java.util.function.Consumer<ServerProgressAccess.Context> changed=c->{};
+    public void changed(java.util.function.Consumer<ServerProgressAccess.Context> listener){check.run();changed=listener;}
+    private void notifyChanged(Session s){try{changed.accept(s.context);}catch(RuntimeException ignored){}}
     private boolean closed;
     public PersonalQuest(QuestStore store,String id,Executor owner,Runnable check){this(store,Set.of(id),owner,check);}
     public PersonalQuest(QuestStore store,Collection<String> ids,Executor owner,Runnable check){
@@ -99,7 +102,7 @@ public final class PersonalQuest {
             boolean rejected=cause instanceof IllegalStateException && Set.of("QUEST_LOCKED","QUEST_PREREQUISITE_BUSY","QUEST_PREREQUISITE_CHANGED","STALE_QUEST").contains(Objects.toString(cause.getMessage(),""));
             if(error!=null && !rejected){s.hold=true;drain.completeExceptionally(error);}else drain.complete(null);
             if(error!=null)result.completeExceptionally(error);
-            else if(current(s)){s.saved=row;result.complete(row);}else result.completeExceptionally(new IllegalStateException("STALE_QUEST"));
+            else if(current(s)){s.saved=row;notifyChanged(s);result.complete(row);}else result.completeExceptionally(new IllegalStateException("STALE_QUEST"));
         },owner);
         return result;
     }
@@ -109,7 +112,7 @@ public final class PersonalQuest {
         check.run();if(closed || !valid.getAsBoolean())return rejected("STALE_QUEST");
         if(Math.floor(fx)==Math.floor(tx) && Math.floor(fy)==Math.floor(ty) && Math.floor(fz)==Math.floor(tz))return CompletableFuture.completedFuture(Optional.empty());
         boolean start=c.startMode()==QuestContent.StartMode.AUTOMATIC && c.startArea().entered(fx,fy,fz,tx,ty,tz);
-        boolean goal=c.contains(tx,ty,tz);
+        boolean goal=c.goals().stream().anyMatch(g->g.area().contains(tx,ty,tz));
         if(!start && !goal)return CompletableFuture.completedFuture(Optional.empty());
         Key key=new Key(context.storyRunId(),context.playerId(),c.id());
         if(movements.containsKey(key))return CompletableFuture.completedFuture(Optional.empty());
@@ -118,7 +121,7 @@ public final class PersonalQuest {
             require(q);if(q.hold)throw new IllegalStateException("QUEST_HOLD");if(q.busy)return CompletableFuture.completedFuture(Optional.<QuestStore.Saved>empty());
             // 시작과 목표가 겹쳐도 이 진입은 시작만 수행합니다.
             if(start && q.saved.phase()==QuestStore.Phase.NOT_ACCEPTED)return start(q,c,tx,ty,tz).thenApply(Optional::of);
-            return goal && q.saved.phase()==QuestStore.Phase.ACTIVE?reach(q,c,tx,ty,tz).thenApply(Optional::of):CompletableFuture.completedFuture(Optional.<QuestStore.Saved>empty());
+            return goal && q.saved.phase()==QuestStore.Phase.ACTIVE && c.goal(q.saved).area().contains(tx,ty,tz)?reach(q,c,tx,ty,tz).thenApply(Optional::of):CompletableFuture.completedFuture(Optional.<QuestStore.Saved>empty());
         },owner).whenCompleteAsync((saved,error)->{
             movements.remove(key,drain);
             Throwable cause=error;while(cause instanceof CompletionException && cause.getCause()!=null)cause=cause.getCause();
@@ -132,23 +135,25 @@ public final class PersonalQuest {
     public CompletionStage<QuestStore.Saved> reach(Session s,QuestContent content,double x,double y,double z) {
         check.run();
         if(!current(s))return rejected("STALE_QUEST");
-        if(!s.key.quest().equals(content.id()) || !content.contains(x,y,z) || s.saved==null || s.saved.phase()!=QuestStore.Phase.ACTIVE)return rejected("QUEST_GOAL");
+        if(!s.key.quest().equals(content.id()) || s.saved==null || s.saved.phase()!=QuestStore.Phase.ACTIVE || !content.goal(s.saved).area().contains(x,y,z))return rejected("QUEST_GOAL");
+        if(s.saved.objectiveIndex()+1<content.goals().size())return advance(s,QuestStore.Phase.ACTIVE,false,s.saved.objectiveIndex()+1);
         boolean automatic=content.completionMode()==QuestContent.CompletionMode.AUTOMATIC;
         return advance(s,automatic?QuestStore.Phase.COMPLETED:QuestStore.Phase.REPORT_READY,automatic);
     }
-    private CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target,boolean automatic) {
+    private CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target,boolean automatic){return advance(s,target,automatic,s.saved==null?0:s.saved.objectiveIndex());}
+    private CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target,boolean automatic,int index) {
         check.run();
         if(!current(s))return rejected("STALE_QUEST");
         if(s.busy || s.hold || s.saved==null)return rejected("QUEST_BUSY_OR_HOLD");
-        if(!QuestStore.follows(s.saved.phase(),target) || (s.saved.phase()==QuestStore.Phase.ACTIVE && target==QuestStore.Phase.COMPLETED && !automatic))return rejected("QUEST_ORDER");
+        if(!(s.saved.phase()==QuestStore.Phase.ACTIVE && target==QuestStore.Phase.ACTIVE && index==s.saved.objectiveIndex()+1) && !QuestStore.follows(s.saved.phase(),target) || (s.saved.phase()==QuestStore.Phase.ACTIVE && target==QuestStore.Phase.COMPLETED && !automatic))return rejected("QUEST_ORDER");
         s.busy=true;var result=new CompletableFuture<QuestStore.Saved>();
-        s.io=store.advanceQuest(s.context,s.key.quest(),s.saved,target).thenAcceptAsync(row->{
+        s.io=store.advanceQuest(s.context,s.key.quest(),s.saved,target,index).thenAcceptAsync(row->{
             if(current(s))s.saved=row;
         },owner);
         s.io.whenCompleteAsync((v,e)->{
             s.busy=false;
             if(e!=null){s.hold=true;result.completeExceptionally(e);}
-            else if(current(s))result.complete(s.saved);
+            else if(current(s)){notifyChanged(s);result.complete(s.saved);}
             else result.completeExceptionally(new IllegalStateException("STALE_QUEST"));
         },owner);
         return result;

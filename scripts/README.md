@@ -43,3 +43,5 @@
 지역 자동 시작 검사는 `verify-lifecycle.py --sessions --quests --quest-start` 단독 모드를 사용합니다. 한 JVM에서 시작 구역·NPC 수락 차단·중복/SQL 실패·세션 교체·두 완료 방식 조합을 제어 경계로 확인하며 실제 이동 시험은 아닙니다. 기존 `--quest-list`/`--quest-info`는 새 경로에 과거 두 퀘스트 fixture를 준비하고, 세 퀘스트 목록/상세는 시작 검사의 마지막 단계에서 확인합니다.
 
 개인 선행 조건 검사는 `verify-lifecycle.py --sessions --quests --quest-requires` 단독 모드를 사용합니다. 새 후속 콘텐츠를 포함한 한 JVM/DB에서 비동기 잠금 필터·NPC/지역 시작·개인 격리·조회 실패/HOLD·stale를 확인합니다. 이전 자동 모드는 새 경로에서 기존 고정 fixture를 유지하고 수동 모드는 새 콘텐츠 전체를 사용합니다. 실제 클라이언트 시험은 아닙니다.
+
+통합 배치는 `verify-lifecycle.py --sessions --quests --quest-batch` 단독 모드입니다. 새 DB에 V003 fixture를 준비한 뒤 V004·두 JVM 단계/추적/알림/설정 복원·GUI/HUD 객체/표시 데이터·대표 실패를 검사합니다. 기존 고정 콘텐츠 모드와 혼합하지 않습니다. [실제 시험 범위](../docs/s4-quest-batch-verification.md)를 따르며 실제 클라이언트/GUI 클릭은 보류입니다.

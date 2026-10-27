@@ -25,7 +25,13 @@ public final class QuestCatalog {
         for(Object row:questRows){
             var quest=map(row);String id=id(quest,"id"),npcId=id(quest,"npc-id");var npc=rawNpcs.get(npcId);
             if(npc==null)throw new IllegalArgumentException("Unknown NPC link");
-            var goal=map(quest.get("objective"));var text=map(quest.get("text"));var messages=new HashMap<String,String>();
+            var goals=new ArrayList<QuestContent.Goal>();Map<?,?> goal;
+            if(quest.containsKey("objectives")){
+                if(quest.containsKey("objective") || !(quest.get("objectives") instanceof List<?> list) || list.isEmpty())throw new IllegalArgumentException("Invalid objectives");
+                for(Object raw:list){var g=map(raw);goals.add(new QuestContent.Goal(string(g,"description"),area(g)));}
+                goal=map(((List<?>)quest.get("objectives")).getFirst());
+            }else goal=map(quest.get("objective"));
+            var text=map(quest.get("text"));var messages=new HashMap<String,String>();
             for(String key:List.of("offer","accept","active","report-ready","report","completed","failure"))messages.put(key,string(text,key));
             double x=number(npc,"x"),y=number(npc,"y"),z=number(npc,"z");
             double minX=number(goal,"min-x"),maxX=number(goal,"max-x"),minY=number(goal,"min-y"),maxY=number(goal,"max-y"),minZ=number(goal,"min-z"),maxZ=number(goal,"max-z");
@@ -37,7 +43,8 @@ public final class QuestCatalog {
             QuestContent.Area startArea=null;
             if(start==QuestContent.StartMode.AUTOMATIC){var area=map(quest.get("start-area"));startArea=area(area);}
             else if(quest.containsKey("start-area"))throw new IllegalArgumentException("NPC start must not define start-area");
-            var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,start,startArea,quest.containsKey("requires-completed")?id(quest,"requires-completed"):null,Map.copyOf(messages));
+            if(goals.isEmpty())goals.add(new QuestContent.Goal(messages.get("active"),area(goal)));
+            var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,start,startArea,quest.containsKey("requires-completed")?id(quest,"requires-completed"):null,Map.copyOf(messages),goals);
             if(quests.putIfAbsent(id,content)!=null)throw new IllegalArgumentException("Duplicate quest id");
             npcs.computeIfAbsent(npcId,key->new ArrayList<>()).add(content);
         }

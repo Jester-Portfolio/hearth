@@ -35,7 +35,7 @@ public final class QuestListView {
         return entries(catalog,states).stream().filter(row->row.questId().equals(id)).findFirst().map(row->{
             var content=catalog.quest(row.questId());
             String key=switch(row.phase()){case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";default->throw new IllegalArgumentException("Unsupported detail phase");};
-            return new Detail(row,content.name(),content.text().get(key));
+            return new Detail(row,content.name(),content.guidance(states.get(row.questId())));
         });
     }
     public static String infoCommand(Entry row) {

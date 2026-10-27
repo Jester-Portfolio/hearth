@@ -21,10 +21,11 @@ final class PersonalQuestTest {
             if(!deferReads)return CompletableFuture.completedFuture(row);
             var f=new CompletableFuture<Saved>();readResults.add(f);readSnapshots.add(row);return f;
         }
-        public CompletionStage<Saved> advanceQuest(ServerProgressAccess.Context c,String id,Saved before,Phase next){
+        public CompletionStage<Saved> advanceQuest(ServerProgressAccess.Context c,String id,Saved before,Phase next){return advanceQuest(c,id,before,next,before.objectiveIndex());}
+        public CompletionStage<Saved> advanceQuest(ServerProgressAccess.Context c,String id,Saved before,Phase next,int index){
             var f=new CompletableFuture<Saved>();pending.add(f);commit.add(()->{
                 if(!rows.getOrDefault(key(c,id),new Saved(Phase.NOT_ACCEPTED,-1)).equals(before)){f.completeExceptionally(new IllegalStateException("CAS"));return;}
-                var row=new Saved(next,before.revision()+1);rows.put(key(c,id),row);f.complete(row);
+                var row=new Saved(next,before.revision()+1,index);rows.put(key(c,id),row);f.complete(row);
             });return f;
         }
     }

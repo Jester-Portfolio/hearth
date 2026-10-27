@@ -75,6 +75,7 @@ def main():
     parser.add_argument('--plugin', required=True, type=Path)
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--quest-batch', action='store_true', help='두 JVM에서 다단계/추적/알림/설정/GUI·HUD 데이터와 V004를 검사합니다')
     parser.add_argument('--quest-requires', action='store_true', help='한 JVM에서 개인 선행 완료 조건·잠금 비노출·시작 경합을 검사합니다')
     parser.add_argument('--quest-start', action='store_true', help='한 JVM에서 지역 진입 자동 시작·NPC 차단·중복/실패/stale를 검사합니다')
     parser.add_argument('--quest-npc', action='store_true', help='한 NPC의 여러 개인 퀘스트 선택·nonce·지연 응답을 검사합니다')
@@ -91,6 +92,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.quest_batch and (not args.quests or not args.sessions or args.manual_player or args.quest_requires or args.quest_start or args.quest_npc or args.quest_auto or args.quest_info or args.quest_list):
+        parser.error("--quest-batch는 자동 --sessions --quests 단독 배치 검증 모드에서만 사용합니다")
     if args.quest_requires and (not args.quests or not args.sessions or args.manual_player or args.quest_start or args.quest_npc or args.quest_auto or args.quest_info or args.quest_list):
         parser.error("--quest-requires는 자동 --sessions --quests 단독 선행 조건 검증 모드에서만 사용합니다")
     if args.quest_start and (not args.quests or not args.sessions or args.manual_player or args.quest_npc or args.quest_auto or args.quest_info or args.quest_list):
@@ -133,11 +136,11 @@ def main():
         shutil.copyfile(root/name,plugins/name)
     shutil.copyfile(args.plugin,plugins/'Hearth.jar')
     (plugins/'Hearth').mkdir()
-    if args.quests and not args.manual_player and not args.quest_requires:
+    if args.quests and not args.manual_player and not args.quest_batch:
         # 기존 읽기 전용 모드의 고정 두 퀘스트 fixture를 보존합니다. 새 경로에만 기록합니다.
         with zipfile.ZipFile(args.plugin) as jar:
             content=jar.read('quest-demo.yml').decode('utf-8')
-        cut='  - id: entry_marker\n' if args.quest_info or args.quest_list else '  - id: followup_marker\n'
+        cut='  - id: route_marker\n' if args.quest_requires else '  - id: entry_marker\n' if args.quest_info or args.quest_list else '  - id: followup_marker\n'
         (plugins/'Hearth/quest-demo.yml').write_text(content.partition(cut)[0])
     idle_seconds=10 if args.manual_player else 1
     (plugins/'Hearth/config.yml').write_text(f"quest-verification-enabled: {str(args.quests).lower()}\n"+'verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
@@ -171,6 +174,12 @@ motd=Hearth isolated S4-11 verification
                 'io.github.jesterportfolio.hearth.persistence.S45DatabaseFixture',str(root),'--lifecycle']
         monitor.launch('database',helper,root)
         monitor.wait('database','HEARTH_S45_DB READY',seconds=30)
+        if args.quest_batch:
+            legacy=root/'legacy-migrations'; legacy.mkdir()
+            with zipfile.ZipFile(args.plugin) as jar:
+                for file in ['V001__progress.sql','V002__story_inventory.sql','V003__personal_quest.sql']:
+                    (legacy/file).write_bytes(jar.read('db/migration/'+file))
+            monitor.db('quest-legacy')
         paper=[str(args.java.resolve()),'-Xms256m','-Xmx1536m','-XX:ActiveProcessorCount=2',
                '-Dhearth.verification.root='+str(runtime),'-Dhearth.verification.lifecycle=true',
                '-jar',str(root/'paper-26.2-134.jar'),'--nogui']
@@ -203,7 +212,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.quest_requires:
+                        if args.quest_batch:
+                            monitor.action(name,'batch-prepare'); monitor.action(name,'batch-ui'); monitor.action(name,'batch-cycle')
+                        elif args.quest_requires:
                             monitor.action(name,'quest-prereq-prepare'); monitor.action(name,'quest-prereq-complete')
                             monitor.db('lock-quest'); monitor.action(name,'quest-prereq-start'); monitor.db('unlock')
                             monitor.action(name,'quest-prereq-start-done'); monitor.action(name,'quest-prereq-error-ready')
@@ -272,6 +283,12 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.quest_batch:
+                        monitor.action(name,'session-resume'); monitor.action(name,'batch-resume'); monitor.action(name,'batch-complete')
+                        monitor.db('notice-fail-on'); monitor.action(name,'batch-notice-failure'); monitor.db('notice-fail-off')
+                        monitor.db('preferences-fail-on'); monitor.action(name,'batch-preferences-failure'); monitor.db('preferences-fail-off')
+                        monitor.db('lock-quest'); monitor.action(name,'batch-ui-pending'); monitor.db('unlock')
+                        monitor.action(name,'batch-ui-pending-done')
                     elif args.quest_list:
                         monitor.action(name,'session-resume'); monitor.action(name,'quest-list-restored')
                         monitor.db('table-hide'); monitor.action(name,'quest-list-error'); monitor.db('table-show')
@@ -318,7 +335,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, manual_player_mode=args.manual_player,
+                    sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],
