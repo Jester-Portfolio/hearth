@@ -114,7 +114,12 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private boolean command(Player p,String command){
         if(!command.startsWith("/hearthquest"))return false;
         var session=players.current(p);if(session==null)return true;
-        if(command.equals("/hearthquest list")){list(p,session);return true;}
+        if(command.equals("/hearthquest list")){read(p,session,null);return true;}
+        if(command.equals("/hearthquest info") || command.startsWith("/hearthquest info ")) {
+            var id=QuestListView.infoId(command);
+            if(id.isEmpty())p.sendMessage(Component.text(QuestListView.UNAVAILABLE));else read(p,session,id.get());
+            return true;
+        }
         final QuestDialogue.Request request;final QuestDialogue.Ticket ticket;
         try {
             request=QuestDialogue.Request.parse(command);
@@ -132,12 +137,20 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             },owner);
         return true;
     }
-    private void list(Player p,PlayerSessions.Session session) {
+    public static List<Component> listMessages(QuestCatalog catalog,Map<String,QuestStore.Saved> states) {
+        var rows=QuestListView.entries(catalog,states);
+        if(rows.isEmpty())return List.of(Component.text(QuestListView.lines(rows).getFirst()));
+        return rows.stream().map(row->(Component)Component.text("["+row.status()+"] "+row.title()).clickEvent(ClickEvent.runCommand(QuestListView.infoCommand(row)))).toList();
+    }
+    public static List<Component> infoMessages(QuestCatalog catalog,Map<String,QuestStore.Saved> states,String id) {
+        return QuestListView.detailLines(QuestListView.detail(catalog,states,id)).stream().map(line->(Component)Component.text(line)).toList();
+    }
+    private void read(Player p,PlayerSessions.Session session,String questId) {
         quests.list(session.context(),session,()->players.current(p)==session).whenCompleteAsync((states,error)->{
             if(players.current(p)!=session)return;
-            if(error!=null){p.sendMessage(Component.text("퀘스트 목록을 확인할 수 없습니다. 저장 처리 또는 오류 상태를 확인해 주세요."));plugin.getLogger().info("HEARTH_QUEST_LIST_REJECTED");return;}
-            try {quests.requireListDisplay(session.context(),states);for(String line:QuestListView.lines(QuestListView.entries(catalog,states)))p.sendMessage(Component.text(line));}
-            catch(RuntimeException failure){p.sendMessage(Component.text("퀘스트 목록을 확인할 수 없습니다."));plugin.getLogger().warning("HEARTH_QUEST_LIST_INVALID_RESPONSE");}
+            if(error!=null){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다. 저장 처리 또는 오류 상태를 확인해 주세요."));plugin.getLogger().info("HEARTH_QUEST_READ_REJECTED");return;}
+            try {quests.requireListDisplay(session.context(),states);for(Component message:questId==null?listMessages(catalog,states):infoMessages(catalog,states,questId))p.sendMessage(message);}
+            catch(RuntimeException failure){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다."));plugin.getLogger().warning("HEARTH_QUEST_READ_INVALID_RESPONSE");}
         },owner);
     }
     @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void move(PlayerMoveEvent e){

@@ -1,5 +1,23 @@
 # 격리 개인 방문 퀘스트·NPC 검증
 
+## 개인 퀘스트 상세 조회 — 2026-10-27
+
+기준 `ddc51e603adfb9980f2f23edbb7e213f3b1651d4`, 깨끗한 main·스테이징에서 시작했고 fetch 후 origin/main과 일치했습니다. 격리 ACTIVE 세션의 `/hearthquest info <quest_id>`와 수락한 목록의 클릭을 연결했습니다. 제목·NPC 이름·한국어 상태·현재 단계의 기존 콘텐츠 안내(`active`/`report-ready`/`completed`)를 표시합니다. 미수락/미존재 ID는 모두 **조회할 수 있는 퀘스트가 없습니다**로 응답하고 다른 플레이어·진행 인자를 받지 않습니다.
+
+`QuestListView`의 수락 항목 필터·명령 파서·불변 상세/문자열 생성과 `PaperQuestAdapter`의 실제 Adventure 메시지 생성을 연결했습니다. 목록/상세는 같은 `PersonalQuest.list` 및 `requireListDisplay`를 사용해 조회 후 세션·현재 진행·쓰기/HOLD·revision을 재검사합니다. 조회 오류는 미수락 안내로 바꾸지 않고 오류로 처리하며 늦은 결과를 이전 세션에 보내지 않습니다. 저장 조정자·QuestStore·V001~V003·콘텐츠·진행 규칙은 변경하지 않았습니다.
+
+구현 완료 후 일괄 검증에서 통합 검사 코드의 `ClickEvent.value()`가 실제 Adventure5.2 API에 없어 compileJava가 실패했습니다. 이때 단위/런타임은 미실행이었으며 로컬 JAR API를 확인해 `ClickEvent.runCommand`의 이벤트 동등 비교로 검사 코드만 수정했습니다. 실패 설명·당시 입력 해시를 보존하고 미수행 검사를 이어서 실행했습니다.
+
+- **Gradle build/test/check·단위/회귀70개 PASS**, 실패/오류/skip0. 새 상세6개와 기존 목록·전이·세션 회귀를 한 번에 검사했습니다.
+- **실제 Paper JVM1회·PG1개, 첫 런타임 묶음36.068초 PASS**. 기존 `--sessions --quests --quest-info` 도구에서 상태별 상세·클릭 명령 Component와 서버 파서·개인/진행 격리·미수락/미존재 동일 안내·조회 전후 모든 phase/revision 불변을 확인했습니다. 읽기 잠금 중 제어 세션 토큰 교체/stale, SQLSTATE42P01 조회 실패·시험 테이블 복구도 통과했습니다.
+- 복원/저장 경계가 바뀌지 않아 두 번째 JVM과 기존 전체 기능 통합을 반복하지 않았습니다. 기존 600초·Xmx1536MiB·RSS2.5GiB·RAM6GiB/디스크4GiB·CPU2/nice+10·localhost 한도를 유지했고 모든 소유 프로세스/포트를 반환했습니다. Paper 최대 표본 RSS1,346.11MiB·CPU60.62초·준비14.053초·종료4.110초, 최소 표본 가용 RAM 약11.079GiB입니다. DB 보조 JVM RSS214.76MiB/CPU2.32초는 PG 자식 전체 측정이 아닙니다.
+- 최종 빌드/실행 JAR SHA-256 `0dfce24f5d1d593aa14bde8da7a1e0b3777a59f29df592ccfaf3fc1d61af3bfb`, 실행 후 모든 소스/Gradle 입력과 일치합니다. [상세 결과 JSON](../verification/quest-info-result.json)에 실패 이력·단위/실DB/실제 Paper·자원/원시 해시·미실행을 구분했습니다.
+
+최종 문서 검사는 변경 Markdown6개·상대 링크191개, 구조/언어/diff 오류0건입니다. 최종 JSON·JAR/빌드 입력 일치도 확인했으며 비밀 검사는 기존 Git 훅을 사용합니다.
+
+실제 Player 명령 입력·채팅 수신·목록 클릭·접속 종료 경합, DB 프로세스 재시작·장기 부하/TPS/MSPT/누수·운영 배포는 미검증입니다. 실제 클라이언트 시험은 별도 요청 전 보류하고 전체 S4는 진행 중입니다. 아래는 이전 목록/콘텐츠 작업의 역사적 기록입니다.
+
+
 ## 읽기 전용 개인 퀘스트 목록 — 2026-10-27
 
 기준 `1dd5abfa21734a3fb44faaa187566a1506790578`, 깨끗한 main·스테이징에서 시작했고 fetch 후 origin/main과 일치했습니다. 격리 개발 모드의 **ACTIVE 세션에서 `/hearthquest list`**로 본인의 수락한 퀘스트를 조회합니다. 인자는 받지 않으며 다른 플레이어/진행을 지정할 수 없습니다. NPC 근처에 있어야 하는 수락/보고 경로와 달리 목록은 현재 세션의 서버 측 진행 연결만 사용합니다.

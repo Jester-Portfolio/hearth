@@ -33,3 +33,5 @@
 2026-10-27 `--sessions --quests`는 두 콘텐츠·두 퀘스트 저장 잠금/해제·다중 장벽/stale·새 JVM 복원을 같은 실행 도구로 검사합니다. 실제 클라이언트 시험은 사용자 별도 요청 전 보류하며 준비·접속·TTY를 요청하지 않습니다. 과거 수동 명령 예시는 현재 실행 요청이 아닙니다.
 
 읽기 전용 목록은 `verify-lifecycle.py --sessions --quests --quest-list`로 같은 도구에서 목록 전용 fixture·상태/revision 불변·읽기 지연/stale·SQL 조회 오류·두 JVM 복원을 검사합니다. 기존 완료 흐름 전체를 반복하지 않으며 실제 클라이언트는 사용하지 않습니다.
+
+상세 조회의 최소 자동 연동 검사는 `verify-lifecycle.py --sessions --quests --quest-info`를 사용합니다. 같은 도구에서 Paper 한 JVM만 실행해 상세/목록 클릭 Component·개인 격리·DB 불변·조회 오류/stale를 검사합니다. `--quest-list`와 동시에 사용하지 않으며 복원 경계가 그대로인 두 번째 JVM 전체 검사를 반복하지 않습니다. 실제 클라이언트는 사용하지 않습니다.

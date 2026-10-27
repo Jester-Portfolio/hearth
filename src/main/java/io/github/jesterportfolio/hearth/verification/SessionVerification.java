@@ -143,6 +143,10 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "quest-info-prepare" -> readFixture().thenCompose(v->infoCheck());
+        case "quest-info-check" -> infoCheck();
+        case "quest-info-pending-done" -> expectQuestCode(pendingList,"STALE_QUEST_LIST").thenCompose(v->mainResult(listBarrier)).thenCompose(v->infoCheck());
+        case "quest-info-error" -> expect(quests.list(a1,s1,()->coordinator.playable(s1)),"42P01");
         case "quest-list-prepare" -> listPrepare();
         case "quest-list-check" -> listCheck();
         case "quest-list-restored" -> openAll().thenCompose(v->listCheck());
@@ -273,13 +277,13 @@ public final class SessionVerification implements AutoCloseable {
         }
         return work.thenAccept(row->check(row.phase()==phase,"list_fixture_"+id+"_"+phase));
     }
-    private CompletionStage<Void> listPrepare() {
+    private CompletionStage<Void> listPrepare() { return readFixture().thenCompose(v->listCheck()); }
+    private CompletionStage<Void> readFixture() {
         return openAll().thenCompose(v->mainResult(store.createPlayer(ctx(b,2),"list-empty")))
             .thenCompose(v->seedList(a1,"survey_marker",QuestStore.Phase.COMPLETED))
             .thenCompose(v->seedList(a1,"path_marker",QuestStore.Phase.ACTIVE))
             .thenCompose(v->seedList(a2,"survey_marker",QuestStore.Phase.REPORT_READY))
-            .thenCompose(v->seedList(ctx(b,1),"survey_marker",QuestStore.Phase.ACTIVE))
-            .thenCompose(v->listCheck());
+            .thenCompose(v->seedList(ctx(b,1),"survey_marker",QuestStore.Phase.ACTIVE));
     }
     private CompletionStage<Map<String,QuestStore.Saved>> listSnapshot(ServerProgressAccess.Context c) {
         CompletionStage<Map<String,QuestStore.Saved>> work=CompletableFuture.completedFuture(new HashMap<>());
@@ -307,6 +311,40 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->listOwner(a2,Map.of("survey_marker",new QuestStore.Saved(QuestStore.Phase.REPORT_READY,1),"path_marker",missing)))
             .thenCompose(v->listOwner(ctx(b,1),Map.of("survey_marker",new QuestStore.Saved(QuestStore.Phase.ACTIVE,0),"path_marker",missing)))
             .thenCompose(v->listOwner(ctx(b,2),Map.of("survey_marker",missing,"path_marker",missing)));
+    }
+    private CompletionStage<Void> infoOwner(ServerProgressAccess.Context c,Map<String,QuestStore.Saved> expected) {
+        return listSnapshot(c).thenCompose(before->quests.list(c,new Object(),()->worlds.get(c.storyRunId()).state()==WorldLifecycle.State.ACTIVE).thenCompose(rows->{
+            check(rows.equals(expected) && rows.equals(before),"info_owner_scope_"+c.storyRunId()+"_"+c.playerId());
+            quests.requireListDisplay(c,rows);
+            var entries=QuestListView.entries(catalog,rows);var messages=PaperQuestAdapter.listMessages(catalog,rows);
+            if(entries.isEmpty())check(messages.equals(List.of(Component.text("수락한 퀘스트가 없습니다"))) && messages.getFirst().clickEvent()==null,"info_empty_list_has_no_click_target");
+            else {
+                check(messages.size()==entries.size(),"info_clickable_list_size");
+                for(int i=0;i<entries.size();i++) {
+                    var event=Objects.requireNonNull(messages.get(i).clickEvent());
+                    String command=QuestListView.infoCommand(entries.get(i));
+                    check(event.equals(net.kyori.adventure.text.event.ClickEvent.runCommand(command))
+                        && QuestListView.infoId(command).orElseThrow().equals(entries.get(i).questId()),"info_list_click_command_"+entries.get(i).questId());
+                }
+            }
+            for(String id:catalog.questIds()) {
+                var detail=QuestListView.detail(catalog,rows,id);var components=PaperQuestAdapter.infoMessages(catalog,rows,id);
+                if(rows.get(id).phase()==QuestStore.Phase.NOT_ACCEPTED)check(detail.isEmpty() && components.equals(PaperQuestAdapter.infoMessages(catalog,rows,"missing")),"info_unaccepted_unknown_same_response_"+id);
+                else {
+                    var data=detail.orElseThrow();String key=switch(rows.get(id).phase()){case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";default->throw new IllegalStateException();};
+                    check(data.quest().title().equals(catalog.quest(id).title()) && data.npc().equals(catalog.quest(id).name()) && data.guidance().equals(catalog.quest(id).text().get(key)),"info_content_stage_"+rows.get(id).phase());
+                    check(components.equals(QuestListView.detailLines(detail).stream().map(Component::text).toList()),"info_Paper_components_"+rows.get(id).phase());
+                }
+            }
+            return listSnapshot(c).thenAccept(after->check(before.equals(after),"info_DB_rows_revisions_unchanged_"+c.storyRunId()+"_"+c.playerId()));
+        }));
+    }
+    private CompletionStage<Void> infoCheck() {
+        var missing=new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1);
+        return infoOwner(a1,Map.of("survey_marker",new QuestStore.Saved(QuestStore.Phase.COMPLETED,2),"path_marker",new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)))
+            .thenCompose(v->infoOwner(a2,Map.of("survey_marker",new QuestStore.Saved(QuestStore.Phase.REPORT_READY,1),"path_marker",missing)))
+            .thenCompose(v->infoOwner(ctx(b,1),Map.of("survey_marker",new QuestStore.Saved(QuestStore.Phase.ACTIVE,0),"path_marker",missing)))
+            .thenCompose(v->infoOwner(ctx(b,2),Map.of("survey_marker",missing,"path_marker",missing)));
     }
     private CompletionStage<Void> listPending() {
         Object captured=listToken;

@@ -1,0 +1,365 @@
+{
+  "기준_커밋": "ddc51e603adfb9980f2f23edbb7e213f3b1651d4",
+  "확인일": "2026-10-27",
+  "범위": "개인 상세 조회·목록 클릭 데이터. 실제 클라이언트 시험 보류·전체 S4 진행 중.",
+  "단위_회귀": {
+    "tests": 70,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "일괄_검증": "구현 완료 후 첫 compileJava에서 ClickEvent.value() 미존재 오류. 로컬 실제 Adventure 5.2 JAR의 API를 확인하고 ClickEvent.runCommand 결과 동등 비교로 검사 코드만 수정. 당시 단위/런타임 미실행이므로 미수행 검사를 이어서 실행. 최종 build/test/check 70개 PASS. 이전 64개 결과를 이번 결과로 세지 않음.",
+  "컴파일_오류_증거": [
+    {
+      "path": "initial-build-failure.txt",
+      "sha256": "2465a1eee62bbc3d06d2de55c08421c1e86673d46ad17fe4a6671c94f4a4a4c6"
+    },
+    {
+      "path": "initial-build-inputs.json",
+      "sha256": "afca044c8cd560c91241a0ba6657a1ff6761c232b885428fc10aedc935ec148d"
+    }
+  ],
+  "자동_묶음_사용": 1,
+  "자동_묶음_상한": 3,
+  "Paper_JVM_실행": 1,
+  "두번째_JVM": "복원 경계 변경이 없어 실행하지 않음. 기존 두 JVM 전체 회귀를 반복하지 않음.",
+  "결과": "PASS",
+  "초": 36.068,
+  "한도": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 1,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "원시_경로": "/tmp/hearth-s4-11.bgb7zlrm",
+  "원시_결과_sha256": "79e2ecd7f851c74da5f0bb11723a66dc855f88a3bfe5537a8daeb67022e3646d",
+  "최종_JAR_sha256": "0dfce24f5d1d593aa14bde8da7a1e0b3777a59f29df592ccfaf3fc1d61af3bfb",
+  "설치_JAR_sha256": "0dfce24f5d1d593aa14bde8da7a1e0b3777a59f29df592ccfaf3fc1d61af3bfb",
+  "빌드_입력": [
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/HearthPlugin.java",
+      "sha256": "2058d655fb84b4eb4d9e4fcb7855e764ffdcb88c0eba4bf297fe0e8bd1884853"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryAutosave.java",
+      "sha256": "45f248c7f865fe8e23b866f649bdbeb582984adf47c843b7a955eca500825463"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryPayload.java",
+      "sha256": "8ff879502e58f73ec5088fbcd8573af4204b1cf4367db72b853fb2b6131e2e00"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventorySaveSession.java",
+      "sha256": "8e612bd8ff6dbf58c3f067ed6069f6c8acf8fe53c8155e9bd2d3a91edb6fdae1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryTransition.java",
+      "sha256": "46a9d0446de17a5d4eb3bc99fc29301f9ab048cf77a957d479c124a04acfaf71"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryAutosave.java",
+      "sha256": "8b2a9dbffdfca427e61c4049159069e4716d3c2fe29d4a81cdc85c1b02950bb5"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryCodec.java",
+      "sha256": "d48daed9f3c948fd58391683816fded7e2633f29132afe4ebf1b0cb01e6cdd94"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/LifecycleFailure.java",
+      "sha256": "ff1fcca716d8d6c8696749e89a4de8104eff35102d62bdc2869f55d54f7706b0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary.java",
+      "sha256": "c276e62a12f6f8d8702ad2a121385888297a48262726b0402b0f5171320f8f35"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldLifecycle.java",
+      "sha256": "b33868a5bdd87e956c3147793ecf52d9ac15f39e42eb1b766d00590c9df45925"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldPersistence.java",
+      "sha256": "bc947ff843c46cdea35e80743474acd196b5be70e81804f2c200f0a25fcfda12"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/InventoryStore.java",
+      "sha256": "07dc183985f058b45da0901a2e7a19f1e3f52e4a5b0a978667161b57a5a7eefb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/PostgresProgressStore.java",
+      "sha256": "96c9efa91360e82cbd072cf06e442526d6f62edab66ace83bbe3eb502e2555b7"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ProgressStore.java",
+      "sha256": "6671c08210d54ae01a9e568e652d951d8718dab3dd8eea711baf13d3c00b168f"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/QuestStore.java",
+      "sha256": "48b902e4dc45239455e6a114a37abeb930bee4f9665dde5222011397a033ecc1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/SchemaMigration.java",
+      "sha256": "82c823661ba1907a0b3184dc308f84c9f248ce9c51b13cd121a761dca613da15"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ServerProgressAccess.java",
+      "sha256": "b938fe1e8e18ea5fe9d997f092a5655260fefd11d0678563765a9d753867aae2"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/StorageFailure.java",
+      "sha256": "2648853231e00e70ee7ceba5809da1eda1aeb4134509fab9e623bd62f3d8a9fb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PaperQuestAdapter.java",
+      "sha256": "b2e7dd775787473b54f0e8c750e744311013a4bf44c0aefa7b96d5eeeb9fec79"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PersonalQuest.java",
+      "sha256": "19378220692ba4dc513b46ed47bf1167c49721fab518adb8d8aee7988aef0bdf"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestCatalog.java",
+      "sha256": "550c753bb4bf5abbc8e31fe8b354706a0de2d8d2557198ca3cc6d0600c831364"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestContent.java",
+      "sha256": "25f8794509cac138d78d65e4b5fb2951e01a77779042f441f6ccc86546aa9ea9"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestDialogue.java",
+      "sha256": "6ba79040116e3e7009bdc6273434f7b248f8fa2e3880b3c4f8ba52481dec1388"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestListView.java",
+      "sha256": "43992666fb707f07631a50412e0dd0bfcf4358fc3c62d0a80f85212c0a67a01d"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PaperSessionAdapter.java",
+      "sha256": "a6a7545cf371b04a319a0e1422491a44536b253392746554e16b181a0327f2cb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PlayerSessions.java",
+      "sha256": "2a6fede944d8e36f8cebdc75fe8e622da80ad63e14cc1effba62fb40776f8684"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/DatabaseVerification.java",
+      "sha256": "a9ccf7a3506b31e5689ee7d7ee627b4b6d1ac45bc7c6f1922879a182b4a71ff4"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/InventoryVerification.java",
+      "sha256": "a1a94f421841a19b5406c2e9651278d9a9752baf47c6bd338a0063a4cb4ab300"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/LifecycleVerification.java",
+      "sha256": "e332ba5d9547e183e9343dfadc74809fa356416e4707bdf59a2b7e8b30ec74d0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/PlayerActionObserver.java",
+      "sha256": "f0c85f4a4151d6f0d179dc57202d563b5b370e53dc986805132bf3966964d802"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/RestartVerification.java",
+      "sha256": "17fecf78ad0a14a980a683de475b923dbdad896976455a5d0ddc393ab7c2b782"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java",
+      "sha256": "eec7adc970a7b49971c088eb361614066943c2651e30abe49b0177d9621b1817"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SmokeVerification.java",
+      "sha256": "2ec3647a00f3f66328923591eacdbf20ee976b21c256cbdeb2b3e2190e8c4370"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/PaperWorldBackend.java",
+      "sha256": "b46a5acbc7f43b03ab25f523982f8110bb3c7942bbb77fafed7ef6cf1685e1ca"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/TemplateStore.java",
+      "sha256": "d27b4d777c72c8968136855267e496c35bd138134ef2cfe32a1daa5df18c26b1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/WorldBackend.java",
+      "sha256": "bf9d5742a8a955aeb754f5eb70510cf75d6b38ff7e371864058135d02303b42e"
+    },
+    {
+      "path": "src/main/resources/config.yml",
+      "sha256": "c78c088e194e4281524d13444745465ec819872e4fd5853b0ac9adf0b4aad462"
+    },
+    {
+      "path": "src/main/resources/db/migration/V001__progress.sql",
+      "sha256": "9cfd301837659e3d303f5c7c81ed7b4f2b884bb3160a638cffcaf37d35520c4a"
+    },
+    {
+      "path": "src/main/resources/db/migration/V002__story_inventory.sql",
+      "sha256": "b04a0051a12bfd56c5c5d993eb988ee3a760cdc270a53d54d89e1048f74a5c16"
+    },
+    {
+      "path": "src/main/resources/db/migration/V003__personal_quest.sql",
+      "sha256": "3c9799d3665d81697245be21149375f4a4365fe696df9a5a6e40909c32a34cc6"
+    },
+    {
+      "path": "src/main/resources/plugin.yml",
+      "sha256": "816d959a3f032ec6a18dc211b4e25f36ef9acebc26245901dd10023f787672ae"
+    },
+    {
+      "path": "src/main/resources/quest-demo.yml",
+      "sha256": "652ae92c0eba710c393221934acb6f9295d8157fe602ae293d842746a7c409db"
+    },
+    {
+      "path": "build.gradle.kts",
+      "sha256": "d6be3d63d1fb0fc05b803f0476506d584cbd30e902b937fe6f0135b1fd42fc4b"
+    },
+    {
+      "path": "settings.gradle.kts",
+      "sha256": "3c65ec08315b00dea23f54b6db4b985cb1f763ddfc1b936d5193235730742570"
+    }
+  ],
+  "프로세스_포트_반환": true,
+  "자원": {
+    "database": {
+      "pid": 1319280,
+      "exit_code": 0,
+      "ready_seconds": null,
+      "duration_seconds": 35.473,
+      "shutdown_seconds": 0.208,
+      "max_sampled_rss_kib": 219912,
+      "observed_cpu_seconds": 2.32,
+      "min_sampled_host_available_kib": 11617688,
+      "sample_count": 580
+    },
+    "paper-prepare": {
+      "pid": 1319360,
+      "exit_code": 0,
+      "ready_seconds": 14.053,
+      "duration_seconds": 32.66,
+      "shutdown_seconds": 4.11,
+      "max_sampled_rss_kib": 1378420,
+      "observed_cpu_seconds": 60.62,
+      "min_sampled_host_available_kib": 11617688,
+      "sample_count": 528
+    }
+  },
+  "검사": [
+    "fixture_prepared_no_login_provisioning",
+    "no_apply_or_admission_before_prepare",
+    "all_sessions_active_after_move",
+    "list_fixture_survey_marker_COMPLETED",
+    "list_fixture_path_marker_ACTIVE",
+    "list_fixture_survey_marker_REPORT_READY",
+    "list_fixture_survey_marker_ACTIVE",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001",
+    "info_clickable_list_size",
+    "info_list_click_command_path_marker",
+    "info_list_click_command_survey_marker",
+    "info_content_stage_ACTIVE",
+    "info_Paper_components_ACTIVE",
+    "info_content_stage_COMPLETED",
+    "info_Paper_components_COMPLETED",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002",
+    "info_clickable_list_size",
+    "info_list_click_command_survey_marker",
+    "info_unaccepted_unknown_same_response_path_marker",
+    "info_content_stage_REPORT_READY",
+    "info_Paper_components_REPORT_READY",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001",
+    "info_clickable_list_size",
+    "info_list_click_command_survey_marker",
+    "info_unaccepted_unknown_same_response_path_marker",
+    "info_content_stage_ACTIVE",
+    "info_Paper_components_ACTIVE",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000002",
+    "info_empty_list_has_no_click_target",
+    "info_unaccepted_unknown_same_response_path_marker",
+    "info_unaccepted_unknown_same_response_survey_marker",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000002",
+    "list_async_read_barrier_waits_without_main_block",
+    "list_duplicate_read_limited",
+    "list_controlled_session_token_replaced",
+    "multi_rejected_STALE_QUEST_LIST",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001",
+    "info_clickable_list_size",
+    "info_list_click_command_path_marker",
+    "info_list_click_command_survey_marker",
+    "info_content_stage_ACTIVE",
+    "info_Paper_components_ACTIVE",
+    "info_content_stage_COMPLETED",
+    "info_Paper_components_COMPLETED",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002",
+    "info_clickable_list_size",
+    "info_list_click_command_survey_marker",
+    "info_unaccepted_unknown_same_response_path_marker",
+    "info_content_stage_REPORT_READY",
+    "info_Paper_components_REPORT_READY",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001",
+    "info_clickable_list_size",
+    "info_list_click_command_survey_marker",
+    "info_unaccepted_unknown_same_response_path_marker",
+    "info_content_stage_ACTIVE",
+    "info_Paper_components_ACTIVE",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000002",
+    "info_empty_list_has_no_click_target",
+    "info_unaccepted_unknown_same_response_path_marker",
+    "info_unaccepted_unknown_same_response_survey_marker",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000002",
+    "rejected_42P01",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001",
+    "info_clickable_list_size",
+    "info_list_click_command_path_marker",
+    "info_list_click_command_survey_marker",
+    "info_content_stage_ACTIVE",
+    "info_Paper_components_ACTIVE",
+    "info_content_stage_COMPLETED",
+    "info_Paper_components_COMPLETED",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002",
+    "info_clickable_list_size",
+    "info_list_click_command_survey_marker",
+    "info_unaccepted_unknown_same_response_path_marker",
+    "info_content_stage_REPORT_READY",
+    "info_Paper_components_REPORT_READY",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001",
+    "info_clickable_list_size",
+    "info_list_click_command_survey_marker",
+    "info_unaccepted_unknown_same_response_path_marker",
+    "info_content_stage_ACTIVE",
+    "info_Paper_components_ACTIVE",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001",
+    "info_owner_scope_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000002",
+    "info_empty_list_has_no_click_target",
+    "info_unaccepted_unknown_same_response_path_marker",
+    "info_unaccepted_unknown_same_response_survey_marker",
+    "info_DB_rows_revisions_unchanged_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000002"
+  ],
+  "로그": [
+    {
+      "path": "database-console.log",
+      "sha256": "fa7aaa6492780d5dd041fa53f133886d44dff4edd72804091a869a85fb76f05f"
+    },
+    {
+      "path": "paper-prepare-console.log",
+      "sha256": "00102f1335e6b646ddd18139391ca966142a29beaca26847d4fec545035d1c46"
+    }
+  ],
+  "실제_Paper_실DB": "한 JVM·PG 한 개. 기존 fixture/읽기 도구로 A/P1·A/P2·B/P1·B/P2의 개인/진행 격리·상태별 상세 데이터·목록 Component의 RUN_COMMAND payload 및 서버 상세 파서 연결·미수락/미존재 동일 안내·조회 전후 DB phase/revision 불변 확인. 실제 읽기 잠금 중 제어 세션 토큰 교체 stale 거부·SQLSTATE42P01 실패·시험 테이블 복구 후 데이터 보존 확인.",
+  "단위_제어_경계": "실제 명령 파서·표시 생성 함수/기존 PersonalQuest.list 재사용. HOLD/쓰기/표시 직전 revision·오류/세션 교체 거부를 포함. 실제 Player 입력/클릭은 수행하지 않음.",
+  "보존": "PersonalQuest·QuestStore·V001~V003·콘텐츠 파일·기존 verification 증거 불변. 새 읽기 정본이나 저장 구조를 만들지 않음.",
+  "미실행": [
+    "실제 인증 클라이언트 /hearthquest info·목록 클릭·채팅 화면",
+    "실제 접속 종료/HOLD 경합",
+    "변경 없는 두 번째 JVM 복원 시험",
+    "PostgreSQL 프로세스 재시작",
+    "장기 부하·누수·TPS/MSPT",
+    "운영 배포"
+  ],
+  "경고": "기존 비대화형 터미널·JOML Unsafe·고정 Paper 업데이트·수동 저장 안내. SQLSTATE42P01은 의도한 조회 실패."
+}
