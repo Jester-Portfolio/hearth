@@ -1,0 +1,351 @@
+{
+  "기준_커밋": "b359cc22570a90fba7173bde5c5aece2d5e10996",
+  "확인일": "2026-10-27",
+  "단위_회귀": {
+    "tests": 76,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "결과": "PASS",
+  "자동_묶음_사용": 1,
+  "Paper_JVM_실행": 1,
+  "원시_결과_sha256": "06096f19508a5bc5d7d167c149c0b3941053ded30aa031c5021c2e81e28fdfec",
+  "빌드_입력": [
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/HearthPlugin.java",
+      "sha256": "2058d655fb84b4eb4d9e4fcb7855e764ffdcb88c0eba4bf297fe0e8bd1884853"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryAutosave.java",
+      "sha256": "45f248c7f865fe8e23b866f649bdbeb582984adf47c843b7a955eca500825463"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryPayload.java",
+      "sha256": "8ff879502e58f73ec5088fbcd8573af4204b1cf4367db72b853fb2b6131e2e00"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventorySaveSession.java",
+      "sha256": "8e612bd8ff6dbf58c3f067ed6069f6c8acf8fe53c8155e9bd2d3a91edb6fdae1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryTransition.java",
+      "sha256": "46a9d0446de17a5d4eb3bc99fc29301f9ab048cf77a957d479c124a04acfaf71"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryAutosave.java",
+      "sha256": "8b2a9dbffdfca427e61c4049159069e4716d3c2fe29d4a81cdc85c1b02950bb5"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryCodec.java",
+      "sha256": "d48daed9f3c948fd58391683816fded7e2633f29132afe4ebf1b0cb01e6cdd94"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/LifecycleFailure.java",
+      "sha256": "ff1fcca716d8d6c8696749e89a4de8104eff35102d62bdc2869f55d54f7706b0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary.java",
+      "sha256": "c276e62a12f6f8d8702ad2a121385888297a48262726b0402b0f5171320f8f35"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldLifecycle.java",
+      "sha256": "b33868a5bdd87e956c3147793ecf52d9ac15f39e42eb1b766d00590c9df45925"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldPersistence.java",
+      "sha256": "bc947ff843c46cdea35e80743474acd196b5be70e81804f2c200f0a25fcfda12"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/InventoryStore.java",
+      "sha256": "07dc183985f058b45da0901a2e7a19f1e3f52e4a5b0a978667161b57a5a7eefb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/PostgresProgressStore.java",
+      "sha256": "96c9efa91360e82cbd072cf06e442526d6f62edab66ace83bbe3eb502e2555b7"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ProgressStore.java",
+      "sha256": "6671c08210d54ae01a9e568e652d951d8718dab3dd8eea711baf13d3c00b168f"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/QuestStore.java",
+      "sha256": "7f9bbf117c7edaa76ff70cc553fc2a4b1ccec4bd4e44a4723558a21eb6cf94e2"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/SchemaMigration.java",
+      "sha256": "82c823661ba1907a0b3184dc308f84c9f248ce9c51b13cd121a761dca613da15"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ServerProgressAccess.java",
+      "sha256": "b938fe1e8e18ea5fe9d997f092a5655260fefd11d0678563765a9d753867aae2"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/StorageFailure.java",
+      "sha256": "2648853231e00e70ee7ceba5809da1eda1aeb4134509fab9e623bd62f3d8a9fb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PaperQuestAdapter.java",
+      "sha256": "f7a12011dc2ff98fba611c10b32f3d8952b56f07f34e6171b4f5aad04e897404"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PersonalQuest.java",
+      "sha256": "994721b901d0139e5f2b5d47d81f1b605d63575eaf95b77b54c98f1369987803"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestCatalog.java",
+      "sha256": "4c797317652bba036cef40cb272f903ebfa2d5e3290ac19fa3705ab3cd9b4e86"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestContent.java",
+      "sha256": "c3d161f7697f98a9b05d4ace746976669191b1c7595abaca468aeef323e2caa6"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestDialogue.java",
+      "sha256": "6ba79040116e3e7009bdc6273434f7b248f8fa2e3880b3c4f8ba52481dec1388"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestListView.java",
+      "sha256": "43992666fb707f07631a50412e0dd0bfcf4358fc3c62d0a80f85212c0a67a01d"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PaperSessionAdapter.java",
+      "sha256": "a6a7545cf371b04a319a0e1422491a44536b253392746554e16b181a0327f2cb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PlayerSessions.java",
+      "sha256": "2a6fede944d8e36f8cebdc75fe8e622da80ad63e14cc1effba62fb40776f8684"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/DatabaseVerification.java",
+      "sha256": "a9ccf7a3506b31e5689ee7d7ee627b4b6d1ac45bc7c6f1922879a182b4a71ff4"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/InventoryVerification.java",
+      "sha256": "a1a94f421841a19b5406c2e9651278d9a9752baf47c6bd338a0063a4cb4ab300"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/LifecycleVerification.java",
+      "sha256": "54021dbae386a8399944818ac174c10f8777aa39244d791fee0cb1c16f3a90a0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/PlayerActionObserver.java",
+      "sha256": "f0c85f4a4151d6f0d179dc57202d563b5b370e53dc986805132bf3966964d802"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/RestartVerification.java",
+      "sha256": "17fecf78ad0a14a980a683de475b923dbdad896976455a5d0ddc393ab7c2b782"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java",
+      "sha256": "f15aae42971acc6ff76a1eaebb0d262113f16c1e09d718fce5100daf3e554fc1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SmokeVerification.java",
+      "sha256": "2ec3647a00f3f66328923591eacdbf20ee976b21c256cbdeb2b3e2190e8c4370"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/PaperWorldBackend.java",
+      "sha256": "b46a5acbc7f43b03ab25f523982f8110bb3c7942bbb77fafed7ef6cf1685e1ca"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/TemplateStore.java",
+      "sha256": "d27b4d777c72c8968136855267e496c35bd138134ef2cfe32a1daa5df18c26b1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/WorldBackend.java",
+      "sha256": "bf9d5742a8a955aeb754f5eb70510cf75d6b38ff7e371864058135d02303b42e"
+    },
+    {
+      "path": "src/main/resources/config.yml",
+      "sha256": "c78c088e194e4281524d13444745465ec819872e4fd5853b0ac9adf0b4aad462"
+    },
+    {
+      "path": "src/main/resources/db/migration/V001__progress.sql",
+      "sha256": "9cfd301837659e3d303f5c7c81ed7b4f2b884bb3160a638cffcaf37d35520c4a"
+    },
+    {
+      "path": "src/main/resources/db/migration/V002__story_inventory.sql",
+      "sha256": "b04a0051a12bfd56c5c5d993eb988ee3a760cdc270a53d54d89e1048f74a5c16"
+    },
+    {
+      "path": "src/main/resources/db/migration/V003__personal_quest.sql",
+      "sha256": "3c9799d3665d81697245be21149375f4a4365fe696df9a5a6e40909c32a34cc6"
+    },
+    {
+      "path": "src/main/resources/plugin.yml",
+      "sha256": "816d959a3f032ec6a18dc211b4e25f36ef9acebc26245901dd10023f787672ae"
+    },
+    {
+      "path": "src/main/resources/quest-demo.yml",
+      "sha256": "70bc99b3b3ccba85c86f2b076143b54783a23a9a3b2f1ae8d9ef76b594a0ba68"
+    },
+    {
+      "path": "build.gradle.kts",
+      "sha256": "d6be3d63d1fb0fc05b803f0476506d584cbd30e902b937fe6f0135b1fd42fc4b"
+    },
+    {
+      "path": "settings.gradle.kts",
+      "sha256": "3c65ec08315b00dea23f54b6db4b985cb1f763ddfc1b936d5193235730742570"
+    }
+  ],
+  "검증_경계": "목표 도달은 서버 내부 제어 컨텍스트 호출. 실제 클릭·이동·채팅 수신 미실행. SQL 실패는 별도 제어 조정자의 HOLD로 보존. 기존 저장 상태는 변환하지 않음. 두 번째 JVM은 저장/복원 경계 불변으로 생략.",
+  "실행_결과": {
+    "outcome": "PASS",
+    "failure": null,
+    "cleanup_errors": [],
+    "workspace": "/tmp/hearth-s4-11.5cytfudn",
+    "duration_seconds": 35.509,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 1,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "processes": {
+      "database": {
+        "pid": 1323432,
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 34.918,
+        "shutdown_seconds": 0.208,
+        "max_sampled_rss_kib": 219704,
+        "observed_cpu_seconds": 2.28,
+        "min_sampled_host_available_kib": 11853716,
+        "sample_count": 586,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-prepare": {
+        "pid": 1323515,
+        "exit_code": 0,
+        "ready_seconds": 13.296,
+        "duration_seconds": 32.103,
+        "shutdown_seconds": 3.66,
+        "max_sampled_rss_kib": 1169660,
+        "observed_cpu_seconds": 63.19,
+        "min_sampled_host_available_kib": 11853716,
+        "sample_count": 534,
+        "checks": [
+          "region_isolation_hearth_verify:restart_b",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "world_IO_pool_closed"
+        ],
+        "timings": [
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=1825",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=1823",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=197",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=200",
+          "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=103",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=103",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE elapsed_ms=2298",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=2348",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE elapsed_ms=997",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING elapsed_ms=50",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=998",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=49",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING elapsed_ms=149",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING elapsed_ms=149",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING elapsed_ms=100",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING elapsed_ms=100"
+        ],
+        "states": [
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE"
+        ]
+      }
+    },
+    "all_owned_processes_and_ports_closed": true,
+    "plugin_sha256": "0b4d40b331ff2c74e5e47834fa3bb9ef84b5f7fbbe0cea1f3e2d672405b83542",
+    "session_checks": [
+      "fixture_prepared_no_login_provisioning",
+      "auto_both_content_modes",
+      "no_apply_or_admission_before_prepare",
+      "all_sessions_active_after_move",
+      "quest_invalid_or_duplicate_rejected",
+      "quest_invalid_or_duplicate_rejected",
+      "quest_invalid_or_duplicate_rejected",
+      "list_fixture_path_marker_REPORT_READY",
+      "quest_invalid_or_duplicate_rejected",
+      "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_path_marker_REPORT_READY_r1",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_survey_marker_REPORT_READY_r1",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_path_marker_ACTIVE_r0",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_path_marker_ACTIVE_r0",
+      "quest_invalid_or_duplicate_rejected",
+      "auto_DB_pending_no_completion_or_duplicate",
+      "auto_direct_COMPLETED_revision1",
+      "quest_invalid_or_duplicate_rejected",
+      "rejected_REVISION_CONFLICT_OR_MISSING",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_path_marker_COMPLETED_r1",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_path_marker_ACTIVE_r0",
+      "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_path_marker_REPORT_READY_r1",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_survey_marker_REPORT_READY_r1",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_survey_marker_COMPLETED_r2",
+      "auto_list_info_completed_after_DB_success",
+      "auto_existing_Paper_display_path",
+      "rejected_23514",
+      "quest_invalid_or_duplicate_rejected",
+      "auto_SQL_failure_ACTIVE_HOLD_no_success",
+      "quest_invalid_or_duplicate_rejected",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_path_marker_ACTIVE_r0",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_path_marker_COMPLETED_r1",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_survey_marker_COMPLETED_r2",
+      "auto_reconnect_waits_inflight_write",
+      "multi_rejected_STALE_QUEST",
+      "auto_old_callback_rejected_new_session_reads_DB",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_path_marker_COMPLETED_r1",
+      "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_path_marker_REPORT_READY_r1",
+      "auto_list_info_completed_after_DB_success",
+      "auto_existing_Paper_display_path"
+    ],
+    "sessions_mode": true,
+    "quests_mode": true,
+    "quest_list_mode": false,
+    "quest_info_mode": false,
+    "quest_auto_mode": true,
+    "manual_player_mode": false,
+    "installed_plugin_sha256": "0b4d40b331ff2c74e5e47834fa3bb9ef84b5f7fbbe0cea1f3e2d672405b83542",
+    "snapshots": [],
+    "runtime_library_jars": [
+      "libraries/com/zaxxer/HikariCP/7.1.0/HikariCP-7.1.0.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+      "libraries/org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar",
+      "libraries/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar"
+    ],
+    "player_actions_verdict": "NOT_RUN",
+    "not_executed": [
+      "실제 인증 플레이어/로그인·텔레포트",
+      "PostgreSQL 프로세스 재시작",
+      "실제 파일시스템 저장 장애·강제 종료 복구",
+      "TPS/MSPT·장기 부하·메모리 누수",
+      "운영 배포·경제 realm"
+    ]
+  }
+}

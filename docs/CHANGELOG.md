@@ -2,6 +2,11 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-27 — 콘텐츠별 개인 퀘스트 자동 완료
+
+- `completion-mode` 생략/report는 기존 NPC 보고, automatic은 목표 도달 후 DB 성공 시 직접 완료합니다. 기존 저장 상태·ID·스키마는 보존합니다.
+- [검증 기록](personal-quest-verification.md#자동-완료형-개인-퀘스트--2026-10-27)·[결과](../verification/quest-auto-result.json): 최종 단위/회귀76개와 한 Paper JVM/PG 통합 PASS. 실제 클라이언트는 보류하며 전체 S4는 진행 중입니다.
+
 ## 2026-10-27 — 개인 퀘스트 상세 조회·목록 클릭
 
 - `ddc51e6` 이후 수락한 퀘스트의 상세 명령·목록 클릭·콘텐츠 기반 현재 단계 표시를 추가했습니다. 미수락/미존재 동일 안내와 기존 읽기 전용·세션/HOLD 방어를 재사용합니다.

@@ -13,6 +13,7 @@ public interface QuestStore {
     CompletionStage<Saved> readQuest(ServerProgressAccess.Context context,String quest);
     CompletionStage<Saved> advanceQuest(ServerProgressAccess.Context context,String quest,Saved expected,Phase next);
     static boolean follows(Phase before,Phase after) {
-        return before!=Phase.COMPLETED && after.ordinal()==before.ordinal()+1;
+        return (before!=Phase.COMPLETED && after.ordinal()==before.ordinal()+1)
+            || (before==Phase.ACTIVE && after==Phase.COMPLETED);
     }
 }

@@ -1,5 +1,19 @@
 # 격리 개인 방문 퀘스트·NPC 검증
 
+## 자동 완료형 개인 퀘스트 — 2026-10-27
+
+기준 `b359cc22570a90fba7173bde5c5aece2d5e10996`의 깨끗한 main에서 시작했습니다. ADR-0006의 완료 방식을 콘텐츠 `completion-mode`로 선택합니다. 생략은 `report`이며 잘못된 값은 활성화 전에 거부합니다. 기존 ID·V001~V003·저장 상태를 변경하거나 자동 변환하지 않습니다. 격리 콘텐츠 `survey_marker`는 보고형, `path_marker`는 자동 완료형입니다.
+
+- 보고형: 수락 ACTIVE/revision0 → 목표 REPORT_READY/revision1 → NPC 보고 COMPLETED/revision2.
+- 자동형: 수락 ACTIVE/revision0 → 목표 COMPLETED/revision1. DB 성공 후 현재 세션에만 완료 안내를 보냅니다. 일반 보고 요청으로 목표를 건너뛰지 못합니다.
+- 기존 busy/HOLD·세션·저장 장벽·revision CAS를 재사용합니다. 반복 진입은 완료 revision을 바꾸지 않고 DB 실패는 ACTIVE·기존 값·HOLD를 보존합니다. 이미 저장된 REPORT_READY는 설정이 automatic이어도 자동 완료/초기화하지 않으며 기존 보고 경로를 유지합니다.
+
+구현 완료 후 Gradle build/test/check **76개 PASS**, 실패/오류/skip0을 확인했습니다. 새 `--sessions --quests --quest-auto` 한 묶음에서 실제 Paper 한 JVM·격리 PostgreSQL 한 개로 두 방식·수락 전/중복/잘못된 요청·A/P1 A/P2 B/P1 격리·SQL 쓰기 실패·진행 중 쓰기를 기다리는 세션 교체/stale 거부·목록/상세 완료 표시 데이터를 확인했습니다. DB 잠금 중 성공 미확정 및 이후 revision 불변도 검사했습니다. 실제 이동 이벤트 대신 기존 서버 내부 목표 도달 경계를 호출한 시험입니다.
+
+통합 **35.509초 PASS**, Paper 최대 표본 RSS1,142.25MiB·CPU63.19초·준비13.296초·종료3.660초, 최소 표본 가용 RAM 약11.305GiB입니다. 기존 자원/localhost 한도와 소유 프로세스·포트 반환을 확인했습니다. DB 보조 JVM RSS214.55MiB는 PG 자식 전체 측정이 아닙니다. 최종 빌드·설치 JAR SHA-256 `0b4d40b331ff2c74e5e47834fa3bb9ef84b5f7fbbe0cea1f3e2d672405b83542`와 소스/Gradle 입력이 일치합니다. [결과 JSON](../verification/quest-auto-result.json)에 원시 체크·해시·자원을 기록했습니다.
+
+저장/복원 경계는 그대로여서 두 번째 JVM은 반복하지 않았습니다. 실제 클라이언트 클릭·이동·채팅 수신은 보류하며 DB 프로세스 재시작·장기 부하·누수·운영 배포는 미실행입니다. 일반 서버는 비활성이고 전체 S4는 진행 중입니다. 아래는 이전 작업 당시의 기록입니다.
+
 ## 개인 퀘스트 상세 조회 — 2026-10-27
 
 기준 `ddc51e603adfb9980f2f23edbb7e213f3b1651d4`, 깨끗한 main·스테이징에서 시작했고 fetch 후 origin/main과 일치했습니다. 격리 ACTIVE 세션의 `/hearthquest info <quest_id>`와 수락한 목록의 클릭을 연결했습니다. 제목·NPC 이름·한국어 상태·현재 단계의 기존 콘텐츠 안내(`active`/`report-ready`/`completed`)를 표시합니다. 미수락/미존재 ID는 모두 **조회할 수 있는 퀘스트가 없습니다**로 응답하고 다른 플레이어·진행 인자를 받지 않습니다.

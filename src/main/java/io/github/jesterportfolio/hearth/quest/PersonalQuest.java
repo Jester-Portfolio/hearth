@@ -66,11 +66,20 @@ public final class PersonalQuest {
     private boolean current(Session s){return !closed && sessions.get(s.key)==s && s.valid.getAsBoolean();}
     private void require(Session s){check.run();if(!current(s))throw new IllegalStateException("STALE_QUEST");}
     private static <T> CompletionStage<T> rejected(String code){return CompletableFuture.failedFuture(new IllegalStateException(code));}
-    public CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target) {
+    public CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target) { return advance(s,target,false); }
+    /** 목표 도달만 automatic의 보고 생략을 허용합니다. 일반 보고 명령으로 목표를 건너뛸 수 없습니다. */
+    public CompletionStage<QuestStore.Saved> reach(Session s,QuestContent content,double x,double y,double z) {
+        check.run();
+        if(!current(s))return rejected("STALE_QUEST");
+        if(!s.key.quest().equals(content.id()) || !content.contains(x,y,z) || s.saved==null || s.saved.phase()!=QuestStore.Phase.ACTIVE)return rejected("QUEST_GOAL");
+        boolean automatic=content.completionMode()==QuestContent.CompletionMode.AUTOMATIC;
+        return advance(s,automatic?QuestStore.Phase.COMPLETED:QuestStore.Phase.REPORT_READY,automatic);
+    }
+    private CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target,boolean automatic) {
         check.run();
         if(!current(s))return rejected("STALE_QUEST");
         if(s.busy || s.hold || s.saved==null)return rejected("QUEST_BUSY_OR_HOLD");
-        if(!QuestStore.follows(s.saved.phase(),target))return rejected("QUEST_ORDER");
+        if(!QuestStore.follows(s.saved.phase(),target) || (s.saved.phase()==QuestStore.Phase.ACTIVE && target==QuestStore.Phase.COMPLETED && !automatic))return rejected("QUEST_ORDER");
         s.busy=true;var result=new CompletableFuture<QuestStore.Saved>();
         s.io=store.advanceQuest(s.context,s.key.quest(),s.saved,target).thenAcceptAsync(row->{
             if(current(s))s.saved=row;

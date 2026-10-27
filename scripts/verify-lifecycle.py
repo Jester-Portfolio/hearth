@@ -75,6 +75,7 @@ def main():
     parser.add_argument('--plugin', required=True, type=Path)
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--quest-auto', action='store_true', help='한 JVM에서 보고형/자동 완료형의 목표·저장·중복·실패·stale를 검사합니다')
     parser.add_argument('--quest-info', action='store_true', help='한 JVM에서 퀘스트 상세/목록 클릭 데이터와 기존 읽기 경계를 검사합니다')
     parser.add_argument('--quest-list', action='store_true', help='기존 세션/DB 도구로 읽기 전용 개인 목록만 검사합니다')
     parser.add_argument('--quests', action='store_true', help='격리 개인 방문 퀘스트/NPC와 기존 세션을 검증합니다')
@@ -87,6 +88,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.quest_auto and (not args.quests or not args.sessions or args.manual_player or args.quest_info or args.quest_list):
+        parser.error("--quest-auto는 자동 --sessions --quests 단독 완료 검증 모드에서만 사용합니다")
     if args.quest_info and (not args.quests or not args.sessions or args.manual_player or args.quest_list):
         parser.error("--quest-info는 자동 --sessions --quests 단독 상세 모드에서만 사용합니다")
     if args.quest_list and (not args.quests or not args.sessions or args.manual_player):
@@ -163,7 +166,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.quests=true')
         if args.manual_player:
             paper.insert(-3,'-Dhearth.verification.sessionManual=true')
-        for phase in (['prepare'] if args.quest_info else ['prepare','resume']):
+        for phase in (['prepare'] if args.quest_info or args.quest_auto else ['prepare','resume']):
             s42.port_free()
             name='paper-'+phase
             monitor.launch(name,paper,runtime)
@@ -185,7 +188,15 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.quest_info:
+                        if args.quest_auto:
+                            monitor.action(name,'quest-auto-prepare')
+                            monitor.db('lock-quest'); monitor.action(name,'quest-auto-save-start'); monitor.db('unlock')
+                            monitor.action(name,'quest-auto-save-done')
+                            monitor.db('quest-fail-on'); monitor.action(name,'quest-auto-failure'); monitor.db('quest-fail-off')
+                            monitor.action(name,'quest-auto-stale-ready')
+                            monitor.db('lock-quest'); monitor.action(name,'quest-auto-stale-start'); monitor.db('unlock')
+                            monitor.action(name,'quest-auto-stale-done')
+                        elif args.quest_info:
                             monitor.action(name,'quest-info-prepare')
                             monitor.db('lock-quest'); monitor.action(name,'quest-list-pending'); monitor.db('unlock')
                             monitor.action(name,'quest-info-pending-done')
@@ -265,11 +276,11 @@ motd=Hearth isolated S4-11 verification
             outcome='FAIL'
         result=dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, workspace=str(root),
                     duration_seconds=round(time.monotonic()-monitor.started,3), limits=dict(total_seconds=600,work_seconds=550,
-                    paper_starts_max=1 if args.quest_info else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
+                    paper_starts_max=1 if args.quest_info or args.quest_auto else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, manual_player_mode=args.manual_player,
+                    sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

@@ -13,6 +13,7 @@ npcs:
     z: 3.5
 quests:
   - id: survey_marker
+    completion-mode: report
     title: 시험 지점 방문 조사
     npc-id: survey_guide
     objective:
@@ -31,6 +32,7 @@ quests:
       completed: '방문 조사 보고가 완료되었습니다. 완료 기록이 유지됩니다.'
       failure: '방문 조사 처리를 확인할 수 없습니다. 관리자 확인이 필요할 수 있습니다.'
   - id: path_marker
+    completion-mode: automatic
     title: 시험 경로 확인
     npc-id: path_guide
     objective:
@@ -41,10 +43,10 @@ quests:
       min-z: 2.0
       max-z: 4.0
     text:
-      offer: '경로 지점 (12~14, 64~67, 2~4)을 방문한 뒤 돌아와 주세요. 보상과 아이템 소모는 없습니다.'
+      offer: '경로 지점 (12~14, 64~67, 2~4)을 방문하면 자동 완료됩니다. 보상과 아이템 소모는 없습니다.'
       accept: '[경로 확인 수락]'
       active: '경로 확인을 수락했습니다. 경로 지점을 방문해 주세요.'
       report-ready: '경로 확인을 마쳤습니다. 경로 안내원에게 보고해 주세요.'
       report: '[경로 확인 보고]'
-      completed: '경로 확인 보고가 완료되었습니다. 완료 기록이 유지됩니다.'
+      completed: '경로 확인이 자동 완료되었습니다. 완료 기록이 유지됩니다.'
       failure: '경로 확인 처리를 확인할 수 없습니다. 관리자 확인이 필요할 수 있습니다.'

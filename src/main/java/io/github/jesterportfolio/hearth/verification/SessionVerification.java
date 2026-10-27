@@ -45,6 +45,10 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<Void> multiBarrier;
     private final java.util.concurrent.atomic.AtomicBoolean multiValid=new java.util.concurrent.atomic.AtomicBoolean(true);
     private PersonalQuest.Session qa,qb;
+    private PersonalQuest.Session autoOne,autoTwo,autoReport,autoOld;
+    private CompletionStage<QuestStore.Saved> autoWrite,autoStaleWrite;
+    private CompletionStage<PersonalQuest.Session> autoFresh;
+    private final java.util.concurrent.atomic.AtomicBoolean autoValid=new java.util.concurrent.atomic.AtomicBoolean(true);
     private Object listToken=new Object();
     private CompletionStage<Map<String,QuestStore.Saved>> pendingList;
     private CompletionStage<Void> listBarrier;
@@ -78,9 +82,11 @@ public final class SessionVerification implements AutoCloseable {
         if(yaml.isSet("id") && !yaml.isSet("format")) {
             // 기존 파일을 덮어쓰지 않고 단일 콘텐츠의 옛 형식을 초기 로딩합니다.
             var npc=new HashMap<String,Object>(Objects.requireNonNull(yaml.getConfigurationSection("npc"),"Missing legacy NPC").getValues(false));npc.put("id","survey_guide");
-            return QuestCatalog.parse(List.of(npc),List.of(Map.of("id",Objects.requireNonNull(yaml.get("id")),"title",Objects.requireNonNull(yaml.get("title"),"Missing legacy content title"),"npc-id","survey_guide",
+            var quest=new HashMap<String,Object>(Map.of("id",Objects.requireNonNull(yaml.get("id")),"title",Objects.requireNonNull(yaml.get("title"),"Missing legacy content title"),"npc-id","survey_guide",
                 "objective",Objects.requireNonNull(yaml.getConfigurationSection("objective"),"Missing legacy goal").getValues(false),
-                "text",Objects.requireNonNull(yaml.getConfigurationSection("text"),"Missing legacy dialogue").getValues(false))));
+                "text",Objects.requireNonNull(yaml.getConfigurationSection("text"),"Missing legacy dialogue").getValues(false)));
+            if(yaml.isSet("completion-mode"))quest.put("completion-mode",yaml.get("completion-mode"));
+            return QuestCatalog.parse(List.of(npc),List.of(quest));
         }
         if(!(yaml.get("format") instanceof Number n) || n.doubleValue()!=2 || !(yaml.get("npcs") instanceof List<?> npcs) || !(yaml.get("quests") instanceof List<?> rows))
             throw new IllegalArgumentException("Unsupported or malformed quest content format");
@@ -143,6 +149,13 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "quest-auto-prepare" -> autoPrepare();
+        case "quest-auto-save-start" -> autoSaveStart();
+        case "quest-auto-save-done" -> autoSaveDone();
+        case "quest-auto-failure" -> autoFailure();
+        case "quest-auto-stale-ready" -> autoStaleReady();
+        case "quest-auto-stale-start" -> autoStaleStart();
+        case "quest-auto-stale-done" -> autoStaleDone();
         case "quest-info-prepare" -> readFixture().thenCompose(v->infoCheck());
         case "quest-info-check" -> infoCheck();
         case "quest-info-pending-done" -> expectQuestCode(pendingList,"STALE_QUEST_LIST").thenCompose(v->mainResult(listBarrier)).thenCompose(v->infoCheck());
@@ -354,6 +367,81 @@ public final class SessionVerification implements AutoCloseable {
             check(quests.list(a1,s1,()->true).toCompletableFuture().isCompletedExceptionally(),"list_duplicate_read_limited");
             listToken=new Object();check(true,"list_controlled_session_token_replaced");
         });
+    }
+    private CompletionStage<QuestStore.Saved> visit(PersonalQuest owner,PersonalQuest.Session session,QuestContent c) {
+        return owner.reach(session,c,(c.minX()+c.maxX())/2,c.minY(),(c.minZ()+c.maxZ())/2);
+    }
+    private CompletionStage<Void> autoPrepare() {
+        check(catalog.quest("survey_marker").completionMode()==QuestContent.CompletionMode.REPORT && catalog.quest("path_marker").completionMode()==QuestContent.CompletionMode.AUTOMATIC,"auto_both_content_modes");
+        return openAll().thenCompose(v->quests.open(a1,"path_marker",s1,()->coordinator.playable(s1)))
+            .thenCompose(q->{autoOne=q;return rejectQuest(visit(quests,q,catalog.quest("path_marker")));})
+            .thenCompose(v->quests.advance(autoOne,QuestStore.Phase.ACTIVE))
+            .thenCompose(v->rejectQuest(quests.advance(autoOne,QuestStore.Phase.COMPLETED)))
+            .thenCompose(v->rejectQuest(quests.reach(autoOne,catalog.quest("path_marker"),2,64,2)))
+            .thenCompose(v->quests.open(a2,"path_marker",s2,()->coordinator.playable(s2)))
+            .thenCompose(q->{autoTwo=q;return quests.advance(q,QuestStore.Phase.ACTIVE);})
+            .thenCompose(v->seedList(ctx(b,1),"path_marker",QuestStore.Phase.REPORT_READY))
+            .thenCompose(v->quests.open(ctx(b,1),"path_marker",new Object(),()->true))
+            .thenCompose(q->rejectQuest(visit(quests,q,catalog.quest("path_marker"))))
+            .thenCompose(v->questRead(ctx(b,1),"path_marker",QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->quests.open(a1,"survey_marker",s1,()->coordinator.playable(s1)))
+            .thenCompose(q->{autoReport=q;return quests.advance(q,QuestStore.Phase.ACTIVE);})
+            .thenCompose(v->visit(quests,autoReport,catalog.quest("survey_marker")))
+            .thenCompose(v->questRead(a1,"survey_marker",QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->questRead(a1,"path_marker",QuestStore.Phase.ACTIVE,0))
+            .thenCompose(v->questRead(a2,"path_marker",QuestStore.Phase.ACTIVE,0));
+    }
+    private CompletionStage<Void> autoSaveStart() {
+        autoWrite=visit(quests,autoOne,catalog.quest("path_marker"));
+        return rejectQuest(visit(quests,autoOne,catalog.quest("path_marker")))
+            .thenRun(()->check(!autoWrite.toCompletableFuture().isDone() && autoOne.saved().equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)),"auto_DB_pending_no_completion_or_duplicate"));
+    }
+    private CompletionStage<Void> autoDisplay() {
+        return quests.list(a1,s1,()->coordinator.playable(s1)).thenAccept(rows->{
+            quests.requireListDisplay(a1,rows);
+            var detail=QuestListView.detail(catalog,rows,"path_marker").orElseThrow();
+            check(detail.quest().phase()==QuestStore.Phase.COMPLETED && detail.quest().status().equals("완료")
+                && detail.guidance().equals(catalog.quest("path_marker").text().get("completed")),"auto_list_info_completed_after_DB_success");
+            check(PaperQuestAdapter.listMessages(catalog,rows).size()==2 && PaperQuestAdapter.infoMessages(catalog,rows,"path_marker").size()==4,"auto_existing_Paper_display_path");
+        });
+    }
+    private CompletionStage<Void> autoSaveDone() {
+        return mainResult(autoWrite).thenAccept(row->check(row.equals(new QuestStore.Saved(QuestStore.Phase.COMPLETED,1)),"auto_direct_COMPLETED_revision1"))
+            .thenCompose(v->rejectQuest(visit(quests,autoOne,catalog.quest("path_marker"))))
+            .thenCompose(v->expect(store.advanceQuest(a1,"path_marker",new QuestStore.Saved(QuestStore.Phase.ACTIVE,0),QuestStore.Phase.COMPLETED),"REVISION_CONFLICT_OR_MISSING"))
+            .thenCompose(v->questRead(a1,"path_marker",QuestStore.Phase.COMPLETED,1))
+            .thenCompose(v->questRead(a2,"path_marker",QuestStore.Phase.ACTIVE,0))
+            .thenCompose(v->questRead(ctx(b,1),"path_marker",QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->questRead(a1,"survey_marker",QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->quests.advance(autoReport,QuestStore.Phase.COMPLETED))
+            .thenCompose(v->questRead(a1,"survey_marker",QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->autoDisplay());
+    }
+    private CompletionStage<Void> autoFailure() {
+        var probe=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);
+        return probe.open(a2,"path_marker",new Object(),()->true).thenCompose(q->expect(visit(probe,q,catalog.quest("path_marker")),"23514")
+            .thenCompose(v->rejectQuest(visit(probe,q,catalog.quest("path_marker"))))
+            .thenRun(()->check(q.held() && q.saved().equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)),"auto_SQL_failure_ACTIVE_HOLD_no_success"))
+            .thenCompose(v->rejectQuest(probe.barrier(a))))
+            .thenCompose(v->questRead(a2,"path_marker",QuestStore.Phase.ACTIVE,0))
+            .thenCompose(v->questRead(a1,"path_marker",QuestStore.Phase.COMPLETED,1))
+            .thenCompose(v->questRead(a1,"survey_marker",QuestStore.Phase.COMPLETED,2));
+    }
+    private CompletionStage<Void> autoStaleReady() {
+        return quests.open(a2,"path_marker",new Object(),autoValid::get).thenAccept(q->autoOld=q);
+    }
+    private CompletionStage<Void> autoStaleStart() {
+        autoStaleWrite=visit(quests,autoOld,catalog.quest("path_marker"));autoValid.set(false);
+        autoFresh=quests.open(a2,"path_marker",new Object(),()->true);
+        check(!autoStaleWrite.toCompletableFuture().isDone() && !autoFresh.toCompletableFuture().isDone(),"auto_reconnect_waits_inflight_write");
+        return CompletableFuture.completedFuture(null);
+    }
+    private CompletionStage<Void> autoStaleDone() {
+        return expectQuestCode(autoStaleWrite,"STALE_QUEST").thenCompose(v->mainResult(autoFresh))
+            .thenAccept(q->check(q.saved().equals(new QuestStore.Saved(QuestStore.Phase.COMPLETED,1)) && autoOld.saved().equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)),"auto_old_callback_rejected_new_session_reads_DB"))
+            .thenCompose(v->questRead(a2,"path_marker",QuestStore.Phase.COMPLETED,1))
+            .thenCompose(v->questRead(ctx(b,1),"path_marker",QuestStore.Phase.REPORT_READY,1))
+            .thenCompose(v->autoDisplay());
     }
     private CompletionStage<Void> matrix() {
         return questRead(a1,"survey_marker",QuestStore.Phase.COMPLETED,2)

@@ -27,7 +27,7 @@ public final class QuestCatalog {
             if(y< -64 || y>318 || minY< -64 || maxY>320 || Math.abs(x)>29999984 || Math.abs(z)>29999984
                 || Math.abs(minX)>29999984 || Math.abs(maxX)>29999984 || Math.abs(minZ)>29999984 || Math.abs(maxZ)>29999984)
                 throw new IllegalArgumentException("Position outside supported test world bounds");
-            var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,Map.copyOf(messages));
+            var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,Map.copyOf(messages));
             if(quests.putIfAbsent(id,content)!=null)throw new IllegalArgumentException("Duplicate quest id");
             if(npcs.putIfAbsent(npcId,content)!=null)throw new IllegalArgumentException("This prototype supports one visit quest per NPC");
         }

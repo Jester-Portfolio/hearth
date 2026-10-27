@@ -160,7 +160,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         for(QuestContent c:catalog.all())if(c.contains(to.getX(),to.getY(),to.getZ())) {
             quests.open(session.context(),c.id(),session,()->players.current(p)==session).thenComposeAsync(q->{
                 if(players.current(p)==session && !q.busy() && !q.held() && q.saved().phase()==QuestStore.Phase.ACTIVE)
-                    return quests.advance(q,QuestStore.Phase.REPORT_READY).thenAcceptAsync(saved->{if(players.current(p)==session)p.sendMessage(Component.text(c.text().get("report-ready")));},owner);
+                    return quests.reach(q,c,to.getX(),to.getY(),to.getZ()).thenAcceptAsync(saved->{if(players.current(p)==session)p.sendMessage(Component.text(c.text().get(saved.phase()==QuestStore.Phase.COMPLETED?"completed":"report-ready")));},owner);
                 return java.util.concurrent.CompletableFuture.completedFuture(null);
             },owner).exceptionally(error->null);
         }
