@@ -1,0 +1,368 @@
+{
+  "기준_커밋": "556c667063c606b722d233325ee150be73c6b788",
+  "확인일": "2026-10-27",
+  "결과": "PASS",
+  "단위_회귀": {
+    "tests": 94,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "자동_묶음_사용": 1,
+  "실행_경계": "한 Paper JVM/격리 PG. NPC 수락형과 automatic 완료 조합은 동일 신규 ID의 서버 내부 합성 콘텐츠 변형. 실제 클라이언트 클릭/이동/채팅은 미실행. 기본 합성 파일은 지역 자동 시작/report 완료.",
+  "실DB_확인": "선행 완료 DB 조회·후속 CAS INSERT/revision0·개인/진행 격리·표시 전후 DB 불변·표 이름 변경에 따른 SQLSTATE42P01 조회 실패/HOLD·읽기 잠금 중 세션 교체 및 늦은 메뉴 응답 거부. 시험 테이블 원복 후 데이터 보존.",
+  "단위만_확인": "선행 그래프 오류·기존 시작 상태 보존·선행 세션/쓰기/HOLD 경합·후속 쓰기 실패의 HOLD/원본 보존 등. 실제 SQL 쓰기 오류 주입은 이번 묶음에서 반복하지 않음.",
+  "최종_실행": {
+    "outcome": "PASS",
+    "failure": null,
+    "cleanup_errors": [],
+    "workspace": "/tmp/hearth-s4-11.i6jif7jh",
+    "duration_seconds": 37.578,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 1,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "processes": {
+      "database": {
+        "pid": 1340067,
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 36.978,
+        "shutdown_seconds": 0.208,
+        "max_sampled_rss_kib": 223420,
+        "observed_cpu_seconds": 2.4,
+        "min_sampled_host_available_kib": 11986956,
+        "sample_count": 608,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-prepare": {
+        "pid": 1340144,
+        "exit_code": 0,
+        "ready_seconds": 13.394,
+        "duration_seconds": 34.148,
+        "shutdown_seconds": 3.657,
+        "max_sampled_rss_kib": 1001272,
+        "observed_cpu_seconds": 63.27,
+        "min_sampled_host_available_kib": 11986956,
+        "sample_count": 556,
+        "checks": [
+          "region_isolation_hearth_verify:restart_b",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "world_IO_pool_closed"
+        ],
+        "timings": [
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=1838",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=1836",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=197",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=200",
+          "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=52",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=52",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE elapsed_ms=5948",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=5997",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE elapsed_ms=998",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING elapsed_ms=50",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=998",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=49",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING elapsed_ms=149",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING elapsed_ms=149",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING elapsed_ms=100",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING elapsed_ms=100"
+        ],
+        "states": [
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE"
+        ]
+      }
+    },
+    "all_owned_processes_and_ports_closed": true,
+    "plugin_sha256": "0e124df71b40be85da72f069670c91a331805f8f7311e824090ef5242d9354e5",
+    "session_checks": [
+      "fixture_prepared_no_login_provisioning",
+      "no_apply_or_admission_before_prepare",
+      "all_sessions_active_after_move",
+      "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a_survey_guide",
+      "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a_survey_guide",
+      "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a_survey_guide",
+      "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000a_survey_guide",
+      "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b_survey_guide",
+      "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b_survey_guide",
+      "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b_survey_guide",
+      "quest_npc_single_interaction_flag_00000000-0000-002a-0000-00000000000b_survey_guide",
+      "quest_content_visit_bounds",
+      "prereq_filtered_NPC_choices_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_visiblefalse",
+      "prereq_menu_DB_rows_revisions_unchanged",
+      "multi_rejected_QUEST_LOCKED",
+      "prereq_locked_area_no_start",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_followup_marker_NOT_ACCEPTED_r-1",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_followup_marker_NOT_ACCEPTED_r-1",
+      "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_followup_marker_NOT_ACCEPTED_r-1",
+      "prereq_filtered_NPC_choices_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_visibletrue",
+      "prereq_menu_DB_rows_revisions_unchanged",
+      "prereq_filtered_NPC_choices_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_visiblefalse",
+      "prereq_menu_DB_rows_revisions_unchanged",
+      "prereq_filtered_NPC_choices_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_visiblefalse",
+      "prereq_menu_DB_rows_revisions_unchanged",
+      "multi_rejected_QUEST_BUSY_OR_HOLD",
+      "prereq_read_pending_no_success_and_barrier_waits",
+      "prereq_NPC_start_revision0",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_followup_marker_COMPLETED_r2",
+      "rejected_42P01",
+      "rejected_42P01",
+      "prereq_query_failure_HOLD_no_unlock_no_INSERT",
+      "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_followup_marker_NOT_ACCEPTED_r-1",
+      "list_fixture_survey_marker_COMPLETED",
+      "prereq_new_session_waits_for_old_query",
+      "multi_rejected_STALE_QUEST",
+      "prereq_session_change_before_INSERT_no_start",
+      "prereq_automatic_start_after_fresh_entry",
+      "prereq_started_reentry_no_duplicate",
+      "prereq_other_run_still_locked",
+      "list_fixture_survey_marker_COMPLETED",
+      "prereq_automatic_completion_revision1",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_followup_marker_COMPLETED_r2",
+      "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_followup_marker_COMPLETED_r2",
+      "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_followup_marker_COMPLETED_r1",
+      "prereq_filtered_NPC_choices_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_visibletrue",
+      "prereq_menu_DB_rows_revisions_unchanged",
+      "list_async_read_barrier_waits_without_main_block",
+      "list_duplicate_read_limited",
+      "list_controlled_session_token_replaced",
+      "multi_rejected_STALE_QUEST_LIST"
+    ],
+    "sessions_mode": true,
+    "quests_mode": true,
+    "quest_list_mode": false,
+    "quest_info_mode": false,
+    "quest_auto_mode": false,
+    "quest_npc_mode": false,
+    "quest_start_mode": false,
+    "quest_requires_mode": true,
+    "manual_player_mode": false,
+    "installed_plugin_sha256": "0e124df71b40be85da72f069670c91a331805f8f7311e824090ef5242d9354e5",
+    "snapshots": [],
+    "runtime_library_jars": [
+      "libraries/com/zaxxer/HikariCP/7.1.0/HikariCP-7.1.0.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar",
+      "libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+      "libraries/org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar",
+      "libraries/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar"
+    ],
+    "player_actions_verdict": "NOT_RUN",
+    "not_executed": [
+      "실제 인증 플레이어/로그인·텔레포트",
+      "PostgreSQL 프로세스 재시작",
+      "실제 파일시스템 저장 장애·강제 종료 복구",
+      "TPS/MSPT·장기 부하·메모리 누수",
+      "운영 배포·경제 realm"
+    ]
+  },
+  "원시_결과_sha256": "2da5e0c71605c762328be028dfb739ce741abbc7aa2abfb4fd341d0235217851",
+  "빌드_입력": [
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/HearthPlugin.java",
+      "sha256": "2058d655fb84b4eb4d9e4fcb7855e764ffdcb88c0eba4bf297fe0e8bd1884853"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryAutosave.java",
+      "sha256": "45f248c7f865fe8e23b866f649bdbeb582984adf47c843b7a955eca500825463"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryPayload.java",
+      "sha256": "8ff879502e58f73ec5088fbcd8573af4204b1cf4367db72b853fb2b6131e2e00"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventorySaveSession.java",
+      "sha256": "8e612bd8ff6dbf58c3f067ed6069f6c8acf8fe53c8155e9bd2d3a91edb6fdae1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/InventoryTransition.java",
+      "sha256": "46a9d0446de17a5d4eb3bc99fc29301f9ab048cf77a957d479c124a04acfaf71"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryAutosave.java",
+      "sha256": "8b2a9dbffdfca427e61c4049159069e4716d3c2fe29d4a81cdc85c1b02950bb5"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/inventory/PaperInventoryCodec.java",
+      "sha256": "d48daed9f3c948fd58391683816fded7e2633f29132afe4ebf1b0cb01e6cdd94"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/LifecycleFailure.java",
+      "sha256": "ff1fcca716d8d6c8696749e89a4de8104eff35102d62bdc2869f55d54f7706b0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary.java",
+      "sha256": "c276e62a12f6f8d8702ad2a121385888297a48262726b0402b0f5171320f8f35"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldLifecycle.java",
+      "sha256": "b33868a5bdd87e956c3147793ecf52d9ac15f39e42eb1b766d00590c9df45925"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/lifecycle/WorldPersistence.java",
+      "sha256": "bc947ff843c46cdea35e80743474acd196b5be70e81804f2c200f0a25fcfda12"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/InventoryStore.java",
+      "sha256": "07dc183985f058b45da0901a2e7a19f1e3f52e4a5b0a978667161b57a5a7eefb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/PostgresProgressStore.java",
+      "sha256": "96c9efa91360e82cbd072cf06e442526d6f62edab66ace83bbe3eb502e2555b7"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ProgressStore.java",
+      "sha256": "6671c08210d54ae01a9e568e652d951d8718dab3dd8eea711baf13d3c00b168f"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/QuestStore.java",
+      "sha256": "7f9bbf117c7edaa76ff70cc553fc2a4b1ccec4bd4e44a4723558a21eb6cf94e2"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/SchemaMigration.java",
+      "sha256": "82c823661ba1907a0b3184dc308f84c9f248ce9c51b13cd121a761dca613da15"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/ServerProgressAccess.java",
+      "sha256": "b938fe1e8e18ea5fe9d997f092a5655260fefd11d0678563765a9d753867aae2"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/persistence/StorageFailure.java",
+      "sha256": "2648853231e00e70ee7ceba5809da1eda1aeb4134509fab9e623bd62f3d8a9fb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PaperQuestAdapter.java",
+      "sha256": "dfe0624517161867f562b53089a391c9ae104fa22248d0d705461a50077353b9"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/PersonalQuest.java",
+      "sha256": "cc441d4d7ee415c59469db7c914b869f3d183674573d0fb8ebc393ef80743dde"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestCatalog.java",
+      "sha256": "80ec37ef3bff6dbdea8d9cdeead7311261409479ad76618728a5acfd75fb4c0b"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestContent.java",
+      "sha256": "f6916bcf929c13b2ccd135b2b1ceef7748d2e55b3637b1dd31f0f7f9a0b1f68e"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestDialogue.java",
+      "sha256": "b1bb546f8a906b6e3ab5787be98d52f7b87e055b0d824500e46a9b195627fda0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/quest/QuestListView.java",
+      "sha256": "704321493de2c7f16cd9ec8bd0efc4e7d435be7e2269b596fd87799d8c93beb0"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PaperSessionAdapter.java",
+      "sha256": "a6a7545cf371b04a319a0e1422491a44536b253392746554e16b181a0327f2cb"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/session/PlayerSessions.java",
+      "sha256": "2a6fede944d8e36f8cebdc75fe8e622da80ad63e14cc1effba62fb40776f8684"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/DatabaseVerification.java",
+      "sha256": "a9ccf7a3506b31e5689ee7d7ee627b4b6d1ac45bc7c6f1922879a182b4a71ff4"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/InventoryVerification.java",
+      "sha256": "a1a94f421841a19b5406c2e9651278d9a9752baf47c6bd338a0063a4cb4ab300"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/LifecycleVerification.java",
+      "sha256": "d55f40f6c1b2ee3e74e94bcaeec6779ae1b1989b268b06d014ddf511ac376ecd"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/PlayerActionObserver.java",
+      "sha256": "f0c85f4a4151d6f0d179dc57202d563b5b370e53dc986805132bf3966964d802"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/RestartVerification.java",
+      "sha256": "17fecf78ad0a14a980a683de475b923dbdad896976455a5d0ddc393ab7c2b782"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java",
+      "sha256": "bc51118cb78f7711d0e89a55b7f058d6546a10497ab3bbd32615acaa0e84b492"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/SmokeVerification.java",
+      "sha256": "2ec3647a00f3f66328923591eacdbf20ee976b21c256cbdeb2b3e2190e8c4370"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/PaperWorldBackend.java",
+      "sha256": "b46a5acbc7f43b03ab25f523982f8110bb3c7942bbb77fafed7ef6cf1685e1ca"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/TemplateStore.java",
+      "sha256": "d27b4d777c72c8968136855267e496c35bd138134ef2cfe32a1daa5df18c26b1"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/world/WorldBackend.java",
+      "sha256": "bf9d5742a8a955aeb754f5eb70510cf75d6b38ff7e371864058135d02303b42e"
+    },
+    {
+      "path": "src/main/resources/config.yml",
+      "sha256": "c78c088e194e4281524d13444745465ec819872e4fd5853b0ac9adf0b4aad462"
+    },
+    {
+      "path": "src/main/resources/db/migration/V001__progress.sql",
+      "sha256": "9cfd301837659e3d303f5c7c81ed7b4f2b884bb3160a638cffcaf37d35520c4a"
+    },
+    {
+      "path": "src/main/resources/db/migration/V002__story_inventory.sql",
+      "sha256": "b04a0051a12bfd56c5c5d993eb988ee3a760cdc270a53d54d89e1048f74a5c16"
+    },
+    {
+      "path": "src/main/resources/db/migration/V003__personal_quest.sql",
+      "sha256": "3c9799d3665d81697245be21149375f4a4365fe696df9a5a6e40909c32a34cc6"
+    },
+    {
+      "path": "src/main/resources/plugin.yml",
+      "sha256": "816d959a3f032ec6a18dc211b4e25f36ef9acebc26245901dd10023f787672ae"
+    },
+    {
+      "path": "src/main/resources/quest-demo.yml",
+      "sha256": "23f882d449ca01034d5bb2b6d4c34905cbbf0f33848906412531839d1ebd90fe"
+    },
+    {
+      "path": "build.gradle.kts",
+      "sha256": "d6be3d63d1fb0fc05b803f0476506d584cbd30e902b937fe6f0135b1fd42fc4b"
+    },
+    {
+      "path": "settings.gradle.kts",
+      "sha256": "3c65ec08315b00dea23f54b6db4b985cb1f763ddfc1b936d5193235730742570"
+    }
+  ],
+  "미검증": "실제 NPC/채팅/이동·인증 세션 경합, 두 번째 Paper JVM 및 PG 프로세스 재시작, 장기 부하/누수·운영 배포. 전체 S4 진행 중."
+}

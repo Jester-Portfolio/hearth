@@ -37,9 +37,16 @@ public final class QuestCatalog {
             QuestContent.Area startArea=null;
             if(start==QuestContent.StartMode.AUTOMATIC){var area=map(quest.get("start-area"));startArea=area(area);}
             else if(quest.containsKey("start-area"))throw new IllegalArgumentException("NPC start must not define start-area");
-            var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,start,startArea,Map.copyOf(messages));
+            var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,start,startArea,quest.containsKey("requires-completed")?id(quest,"requires-completed"):null,Map.copyOf(messages));
             if(quests.putIfAbsent(id,content)!=null)throw new IllegalArgumentException("Duplicate quest id");
             npcs.computeIfAbsent(npcId,key->new ArrayList<>()).add(content);
+        }
+        for(var c:quests.values())if(c.requiresCompleted()!=null && !quests.containsKey(c.requiresCompleted()))throw new IllegalArgumentException("Unknown prerequisite quest");
+        var done=new HashSet<String>();
+        for(String first:quests.keySet()){
+            var path=new HashSet<String>();String next=first;
+            while(next!=null && !done.contains(next)){if(!path.add(next))throw new IllegalArgumentException("Cyclic prerequisite quest");next=quests.get(next).requiresCompleted();}
+            done.addAll(path);
         }
         if(npcs.size()!=rawNpcs.size())throw new IllegalArgumentException("NPC without quest link");
         var positions=new HashSet<List<Double>>();

@@ -49,6 +49,12 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<QuestStore.Saved> autoWrite,autoStaleWrite;
     private CompletionStage<PersonalQuest.Session> autoFresh;
     private final java.util.concurrent.atomic.AtomicBoolean autoValid=new java.util.concurrent.atomic.AtomicBoolean(true);
+    private CompletionStage<QuestStore.Saved> prerequisiteWrite,prerequisiteStaleWrite;
+    private CompletionStage<PersonalQuest.Session> prerequisiteFresh;
+    private PersonalQuest prerequisiteProbe;
+    private PersonalQuest.Session prerequisiteHeld,prerequisiteOld;
+    private final java.util.concurrent.atomic.AtomicBoolean prerequisiteValid=new java.util.concurrent.atomic.AtomicBoolean(true);
+    private Object prerequisiteFreshToken;
     private CompletionStage<Optional<QuestStore.Saved>> entryWrite,entryStaleWrite;
     private CompletionStage<PersonalQuest.Session> entryFresh;
     private final java.util.concurrent.atomic.AtomicBoolean entryValid=new java.util.concurrent.atomic.AtomicBoolean(true);
@@ -93,6 +99,7 @@ public final class SessionVerification implements AutoCloseable {
             var quest=new HashMap<String,Object>(Map.of("id",Objects.requireNonNull(yaml.get("id")),"title",Objects.requireNonNull(yaml.get("title"),"Missing legacy content title"),"npc-id","survey_guide",
                 "objective",Objects.requireNonNull(yaml.getConfigurationSection("objective"),"Missing legacy goal").getValues(false),
                 "text",Objects.requireNonNull(yaml.getConfigurationSection("text"),"Missing legacy dialogue").getValues(false)));
+            if(yaml.isSet("requires-completed"))quest.put("requires-completed",yaml.get("requires-completed"));
             if(yaml.isSet("start-mode"))quest.put("start-mode",yaml.get("start-mode"));
             if(yaml.isSet("start-area"))quest.put("start-area",Objects.requireNonNull(yaml.getConfigurationSection("start-area")).getValues(false));
             if(yaml.isSet("completion-mode"))quest.put("completion-mode",yaml.get("completion-mode"));
@@ -159,6 +166,18 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "quest-prereq-prepare" -> prerequisitePrepare();
+        case "quest-prereq-complete" -> prerequisiteComplete();
+        case "quest-prereq-start" -> prerequisiteStart();
+        case "quest-prereq-start-done" -> prerequisiteStartDone();
+        case "quest-prereq-error-ready" -> prerequisiteErrorReady();
+        case "quest-prereq-error" -> prerequisiteError();
+        case "quest-prereq-error-done" -> questRead(ctx(b,1),"followup_marker",QuestStore.Phase.NOT_ACCEPTED,-1);
+        case "quest-prereq-stale-ready" -> seedList(a2,"survey_marker",QuestStore.Phase.COMPLETED).thenCompose(v->quests.open(a2,"followup_marker",new Object(),prerequisiteValid::get)).thenAccept(q->prerequisiteOld=q);
+        case "quest-prereq-stale" -> prerequisiteStale();
+        case "quest-prereq-stale-done" -> expectQuestCode(prerequisiteStaleWrite,"STALE_QUEST").thenCompose(v->mainResult(prerequisiteFresh)).thenAccept(q->check(q.saved().phase()==QuestStore.Phase.NOT_ACCEPTED,"prereq_session_change_before_INSERT_no_start"));
+        case "quest-prereq-check" -> prerequisiteCheck();
+        case "quest-prereq-menu-done" -> expectQuestCode(pendingList,"STALE_QUEST_LIST").thenCompose(v->mainResult(listBarrier));
         case "quest-entry-prepare" -> entryPrepare();
         case "quest-entry-start" -> entryStart();
         case "quest-entry-start-done" -> entryStartDone();
@@ -390,6 +409,72 @@ public final class SessionVerification implements AutoCloseable {
             listToken=new Object();check(true,"list_controlled_session_token_replaced");
         });
     }
+    private QuestContent prerequisiteContent(boolean npc,boolean automatic){
+        var c=catalog.quest("followup_marker");
+        return new QuestContent(c.id(),c.title(),c.npcId(),c.name(),c.x(),c.y(),c.z(),c.minX(),c.maxX(),c.minY(),c.maxY(),c.minZ(),c.maxZ(),
+            automatic?QuestContent.CompletionMode.AUTOMATIC:c.completionMode(),npc?QuestContent.StartMode.NPC:c.startMode(),npc?null:c.startArea(),c.requiresCompleted(),c.text());
+    }
+    private CompletionStage<Void> prerequisiteMenu(ServerProgressAccess.Context context,Object token,boolean visible){
+        return listSnapshot(context).thenCompose(before->quests.list(context,token,()->true).thenCompose(rows->{
+            quests.requireListDisplay(context,rows);var d=new QuestDialogue(catalog);UUID world=worlds.get(context.storyRunId()).mapping().physicalId();
+            var options=d.options(context.playerId(),token,context.storyRunId(),world,UUID.randomUUID(),"survey_guide");
+            var expected=options.stream().filter(t->QuestListView.available(catalog.quest(t.quest()),rows)).map(t->Component.text("["+catalog.quest(t.quest()).title()+"]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(d.command(t,"select")))).toList();
+            var messages=PaperQuestAdapter.selectionMessages(catalog,d,options,rows);
+            check(messages.equals(expected) && messages.size()==(visible?4:3) && QuestListView.available(catalog.quest("followup_marker"),rows)==visible,"prereq_filtered_NPC_choices_"+context.storyRunId()+"_"+context.playerId()+"_visible"+visible);
+            return listSnapshot(context).thenAccept(after->check(before.equals(after),"prereq_menu_DB_rows_revisions_unchanged"));
+        }));
+    }
+    private CompletionStage<Void> prerequisitePrepare(){
+        return openAll().thenRun(this::npcCheck).thenCompose(v->prerequisiteMenu(a1,s1,false))
+            .thenCompose(v->quests.open(a1,"followup_marker",s1,()->true)).thenCompose(q->expectQuestCode(quests.accept(q,prerequisiteContent(true,false)),"QUEST_LOCKED"))
+            .thenCompose(v->entry(quests,a1,catalog.quest("followup_marker"),s1,()->true,false))
+            .thenAccept(row->check(row.isEmpty(),"prereq_locked_area_no_start"))
+            .thenCompose(v->questRead(a1,"followup_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->questRead(a2,"followup_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->questRead(ctx(b,1),"followup_marker",QuestStore.Phase.NOT_ACCEPTED,-1));
+    }
+    private CompletionStage<Void> prerequisiteComplete(){
+        return quests.open(a1,"survey_marker",s1,()->true).thenCompose(q->quests.accept(q,catalog.quest("survey_marker")).thenCompose(v->visit(quests,q,catalog.quest("survey_marker"))).thenCompose(v->quests.advance(q,QuestStore.Phase.COMPLETED)))
+            .thenCompose(v->prerequisiteMenu(a1,s1,true)).thenCompose(v->prerequisiteMenu(a2,s2,false)).thenCompose(v->prerequisiteMenu(ctx(b,1),new Object(),false));
+    }
+    private CompletionStage<Void> prerequisiteStart(){
+        return quests.open(a1,"followup_marker",s1,()->true).thenCompose(q->{
+            prerequisiteWrite=quests.accept(q,prerequisiteContent(true,false));
+            return expectQuestCode(quests.accept(q,prerequisiteContent(true,false)),"QUEST_BUSY_OR_HOLD");
+        }).thenRun(()->check(!prerequisiteWrite.toCompletableFuture().isDone() && !quests.barrier(a).toCompletableFuture().isDone(),"prereq_read_pending_no_success_and_barrier_waits"));
+    }
+    private CompletionStage<Void> prerequisiteStartDone(){return mainResult(prerequisiteWrite)
+        .thenAccept(row->check(row.equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)),"prereq_NPC_start_revision0"))
+        .thenCompose(v->quests.open(a1,"followup_marker",s1,()->true)).thenCompose(q->visit(quests,q,catalog.quest("followup_marker")).thenCompose(v->quests.advance(q,QuestStore.Phase.COMPLETED)))
+        .thenCompose(v->questRead(a1,"followup_marker",QuestStore.Phase.COMPLETED,2));}
+    private CompletionStage<Void> prerequisiteErrorReady(){
+        prerequisiteProbe=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);
+        return prerequisiteProbe.open(ctx(b,1),"followup_marker",new Object(),()->true).thenAccept(q->prerequisiteHeld=q);
+    }
+    private CompletionStage<Void> prerequisiteError(){return expect(prerequisiteProbe.accept(prerequisiteHeld,prerequisiteContent(true,false)),"42P01")
+        .thenCompose(v->expect(quests.list(a2,s2,()->true),"42P01"))
+        .thenRun(()->check(prerequisiteHeld.held() && prerequisiteHeld.saved().phase()==QuestStore.Phase.NOT_ACCEPTED,"prereq_query_failure_HOLD_no_unlock_no_INSERT"));}
+    private CompletionStage<Void> prerequisiteStale(){
+        prerequisiteStaleWrite=quests.accept(prerequisiteOld,prerequisiteContent(true,false));prerequisiteValid.set(false);prerequisiteFreshToken=new Object();
+        prerequisiteFresh=quests.open(a2,"followup_marker",prerequisiteFreshToken,()->true);
+        check(!prerequisiteStaleWrite.toCompletableFuture().isDone() && !prerequisiteFresh.toCompletableFuture().isDone(),"prereq_new_session_waits_for_old_query");return CompletableFuture.completedFuture(null);
+    }
+    private CompletionStage<Void> prerequisiteCheck(){
+        var context=ctx(b,1);var c=catalog.quest("followup_marker");Object token=new Object();
+        return entry(quests,a2,c,prerequisiteFreshToken,()->true,false).thenAccept(row->check(row.orElseThrow().equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)),"prereq_automatic_start_after_fresh_entry"))
+            .thenCompose(v->entry(quests,a2,c,prerequisiteFreshToken,()->true,false)).thenAccept(row->check(row.isEmpty(),"prereq_started_reentry_no_duplicate"))
+            .thenCompose(v->entry(quests,a2,c,prerequisiteFreshToken,()->true,true))
+            .thenCompose(v->quests.open(a2,c.id(),prerequisiteFreshToken,()->true)).thenCompose(q->quests.advance(q,QuestStore.Phase.COMPLETED))
+            .thenCompose(v->entry(quests,context,c,token,()->true,false)).thenAccept(row->check(row.isEmpty(),"prereq_other_run_still_locked"))
+            .thenCompose(v->seedList(context,"survey_marker",QuestStore.Phase.COMPLETED))
+            .thenCompose(v->entry(quests,context,prerequisiteContent(false,true),token,()->true,false))
+            .thenCompose(v->entry(quests,context,prerequisiteContent(false,true),token,()->true,true))
+            .thenAccept(row->check(row.orElseThrow().equals(new QuestStore.Saved(QuestStore.Phase.COMPLETED,1)),"prereq_automatic_completion_revision1"))
+            .thenCompose(v->questRead(a1,c.id(),QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(a2,c.id(),QuestStore.Phase.COMPLETED,2))
+            .thenCompose(v->questRead(context,c.id(),QuestStore.Phase.COMPLETED,1))
+            .thenCompose(v->prerequisiteMenu(a1,s1,true));
+    }
     private CompletionStage<Optional<QuestStore.Saved>> entry(PersonalQuest owner,ServerProgressAccess.Context ctx,QuestContent c,Object token,BooleanSupplier valid,boolean goal){
         return owner.enter(ctx,c,token,valid,2,64,2,goal?(c.minX()+c.maxX())/2:(c.startArea().minX()+c.startArea().maxX())/2,64,goal?(c.minZ()+c.maxZ())/2:(c.startArea().minZ()+c.startArea().maxZ())/2);
     }
@@ -450,7 +535,7 @@ public final class SessionVerification implements AutoCloseable {
         .thenAccept(q->check(q.saved().equals(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0)) && entryOld.saved().phase()==QuestStore.Phase.NOT_ACCEPTED,"entry_old_response_no_start_message_new_session_reads_confirmed_row"));}
     private CompletionStage<Void> entryCheck(){
         var c=catalog.quest("entry_marker");
-        var automatic=new QuestContent(c.id(),c.title(),c.npcId(),c.name(),c.x(),c.y(),c.z(),c.minX(),c.maxX(),c.minY(),c.maxY(),c.minZ(),c.maxZ(),QuestContent.CompletionMode.AUTOMATIC,c.startMode(),c.startArea(),c.text());
+        var automatic=new QuestContent(c.id(),c.title(),c.npcId(),c.name(),c.x(),c.y(),c.z(),c.minX(),c.maxX(),c.minY(),c.maxY(),c.minZ(),c.maxZ(),QuestContent.CompletionMode.AUTOMATIC,c.startMode(),c.startArea(),c.requiresCompleted(),c.text());
         Object token=new Object();var context=ctx(b,1);
         return entry(quests,context,automatic,token,()->true,false)
             .thenAccept(row->check(row.orElseThrow().phase()==QuestStore.Phase.ACTIVE,"entry_auto_completion_variant_starts_only"))

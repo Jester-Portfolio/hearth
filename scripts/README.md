@@ -41,3 +41,5 @@
 한 NPC의 다중 퀘스트 검사는 `verify-lifecycle.py --sessions --quests --quest-npc`로 실행합니다. 단독 모드이며 한 JVM에서 두 선택지·동작별 nonce·개인 상태/DB 불변·지연 응답·자동/보고 완료·NPC 언로드/재로드를 확인합니다. 무접속 조회 동안에만 시험용 NPC 청크 티켓을 유지하고 해제합니다. 실제 클릭/채팅/거리 행동 시험은 아닙니다.
 
 지역 자동 시작 검사는 `verify-lifecycle.py --sessions --quests --quest-start` 단독 모드를 사용합니다. 한 JVM에서 시작 구역·NPC 수락 차단·중복/SQL 실패·세션 교체·두 완료 방식 조합을 제어 경계로 확인하며 실제 이동 시험은 아닙니다. 기존 `--quest-list`/`--quest-info`는 새 경로에 과거 두 퀘스트 fixture를 준비하고, 세 퀘스트 목록/상세는 시작 검사의 마지막 단계에서 확인합니다.
+
+개인 선행 조건 검사는 `verify-lifecycle.py --sessions --quests --quest-requires` 단독 모드를 사용합니다. 새 후속 콘텐츠를 포함한 한 JVM/DB에서 비동기 잠금 필터·NPC/지역 시작·개인 격리·조회 실패/HOLD·stale를 확인합니다. 이전 자동 모드는 새 경로에서 기존 고정 fixture를 유지하고 수동 모드는 새 콘텐츠 전체를 사용합니다. 실제 클라이언트 시험은 아닙니다.

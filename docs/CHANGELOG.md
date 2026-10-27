@@ -2,6 +2,11 @@
 
 Git 커밋의 실제 변경을 기준으로 주요 항목만 기록합니다. 날짜는 커밋 기록의 Asia/Seoul(+09:00) 기준입니다. 사소한 편집과 확인할 수 없는 과거 작업은 나열하지 않습니다. 현재 상태는 [PROJECT_STATUS](PROJECT_STATUS.md), 이후 계획은 [ROADMAP](ROADMAP.md)을 참고합니다.
 
+## 2026-10-27 — 개인 퀘스트 선행 완료 조건
+
+- 선택적 requires-completed·그래프 검증·개인/진행 범위의 시작 허용·잠긴 NPC 선택지 제외를 추가했습니다. 기존 상태·ID·스키마·완료 방식은 유지합니다.
+- [기록](personal-quest-verification.md#개인-퀘스트-선행-완료-조건--2026-10-27)·[결과](../verification/quest-prerequisite-result.json): 단위94개·최초 한 Paper JVM/PG37.578초 PASS. 실제 클라이언트는 보류하며 전체 S4는 진행 중입니다.
+
 ## 2026-10-27 — 지역 진입형 개인 퀘스트 자동 시작
 
 - `start-mode` 기본 npc, automatic의 별도 시작 구역·NPC 수락 차단·진입 중복 제한·저장 장벽을 연결했습니다. 기존 ID·스키마·완료 방식을 유지합니다.

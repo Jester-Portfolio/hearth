@@ -72,3 +72,31 @@ quests:
       report: '[구역 조사 보고]'
       completed: '구역 조사가 완료되었습니다.'
       failure: '구역 조사 저장 상태를 확인할 수 없습니다.'
+  - id: followup_marker
+    requires-completed: survey_marker
+    start-mode: automatic
+    start-area:
+      min-x: 5.0
+      max-x: 7.0
+      min-y: 64.0
+      max-y: 67.0
+      min-z: 16.0
+      max-z: 18.0
+    completion-mode: report
+    title: 공개 후속 지점 조사
+    npc-id: survey_guide
+    objective:
+      min-x: 12.0
+      max-x: 14.0
+      min-y: 64.0
+      max-y: 67.0
+      min-z: 16.0
+      max-z: 18.0
+    text:
+      offer: '후속 시작 구역 (5~7, 64~67, 16~18)에 들어가면 조사가 시작됩니다.'
+      accept: '[후속 구역에서 시작]'
+      active: '후속 조사가 시작되었습니다. 목표 지점을 방문해 주세요.'
+      report-ready: '후속 조사를 마쳤습니다. 시험 안내원에게 보고해 주세요.'
+      report: '[후속 조사 보고]'
+      completed: '후속 조사가 완료되었습니다.'
+      failure: '후속 조사 저장 상태를 확인할 수 없습니다.'

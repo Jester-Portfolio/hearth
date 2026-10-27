@@ -95,7 +95,17 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         e.setCancelled(true);if(e.getHand()!=EquipmentSlot.HAND)return;
         Player p=e.getPlayer();var session=players.current(p);UUID entity=e.getRightClicked().getUniqueId();
         if(session==null || !near(p,npc,entity))return;
-        for(Component message:selectionMessages(catalog,dialogues,dialogues.options(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc)))p.sendMessage(message);
+        var tickets=dialogues.options(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc);
+        quests.list(session.context(),session,()->players.current(p)==session).whenCompleteAsync((rows,error)->{
+            if(tickets.stream().anyMatch(t->!current(p,session,t)))return;
+            if(error!=null){unavailable(p);return;}
+            try {quests.requireListDisplay(session.context(),rows);var messages=selectionMessages(catalog,dialogues,tickets,rows);
+                if(messages.isEmpty())p.sendMessage(Component.text("현재 대화할 퀘스트가 없습니다."));else messages.forEach(p::sendMessage);
+            }catch(RuntimeException failure){unavailable(p);}
+        },owner);
+    }
+    public static List<Component> selectionMessages(QuestCatalog catalog,QuestDialogue dialogues,List<QuestDialogue.Ticket> tickets,Map<String,QuestStore.Saved> rows){
+        return selectionMessages(catalog,dialogues,tickets.stream().filter(t->QuestListView.available(catalog.quest(t.quest()),rows)).toList());
     }
     public static List<Component> selectionMessages(QuestCatalog catalog,QuestDialogue dialogues,List<QuestDialogue.Ticket> tickets){
         return tickets.stream().map(t->(Component)Component.text("["+catalog.quest(t.quest()).title()+"]").clickEvent(ClickEvent.runCommand(dialogues.command(t,"select")))).toList();
@@ -130,17 +140,21 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         } catch(IllegalArgumentException error){plugin.getLogger().info("HEARTH_QUEST_REQUEST_REJECTED");return true;}
         QuestContent content=catalog.quest(ticket.quest());
         if(request.action().equals("select")) {
-            quests.open(session.context(),content.id(),session,()->players.current(p)==session).whenCompleteAsync((q,error)->{
+            quests.list(session.context(),session,()->players.current(p)==session).thenComposeAsync(rows->{
+                if(!current(p,session,ticket))throw new IllegalStateException("STALE_DIALOGUE");
+                quests.requireListDisplay(session.context(),rows);if(!QuestListView.available(content,rows))throw new IllegalStateException("QUEST_LOCKED");
+                return quests.open(session.context(),content.id(),session,()->players.current(p)==session);
+            },owner).whenCompleteAsync((q,error)->{
                 if(!current(p,session,ticket))return;
-                if(error!=null){failure(p,content);return;}
+                if(error!=null){unavailable(p);return;}
                 try {for(Component message:dialogueMessages(content,quests.requireDialogue(q),dialogues,ticket))p.sendMessage(message);}
-                catch(RuntimeException invalid){failure(p,content);}
+                catch(RuntimeException invalid){unavailable(p);}
             },owner);
         } else quests.open(session.context(),content.id(),session,()->players.current(p)==session)
             .thenComposeAsync(q->{if(!current(p,session,ticket))throw new IllegalStateException("STALE_DIALOGUE");return request.action().equals("accept")?quests.accept(q,content):quests.advance(q,QuestStore.Phase.COMPLETED);},owner)
             .whenCompleteAsync((saved,error)->{
                 if(!current(p,session,ticket))return;
-                if(error!=null){failure(p,content);return;}
+                if(error!=null){unavailable(p);return;}
                 p.sendMessage(Component.text(content.text().get(saved.phase()==QuestStore.Phase.ACTIVE?"active":"completed")));
             },owner);
         return true;
@@ -173,6 +187,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
                 p.sendMessage(Component.text(c.text().get(key)));
             },owner).exceptionally(error->null);
     }
+    private void unavailable(Player p){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다."));plugin.getLogger().info("HEARTH_QUEST_REQUEST_UNAVAILABLE");}
     private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}
     @Override public void close(){closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
         for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(e->npcId(e)!=null).forEach(Entity::remove);}npcs.clear();}

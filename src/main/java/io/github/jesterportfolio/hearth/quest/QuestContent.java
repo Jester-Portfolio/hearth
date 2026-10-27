@@ -4,7 +4,7 @@ import java.util.Map;
 
 /** 초기 로딩 시 검증한 NPC-개인 방문 퀘스트 연결 한 개입니다. */
 public record QuestContent(String id,String title,String npcId,String name,double x,double y,double z,
-        double minX,double maxX,double minY,double maxY,double minZ,double maxZ,CompletionMode completionMode,StartMode startMode,Area startArea,Map<String,String> text) {
+        double minX,double maxX,double minY,double maxY,double minZ,double maxZ,CompletionMode completionMode,StartMode startMode,Area startArea,String requiresCompleted,Map<String,String> text) {
     public enum StartMode {
         NPC, AUTOMATIC;
         static StartMode parse(Object value){if("npc".equals(value))return NPC;if("automatic".equals(value))return AUTOMATIC;throw new IllegalArgumentException("Invalid start-mode");}

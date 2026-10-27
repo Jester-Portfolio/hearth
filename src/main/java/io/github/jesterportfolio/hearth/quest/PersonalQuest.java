@@ -69,10 +69,39 @@ public final class PersonalQuest {
     private static <T> CompletionStage<T> rejected(String code){return CompletableFuture.failedFuture(new IllegalStateException(code));}
     public CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target) { return advance(s,target,false); }
     public CompletionStage<QuestStore.Saved> accept(Session s,QuestContent c){
-        check.run();if(!s.key.quest().equals(c.id()) || c.startMode()!=QuestContent.StartMode.NPC)return rejected("QUEST_START_MODE");return advance(s,QuestStore.Phase.ACTIVE);
+        check.run();if(!s.key.quest().equals(c.id()) || c.startMode()!=QuestContent.StartMode.NPC)return rejected("QUEST_START_MODE");return begin(s,c);
     }
     public CompletionStage<QuestStore.Saved> start(Session s,QuestContent c,double x,double y,double z){
-        check.run();if(!s.key.quest().equals(c.id()) || !c.startsAt(x,y,z) || s.saved==null || s.saved.phase()!=QuestStore.Phase.NOT_ACCEPTED)return rejected("QUEST_START_AREA");return advance(s,QuestStore.Phase.ACTIVE);
+        check.run();if(!s.key.quest().equals(c.id()) || !c.startsAt(x,y,z) || s.saved==null || s.saved.phase()!=QuestStore.Phase.NOT_ACCEPTED)return rejected("QUEST_START_AREA");return begin(s,c);
+    }
+    private void dependencyReady(Session dependency){
+        if(dependency!=null && (dependency.busy || dependency.hold || dependency.io.toCompletableFuture().isCompletedExceptionally()))throw new IllegalStateException("QUEST_PREREQUISITE_BUSY");
+    }
+    /** 선행 조회부터 시작 INSERT까지 같은 세션의 busy/저장 장벽을 유지합니다. */
+    private CompletionStage<QuestStore.Saved> begin(Session s,QuestContent c){
+        check.run();if(!current(s))return rejected("STALE_QUEST");
+        if(s.busy || s.hold || s.saved==null)return rejected("QUEST_BUSY_OR_HOLD");
+        if(s.saved.phase()!=QuestStore.Phase.NOT_ACCEPTED)return rejected("QUEST_ORDER");
+        if(c.requiresCompleted()==null)return advance(s,QuestStore.Phase.ACTIVE);
+        if(!ids.contains(c.requiresCompleted()))return rejected("UNKNOWN_PREREQUISITE");
+        Key key=new Key(s.key.run(),s.key.player(),c.requiresCompleted());var dependency=sessions.get(key);
+        try {dependencyReady(dependency);}catch(RuntimeException error){return CompletableFuture.failedFuture(error);}
+        var dependencyIO=dependency==null?null:dependency.io;var expected=s.saved;
+        var drain=new CompletableFuture<Void>();var result=new CompletableFuture<QuestStore.Saved>();s.busy=true;s.io=drain;
+        store.readQuest(s.context,c.requiresCompleted()).thenComposeAsync(row->{
+            require(s);if(s.hold || s.io!=drain || s.saved!=expected)throw new IllegalStateException("QUEST_PREREQUISITE_CHANGED");
+            if(sessions.get(key)!=dependency || dependency!=null && dependency.io!=dependencyIO)throw new IllegalStateException("QUEST_PREREQUISITE_CHANGED");
+            dependencyReady(dependency);
+            if(row.phase()!=QuestStore.Phase.COMPLETED)throw new IllegalStateException("QUEST_LOCKED");
+            return store.advanceQuest(s.context,c.id(),expected,QuestStore.Phase.ACTIVE);
+        },owner).whenCompleteAsync((row,error)->{
+            s.busy=false;Throwable cause=error;while(cause instanceof CompletionException && cause.getCause()!=null)cause=cause.getCause();
+            boolean rejected=cause instanceof IllegalStateException && Set.of("QUEST_LOCKED","QUEST_PREREQUISITE_BUSY","QUEST_PREREQUISITE_CHANGED","STALE_QUEST").contains(Objects.toString(cause.getMessage(),""));
+            if(error!=null && !rejected){s.hold=true;drain.completeExceptionally(error);}else drain.complete(null);
+            if(error!=null)result.completeExceptionally(error);
+            else if(current(s)){s.saved=row;result.complete(row);}else result.completeExceptionally(new IllegalStateException("STALE_QUEST"));
+        },owner);
+        return result;
     }
     /** 블록 이동·구역 진입에만 읽기를 요청하고 진행 중 요청은 합칩니다. */
     public CompletionStage<Optional<QuestStore.Saved>> enter(ServerProgressAccess.Context context,QuestContent c,Object token,BooleanSupplier valid,
@@ -93,8 +122,9 @@ public final class PersonalQuest {
         },owner).whenCompleteAsync((saved,error)->{
             movements.remove(key,drain);
             Throwable cause=error;while(cause instanceof CompletionException && cause.getCause()!=null)cause=cause.getCause();
-            if(cause==null || cause instanceof IllegalStateException && "STALE_QUEST".equals(cause.getMessage()))drain.complete(null);else drain.completeExceptionally(error);
-            if(error==null)result.complete(saved);else result.completeExceptionally(error);
+            boolean locked=cause instanceof IllegalStateException && Set.of("QUEST_LOCKED","QUEST_PREREQUISITE_BUSY","QUEST_PREREQUISITE_CHANGED").contains(Objects.toString(cause.getMessage(),""));
+            if(cause==null || locked || cause instanceof IllegalStateException && "STALE_QUEST".equals(cause.getMessage()))drain.complete(null);else drain.completeExceptionally(error);
+            if(error==null)result.complete(saved);else if(locked)result.complete(Optional.empty());else result.completeExceptionally(error);
         },owner);
         return result;
     }

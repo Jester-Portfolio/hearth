@@ -6,6 +6,11 @@ import java.util.*;
 /** 채팅/향후 GUI가 공유할 읽기 전용 표시 데이터. 미수락 콘텐츠는 행을 만들지 않습니다. */
 public final class QuestListView {
     private QuestListView() {}
+    public static boolean available(QuestContent c,Map<String,QuestStore.Saved> rows){
+        var own=Objects.requireNonNull(rows.get(c.id()),"Missing quest state");
+        return own.phase()!=QuestStore.Phase.NOT_ACCEPTED || c.requiresCompleted()==null
+            || Objects.requireNonNull(rows.get(c.requiresCompleted()),"Missing prerequisite state").phase()==QuestStore.Phase.COMPLETED;
+    }
     public static final String UNAVAILABLE="조회할 수 있는 퀘스트가 없습니다";
     public record Detail(Entry quest,String npc,String guidance) {}
     public record Entry(String questId,String title,QuestStore.Phase phase,String status) {}
