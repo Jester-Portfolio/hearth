@@ -1,6 +1,7 @@
 # 공개 합성 공유 단계입니다. 실제 챕터·개방 시점을 정의하지 않습니다.
 format: 1
 first: trial_arrival
+guide-npcs: [survey_guide]
 stages:
   - id: trial_arrival
     title: 공개 공동 조사 준비

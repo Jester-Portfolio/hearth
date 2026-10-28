@@ -219,6 +219,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "gameplay-guide" -> gameplayGuide();
         case "story-prepare" -> storyPrepare();
         case "story-vote" -> storyVote();
         case "story-persist-start" -> storyPersistStart();
@@ -509,6 +510,17 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> gameplayGuide(){
+        var before=sharedStory.cached(a);var lines=StoryGuide.lines(sharedStory.content(),before,sharedStory.phase(a));
+        check(sharedStory.content().guideNpcs().contains("survey_guide"),"guide_content_npc_link");
+        check(lines.stream().anyMatch(line->"/hearthphone".equals(line.command())),"guide_phone_chat_link");
+        check(lines.stream().noneMatch(line->line.text().contains("survey_marker")||line.text().contains("path_marker")),"guide_private_condition_ids_hidden");
+        return journal.load(a1,s1,()->coordinator.playable(s1)).thenCompose(view->{
+            var buttons=QuestScreens.screen(catalog,view,"story",null,0);
+            check(buttons.stream().anyMatch(button->button.action().equals("story-guide")),"guide_gui_chat_only");
+            return mainResult(store.readStory(a1));
+        }).thenAccept(saved->{main();check(saved.equals(before),"guide_read_only_revision_unchanged");});
+    }
     private CompletionStage<Void> storyPrepare(){var legacy=ctx(new UUID(42,99),99);return openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);sharedStory.rosterChanged(b3);})
         .thenCompose(v->mainResult(store.readExploration(legacy))).thenAccept(data->check(data.story().revision()==3 && data.story().stage().equals("public_test_stage") && data.places().get("public_village").hub(),"story_V005_rows_preserved_after_V006"))
         .thenCompose(v->seedList(a1,"survey_marker",QuestStore.Phase.COMPLETED))

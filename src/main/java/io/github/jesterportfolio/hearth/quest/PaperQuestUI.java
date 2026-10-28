@@ -28,13 +28,16 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         }
         @Override public Inventory getInventory(){return inventory;}
     }
+    private Consumer<Player> storyGuide=p->{};
+    public void storyGuide(Consumer<Player> guide){storyGuide=guide;}
+    private void dirtyRun(UUID run){for(Player player:Bukkit.getOnlinePlayers()){var session=players.current(player);if(session!=null&&session.context().storyRunId().equals(run))dirty.add(player.getUniqueId());}}
     private final JavaPlugin plugin;private final PaperSessionAdapter players;private final PersonalQuest quests;private final QuestCatalog catalog;private final QuestJournal journal;private final Executor owner;
     private final Map<UUID,List<BossBar>> bars=new HashMap<>();private final Map<UUID,Object> attempted=new HashMap<>();private final Set<UUID> dirty=new HashSet<>();
     private final Map<UUID,Long> requests=new HashMap<>();private final BukkitTask task;private boolean closed;private long requestId;
     public PaperQuestUI(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner){
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;this.owner=owner;
         Bukkit.getPluginManager().registerEvents(this,plugin);players.developerInventory(this::allowed);
-        quests.changed(ctx->dirty.add(ctx.playerId()));journal.changed(ctx->dirty.add(ctx.playerId()));
+        quests.changed(ctx->dirtyRun(ctx.storyRunId()));journal.changed(ctx->dirty.add(ctx.playerId()));journal.sharedChanged(this::dirtyRun);
         task=Bukkit.getScheduler().runTaskTimer(plugin,()->{for(Player p:Bukkit.getOnlinePlayers()){
             var s=players.current(p);if(s==null){clearBars(p);continue;}
             if(!requests.containsKey(p.getUniqueId()) && (attempted.get(p.getUniqueId())!=s || dirty.remove(p.getUniqueId()))){attempted.put(p.getUniqueId(),s);load(p,s,v->{if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen screen && screen.session==s)open(p,s,v,screen.page,screen.quest,screen.offset);});}
@@ -76,7 +79,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         Bukkit.getScheduler().runTaskLater(plugin,()->{
             if(players.current(p)!=s || p.getOpenInventory().getTopInventory()!=screen.inventory)return;
             String action=button.action();
-            if(action.equals("track"))request(p,s,journal.track(s.context(),s,()->players.current(p)==s,button.quest(),button.revision()==1),v->open(p,s,v,"detail",button.quest(),0));
+            if(action.equals("story-guide")){p.closeInventory();storyGuide.accept(p);}
+            else if(action.equals("track"))request(p,s,journal.track(s.context(),s,()->players.current(p)==s,button.quest(),button.revision()==1),v->open(p,s,v,"detail",button.quest(),0));
             else if(action.equals("hud"))request(p,s,journal.hud(s.context(),s,()->players.current(p)==s,button.revision()==1),v->open(p,s,v,"settings",null,0));
             else if(action.startsWith("setting:"))request(p,s,journal.setting(s.context(),s,()->players.current(p)==s,action.substring(8),button.revision()==1),v->open(p,s,v,"settings",null,0));
             else if(action.equals("place-notice"))request(p,s,journal.readPlaceNotice(s.context(),s,()->players.current(p)==s,button.quest()),v->open(p,s,v,"place",button.quest(),0));
@@ -88,5 +92,5 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.MONITOR) public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Screen)e.setCancelled(true);}
     @EventHandler public void closed(InventoryCloseEvent e){if(e.getInventory().getHolder() instanceof Screen)requests.remove(e.getPlayer().getUniqueId());}
     @EventHandler public void quit(PlayerQuitEvent e){clearBars(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());}
-    @Override public void close(){closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();}
+    @Override public void close(){closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();}
 }

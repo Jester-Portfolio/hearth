@@ -21,8 +21,17 @@ public final class PaperStoryAdapter implements AutoCloseable {
     }
     public StoryAccess access(){return access;}
     private void sendVote(Player p,UUID run){story.vote(run).filter(v->v.state().equals("OPEN")).ifPresent(v->{for(var choice:v.choices())p.sendMessage(Component.text("["+choice.label()+"]").clickEvent(ClickEvent.runCommand("/hearthstory vote "+v.id()+" "+choice.id())));p.sendMessage(Component.text("[기권]").clickEvent(ClickEvent.runCommand("/hearthstory vote "+v.id()+" abstain")));});}
+    public void guide(Player player,String npc){
+        var session=players.current(player);if(session==null || npc!=null&&!story.content().guideNpcs().contains(npc))return;
+        UUID run=session.context().storyRunId();
+        for(var line:StoryGuide.lines(story.content(),story.cached(run),story.phase(run))){
+            var message=Component.text(line.text());if(line.command()!=null)message=message.clickEvent(ClickEvent.runCommand(line.command()));player.sendMessage(message);
+        }
+        sendVote(player,run);
+    }
     public boolean command(Player p,String command){if(!command.startsWith("/hearthstory"))return false;var s=players.current(p);if(s==null)return true;var ctx=s.context();String[] args=command.split(" ",-1);CompletionStage<?> work;
-        try{if(args.length==2&&args[1].equals("next"))work=story.advance(ctx,s,()->players.current(p)==s);
+        try{if(args.length==2&&args[1].equals("guide")){guide(p,null);return true;}
+            else if(args.length==2&&args[1].equals("next"))work=story.advance(ctx,s,()->players.current(p)==s);
             else if(args.length==2&&args[1].equals("vote"))work=story.openVote(ctx,s,()->players.current(p)==s);
             else if(args.length==4&&args[1].equals("vote"))work=story.cast(ctx,s,()->players.current(p)==s,UUID.fromString(args[2]),args[3]);
             else if(args.length==2&&args[1].equals("resolve"))work=story.resolve(ctx);

@@ -16,8 +16,10 @@ public final class QuestJournal {
     private record Key(UUID run,UUID player){}
     private final QuestJournalStore store;private final PersonalQuest quests;private final QuestCatalog catalog;private final Executor owner;private final Runnable check;
     private final Map<Key,CompletableFuture<Void>> pending=new HashMap<>();private final Set<Key> holds=new HashSet<>();private boolean closed;private Consumer<ServerProgressAccess.Context> changed=c->{};
+    private Consumer<UUID> sharedChanged=r->{};
+    public void sharedChanged(Consumer<UUID> listener){check.run();sharedChanged=listener;}
     private SharedStory story;private StoryAccess storyAccess;
-    public void sharedStory(SharedStory story,StoryAccess access){check.run();this.story=story;storyAccess=access;story.changed(ctx->changed.accept(ctx));}
+    public void sharedStory(SharedStory story,StoryAccess access){check.run();this.story=story;storyAccess=access;story.changed(ctx->{changed.accept(ctx);sharedChanged.accept(ctx.storyRunId());});}
     public boolean questAllowed(ServerProgressAccess.Context ctx,String id){return storyAccess==null||storyAccess.quest(ctx.storyRunId(),catalog.quest(id));}
     public Set<String> blocked(ServerProgressAccess.Context ctx){var result=new HashSet<String>();for(String id:catalog.questIds())if(!questAllowed(ctx,id))result.add(id);return Set.copyOf(result);}
     private ExplorationView explorationView(ServerProgressAccess.Context ctx,ExplorationStore.Data raw,List<CommunityBoundary.Member> members){

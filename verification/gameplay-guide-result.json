@@ -1,0 +1,54 @@
+{
+  "outcome": "PASS",
+  "workspace": "/tmp/hearth-s4-11.h1jgk3a9",
+  "duration_seconds": 37.977,
+  "cleanup_errors": [],
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "b8ba64a9b94d494111aa86f99c6c6fb5e436a814e1e3b4af22254566782abd77",
+  "installed_plugin_sha256": "b8ba64a9b94d494111aa86f99c6c6fb5e436a814e1e3b4af22254566782abd77",
+  "unit_tests": {
+    "passed": 40,
+    "failed": 0
+  },
+  "paper_jvms": 1,
+  "postgres_instances": 1,
+  "processes": {
+    "database": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 221200,
+      "observed_cpu_seconds": 2.34,
+      "min_sampled_host_available_kib": 12034472
+    },
+    "paper-prepare": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 1053800,
+      "observed_cpu_seconds": 62.11,
+      "min_sampled_host_available_kib": 12034472
+    }
+  },
+  "guide_checks": [
+    "guide_content_npc_link",
+    "guide_gui_chat_only",
+    "guide_phone_chat_link",
+    "guide_private_condition_ids_hidden",
+    "guide_read_only_revision_unchanged"
+  ],
+  "prior_attempt": {
+    "outcome": "FAIL",
+    "workspace": "/tmp/hearth-s4-11.w27frt7p",
+    "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+    "cleanup_errors": [
+      "AssertionError: DB 풀 종료 확인 누락"
+    ],
+    "process_exit_codes": {
+      "database": 0,
+      "paper-prepare": 0
+    }
+  },
+  "not_executed": [
+    "실제 인증 클라이언트 NPC 클릭·채팅·이동·GUI",
+    "새 JVM 복원 재시험: 저장 계약 불변으로 생략",
+    "일반 플레이 인벤토리·시설 제한 해제",
+    "운영 배포"
+  ]
+}

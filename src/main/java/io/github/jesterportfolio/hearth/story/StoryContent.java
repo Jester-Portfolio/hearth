@@ -5,14 +5,15 @@ import io.github.jesterportfolio.hearth.exploration.*;
 import java.util.*;
 
 /** 서버 전용 공유 단계 정의. 개인 조건의 ID/미선택 분기 정의는 공개 DTO에 전달하지 않습니다. */
-public record StoryContent(String first,Map<String,Stage> stages,List<RegionRule> regions){
+public record StoryContent(String first,Map<String,Stage> stages,List<RegionRule> regions,Set<String> guideNpcs){
     public record Choice(String id,String label,String next,ExplorationContent.Fact fact){}
     public record Stage(String id,String title,String goal,String next,Set<String> entry,Set<String> complete,boolean opens,List<Choice> choices,ExplorationContent.Fact fact){
         public Stage{entry=entry==null?null:Set.copyOf(entry);complete=complete==null?null:Set.copyOf(complete);choices=List.copyOf(choices);}
     }
     public enum Policy{OPEN,ENTRY,CONTENT}
     public record RegionRule(String region,Policy policy,String reached,QuestContent.Area bounds){}
-    public StoryContent{stages=Map.copyOf(stages);regions=List.copyOf(regions);}
+    public StoryContent(String first,Map<String,Stage> stages,List<RegionRule> regions){this(first,stages,regions,Set.of());}
+    public StoryContent{stages=Map.copyOf(stages);regions=List.copyOf(regions);guideNpcs=Set.copyOf(guideNpcs);}
     public Stage stage(String id){var s=stages.get(id);if(s==null)throw new IllegalStateException("UNREGISTERED_STAGE");return s;}
     public Set<String> conditions(Stage current,Stage target){if(target.entry()==null || current!=null&&current.complete()==null)throw new IllegalStateException("UNREGISTERED_CONDITIONS");var ids=new HashSet<>(target.entry());if(current!=null)ids.addAll(current.complete());return Set.copyOf(ids);}
     public Stage target(Stage current,String choice){if(current==null)return stage(first);if(current.choices().isEmpty())return current.next()==null?current:stage(current.next());return stage(current.choices().stream().filter(c->c.id().equals(choice)).findFirst().orElseThrow(()->new IllegalArgumentException("Unknown choice")).next());}
@@ -39,7 +40,11 @@ public record StoryContent(String first,Map<String,Stage> stages,List<RegionRule
             var b=map(row.get("bounds"));var area=new QuestContent.Area(number(b,"min-x"),number(b,"max-x"),number(b,"min-y"),number(b,"max-y"),number(b,"min-z"),number(b,"max-z"));
             if(area.minX()>area.maxX()||area.minY()>area.maxY()||area.minZ()>area.maxZ()||area.minY()< -64||area.maxY()>320)throw new IllegalArgumentException("Invalid region bounds");rules.add(new RegionRule(region,p,reached,area));
         }
-        return new StoryContent(first,stages,rules);
+        var guides=new HashSet<String>();
+        if(root.containsKey("guide-npcs")){if(!(root.get("guide-npcs") instanceof List<?> list))throw new IllegalArgumentException("Invalid story guides");
+            var known=new HashSet<String>();quests.npcs().forEach(npc->known.add(npc.npcId()));
+            for(Object value:list)if(!(value instanceof String guide)||!known.contains(guide)||!guides.add(guide))throw new IllegalArgumentException("Invalid story guide link");}
+        return new StoryContent(first,stages,rules,guides);
     }
     static void walk(String id,Map<String,Stage> all,Set<String> path,Set<String> visited){if(path.contains(id))throw new IllegalArgumentException("Cyclic story");if(visited.contains(id))return;var s=all.get(id);if(s==null)throw new IllegalArgumentException("Missing next stage");path.add(id);if(s.next()!=null)walk(s.next(),all,path,visited);for(var c:s.choices())walk(c.next(),all,path,visited);path.remove(id);visited.add(id);}
     static Set<String> condition(Map<?,?> m,String key,QuestCatalog quests){if(!m.containsKey(key))return null;if(!(m.get(key) instanceof List<?> list)||list.isEmpty())throw new IllegalArgumentException("Unregistered conditions must be omitted");var ids=new HashSet<String>();for(Object v:list){if(!(v instanceof String s)||!quests.questIds().contains(s)||!ids.add(s))throw new IllegalArgumentException("Invalid personal condition");}return ids;}

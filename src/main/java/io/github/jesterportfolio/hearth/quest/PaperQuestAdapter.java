@@ -36,7 +36,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final Map<UUID,Map<String,UUID>> npcs=new HashMap<>();
     private final PaperQuestUI ui;
     private io.github.jesterportfolio.hearth.story.PaperStoryAdapter story;
-    public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;}
+    public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;ui.storyGuide(p->adapter.guide(p,null));}
     private boolean closed;
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
@@ -109,6 +109,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             if(error!=null){unavailable(p);return;}
             try {quests.requireListDisplay(session.context(),rows);var messages=selectionMessages(catalog,dialogues,tickets.stream().filter(t->journal.questAllowed(session.context(),t.quest())).toList(),rows);
                 if(messages.isEmpty())p.sendMessage(Component.text("현재 대화할 퀘스트가 없습니다."));else messages.forEach(p::sendMessage);
+                if(story!=null)story.guide(p,npc);
             }catch(RuntimeException failure){unavailable(p);}
         },owner);
     }
