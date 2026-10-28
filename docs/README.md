@@ -18,6 +18,7 @@
 | [s4-9-verification.md](s4-9-verification.md) | 수명주기·예약·IDLE·세대 단위 조건 통과와 실제 시험 경계 |
 | [s4-10-verification.md](s4-10-verification.md) | 저장 순서·실패 보존 단위 및 실제 기존 월드 재진입/대표 거부 검증 |
 | [s4-11-verification.md](s4-11-verification.md) | watchdog 실패 이력·수정본 두 JVM 재검증 통과·자원/정리와 미실행 경계 |
+| [s4-world-effect-verification.md](s4-world-effect-verification.md) | Issue #1 격리 단일 블록 수렴·충돌·두 JVM 검증. 후속 대상 판정 수정은 PROJECT_STATUS 참조 |
 | [s4-shared-story-batch-verification.md](s4-shared-story-batch-verification.md) | V006·공유 단계/조건/채팅 투표·분기·탐험/지역 접근·두 JVM 검증 |
 | [s4-exploration-batch-verification.md](s4-exploration-batch-verification.md) | V005·개인 발견/공개 지도·일지·공동체 읽기 경계·설정·두 JVM 검증 |
 | [s4-quest-batch-verification.md](s4-quest-batch-verification.md) | 다단계/V004·추적·개발 HUD·스마트폰·알림/설정·두 JVM 검증 |

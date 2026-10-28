@@ -28,7 +28,7 @@ minecraft/
   economy/             경제 월드 설계 및 향후 설정
 services/              Hearth 보조 서비스 설계 및 향후 소스
 infrastructure/        Hearth 배포·모니터링 설계 및 향후 설정
-scripts/               향후 개발·검증·운영 보조 스크립트
+scripts/               개발·검증 보조 스크립트
 ```
 
 문서의 출발점은 [문서 안내](docs/README.md), 시스템 구성안은 [아키텍처](docs/architecture.md)입니다. 작업 규칙은 [AGENTS.md](AGENTS.md)를 따릅니다.
@@ -37,17 +37,11 @@ Git 저장소의 문서를 ChatGPT와 Codex가 공유하는 공식 프로젝트 
 
 ## 현재 단계
 
-[S4-3](docs/s4-3-verification.md)는 인증된 플레이어의 수동 건축 시험 경로를 준비했습니다. 클라이언트 미확보로 실제 접속 행동과 수동 경로 런타임은 미실행이며 S4는 진행 중입니다.
+**S3 설계 완료, S4 핵심 시스템 구현·통합 진행 중**입니다. 격리 개발 모드에서 월드·보호·PostgreSQL 인벤토리/세션·NPC/개인 퀘스트·공유 스토리·탐험·스마트폰 기반을 구현했습니다. 현재 사실과 기능별 자동 검증 근거는 [프로젝트 현황](docs/PROJECT_STATUS.md), 다음 기능 배치와 완료 기준은 [로드맵](docs/ROADMAP.md)을 따릅니다.
 
-[S4-4](docs/s4-4-verification.md)는 최소 PostgreSQL 공유/개인 스키마·비동기 저장·revision 기반 덮어쓰기 방지와 실DB 진행 격리·실패·재연결 시험을 통과했습니다. 해당 S4-4 단계에서는 Paper DB 활성화·전체 인벤토리/30초 자동 저장·운영 배포를 수행하지 않았습니다.
+[실제 인증 한 명의 수동 시험](docs/player-session-manual-test.md)에서는 A 보호/건축·인벤토리·재접속·두 JVM 복원의 일부를 확인했습니다. NPC 대화·퀘스트·공유 투표·GUI 등 나머지 실제 클라이언트 행동은 미검증이며 사용자 별도 요청 전 보류합니다. 내부 자동 검증을 실제 플레이 성공으로 취급하지 않습니다.
 
-[S4-5](docs/s4-5-verification.md)는 격리 Paper–PostgreSQL 연결·libraries 로딩·두 Paper JVM 간 상태/revision 복원과 대표 오류/대기열/종료 처리를 검증했습니다. 해당 S4-5 범위는 실제 플레이어·전체 인벤토리/자동 저장·장기 안정성·운영 배포를 포함하지 않으며 S4는 진행 중입니다.
-
-[S4-6~8](docs/s4-8-verification.md)은 V002 인벤토리·실제 30초 dirty 저장·source 저장 후 내부 전환·두 JVM 복원과 대표 오류를 검증했습니다. 실제 접속 플레이어와 일반 아이템 이벤트·추가 인벤토리 영역·운영 배포는 미검증이며 전체 S4는 진행 중입니다.
-
-후속 [S4-2 검증](docs/s4-2-verification.md)에서 새 JVM의 A/B 영속성·구역 API·자연 피스톤 보호를 확인했습니다. 접속 플레이어 설치/파괴는 미실행이며 전체 S4는 진행 중입니다.
-
-기술 스택과 월드 운영 정책을 확정했고 Temurin JDK 25·Gradle 9.1.0·고정 Paper API로 최소 플러그인 컴파일·JAR 생성을 확인했습니다. 주요 API 참조 컴파일·위험·후속 기준 정리로 S2를 완료했고 C1 승인·12영역 감사에 따라 [S3 상세 설계](docs/story-world-detailed-design.md)를 설계 기준선으로 완료했습니다. S4 사전 [플러그인 검토](docs/plugin-suitability-review.md)를 기록했으며 S4-1 최소 플러그인·파일 시험을 구현했습니다. [S4-1 기록](docs/s4-1-verification.md)의 EULA 동의 후 Paper/Hearth/WG/WE 로딩, 합성 A/B 월드·블록 보존·WG 구역 API smoke는 통과했습니다. 실제 플레이어 이벤트·전체 기능/부하 시험은 남습니다. 전체 게임 구현·운영 검증은 미완료이며 [검증 기록](docs/stack-build-verification.md)에 범위를 구분했습니다. 초기 설계·검토와 B안 ADR 및 S3 필수 명세는 준비됐으며 명시적 보류 정책·구현·실행 검증은 남습니다. 저장소에는 최소 Java 플러그인·Gradle·파일 시험과 제한된 시험 실행 도구가 있으며 실제 월드/서버 JAR·AI 소스·운영 배포 설정은 없습니다. Git 보안 검사 Hook과 활성화 스크립트는 존재합니다. 호스트 전체 설치·가동 상태 조사나 운영 변경은 하지 않았으며, 이번 서버 실행은 시간·자원을 제한한 Hearth 전용 격리 시험뿐입니다. 확인 근거와 날짜는 프로젝트 현황에서 관리합니다.
+S5 필수 로컬 AI, S6 플레이 범위·성능, 경제 시스템과 운영 배포는 미완료입니다. 개발 모드의 시험용 조작 제한과 미구현 기능이 있어 아직 일반 RPG 서버로 사용할 수 없습니다. 다음 우선순위는 기존 기능을 연결하는 게임플레이 통합이며, 격리 블록 효과 시험의 반복 확장을 우선 목표로 삼지 않습니다.
 
 확정 스택은 Paper 26.2, Java 25, Gradle, PostgreSQL, 단일 플러그인 JAR과 내부 기능별 모듈화, Docker Compose, 기존 Zabbix 활용입니다. 순정 Minecraft Java Edition을 대상으로 별도 모드 설치를 최소화하며 필요시 서버 리소스팩을 제공합니다. AI 구체 기술과 세부 배포 구성은 미정입니다.
 
