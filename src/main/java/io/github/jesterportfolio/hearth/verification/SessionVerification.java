@@ -219,6 +219,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "interaction-play" -> interactionPlay();
         case "gameplay-guide" -> gameplayGuide();
         case "story-prepare" -> storyPrepare();
         case "story-vote" -> storyVote();
@@ -510,6 +511,24 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> interactionPlay(){
+        var beforeB=new InventoryStore.Stored[1];
+        return openAll().thenCompose(v->mainResult(store.readInventory(ctx(b,1)))).thenCompose(v->{beforeB[0]=v;
+            check(PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(true,true,true,true,9,"NUMBER_KEY","HOTBAR_SWAP",0)),"interaction_hotbar_policy_allowed");
+            check(!PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(false,true,true,true,9,"NUMBER_KEY","HOTBAR_SWAP",0)),"interaction_unprepared_denied");
+            check(!PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(true,false,true,true,9,"NUMBER_KEY","HOTBAR_SWAP",0)),"interaction_GUI_and_containers_denied");
+            check(PlayerInteractionRules.facility("OAK_DOOR")&&!PlayerInteractionRules.facility("CHEST"),"interaction_facility_policy");
+            var initial=one.inventory.getItem(0);one.inventory.setItem(0,one.inventory.getItem(9));one.inventory.setItem(9,initial);
+            var offhand=one.inventory.getItem(40);one.inventory.setItem(40,one.inventory.getItem(9));one.inventory.setItem(9,offhand);
+            var expected=one.capture();coordinator.refresh(s1);check(s1.save().dirty(),"interaction_existing_dirty_path");
+            return s1.save().flush().thenCompose(x->mainResult(store.readInventory(a1))).thenCompose(saved->{
+                check(codec.equivalent(saved.payload(),expected)&&saved.revision()==1,"interaction_hotbar_offhand_slots_and_metadata_saved");
+                return verify(a2,5,0).thenCompose(x->mainResult(store.readInventory(ctx(b,1)))).thenCompose(afterB->{check(afterB.equals(beforeB[0]),"interaction_other_run_inventory_unchanged");return coordinator.disconnect(s1);}).thenCompose(x->{
+                    one=new Controlled();s1=connect(a1,one);return s1.ready();
+                }).thenRun(()->check(codec.equivalent(one.capture(),expected)&&s1.save().revision()==1,"interaction_reconnect_restores_slot_changes"));
+            });
+        });
+    }
     private CompletionStage<Void> gameplayGuide(){
         var before=sharedStory.cached(a);var lines=StoryGuide.lines(sharedStory.content(),before,sharedStory.phase(a));
         check(sharedStory.content().guideNpcs().contains("survey_guide"),"guide_content_npc_link");

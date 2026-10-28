@@ -1,0 +1,50 @@
+{
+  "outcome": "PASS",
+  "workspace": "/tmp/hearth-s4-11.ckmt9psu",
+  "duration_seconds": 32.501,
+  "all_owned_processes_and_ports_closed": true,
+  "cleanup_errors": [],
+  "plugin_sha256": "91fa589a76f76cb4bd2032d380bb4ff7441d739076d517ba59521d568fe1f0dd",
+  "installed_plugin_sha256": "91fa589a76f76cb4bd2032d380bb4ff7441d739076d517ba59521d568fe1f0dd",
+  "unit_tests_passed": 25,
+  "paper_jvms": 1,
+  "postgres_instances": 1,
+  "processes": {
+    "database": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 223568,
+      "observed_cpu_seconds": 2.35,
+      "min_sampled_host_available_kib": 11686960
+    },
+    "paper-prepare": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 1181760,
+      "observed_cpu_seconds": 56.44,
+      "min_sampled_host_available_kib": 11686960
+    }
+  },
+  "checks": [
+    "interaction_hotbar_policy_allowed",
+    "interaction_unprepared_denied",
+    "interaction_GUI_and_containers_denied",
+    "interaction_facility_policy",
+    "interaction_existing_dirty_path",
+    "interaction_hotbar_offhand_slots_and_metadata_saved",
+    "interaction_other_run_inventory_unchanged",
+    "interaction_reconnect_restores_slot_changes"
+  ],
+  "prior_attempt": {
+    "outcome": "FAIL",
+    "workspace": "/tmp/hearth-s4-11.akeu9ilj",
+    "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+    "cleanup_errors": [
+      "AssertionError: DB 풀 종료 확인 누락"
+    ]
+  },
+  "not_executed": [
+    "실제 인증 플레이어 키 입력·Shift 장착·드롭·시설 조작",
+    "새 JVM 재시험: 저장 계약 불변",
+    "시설 WorldGuard 실제 사용자 이벤트",
+    "운영 배포"
+  ]
+}

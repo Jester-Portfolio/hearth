@@ -8,6 +8,8 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth S4 isolated multiworld verification foundation
 commands:
+  hearthplay:
+    description: 격리 플레이 조작 안내
   hearthquest:
     description: 격리 NPC 대화의 수락·보고 선택
   hearthphone:

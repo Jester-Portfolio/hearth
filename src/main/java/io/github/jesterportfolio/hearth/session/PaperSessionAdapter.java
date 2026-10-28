@@ -33,6 +33,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private final Map<UUID,Player> moving=new HashMap<>();
     private final Set<Entry> samples=Collections.newSetFromMap(new IdentityHashMap<>());
     private final Map<UUID,String> knownNames=new HashMap<>();
+    private final Map<UUID,Long> interactionHints=new HashMap<>();
     private Consumer<ServerProgressAccess.Context> onlineChanged=c->{};
     private BiPredicate<ServerProgressAccess.Context,Location> entryAccess=(c,l)->true;
     public void onlineChanged(Consumer<ServerProgressAccess.Context> listener){main();onlineChanged=listener;}
@@ -94,11 +95,12 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         session.ready().whenComplete((v,error) -> owner.execute(() -> {
             if (entries.get(player.getUniqueId())!=entry || !player.isOnline()) return;
             if (error!=null) player.kick(Component.text("격리 세션 준비 실패: "+session.error()));
-            else player.sendMessage(Component.text("격리 스토리 진행 복원 완료"));
+            else {player.sendMessage(Component.text("격리 스토리 진행 복원 완료"));player.sendMessage(Component.text("조작 안내: /hearthplay help"));}
         }));
     }
     private static void requireNoCursor(Player p){if(!p.getItemOnCursor().isEmpty())throw new IllegalStateException("Unsupported cursor state");}
     @EventHandler public void quit(PlayerQuitEvent e){
+        interactionHints.remove(e.getPlayer().getUniqueId());
         Entry entry=entries.get(e.getPlayer().getUniqueId());
         if(entry==null || entry.player()!=e.getPlayer())return;
         entries.remove(e.getPlayer().getUniqueId(),entry);onlineChanged.accept(entry.link().context());
@@ -122,10 +124,18 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private boolean canEnter(Player p,Location target){var e=entry(p);return e!=null&&target.getWorld()!=null&&target.getWorld().getUID().equals(e.link().world().mapping().physicalId())&&entryAccess.test(e.link().context(),target);}
     @EventHandler(priority=EventPriority.HIGHEST) public void teleport(PlayerTeleportEvent e){if(moving.get(e.getPlayer().getUniqueId())!=e.getPlayer()||e.getTo()==null||!canEnter(e.getPlayer(),e.getTo()))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){if(e.getPlayer() instanceof Player p && e.getInventory().getType()!=InventoryType.CRAFTING && e.getInventory().getType()!=InventoryType.PLAYER && (!allowed(p) || !developerInventory.test(p,e.getInventory())))e.setCancelled(true);}
-    @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){if(e.getWhoClicked() instanceof Player)e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){
+        if(!(e.getWhoClicked() instanceof Player p))return;
+        boolean ownView=e.getView().getType()==InventoryType.CRAFTING && p.getGameMode()!=GameMode.CREATIVE;
+        var request=new PlayerInteractionRules.InventoryRequest(allowed(p),ownView,e.getClickedInventory()==p.getInventory(),p.getItemOnCursor().isEmpty(),e.getSlot(),e.getClick().name(),e.getAction().name(),e.getHotbarButton());
+        if(!PlayerInteractionRules.inventory(request)){
+            e.setCancelled(true);if(allowed(p)&&ownView)hint(p);
+        }else if(!e.isCancelled())sample(p);
+    }
+    private void hint(Player p){long now=System.nanoTime();Long previous=interactionHints.get(p.getUniqueId());if(previous!=null&&now-previous<5_000_000_000L)return;interactionHints.put(p.getUniqueId(),now);p.sendMessage(Component.text("격리 모드에서는 커서 없는 슬롯 조작만 지원합니다. /hearthplay help"));}
     @EventHandler(priority=EventPriority.HIGHEST) public void drag(InventoryDragEvent e){if(e.getWhoClicked() instanceof Player)e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void interact(PlayerInteractEvent e){
-        if(!allowed(e.getPlayer()) || e.getClickedBlock()!=null && e.getClickedBlock().getType().isInteractable())e.setCancelled(true);
+        if(!allowed(e.getPlayer()) || e.getClickedBlock()!=null && e.getClickedBlock().getType().isInteractable() && !PlayerInteractionRules.facility(e.getClickedBlock().getType().name()))e.setCancelled(true);
         sample(e.getPlayer());
     }
     @EventHandler(priority=EventPriority.HIGHEST) public void place(BlockPlaceEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
@@ -135,8 +145,8 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void consume(PlayerItemConsumeEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void swap(PlayerSwapHandItemsEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void damageItem(PlayerItemDamageEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
-    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied && allowed(e.getPlayer()))questCommand.test(e.getPlayer(),e.getMessage());}
+    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied && allowed(e.getPlayer())){if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else questCommand.test(e.getPlayer(),e.getMessage());}}
     @EventHandler(priority=EventPriority.HIGHEST) public void damage(EntityDamageEvent e){if(e.getEntity() instanceof Player)e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void attack(EntityDamageByEntityEvent e){if(e.getDamager() instanceof Player)e.setCancelled(true);}
-    @Override public void close(){main();closed=true;HandlerList.unregisterAll(this);}
+    @Override public void close(){main();closed=true;interactionHints.clear();HandlerList.unregisterAll(this);}
 }
