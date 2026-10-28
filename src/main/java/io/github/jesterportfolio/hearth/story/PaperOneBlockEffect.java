@@ -22,7 +22,7 @@ public final class PaperOneBlockEffect implements SharedStory.Effects {
     public void prepared(UUID run){main();if(run.equals(definition.run()))prepared=world.generation();}
     public void unloaded(UUID run){main();if(run.equals(definition.run()))prepared=-1;}
     @Override public Set<String> regions(){return definition.regions();}
-    @Override public boolean required(UUID run,StoryStore.Snapshot saved){return definition.required(saved);}
+    @Override public boolean required(UUID run,StoryStore.Snapshot saved){return definition.required(run,saved);}
     @Override public String notAppliedStatus(){return "PENDING";}
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("Effect requires main thread");}
     private boolean available(){return prepared==world.generation()&&Set.of(WorldLifecycle.State.LOADING,WorldLifecycle.State.READY,WorldLifecycle.State.ACTIVE,WorldLifecycle.State.IDLE).contains(world.state());}

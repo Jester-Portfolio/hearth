@@ -9,12 +9,12 @@ public final class OneBlockEffect {
     private OneBlockEffect(){}
     public record Definition(int version,String template,UUID run,String world,String stage,int x,int y,int z,String expected,String target,Set<String> regions){
         public Definition{regions=Set.copyOf(regions);if(version!=1||!"synthetic-restart-v1".equals(template)||run==null||!world.matches("hearth_verify:restart_[ab]")||!stage.matches("[a-z][a-z0-9_]{0,63}")||x<0||x>15||z<0||z>15||y<63||y>66||expected.equals(target)||!Set.of("STONE","GOLD_BLOCK","DIAMOND_BLOCK","EMERALD_BLOCK").containsAll(List.of(expected,target))||regions.isEmpty())throw new IllegalArgumentException("Invalid isolated one-block effect definition");}
-        public boolean required(StoryStore.Snapshot saved){return saved.story().revision()>=0&&(stage.equals(saved.story().stage())||saved.completed().contains(stage));}
+        public boolean required(UUID candidate,StoryStore.Snapshot saved){return run.equals(candidate)&&saved.story().revision()>=0&&(stage.equals(saved.story().stage())||saved.completed().contains(stage));}
     }
     public record Target(UUID run,UUID physical,String world,String directory,long generation,String template,int version){}
     public interface Block{String read();void write(String type);}
     public static boolean reconcile(Definition d,UUID run,StoryStore.Snapshot saved,Target expected,Target actual,Block block,BooleanSupplier confirmed){
-        if(!confirmed.getAsBoolean()||!d.required(saved))throw new IllegalStateException("EFFECT_UNCONFIRMED");
+        if(!confirmed.getAsBoolean()||!d.required(run,saved))throw new IllegalStateException("EFFECT_UNCONFIRMED");
         if(!run.equals(d.run())||!run.equals(expected.run())||!expected.equals(actual)||!d.world().equals(actual.world())||!d.template().equals(actual.template())||d.version()!=actual.version())throw new IllegalStateException("EFFECT_STALE");
         String current=block.read();if(!confirmed.getAsBoolean())throw new IllegalStateException("EFFECT_STALE");
         if(current.equals(d.target()))return true;
