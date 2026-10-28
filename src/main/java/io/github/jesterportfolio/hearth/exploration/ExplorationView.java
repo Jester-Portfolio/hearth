@@ -5,7 +5,9 @@ import java.util.*;
 
 /** GUI/S5가 공유할 공개 DTO. 서버 발견 bounds/미공개 좌표 참조를 포함하지 않습니다. */
 public record ExplorationView(boolean registered,List<Region> regions,List<Place> places,List<ExplorationStore.Fact> facts,List<ExplorationStore.Event> events,
-        List<CommunityBoundary.Member> members,ExplorationStore.Story story,CommunityBoundary.Status conditions,String nextGoal,Set<String> blockedQuests,List<String> branches){
+        List<CommunityBoundary.Member> members,ExplorationStore.Story story,CommunityBoundary.Status conditions,String nextGoal,Set<String> blockedQuests,List<String> branches,String effectStatus){
+    public ExplorationView(boolean registered,List<Region> regions,List<Place> places,List<ExplorationStore.Fact> facts,List<ExplorationStore.Event> events,List<CommunityBoundary.Member> members,ExplorationStore.Story story,CommunityBoundary.Status conditions,String nextGoal,Set<String> blockedQuests,List<String> branches){this(registered,regions,places,facts,events,members,story,conditions,nextGoal,blockedQuests,branches,"NOT_IMPLEMENTED");}
+    public ExplorationView withEffectStatus(String status){return new ExplorationView(registered,regions,places,facts,events,members,story,conditions,nextGoal,blockedQuests,branches,status);}
     public record Region(String id,String name,String access){}
     public record Place(String key,String name,String region,String category,String location,String status,boolean visited,boolean discovered,boolean hubUnlocked){}
     public ExplorationView{regions=List.copyOf(regions);places=List.copyOf(places);facts=List.copyOf(facts);events=List.copyOf(events);members=List.copyOf(members);blockedQuests=Set.copyOf(blockedQuests);branches=List.copyOf(branches);}

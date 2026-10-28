@@ -1,6 +1,6 @@
 # Hearth 프로젝트 현황
 
-최종 갱신: 2026-10-27. 이 파일은 **현재 구현·미완료만** 기록한다. [기존 상세 현황 원본](PROJECT_STATUS-archive-2026-10-27.md), [주요 이력](CHANGELOG.md), 관련 검증 기록을 보존한다.
+최종 갱신: 2026-10-28. 이 파일은 **현재 구현·미완료만** 기록한다. [기존 상세 현황 원본](PROJECT_STATUS-archive-2026-10-27.md), [주요 이력](CHANGELOG.md), 관련 검증 기록을 보존한다.
 
 ## 현재 상태
 - **S0~S2 완료, S3 설계 완료, S4 구현·검증 진행 중.** S5 로컬 AI, 경제 월드 E1~E3, 운영 배포는 미완료.
@@ -17,6 +17,8 @@
 | 공유 스토리 | **커밋 732495b (2026-10-27)**: V006 단계·온라인 전원 조건·과반수 채팅 투표·불변 분기/불명 HOLD·지역 접근·공유 일지·두 JVM/PG 통합 PASS | 실제 채팅·이동·GUI, 모든 NPC 정보 은폐, 실제 세계 효과·전체 게임 |
 
 최신 근거: [공유 단계](s4-shared-story-batch-verification.md) · [탐험](s4-exploration-batch-verification.md) · [개인 퀘스트](personal-quest-verification.md) · [세션](player-session-verification.md). 내부 콘솔·GUI 객체 시험을 실제 클라이언트 성공으로 취급하지 않는다.
+
+단일 블록 세계 효과: Issue #1의 격리 구현·31개 관련 단위/회귀·두 JVM 수렴 시험 PASS. [검증](s4-world-effect-verification.md). 일반 게임 세계 효과·실제 클라이언트·운영은 미검증.
 
 ## 다음 작업
 1. 별도 승인된 범위에서 공유 스토리의 조건/콘텐츠 확장 또는 확정 결과에 따른 세계 효과의 안전한 적용을 설계·구현한다. 미정 게임 정책은 해당 기능 착수 전에 결정한다.

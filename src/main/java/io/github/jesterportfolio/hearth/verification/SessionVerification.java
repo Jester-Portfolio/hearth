@@ -41,7 +41,7 @@ public final class SessionVerification implements AutoCloseable {
     private QuestJournal journal;
     private ExplorationContent explorationContent;
     private final Map<UUID,CommunityBoundary.Condition> explorationConditions=new HashMap<>();
-    private SharedStory sharedStory;private PaperStoryAdapter paperStory;
+    private SharedStory sharedStory;private PaperStoryAdapter paperStory;private PaperOneBlockEffect blockEffect;private OneBlockEffect.Definition effectDefinition;
     private Map<UUID,Object> storyTestRoster;private final java.util.concurrent.atomic.AtomicLong storyClock=new java.util.concurrent.atomic.AtomicLong();
     private final Map<UUID,ServerProgressAccess.Context> storyActors=new HashMap<>();
     private SharedStory.VoteView storyVote;private CompletionStage<StoryStore.Snapshot> storySaving;private CompletionStage<Void> storyBarrier;
@@ -122,6 +122,15 @@ public final class SessionVerification implements AutoCloseable {
             questAdapter=new PaperQuestAdapter(plugin,adapter,quests,catalog,journal,owner,
                 Set.of(worlds.get(a).mapping().physicalId(),worlds.get(b).mapping().physicalId()));
             if(sharedStory!=null){paperStory=new PaperStoryAdapter(plugin,adapter,sharedStory,owner);questAdapter.story(paperStory);}
+            if(plugin.getConfig().getBoolean("world-effect-verification-enabled")){
+                if(sharedStory==null||!Boolean.getBoolean("hearth.verification.worldEffect"))throw new IllegalStateException("World effect gate missing");
+                var effectFile=new java.io.File(plugin.getDataFolder(),"world-effect-demo.yml");if(!effectFile.exists())plugin.saveResource("world-effect-demo.yml",false);
+                effectDefinition=OneBlockEffect.parse(YamlConfiguration.loadConfiguration(effectFile).getValues(false));
+                for(String region:effectDefinition.regions())if(sharedStory.content().regions().stream().noneMatch(rule->rule.region().equals(region)&&rule.policy()!=StoryContent.Policy.OPEN&&Objects.equals(rule.reached(),effectDefinition.stage())))throw new IllegalArgumentException("Effect dependency mismatch");
+                var metadata=new java.util.Properties();try(var in=java.nio.file.Files.newInputStream(plugin.getDataFolder().toPath().resolve("restart-mapping.properties"))){metadata.load(in);}catch(java.io.IOException e){throw new IllegalStateException("Effect template evidence missing",e);}
+                blockEffect=new PaperOneBlockEffect(plugin,effectDefinition,Objects.requireNonNull(worlds.get(effectDefinition.run())),metadata.getProperty("templateVersion"),sharedStory::effectPermit);
+                sharedStory.effects(blockEffect);
+            }
         }
     }
     private List<CommunityBoundary.Ref> storyMembers(ServerProgressAccess.Context ctx){var refs=adapter.community(ctx);if(storyTestRoster==null)return refs;return refs.stream().map(ref->new CommunityBoundary.Ref(ref.run(),ref.player(),ref.name(),ctx.storyRunId().equals(a)?storyTestRoster.containsKey(ref.player()):ref.player().equals(b3.playerId()))).toList();}
@@ -202,6 +211,14 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "effect-prepare" -> effectPrepare();
+        case "effect-db-failure" -> effectDbFailure();
+        case "effect-db-recover" -> sharedStory.refresh(a1).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.openVote(a1,s1,()->true)).thenAccept(vote->storyVote=vote);
+        case "effect-pending" -> effectPending();
+        case "effect-applied" -> effectApplied();
+        case "effect-cycle" -> effectCycle();
+        case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
+        case "effect-conflict" -> effectConflict();
         case "story-prepare" -> storyPrepare();
         case "story-vote" -> storyVote();
         case "story-persist-start" -> storyPersistStart();
@@ -471,6 +488,27 @@ public final class SessionVerification implements AutoCloseable {
             listToken=new Object();check(true,"list_controlled_session_token_replaced");
         });
     }
+    private World effectWorld(UUID run){return Objects.requireNonNull(Bukkit.getWorld(NamespacedKey.fromString(worlds.get(run).mapping().worldKey())));}
+    private Material effectBlock(UUID run){return effectWorld(run).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).getType();}
+    private CompletionStage<Void> effectPrepare(){return openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);check(effectBlock(a)==Material.GOLD_BLOCK&&effectBlock(b)==Material.DIAMOND_BLOCK,"effect_original_A_B_states_no_unconfirmed_change");})
+        .thenCompose(v->seedList(a1,"survey_marker",QuestStore.Phase.COMPLETED)).thenCompose(v->seedList(a2,"survey_marker",QuestStore.Phase.COMPLETED))
+        .thenCompose(v->seedList(a1,"path_marker",QuestStore.Phase.COMPLETED)).thenCompose(v->seedList(a2,"path_marker",QuestStore.Phase.COMPLETED));}
+    private CompletionStage<Void> effectDbFailure(){return expect(sharedStory.advance(a1,s1,()->true),"23514").thenRun(()->check(sharedStory.phase(a)==SharedStory.Phase.HOLD&&effectBlock(a)==Material.GOLD_BLOCK&&blockEffect.writes()==0&&effectBlock(b)==Material.DIAMOND_BLOCK,"effect_actual_DB_failure_never_mutates_A_or_B"));}
+    private CompletionStage<Void> effectPending(){return sharedStory.cast(a1,s1,()->true,storyVote.id(),"route_one").thenCompose(v->{storySaving=sharedStory.cast(a2,s2,()->true,storyVote.id(),"route_one");return later(()->check(!storySaving.toCompletableFuture().isDone()&&effectBlock(a)==Material.GOLD_BLOCK&&blockEffect.writes()==0,"effect_DB_pending_keeps_original_physical_block"));});}
+    private CompletionStage<Void> effectApplied(){return mainResult(storySaving).thenCompose(v->sharedStory.barrier(a)).thenAccept(v->check(sharedStory.effectStatus(a).equals("APPLIED")&&effectBlock(a)==Material.EMERALD_BLOCK&&blockEffect.writes()==1&&effectBlock(b)==Material.DIAMOND_BLOCK,"effect_confirmed_A_one_block_B_unchanged"))
+        .thenCompose(v->{long before=blockEffect.inspections();var first=sharedStory.reconcile(a1);var duplicate=sharedStory.reconcile(a1);check(first==duplicate,"effect_duplicate_inflight_calls_coalesced");return first.thenAccept(ok->check(ok&&blockEffect.inspections()==before+1&&blockEffect.writes()==1,"effect_already_target_reverified_without_duplicate_write"));})
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->check(view.exploration().effectStatus().equals("APPLIED")&&QuestScreens.screen(catalog,view,"story",null,0).stream().anyMatch(row->row.label().equals("세계 효과: 블록 확인 완료")),"effect_GUI_separates_DB_stage_and_checked_block"));}
+    private CompletionStage<Void> effectCycle(){UUID physical=worlds.get(a).mapping().physicalId();storyTestRoster.clear();sharedStory.rosterChanged(a1);return mainResult(coordinator.disconnect(s1)).thenCompose(v->mainResult(coordinator.disconnect(s2))).thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
+        .thenRun(()->check(Bukkit.getWorld(physical)==null&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_unload_clears_memory_verification"))
+        .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return mainResult(s1.ready()).thenCompose(x->mainResult(s2.ready()));})
+        .thenRun(()->{storyTestRoster.put(a1.playerId(),s1);storyTestRoster.put(a2.playerId(),s2);sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored());}
+    private CompletionStage<Void> effectRestored(){return mainResult(store.readStory(a1)).thenAccept(saved->{check(saved.story().revision()==2&&saved.story().stage().equals("trial_open")&&saved.branches().get("trial_vote").choice().equals("route_one"),"effect_DB_stage_branch_preserved");check(effectBlock(a)==Material.EMERALD_BLOCK&&effectBlock(b)==Material.DIAMOND_BLOCK&&sharedStory.effectStatus(a).equals("APPLIED"),"effect_lifecycle_prepare_rechecked_actual_target");check(paperStory.access().entry(a,21,64,21)&&paperStory.access().content(a,21,64,3)&&paperStory.access().entry(a,2,64,2),"effect_dependent_boundaries_open_only_after_verification");}).thenCompose(v->verify(a1,32,0));}
+    private CompletionStage<Void> effectConflict(){long writes=blockEffect.writes();effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.DIAMOND_BLOCK,false);
+        return sharedStory.reconcile(a1).thenAccept(ok->{check(!ok&&sharedStory.effectStatus(a).equals("EFFECT_CONFLICT")&&effectBlock(a)==Material.DIAMOND_BLOCK&&blockEffect.writes()==writes,"effect_conflict_preserved_no_overwrite");check(!paperStory.access().entry(a,21,64,21)&&!paperStory.access().content(a,21,64,3)&&paperStory.access().entry(a,2,64,2)&&effectBlock(b)==Material.DIAMOND_BLOCK,"effect_only_dependent_access_closed_public_and_B_unchanged");})
+        .thenCompose(v->mainResult(store.readStory(a2))).thenAccept(saved->check(saved.story().revision()==2&&saved.branches().size()==1,"effect_conflict_never_rolls_back_confirmed_DB"))
+        .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
+        .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
+        .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
     private CompletionStage<Void> storyPrepare(){var legacy=ctx(new UUID(42,99),99);return openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);sharedStory.rosterChanged(b3);})
         .thenCompose(v->mainResult(store.readExploration(legacy))).thenAccept(data->check(data.story().revision()==3 && data.story().stage().equals("public_test_stage") && data.places().get("public_village").hub(),"story_V005_rows_preserved_after_V006"))
         .thenCompose(v->seedList(a1,"survey_marker",QuestStore.Phase.COMPLETED))
@@ -1083,7 +1121,8 @@ public final class SessionVerification implements AutoCloseable {
     }
     public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)).thenCompose(v2->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run)),owner);}
     public boolean canUnload(UUID run){return coordinator.canUnload(run) && (quests==null || quests.settled(run) && journal.settled(run) && (sharedStory==null||sharedStory.settled(run)));}
-    public void releaseQuests(UUID run){if(quests!=null)quests.release(run);}
+    public CompletionStage<Void> restoreStoryWorld(UUID run){if(blockEffect==null)return CompletableFuture.completedFuture(null);blockEffect.prepared(run);var context=ctx(run,1);return sharedStory.load(context).thenComposeAsync(s->sharedStory.reconcile(context),owner).thenAccept(ok->{});}
+    public void releaseQuests(UUID run){if(quests!=null)quests.release(run);if(blockEffect!=null){blockEffect.unloaded(run);sharedStory.worldUnloaded(run);}}
     public CompletionStage<Void> shutdown(){
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
         if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();

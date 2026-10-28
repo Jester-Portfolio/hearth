@@ -1,6 +1,8 @@
 # S4 후속 설계 제안 — 공유 스토리의 월드 효과
 
-상태: **설계 제안 / 미승인·미구현** (2026-10-27). 프로젝트 상태/ADR을 변경하지 않는다. 기준: `d1412a7`의 코드 및 [공유 진행 검증](s4-shared-story-batch-verification.md). 이 문서는 작업 인계 시에만 읽는다.
+후속: Issue #1 승인 범위의 단일 블록 효과를 구현하고 [격리 검증](s4-world-effect-verification.md)을 완료했다. 아래는 당시 제안 이력이다.
+
+당시 상태: **설계 제안 / 미승인·미구현** (2026-10-27). 프로젝트 상태/ADR을 변경하지 않는다. 기준: `d1412a7`의 코드 및 [공유 진행 검증](s4-shared-story-batch-verification.md). 이 문서는 작업 인계 시에만 읽는다.
 
 ## 1. 현재 근거·다음 목표
 - `SharedStory`는 온라인 조건/투표·V006 CAS/불명 결과를 확정하고 나서야 `Effects.apply(run, request, saved)`를 호출한다. 기본 응답은 `false`(NOT_IMPLEMENTED), 상태는 메모리에만 보관한다.

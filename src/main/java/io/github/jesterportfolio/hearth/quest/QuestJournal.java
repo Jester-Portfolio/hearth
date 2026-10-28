@@ -24,7 +24,7 @@ public final class QuestJournal {
         if(story==null)return ExplorationView.build(content,raw,members,community.status(ctx,raw.story(),members));
         var snapshot=story.cached(ctx.storyRunId());if(!story.healthy(ctx.storyRunId())||snapshot==null||snapshot.story().revision()!=raw.story().revision())throw new IllegalStateException("STORY_CACHE_UNCONFIRMED");
         var branches=snapshot.branches().values().stream().sorted(Comparator.comparing(StoryStore.Branch::stage)).map(b->b.label()).toList();
-        return ExplorationView.build(content,raw,members,community.status(ctx,raw.story(),members),p->storyAccess.region(ctx.storyRunId(),p.region())&&storyAccess.area(ctx.storyRunId(),p.bounds()),r->storyAccess.status(ctx.storyRunId(),r),blocked(ctx),branches);
+        return ExplorationView.build(content,raw,members,community.status(ctx,raw.story(),members),p->storyAccess.region(ctx.storyRunId(),p.region())&&storyAccess.area(ctx.storyRunId(),p.bounds()),r->storyAccess.status(ctx.storyRunId(),r),blocked(ctx),branches).withEffectStatus(story.effectStatus(ctx.storyRunId()));
     }
     private ExplorationStore explorationStore;private ExplorationContent content;private CommunityBoundary community;
     private record DiscoveryKey(UUID run,UUID player,String place,boolean discover){}

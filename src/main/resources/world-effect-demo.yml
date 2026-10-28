@@ -1,0 +1,13 @@
+# Issue #1 공개 합성 fixture 전용. 기존 월드/콘텐츠를 덮어쓰지 않습니다.
+format: 1
+effect-version: 1
+template-version: synthetic-restart-v1
+run-id: 00000000-0000-002a-0000-00000000000a
+world-key: hearth_verify:restart_a
+stage: trial_open
+x: 0
+y: 64
+z: 0
+expected: GOLD_BLOCK
+target: EMERALD_BLOCK
+regions: [survey_valley, story_content_area]

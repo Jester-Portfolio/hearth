@@ -13,14 +13,19 @@ public final class SharedStory {
     public enum Phase{READY,CHECKING,OPEN,INPUT_CLOSED,PERSISTING,HOLD,RESULT_UNKNOWN}
     public record ChoiceView(String id,String label){}
     public record VoteView(UUID id,String state,List<ChoiceView> choices,int targets,long remainingSeconds){}
-    public interface Effects{CompletionStage<Boolean> apply(UUID run,UUID request,StoryStore.Snapshot confirmed);}
+    public interface Effects{
+        CompletionStage<Boolean> apply(UUID run,UUID request,StoryStore.Snapshot confirmed);
+        default boolean required(UUID run,StoryStore.Snapshot saved){return true;}
+        default Set<String> regions(){return Set.of();}
+        default String notAppliedStatus(){return "NOT_IMPLEMENTED";}
+    }
     private static final class Vote{
         final UUID id=UUID.randomUUID();final String stage;final Map<UUID,Object> roster;final long deadline;final Map<UUID,String> votes=new HashMap<>();String state="OPEN";
         Vote(String stage,Map<UUID,Object> roster,long deadline){this.stage=stage;this.roster=Map.copyOf(roster);this.deadline=deadline;}
     }
     private static final class Run{
         StoryStore.Snapshot saved;Phase phase=Phase.READY;Map<UUID,Object> online=Map.of();final AtomicLong rosterVersion=new AtomicLong(),generation=new AtomicLong();
-        CompletableFuture<Void> pending;CompletionStage<Void> effectWork=CompletableFuture.completedFuture(null);Vote vote;StoryStore.Request unresolved;CommunityBoundary.Condition condition;String effect="NOT_IMPLEMENTED";long applied=-1;
+        CompletableFuture<Void> pending;CompletionStage<Void> effectWork=CompletableFuture.completedFuture(null);Vote vote;StoryStore.Request unresolved;CommunityBoundary.Condition condition;String effect="NOT_IMPLEMENTED";long applied=-1,effectEpoch,effectGeneration;StoryStore.Snapshot effectSnapshot;CompletableFuture<Boolean> effectResult;
     }
     private final StoryStore store;private final StoryContent content;private final Executor owner;private final Runnable check;
     private final Function<ServerProgressAccess.Context,Map<UUID,Object>> online;private final LongSupplier clock;private final long voteNanos;
@@ -32,13 +37,33 @@ public final class SharedStory {
     public StoryContent content(){return content;}
     public void changed(Consumer<ServerProgressAccess.Context> listener){changed=listener;}
     public void notice(BiConsumer<UUID,String> listener){notice=listener;}
-    public void effects(Effects port){effects=port;}
+    public void effects(Effects port){check.run();effects=Objects.requireNonNull(port);runs.values().forEach(this::resetEffect);}
+    private void resetEffect(Run r){r.effectEpoch++;r.applied=-1;r.effect="PENDING";r.effectSnapshot=null;}
+    public BooleanSupplier effectPermit(UUID id,StoryStore.Snapshot saved){var r=run(id);long epoch=r.effectEpoch,gen=r.generation.get();return ()->{check.run();return r.saved==saved&&r.effectEpoch==epoch&&r.generation.get()==gen&&healthy(id);};}
+    public void worldUnloaded(UUID id){resetEffect(run(id));}
+    public boolean effectAllows(UUID id,String region){var r=run(id);return !effects.regions().contains(region)||r.saved!=null&&!effects.required(id,r.saved)||healthy(id)&&r.effect.equals("APPLIED")&&r.applied==r.saved.story().revision();}
+    public CompletionStage<Boolean> reconcile(ServerProgressAccess.Context ctx){
+        var r=run(ctx.storyRunId());if(!healthy(ctx.storyRunId()))return CompletableFuture.completedFuture(false);
+        var saved=r.saved;long gen=r.generation.get();
+        if(r.effectResult!=null&&!r.effectResult.isDone()&&r.effectSnapshot==saved&&r.effectGeneration==gen)return r.effectResult;
+        var prior=r.effectWork;long epoch=++r.effectEpoch;r.effect="PENDING";r.applied=-1;r.effectSnapshot=saved;r.effectGeneration=gen;var result=new CompletableFuture<Boolean>();r.effectResult=result;
+        r.effectWork=prior.handle((v,e)->null).thenComposeAsync(v->{
+            if(r.effectEpoch!=epoch||r.saved!=saved||r.generation.get()!=gen||!healthy(ctx.storyRunId()))throw new IllegalStateException("EFFECT_STALE");
+            if(!effects.required(ctx.storyRunId(),saved)){r.effect="NOT_REQUIRED";return CompletableFuture.completedFuture(false);}
+            UUID request=saved.branches().values().stream().map(StoryStore.Branch::request).findFirst().orElse(new UUID(0,0));
+            return effects.apply(ctx.storyRunId(),request,saved);
+        },owner).handleAsync((ok,error)->{
+            boolean current=r.effectEpoch==epoch&&r.saved==saved&&r.generation.get()==gen&&healthy(ctx.storyRunId());boolean applied=current&&error==null&&Boolean.TRUE.equals(ok);
+            if(current){if(applied){r.applied=saved.story().revision();r.effect="APPLIED";}else if(error!=null){var e=cause(error);r.effect="EFFECT_CONFLICT".equals(e.getMessage())?"EFFECT_CONFLICT":"EFFECT_ERROR";}else if(!r.effect.equals("NOT_REQUIRED"))r.effect=effects.notAppliedStatus();try{changed.accept(ctx);}catch(RuntimeException ignored){}}
+            result.complete(applied);return (Void)null;
+        },owner);return result;
+    }
     private Run run(UUID id){check.run();return runs.computeIfAbsent(id,x->new Run());}
     public StoryStore.Snapshot cached(UUID id){return run(id).saved;}
     public boolean known(UUID id){return cached(id)!=null;}
     public boolean healthy(UUID id){var r=run(id);return r.saved!=null&&r.phase!=Phase.HOLD&&r.phase!=Phase.RESULT_UNKNOWN;}
     public Phase phase(UUID id){return run(id).phase;}
-    public String effectStatus(UUID id){return run(id).effect;}
+    public String effectStatus(UUID id){var r=run(id);return r.phase==Phase.HOLD||r.phase==Phase.RESULT_UNKNOWN?"PENDING":r.effect;}
     private void notify(UUID id,String text){try{notice.accept(id,text);}catch(RuntimeException ignored){}}
     private void validate(StoryStore.Snapshot s){if(s.story().stage()!=null)content.stage(s.story().stage());for(String id:s.completed())content.stage(id);for(var b:s.branches().values())if(content.stage(b.stage()).choices().stream().noneMatch(c->c.id().equals(b.choice())))throw new IllegalStateException("UNREGISTERED_BRANCH");}
     private Map<UUID,Object> roster(ServerProgressAccess.Context ctx){var r=run(ctx.storyRunId());var latest=Map.copyOf(online.apply(ctx));if(!r.online.equals(latest)){r.online=latest;r.rosterVersion.incrementAndGet();r.condition=null;}return latest;}
@@ -60,9 +85,9 @@ public final class SharedStory {
     }
     public CompletionStage<StoryStore.Snapshot> load(ServerProgressAccess.Context ctx){var r=run(ctx.storyRunId());if(r.saved!=null&&r.phase!=Phase.HOLD&&r.phase!=Phase.RESULT_UNKNOWN)return CompletableFuture.completedFuture(r.saved);
         if(r.saved==null&&r.pending!=null)return r.pending.thenComposeAsync(v->load(ctx),owner);
-        return start(ctx,()->{long gen=r.generation.get();r.phase=Phase.CHECKING;return store.readStory(ctx).thenApplyAsync(s->{try{if(r.generation.get()!=gen)throw new IllegalStateException("STALE_STORY_GENERATION");validate(s);r.saved=s;r.phase=Phase.READY;return s;}catch(RuntimeException e){r.phase=Phase.HOLD;throw e;}},owner);},false);
+        return start(ctx,()->{long gen=r.generation.get();r.phase=Phase.CHECKING;return store.readStory(ctx).thenApplyAsync(s->{try{if(r.generation.get()!=gen)throw new IllegalStateException("STALE_STORY_GENERATION");validate(s);r.saved=s;resetEffect(r);r.phase=Phase.READY;return s;}catch(RuntimeException e){r.phase=Phase.HOLD;throw e;}},owner).thenComposeAsync(s->reconcile(ctx).thenApply(ok->s),owner);},false);
     }
-    public CompletionStage<StoryStore.Snapshot> refresh(ServerProgressAccess.Context ctx){var r=run(ctx.storyRunId());if(r.phase==Phase.RESULT_UNKNOWN)return CompletableFuture.failedFuture(new IllegalStateException("RESULT_UNKNOWN"));return start(ctx,()->store.readStory(ctx).thenApplyAsync(s->{validate(s);r.saved=s;r.phase=Phase.READY;changed.accept(ctx);return s;},owner),true);}
+    public CompletionStage<StoryStore.Snapshot> refresh(ServerProgressAccess.Context ctx){var r=run(ctx.storyRunId());if(r.phase==Phase.RESULT_UNKNOWN)return CompletableFuture.failedFuture(new IllegalStateException("RESULT_UNKNOWN"));return start(ctx,()->store.readStory(ctx).thenApplyAsync(s->{validate(s);r.saved=s;resetEffect(r);r.phase=Phase.READY;changed.accept(ctx);return s;},owner).thenComposeAsync(s->reconcile(ctx).thenApply(ok->s),owner),true);}
     private StoryContent.Stage current(Run r){if(r.saved==null)throw new IllegalStateException("STORY_NOT_READY");return r.saved.story().stage()==null?null:content.stage(r.saved.story().stage());}
     private void actor(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){if(!valid.getAsBoolean()||roster(ctx).get(ctx.playerId())!=token)throw new IllegalStateException("STALE_STORY_ACTOR");}
     private Set<String> required(Run r,StoryContent.Stage target){return content.conditions(current(r),target);}
@@ -94,7 +119,7 @@ public final class SharedStory {
     }
     private void confirm(ServerProgressAccess.Context ctx,StoryStore.Snapshot saved,StoryStore.Request request){var r=run(ctx.storyRunId());validate(saved);r.saved=saved;r.phase=Phase.READY;r.unresolved=null;r.condition=null;if(r.vote!=null&&r.vote.id.equals(request.id()))r.vote.state="COMMITTED";try{changed.accept(ctx);}catch(RuntimeException ignored){}
         notify(ctx.storyRunId(),request.choice()==null?"공유 단계 저장을 확인했습니다.":"공동체 분기를 저장·확정했습니다: "+request.label());
-        if(r.applied<saved.story().revision()){r.applied=saved.story().revision();r.effect="NOT_IMPLEMENTED";try{r.effectWork=effects.apply(ctx.storyRunId(),request.id(),saved).handleAsync((ok,error)->{if(r.saved==saved)r.effect=error!=null?"EFFECT_ERROR":Boolean.TRUE.equals(ok)?"APPLIED":"NOT_IMPLEMENTED";return (Void)null;},owner);}catch(RuntimeException e){r.effect="EFFECT_ERROR";}}
+        reconcile(ctx);
     }
     public CompletionStage<StoryStore.Snapshot> advance(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){if(run(ctx.storyRunId()).phase!=Phase.READY)return CompletableFuture.failedFuture(new IllegalStateException("STORY_BUSY_OR_HOLD"));return start(ctx,()->{
         var r=run(ctx.storyRunId());actor(ctx,token,valid);var c=current(r);if(c!=null&&!c.choices().isEmpty())throw new IllegalStateException("VOTE_REQUIRED");if(c!=null&&r.saved.completed().contains(c.id()))throw new IllegalStateException("STORY_FINISHED");r.phase=Phase.CHECKING;var target=content.target(c,null);
@@ -116,7 +141,7 @@ public final class SharedStory {
     public CompletionStage<StoryStore.Snapshot> resolve(ServerProgressAccess.Context ctx){var r=run(ctx.storyRunId());if(r.phase!=Phase.RESULT_UNKNOWN||r.unresolved==null)return CompletableFuture.failedFuture(new IllegalStateException("NO_UNKNOWN_REQUEST"));var request=r.unresolved;
         return start(ctx,()->store.storyReceipt(ctx,request.id()).thenComposeAsync(found->{if(found.isEmpty()||!found.get().equals(StoryStore.fingerprint(request))){r.phase=Phase.RESULT_UNKNOWN;throw new IllegalStateException("RESULT_STILL_UNKNOWN");}return store.readStory(ctx);},owner).thenApplyAsync(saved->{confirm(ctx,saved,request);return saved;},owner),true);
     }
-    public void invalidate(UUID run){run(run).generation.incrementAndGet();}
+    public void invalidate(UUID run){var r=run(run);r.generation.incrementAndGet();resetEffect(r);}
     public CompletionStage<Void> barrier(UUID id){var r=run(id);if(r.phase==Phase.HOLD||r.phase==Phase.RESULT_UNKNOWN)return CompletableFuture.failedFuture(new IllegalStateException("STORY_HOLD"));return r.pending==null?r.effectWork:CompletableFuture.allOf(r.pending,r.effectWork.toCompletableFuture());}
     public boolean settled(UUID id){var r=run(id);return r.pending==null&&r.effectWork.toCompletableFuture().isDone()&&r.phase!=Phase.HOLD&&r.phase!=Phase.RESULT_UNKNOWN;}
     public CompletionStage<Void> shutdown(){check.run();closed=true;var tasks=new ArrayList<CompletableFuture<?>>();for(var id:runs.keySet())tasks.add(barrier(id).toCompletableFuture());return CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new));}

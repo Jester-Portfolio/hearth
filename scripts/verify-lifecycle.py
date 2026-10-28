@@ -75,6 +75,7 @@ def main():
     parser.add_argument('--plugin', required=True, type=Path)
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
     parser.add_argument('--story-batch', action='store_true', help='두 JVM에서 공유 단계·채팅 투표 제어 경계·분기·접근·복원을 검사합니다')
     parser.add_argument('--explore-batch', action='store_true', help='두 JVM에서 탐험·일지·공동체·발견 알림·설정과 V005를 검사합니다')
     parser.add_argument('--quest-batch', action='store_true', help='두 JVM에서 다단계/추적/알림/설정/GUI·HUD 데이터와 V004를 검사합니다')
@@ -94,6 +95,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.world_effects and not args.story_batch:
+        parser.error('--world-effects는 --sessions --quests --story-batch가 필요합니다')
     if args.story_batch and (not args.quests or not args.sessions or args.manual_player or any([args.explore_batch,args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
         parser.error('--story-batch는 자동 --sessions --quests 단독 공유 진행 검증 모드입니다')
     if args.explore_batch and (not args.quests or not args.sessions or args.manual_player or any([args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
@@ -153,6 +156,9 @@ def main():
     if args.explore_batch or args.story_batch:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('exploration-verification-enabled: true\n')
+    if args.world_effects:
+        with (plugins/'Hearth/config.yml').open('a') as config:
+            config.write('world-effect-verification-enabled: true\n')
     if args.story_batch:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('story-verification-enabled: true\n')
@@ -198,6 +204,8 @@ motd=Hearth isolated S4-11 verification
         if args.sessions:
             paper.insert(-3,'-Dhearth.verification.sessions=true')
             paper.insert(-3,'-Dhearth.verification.players=true')
+        if args.world_effects:
+            paper.insert(-3,'-Dhearth.verification.worldEffect=true')
         if args.story_batch:
             paper.insert(-3,'-Dhearth.verification.sharedStory=true')
         if args.explore_batch or args.story_batch:
@@ -228,7 +236,13 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.story_batch:
+                        if args.world_effects:
+                            monitor.action(name,'effect-prepare')
+                            monitor.db('story-fail-on'); monitor.action(name,'effect-db-failure'); monitor.db('story-fail-off')
+                            monitor.action(name,'effect-db-recover')
+                            monitor.db('lock-story'); monitor.action(name,'effect-pending'); monitor.db('unlock')
+                            monitor.action(name,'effect-applied'); monitor.action(name,'effect-cycle')
+                        elif args.story_batch:
                             monitor.action(name,'story-prepare'); monitor.action(name,'story-vote')
                             monitor.db('lock-story'); monitor.action(name,'story-persist-start'); monitor.db('unlock')
                             monitor.action(name,'story-persist-done'); monitor.action(name,'story-cycle')
@@ -307,6 +321,8 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.world_effects:
+                        monitor.action(name,'session-resume'); monitor.action(name,'effect-resume'); monitor.action(name,'effect-conflict')
                     elif args.story_batch:
                         monitor.action(name,'session-resume'); monitor.action(name,'story-resume'); monitor.action(name,'story-replay')
                         monitor.action(name,'story-unknown')
@@ -368,7 +384,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],
