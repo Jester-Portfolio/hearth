@@ -39,7 +39,7 @@ public final class PersonalQuest {
     public void clock(java.util.function.LongSupplier source){check.run();if(!sessions.isEmpty())throw new IllegalStateException("Clock already active");clock=source;}
     private java.util.function.BiConsumer<ServerProgressAccess.Context,String> completed=(ctx,id)->{};
     public void completed(java.util.function.BiConsumer<ServerProgressAccess.Context,String> handler){check.run();completed=handler;}
-    private boolean chapterBusy(ServerProgressAccess.Context ctx){var key=new Reader(ctx.storyRunId(),ctx.playerId());return chapterJobs.containsKey(key)||chapterHolds.contains(key);}
+    private boolean chapterBusy(ServerProgressAccess.Context ctx){var key=new Reader(ctx.storyRunId(),ctx.playerId());return chapterJobs.containsKey(key)||chapterHolds.contains(key)||systemJobs.containsKey(key)||systemHolds.contains(key);}
     private long deadline(String id){long duration=rules.rule(id).timeoutMillis();return duration==0?0:Math.addExact(clock.getAsLong(),duration);}
     private final QuestStore store;
     private final Set<String> ids;
@@ -47,6 +47,9 @@ public final class PersonalQuest {
     private final Runnable check;
     private final Map<Key,Session> sessions=new HashMap<>();
     private final Map<Reader,Query> queries=new HashMap<>();
+    private record SystemJob(Object token,CompletableFuture<Void> result) {}
+    private final Map<Reader,SystemJob> systemJobs=new HashMap<>();
+    private final Set<Reader> systemHolds=new HashSet<>();
     private final Map<Key,CompletableFuture<Void>> movements=new HashMap<>(),failureJobs=new HashMap<>();
     private java.util.function.Consumer<ServerProgressAccess.Context> changed=c->{};
     public void changed(java.util.function.Consumer<ServerProgressAccess.Context> listener){check.run();changed=listener;}
@@ -62,24 +65,28 @@ public final class PersonalQuest {
         return open(context,ids.iterator().next(),token,valid);
     }
     public CompletionStage<Session> open(ServerProgressAccess.Context context,String quest,Object token,BooleanSupplier valid) {
-        check.run();if(closed)return rejected("CLOSED");if(chapterBusy(context))return rejected("CHAPTER_BUSY_OR_HOLD");
+        return open(context,quest,token,valid,false);
+    }
+    private CompletionStage<Session> open(ServerProgressAccess.Context context,String quest,Object token,BooleanSupplier valid,boolean system) {
+        check.run();if(closed)return rejected("CLOSED");if(!system&&chapterBusy(context))return rejected("CHAPTER_BUSY_OR_HOLD");
         if(!ids.contains(quest))return rejected("UNKNOWN_QUEST");
         Key key=new Key(context.storyRunId(),context.playerId(),quest);Session previous=sessions.get(key);
         if(previous!=null && previous.token==token)return previous.ready;
         Session s=new Session(context,quest,token,valid);sessions.put(key,s);
         // 이전 저장은 콜백 유효성과 별도로 끝까지 기다립니다. 실패 HOLD도 새 세션으로 지우지 않습니다.
         s.io=(previous==null ? CompletableFuture.<Void>completedFuture(null) : previous.io)
-            .thenComposeAsync(v->{require(s);return store.readQuest(context,quest);},owner)
+            .thenComposeAsync(v->{if(!(system?attached(s):current(s)))throw new IllegalStateException("STALE_QUEST");return store.readQuest(context,quest);},owner)
             .thenAcceptAsync(row->{s.saved=row;},owner);
         s.io.whenCompleteAsync((v,e)->{
             s.busy=false;
             if(e!=null){s.hold=true;s.ready.completeExceptionally(e);}
-            else if(!current(s))s.ready.completeExceptionally(new IllegalStateException("STALE_QUEST"));
+            else if(!(system?attached(s):current(s)))s.ready.completeExceptionally(new IllegalStateException("STALE_QUEST"));
             else s.ready.complete(s);
         },owner);
         return s.ready;
     }
-    private boolean current(Session s){return !closed && sessions.get(s.key)==s && s.valid.getAsBoolean();}
+    private boolean attached(Session s){return !closed&&sessions.get(s.key)==s;}
+    private boolean current(Session s){return attached(s)&&s.valid.getAsBoolean();}
     private void require(Session s){check.run();if(!current(s))throw new IllegalStateException("STALE_QUEST");}
     private static <T> CompletionStage<T> rejected(String code){return CompletableFuture.failedFuture(new IllegalStateException(code));}
     public CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target) { return advance(s,target,false); }
@@ -170,12 +177,15 @@ public final class PersonalQuest {
         return persist(s,target,index,target==QuestStore.Phase.ACTIVE?(s.saved.phase()==QuestStore.Phase.NOT_ACCEPTED?deadline(s.key.quest()):s.saved.deadlineMillis()):0);
     }
     private CompletionStage<QuestStore.Saved> persist(Session s,QuestStore.Phase target,int index,long deadline){
+        return persist(s,target,index,deadline,()->current(s));
+    }
+    private CompletionStage<QuestStore.Saved> persist(Session s,QuestStore.Phase target,int index,long deadline,BooleanSupplier live){
         var expected=s.saved;var drained=new CompletableFuture<Void>();var result=new CompletableFuture<QuestStore.Saved>();s.busy=true;s.io=drained;
         store.advanceQuest(s.context,s.key.quest(),expected,target,index,deadline).whenCompleteAsync((row,error)->{
             s.busy=false;
             if(error==null&&(row==null||row.phase()!=target||row.objectiveIndex()!=index||row.revision()!=expected.revision()+1||row.deadlineMillis()!=deadline))error=new StorageFailure("quest","INVALID_SAVE_RESULT");
             if(error!=null){Throwable cause=error;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();if(cause instanceof StorageFailure f&&Set.of("QUEST_BRANCH_LOCKED","QUEST_RULES_NOT_READY").contains(f.code()))drained.complete(null);else{s.hold=true;drained.completeExceptionally(error);}result.completeExceptionally(error);}
-            else{boolean live=current(s);if(live)s.saved=row;drained.complete(null);if(live){notifyChanged(s);result.complete(row);}else result.completeExceptionally(new IllegalStateException("STALE_QUEST"));}
+            else{boolean active=live.getAsBoolean();if(active)s.saved=row;drained.complete(null);if(active){notifyChanged(s);result.complete(row);}else result.completeExceptionally(new IllegalStateException("STALE_QUEST"));}
         },owner).exceptionally(error->{drained.completeExceptionally(error);result.completeExceptionally(error);return null;});return result;
     }
     public CompletionStage<QuestStore.Saved> fail(Session s,QuestContent c,String condition){return fail(s,c,condition,false);}
@@ -183,9 +193,7 @@ public final class PersonalQuest {
         check.run();if(!current(s)||!queued&&chapterBusy(s.context))return rejected("STALE_QUEST");var rule=rules.rule(c.id());
         if(!s.key.quest().equals(c.id())||s.busy||s.hold||s.saved==null||s.saved.phase()!=QuestStore.Phase.ACTIVE||!rule.failures().contains(condition))return rejected("QUEST_FAILURE_NOT_ALLOWED");
         if(condition.equals("TIMEOUT")&&(s.saved.deadlineMillis()==0||clock.getAsLong()<s.saved.deadlineMillis()))return rejected("QUEST_TIMEOUT_NOT_REACHED");
-        int index=s.saved.objectiveIndex();if(rule.restart()==QuestRules.Restart.BEGINNING)index=0;
-        else if(rule.restart()==QuestRules.Restart.CHECKPOINT){int current=index;index=rule.checkpoints().stream().filter(i->i<=current).max(Integer::compareTo).orElse(0);}
-        return control(s,QuestStore.Phase.FAILED,index,0);
+        return control(s,QuestStore.Phase.FAILED,failureIndex(s.saved,rule),0);
     }
     public CompletionStage<QuestStore.Saved> retry(Session s,QuestContent c){
         check.run();if(!current(s)||chapterBusy(s.context)||!s.key.quest().equals(c.id())||s.busy||s.hold||s.saved==null||s.saved.phase()!=QuestStore.Phase.FAILED)return rejected("QUEST_RETRY_NOT_ALLOWED");
@@ -199,6 +207,38 @@ public final class PersonalQuest {
             var pending=failureJobs.get(s.key);if(pending!=null){work.add(pending);continue;}var job=new CompletableFuture<Void>();failureJobs.put(s.key,job);work.add(job);
             s.io.thenComposeAsync(v->{if(!current(s))return rejected("STALE_QUEST");if(s.saved.phase()!=QuestStore.Phase.ACTIVE)return CompletableFuture.completedFuture(null);return fail(s,catalog.quest(s.key.quest()),condition,true);},owner).whenCompleteAsync((v,error)->{failureJobs.remove(s.key,job);if(error==null)job.complete(null);else job.completeExceptionally(error);},owner);
         }return CompletableFuture.allOf(work.toArray(CompletableFuture[]::new));
+    }
+    private static int failureIndex(QuestStore.Saved row,QuestRules.Rule rule){
+        return switch(rule.restart()){
+            case BEGINNING -> 0;
+            case KEEP -> row.objectiveIndex();
+            case CHECKPOINT -> rule.checkpoints().stream().filter(i->i<=row.objectiveIndex()).max(Integer::compareTo).orElse(0);
+        };
+    }
+    /** 서버가 확정한 사망만 연결 생존 검사로 접수합니다. 일반 행동의 valid 검사는 완화하지 않습니다.
+     * 접수한 사건은 퇴장 후에도 기존 저장 순서로 정리하며, 새 세션은 이 장벽 뒤에서 조회합니다. */
+    public CompletionStage<Void> died(ServerProgressAccess.Context ctx,Object token,BooleanSupplier connected,BooleanSupplier playable,QuestCatalog catalog){
+        check.run();var reader=new Reader(ctx.storyRunId(),ctx.playerId());
+        if(closed||token==null||!connected.getAsBoolean()||!catalog.questIds().equals(ids))return rejected("STALE_QUEST_DEATH");
+        var prior=systemJobs.get(reader);if(prior!=null)return prior.token()==token?prior.result():rejected("QUEST_DEATH_BUSY");
+        if(chapterBusy(ctx))return rejected("CHAPTER_BUSY_OR_HOLD");
+        var result=new CompletableFuture<Void>();var job=new SystemJob(token,result);systemJobs.put(reader,job);
+        CompletionStage<Void> work=CompletableFuture.completedFuture(null);
+        for(String id:new TreeSet<>(ids))if(rules.rule(id).failures().contains("DEATH")){
+            work=work.thenComposeAsync(v->open(ctx,id,token,playable,true),owner).thenComposeAsync(q->q.io.thenComposeAsync(v->store.readQuest(ctx,id),owner).thenComposeAsync(row->{
+                if(!attached(q)||q.token!=token)throw new IllegalStateException("STALE_QUEST_DEATH");
+                q.saved=row;
+                if(q.hold)throw new IllegalStateException("QUEST_HOLD");
+                if(q.saved.phase()!=QuestStore.Phase.ACTIVE)return CompletableFuture.completedFuture(null);
+                return persist(q,QuestStore.Phase.FAILED,failureIndex(q.saved,rules.rule(id)),0,()->attached(q)&&q.token==token).thenAccept(saved->{});
+            },owner),owner);
+        }
+        work.whenCompleteAsync((v,error)->{
+            systemJobs.remove(reader,job);
+            if(error!=null){systemHolds.add(reader);result.completeExceptionally(error);}
+            else result.complete(null);
+        },owner).exceptionally(error->{result.completeExceptionally(error);return null;});
+        return result;
     }
     public CompletionStage<Void> expire(QuestCatalog catalog){check.run();var pending=new ArrayList<CompletableFuture<?>>();for(var s:List.copyOf(sessions.values()))if(current(s)&&!chapterBusy(s.context)&&!s.busy&&!s.hold&&s.saved!=null&&s.saved.phase()==QuestStore.Phase.ACTIVE&&s.saved.deadlineMillis()>0&&clock.getAsLong()>=s.saved.deadlineMillis())pending.add(fail(s,catalog.quest(s.key.quest()),"TIMEOUT").toCompletableFuture());return CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new));}
     public CompletionStage<QuestCompletionStore.ChapterState> skip(ServerProgressAccess.Context ctx,Object token,java.util.function.BooleanSupplier valid,QuestCompletionStore storage,QuestRules.Chapter chapter){
@@ -260,14 +300,15 @@ public final class PersonalQuest {
             if(s.busy || !s.io.toCompletableFuture().isDone())throw new IllegalStateException("QUEST_LIST_BUSY");
         }
     }
-    public CompletionStage<Void> barrier(UUID run){check.run();if(chapterHolds.stream().anyMatch(k->k.run().equals(run)))return rejected("CHAPTER_HOLD");var tasks=new ArrayList<CompletableFuture<?>>();chapterJobs.forEach((k,v)->{if(k.run().equals(run))tasks.add(v);});
+    public CompletionStage<Void> barrier(UUID run){check.run();if(systemHolds.stream().anyMatch(k->k.run().equals(run)))return rejected("QUEST_DEATH_HOLD");if(chapterHolds.stream().anyMatch(k->k.run().equals(run)))return rejected("CHAPTER_HOLD");var tasks=new ArrayList<CompletableFuture<?>>();chapterJobs.forEach((k,v)->{if(k.run().equals(run))tasks.add(v);});
+        systemJobs.forEach((k,v)->{if(k.run().equals(run))tasks.add(v.result());});
         sessions.values().stream().filter(s->s.key.run().equals(run)).forEach(s->tasks.add(s.io.toCompletableFuture()));
         queries.forEach((reader,q)->{if(reader.run().equals(run))tasks.add(q.drained);});
         movements.forEach((key,drain)->{if(key.run().equals(run))tasks.add(drain);});failureJobs.forEach((key,drain)->{if(key.run().equals(run))tasks.add(drain);});
         return CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new));}
-    public boolean settled(UUID run){check.run();return failureJobs.keySet().stream().noneMatch(k->k.run().equals(run))&&chapterHolds.stream().noneMatch(k->k.run().equals(run))&&chapterJobs.keySet().stream().noneMatch(k->k.run().equals(run))&& movements.keySet().stream().noneMatch(key->key.run().equals(run)) && queries.keySet().stream().noneMatch(reader->reader.run().equals(run)) && sessions.values().stream().filter(s->s.key.run().equals(run)).allMatch(s->!s.busy && !s.hold && s.io.toCompletableFuture().isDone() && !s.io.toCompletableFuture().isCompletedExceptionally());}
+    public boolean settled(UUID run){check.run();return systemJobs.keySet().stream().noneMatch(k->k.run().equals(run))&&systemHolds.stream().noneMatch(k->k.run().equals(run))&&failureJobs.keySet().stream().noneMatch(k->k.run().equals(run))&&chapterHolds.stream().noneMatch(k->k.run().equals(run))&&chapterJobs.keySet().stream().noneMatch(k->k.run().equals(run))&& movements.keySet().stream().noneMatch(key->key.run().equals(run)) && queries.keySet().stream().noneMatch(reader->reader.run().equals(run)) && sessions.values().stream().filter(s->s.key.run().equals(run)).allMatch(s->!s.busy && !s.hold && s.io.toCompletableFuture().isDone() && !s.io.toCompletableFuture().isCompletedExceptionally());}
     public void release(UUID run){check.run();if(!settled(run))throw new IllegalStateException("QUEST_HOLD");sessions.entrySet().removeIf(e->e.getKey().run().equals(run));}
     public CompletionStage<Void> shutdown(){check.run();closed=true;var tasks=new ArrayList<CompletableFuture<?>>();
-        tasks.addAll(failureJobs.values());tasks.addAll(chapterJobs.values());if(!chapterHolds.isEmpty())tasks.add(CompletableFuture.failedFuture(new IllegalStateException("CHAPTER_HOLD")));sessions.values().forEach(s->tasks.add(s.io.toCompletableFuture()));queries.values().forEach(q->tasks.add(q.drained));movements.values().forEach(tasks::add);
+        systemJobs.values().forEach(j->tasks.add(j.result()));if(!systemHolds.isEmpty())tasks.add(CompletableFuture.failedFuture(new IllegalStateException("QUEST_DEATH_HOLD")));tasks.addAll(failureJobs.values());tasks.addAll(chapterJobs.values());if(!chapterHolds.isEmpty())tasks.add(CompletableFuture.failedFuture(new IllegalStateException("CHAPTER_HOLD")));sessions.values().forEach(s->tasks.add(s.io.toCompletableFuture()));queries.values().forEach(q->tasks.add(q.drained));movements.values().forEach(tasks::add);
         return CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new));}
 }

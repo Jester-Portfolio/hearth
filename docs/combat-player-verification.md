@@ -39,7 +39,7 @@ hearthverify combat-player-release J_Ester
 - 관련 단위·회귀 66개 PASS 후 적용 결과 누락/퇴장 정리 오류 방어를 보강해 영향받는 연결부 16개만 재검증했다. 유효 검사 68개 PASS이며 반복 실행을 중복 합산하지 않았다. 소유권·조작 차단·관전/적용 단계·정확 복귀·세대/세션 교체·실패/정리/HOLD·저장 장벽·위험 위치·체력값 방어를 포함한다.
 - `--sessions --quests --story-batch --combat-players` 한 JVM/신규 PostgreSQL로 실제 Player 적용기 등록·라이브러리 로딩, 기존 세션 저장/빠른 재접속·인벤토리 revision, 제어 포트의 복귀/부활·대표 실패·다른 진행 보존·정상 종료를 검사해 PASS했다. 보스 시작 청크는 기존 비동기 준비 도구를 재사용한다.
 - 자동 시험의 플레이어 위치/카메라/회복은 내부 제어 포트다. 실제 Player 객체나 합성 Player 이벤트를 만들지 않는다. 실제 인증 접속·치명타·PlayerInventory·관전 카메라·체력/효과 적용·teleportAsync는 실행 미검증이다. 저장 형식/복원 계약이 같으므로 두 번째 JVM은 실행하지 않는다.
-- 전투 사망의 개인 퀘스트 DEATH 실패 연결은 기존 행동 권한과 세션 유효성의 분리가 더 필요해 후속으로 남긴다. 기본 vanilla 사망 훅을 이 수동 사망 전환의 성공 근거로 사용하지 않는다. 보스 재도전 투표·패턴·길목·정식 종료/복귀·전체 인던 수명주기도 후속이다.
+- 이 검사 당시 남겼던 전투 사망의 개인 퀘스트 DEATH 실패 연결은 [후속 연결 기록](quest-death-verification.md)에서 구현·검사했다. 기본 vanilla 사망 훅을 이 수동 사망 전환의 성공 근거로 사용하지 않는다. 보스 재도전 투표·패턴·길목·정식 종료/복귀·전체 인던 수명주기도 후속이다.
 
 구현 API 근거: [Paper 비동기 이동](https://docs.papermc.io/paper/dev/entity-teleport/), [Player 관전 API](https://jd.papermc.io/paper/26.2/org/bukkit/entity/Player.html), [효과 Registry](https://jd.papermc.io/paper/26.2/org/bukkit/Registry.html). 실제 클라이언트·장기 부하/TPS/MSPT·운영 배포는 미실행이다.
 

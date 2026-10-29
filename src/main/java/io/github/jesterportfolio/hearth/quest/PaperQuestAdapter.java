@@ -142,7 +142,15 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private boolean current(Player p,PlayerSessions.Session session,QuestDialogue.Ticket t){return talkAllowed(p,t.npc(),t.entity()) && dialogues.current(t) && players.current(p)==session && p.getWorld().getUID().equals(t.world()) && near(p,t.npc(),t.entity());}
     @EventHandler public void load(WorldLoadEvent e){UUID id=e.getWorld().getUID();Bukkit.getScheduler().runTaskLater(plugin,()->{World w=Bukkit.getWorld(id);if(w!=null)ensure(w);},1);}
     @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){UUID id=e.getWorld().getUID();npcs.remove(id);dialogues.clearWorld(id);for(var rows:marks.values())rows.entrySet().removeIf(entry->{if(!entry.getValue().world().equals(id))return false;removeMark(entry.getValue());return true;});}
-    @EventHandler(priority=EventPriority.MONITOR) public void death(org.bukkit.event.entity.PlayerDeathEvent event){var s=players.current(event.getPlayer());if(s!=null)quests.trigger(s.context(),"DEATH",catalog).exceptionally(error->{plugin.getLogger().warning("HEARTH_QUEST_DEATH_HOLD");return null;});}
+    /** RPG 사망과 일반 사망이 같은 저장 경로를 사용하되 일반 행동 권한은 열지 않습니다. */
+    public CompletionStage<Void> combatDeath(Player p,PlayerSessions.Session session){
+        return quests.died(session.context(),session,()->players.prepared(p)==session,
+            ()->players.current(p)==session,catalog);
+    }
+    @EventHandler(priority=EventPriority.MONITOR) public void death(org.bukkit.event.entity.PlayerDeathEvent event){
+        var p=event.getPlayer();var session=players.prepared(p);
+        if(session!=null)combatDeath(p,session).exceptionally(error->{plugin.getLogger().warning("HEARTH_QUEST_DEATH_HOLD");return null;});
+    }
     @EventHandler public void quit(PlayerQuitEvent e){dialogues.clear(e.getPlayer().getUniqueId());clearVisual(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void click(PlayerInteractAtEntityEvent e){
         String npc=npcId(e.getRightClicked());if(npc==null)return;

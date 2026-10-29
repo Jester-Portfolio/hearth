@@ -159,7 +159,7 @@ public final class SessionVerification implements AutoCloseable {
                 sharedStory.effects(blockEffect);
             }
         }
-        if(plugin.getConfig().getBoolean("combat-player-verification-enabled")){if(combatTrials==null)throw new IllegalStateException("Combat trial required");combatPlayers=new PaperCombatPlayers(plugin,adapter,combatTrials,worlds,owner,ctx->log("COMBAT_PLAYER_DEATH"));}
+        if(plugin.getConfig().getBoolean("combat-player-verification-enabled")){if(combatTrials==null)throw new IllegalStateException("Combat trial required");combatPlayers=new PaperCombatPlayers(plugin,adapter,combatTrials,worlds,owner,(p,session)->{log("COMBAT_PLAYER_DEATH");return questAdapter.combatDeath(p,session);});}
     }
     public void combatPlayer(String operation,String profile,String condition){if(combatPlayers==null)throw new IllegalStateException("Combat player mode disabled");switch(operation){case "combat-player-start"->combatPlayers.startOnline(profile);case "combat-player-release"->combatPlayers.release(profile);case "combat-player-revive"->combatPlayers.condition(profile,condition).whenCompleteAsync((v,error)->log("COMBAT_REVIVE "+(error==null?"APPLIED":"HOLD_OR_REJECTED")),owner);default->throw new IllegalArgumentException("Unknown combat fixture operation");}}
     private List<CommunityBoundary.Ref> storyMembers(ServerProgressAccess.Context ctx){var refs=adapter.community(ctx);if(storyTestRoster==null)return refs;return refs.stream().map(ref->new CommunityBoundary.Ref(ref.run(),ref.player(),ref.name(),ctx.storyRunId().equals(a)?storyTestRoster.containsKey(ref.player()):ref.player().equals(b3.playerId()))).toList();}
@@ -591,27 +591,46 @@ public final class SessionVerification implements AutoCloseable {
         public boolean safe(CombatContent.Pose p){return p.world().equals(position.world());}
         public CompletionStage<Boolean> restore(CombatContent.Pose p,double health,List<CombatContent.Effect> effects,BooleanSupplier valid){applications++;var result=new CompletableFuture<Boolean>();Bukkit.getScheduler().runTaskLater(plugin,()->{if(failRestore||!valid.getAsBoolean()){result.complete(false);return;}this.position=p;this.health=health;spectator=false;result.complete(true);},1);return result;}
     }
+    private CompletionStage<Void> combatQuestSetup(){
+        CompletionStage<Void> work=CompletableFuture.completedFuture(null);
+        for(String id:List.of("trial_checkpoint","trial_keep","trial_beginning"))work=work.thenCompose(v->quests.open(a1,id,s1,()->coordinator.playable(s1))).thenCompose(q->quests.accept(q,catalog.quest(id)).thenCompose(row->quests.reach(q,catalog.quest(id),5,64,31))).thenAccept(row->{});
+        for(var ctx:List.of(a2,b3))work=work.thenCompose(v->mainResult(store.advanceQuest(ctx,"trial_keep",new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1),QuestStore.Phase.ACTIVE))).thenAccept(row->{});
+        return work;
+    }
+    private CompletionStage<Void> combatQuestCheck(){CompletionStage<Void> work=CompletableFuture.completedFuture(null);
+        for(String id:List.of("trial_checkpoint","trial_keep","trial_beginning"))work=work.thenCompose(v->mainResult(store.readQuest(a1,id))).thenAccept(row->check(row.phase()==QuestStore.Phase.FAILED&&row.revision()==2&&row.objectiveIndex()==(id.equals("trial_beginning")?0:1),"combat_death_persists_failure_policy_"+id));
+        for(var ctx:List.of(a2,b3))work=work.thenCompose(v->mainResult(store.readQuest(ctx,"trial_keep"))).thenAccept(row->check(row.phase()==QuestStore.Phase.ACTIVE&&row.revision()==0,"combat_death_other_player_run_unchanged_"+ctx.playerId()));
+        return work;
+    }
+    private CompletionStage<Void> combatQuestDatabaseFailure(){
+        QuestStore conflict=new QuestStore(){public CompletionStage<Saved> readQuest(ServerProgressAccess.Context ctx,String id){return store.readQuest(ctx,id);}public CompletionStage<Saved> advanceQuest(ServerProgressAccess.Context ctx,String id,Saved before,Phase phase){return advanceQuest(ctx,id,before,phase,before.objectiveIndex(),0);}public CompletionStage<Saved> advanceQuest(ServerProgressAccess.Context ctx,String id,Saved before,Phase phase,int index,long deadline){return store.advanceQuest(ctx,id,new Saved(before.phase(),before.revision()+1,before.objectiveIndex(),before.deadlineMillis()),phase,index,deadline);}};
+        var probe=new PersonalQuest(conflict,catalog.questIds(),owner,SessionVerification::main);probe.rules(questRules);
+        return rejectQuest(probe.died(b3,s3,()->coordinator.playable(s3),()->false,catalog)).thenCompose(v->rejectQuest(probe.barrier(b))).thenCompose(v->mainResult(store.readQuest(b3,"trial_keep"))).thenAccept(row->check(row.phase()==QuestStore.Phase.ACTIVE&&row.revision()==0&&coordinator.playable(s1),"combat_quest_real_DB_CAS_failure_HOLD_preserves_original_and_A"));
+    }
     private CompletionStage<Void> combatPlayerState(){
         var bridges=new CombatPlayers[2];var actors=new CombatBody[3];final CombatAttempt[] attempts=new CombatAttempt[2];final UUID request=UUID.randomUUID();final CompletionStage<?>[] pending=new CompletionStage<?>[2];
-        return openAll().thenCompose(v->prepareCombatChunks()).thenRun(()->{
+        return openAll().thenCompose(v->combatQuestSetup()).thenCompose(v->prepareCombatChunks()).thenRun(()->{
             check(combatPlayers!=null,"combat_real_Player_adapter_enabled_without_fake_Player");
             for(int i=0;i<2;i++){UUID run=i==0?a:b;var w=worlds.get(run);bridges[i]=new CombatPlayers(run,w.mapping().physicalId(),w.generation(),w::generation,owner,SessionVerification::main);}
             var poseA=new CombatContent.Pose(worlds.get(a).mapping().physicalId(),3,64,3,31,12);var poseB=new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0);actors[0]=new CombatBody(s1,poseA);actors[1]=new CombatBody(s2,poseA);actors[2]=new CombatBody(s3,poseB);
             attempts[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,poseA),new CombatAttempt.Entrant(a2,s2,poseA)),bridges[0]);bridges[0].attach(attempts[0],List.of(actors[0],actors[1]));
             attempts[1]=combatTrials.start(worlds.get(b),List.of(new CombatAttempt.Entrant(b3,s3,poseB)),bridges[1]);bridges[1].attach(attempts[1],List.of(actors[2]));
             one.count(31);coordinator.refresh(s1);bridges[0].died(actors[0]);check(!bridges[0].actions(actors[0])&&bridges[0].movement(actors[0]),"combat_player_death_blocks_actions_before_projection");bridges[0].project();check(actors[0].spectator&&actors[0].camera.equals(a2.playerId()),"combat_controlled_spectator_camera_and_inventory31_preserved");
-            actors[0].position=new CombatContent.Pose(poseA.world(),7.125,-24,8.25,92,-13);bridges[0].leave(actors[0]);check(!actors[0].spectator&&!bridges[0].current(actors[0]),"combat_player_quit_cleans_old_camera_and_binding");
+        }).thenCompose(v->{var death=quests.died(a1,s1,()->coordinator.playable(s1),()->bridges[0].actions(actors[0]),catalog);check(death==quests.died(a1,s1,()->true,()->false,catalog)&&!quests.barrier(a).toCompletableFuture().isDone(),"combat_death_duplicate_coalesces_and_joins_world_save_barrier");return death;})
+        .thenCompose(v->combatQuestCheck()).thenRun(()->{
+            check(attempts[0].snapshot().phase()==CombatAttempt.Phase.ACTIVE,"combat_personal_quest_failure_does_not_end_boss_attempt");
+            var poseA=actors[0].position;actors[0].position=new CombatContent.Pose(poseA.world(),7.125,-24,8.25,92,-13);bridges[0].leave(actors[0]);check(!actors[0].spectator&&!bridges[0].current(actors[0]),"combat_player_quit_cleans_old_camera_and_binding");
         }).thenCompose(v->mainResult(coordinator.disconnect(s1))).thenCompose(v->verify(a1,31,1))
         .thenCompose(v->{one=new Controlled();s1=connect(a1,one);return mainResult(s1.ready());}).thenRun(()->{
             var exact=bridges[0].returnPosition(a1).orElseThrow();check(exact.y()==-24&&exact.yaw()==92&&exact.pitch()==-13,"combat_return_destination_uses_exact_prior_pose_without_correction");actors[0]=new CombatBody(s1,exact);bridges[0].rejoin(actors[0]);check(actors[0].spectator&&!bridges[0].actions(actors[0])&&attempts[0].snapshot().difficultyPlayers()==2,"combat_dead_new_session_stays_spectator_and_roster_fixed");
             pending[0]=attempts[0].revive(a1,s1,request,"public_rescue");var barrier=bridges[0].barrier();check(!barrier.toCompletableFuture().isDone(),"combat_player_barrier_waits_for_restore_and_counter_confirmation");pending[1]=barrier;
-        }).thenCompose(v->mainResult(pending[0])).thenCompose(v->mainResult(pending[1])).thenRun(()->{
+        }).thenCompose(v->combatQuestCheck()).thenCompose(v->mainResult(pending[0])).thenCompose(v->mainResult(pending[1])).thenRun(()->{
             bridges[0].project();check(bridges[0].actions(actors[0])&&!actors[0].spectator&&actors[0].health==0.5&&attempts[0].snapshot().sharedUsed()==1,"combat_controlled_restore_confirmed_before_play_and_budget_commit");check(attempts[0].revive(a1,s1,request,"public_rescue").toCompletableFuture().isDone()&&actors[0].applications==1,"combat_player_duplicate_request_does_not_reapply_restore");
             bridges[1].died(actors[2]);actors[2].failRestore=true;pending[0]=attempts[1].revive(b3,s3,UUID.randomUUID(),"public_rescue");
         }).thenCompose(v->until(()->pending[0].toCompletableFuture().isDone())).thenRun(()->{
             check(pending[0].toCompletableFuture().isCompletedExceptionally()&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD&&attempts[1].snapshot().sharedUsed()==0&&bridges[0].actions(actors[0]),"combat_player_failed_move_HOLD_and_A_independence");
             bridges[0].close();bridges[1].close();combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
-        }).thenCompose(v->verify(a1,31,1)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
+        }).thenCompose(v->combatQuestDatabaseFailure()).thenCompose(v->verify(a1,31,1)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
     private static final class CombatActors implements CombatAttempt.Port {
         final Map<UUID,UUID> cameras=new HashMap<>();final CompletableFuture<Boolean> applying=new CompletableFuture<>();java.util.function.BooleanSupplier current;CombatContent.Pose appliedPosition;double appliedHealth;List<CombatContent.Effect> appliedEffects;

@@ -1,0 +1,268 @@
+{
+  "scope": "격리 개발 모드의 전투 사망·개인 퀘스트 실패 연결",
+  "date": "2026-10-29",
+  "units": {
+    "tests": 218,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_death_tests": 8,
+  "runtime_attempts": [
+    {
+      "outcome": "FAIL",
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "workspace": "/tmp/hearth-s4-11.p3dj5can",
+      "duration_seconds": 30.481,
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "processes": {
+        "database": {
+          "pid": 1893998,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 30.099,
+          "shutdown_seconds": 0.308,
+          "max_sampled_rss_kib": 221840,
+          "observed_cpu_seconds": 2.26,
+          "min_sampled_host_available_kib": 11632992,
+          "sample_count": 498,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-prepare": {
+          "pid": 1894057,
+          "exit_code": 0,
+          "ready_seconds": 13.754,
+          "duration_seconds": 27.19,
+          "shutdown_seconds": 4.589,
+          "max_sampled_rss_kib": 1220980,
+          "observed_cpu_seconds": 57.7,
+          "min_sampled_host_available_kib": 11632992,
+          "sample_count": 446,
+          "checks": [
+            "region_isolation_hearth_verify:restart_b",
+            "region_isolation_hearth_verify:restart_a",
+            "region_priorities_restored",
+            "shared_progress_hearth_verify:restart_b_r0",
+            "shared_progress_hearth_verify:restart_a_r0"
+          ],
+          "timings": [
+            "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=2123",
+            "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=2122",
+            "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=197",
+            "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=200",
+            "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=52",
+            "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=52",
+            "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0"
+          ],
+          "states": [
+            "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+            "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+            "run=00000000-0000-002a-0000-00000000000b state=READY",
+            "run=00000000-0000-002a-0000-00000000000a state=READY",
+            "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+            "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+            "run=00000000-0000-002a-0000-00000000000a state=ACTIVE"
+          ]
+        }
+      },
+      "all_owned_processes_and_ports_closed": false,
+      "plugin_sha256": "65bca602cad06d62824bb61085f46aa1303a0ca2f2e79f573a46ed447a205ece",
+      "installed_plugin_sha256": "65bca602cad06d62824bb61085f46aa1303a0ca2f2e79f573a46ed447a205ece",
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "combat_controlled_start_chunk_prepared",
+        "combat_controlled_start_chunk_prepared",
+        "combat_real_Player_adapter_enabled_without_fake_Player",
+        "combat_player_death_blocks_actions_before_projection",
+        "combat_controlled_spectator_camera_and_inventory31_preserved",
+        "combat_death_duplicate_coalesces_and_joins_world_save_barrier",
+        "combat_death_persists_failure_policy_trial_checkpoint",
+        "combat_death_persists_failure_policy_trial_keep",
+        "combat_death_persists_failure_policy_trial_beginning",
+        "combat_death_other_player_run_unchanged_00000000-0000-0031-0000-000000000002",
+        "combat_death_other_player_run_unchanged_00000000-0000-0031-0000-000000000003"
+      ],
+      "player_actions_verdict": "NOT_RUN",
+      "not_executed": [
+        "실제 인증 플레이어/로그인·텔레포트",
+        "PostgreSQL 프로세스 재시작",
+        "실제 파일시스템 저장 장애·강제 종료 복구",
+        "TPS/MSPT·장기 부하·메모리 누수",
+        "운영 배포·경제 realm"
+      ],
+      "cleanup_followup": {
+        "paper_pid_absent": 1894057,
+        "database_pid_absent": 1893998,
+        "ports_not_listening": [
+          25585,
+          34583
+        ],
+        "note": "실패 종료에서 풀 종료 로그 확인은 누락. 두 JVM exit 0 및 별도 PID/포트 반환을 확인했으며 원시 FAIL 기록은 보존."
+      }
+    },
+    {
+      "outcome": "PASS",
+      "failure": null,
+      "cleanup_errors": [],
+      "workspace": "/tmp/hearth-s4-11.txo9op2y",
+      "duration_seconds": 34.353,
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "processes": {
+        "database": {
+          "pid": 1894743,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 33.755,
+          "shutdown_seconds": 0.809,
+          "max_sampled_rss_kib": 219788,
+          "observed_cpu_seconds": 2.27,
+          "min_sampled_host_available_kib": 12038088,
+          "sample_count": 564,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-prepare": {
+          "pid": 1894802,
+          "exit_code": 0,
+          "ready_seconds": 13.352,
+          "duration_seconds": 30.355,
+          "shutdown_seconds": 3.657,
+          "max_sampled_rss_kib": 1146876,
+          "observed_cpu_seconds": 59.92,
+          "min_sampled_host_available_kib": 12038088,
+          "sample_count": 508,
+          "checks": [
+            "region_isolation_hearth_verify:restart_b",
+            "region_isolation_hearth_verify:restart_a",
+            "region_priorities_restored",
+            "shared_progress_hearth_verify:restart_b_r0",
+            "shared_progress_hearth_verify:restart_a_r0",
+            "shared_progress_hearth_verify:restart_b_r0",
+            "shared_progress_hearth_verify:restart_a_r0",
+            "world_IO_pool_closed"
+          ],
+          "timings": [
+            "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=1991",
+            "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=1989",
+            "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=197",
+            "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=200",
+            "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=103",
+            "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=103",
+            "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0",
+            "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=1246",
+            "run=00000000-0000-002a-0000-00000000000b state=ACTIVE elapsed_ms=2249",
+            "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=1050",
+            "run=00000000-0000-002a-0000-00000000000b state=IDLE elapsed_ms=996",
+            "run=00000000-0000-002a-0000-00000000000b state=QUIESCING elapsed_ms=50",
+            "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=1000",
+            "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=48",
+            "run=00000000-0000-002a-0000-00000000000b state=SAVING elapsed_ms=171",
+            "run=00000000-0000-002a-0000-00000000000a state=SAVING elapsed_ms=188",
+            "run=00000000-0000-002a-0000-00000000000b state=UNLOADING elapsed_ms=99",
+            "run=00000000-0000-002a-0000-00000000000a state=UNLOADING elapsed_ms=66"
+          ],
+          "states": [
+            "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+            "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+            "run=00000000-0000-002a-0000-00000000000b state=READY",
+            "run=00000000-0000-002a-0000-00000000000a state=READY",
+            "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+            "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+            "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+            "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+            "run=00000000-0000-002a-0000-00000000000b state=IDLE",
+            "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+            "run=00000000-0000-002a-0000-00000000000b state=QUIESCING",
+            "run=00000000-0000-002a-0000-00000000000b state=SAVING",
+            "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+            "run=00000000-0000-002a-0000-00000000000a state=SAVING",
+            "run=00000000-0000-002a-0000-00000000000b state=UNLOADING",
+            "run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+            "run=00000000-0000-002a-0000-00000000000b state=OFFLINE",
+            "run=00000000-0000-002a-0000-00000000000a state=OFFLINE"
+          ]
+        }
+      },
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "c72a52fa9ce38025b5d60ad0c427bcf099e5a679d0a233fe193471b846f59626",
+      "installed_plugin_sha256": "c72a52fa9ce38025b5d60ad0c427bcf099e5a679d0a233fe193471b846f59626",
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "combat_controlled_start_chunk_prepared",
+        "combat_controlled_start_chunk_prepared",
+        "combat_real_Player_adapter_enabled_without_fake_Player",
+        "combat_player_death_blocks_actions_before_projection",
+        "combat_controlled_spectator_camera_and_inventory31_preserved",
+        "combat_death_duplicate_coalesces_and_joins_world_save_barrier",
+        "combat_death_persists_failure_policy_trial_checkpoint",
+        "combat_death_persists_failure_policy_trial_keep",
+        "combat_death_persists_failure_policy_trial_beginning",
+        "combat_death_other_player_run_unchanged_00000000-0000-0031-0000-000000000002",
+        "combat_death_other_player_run_unchanged_00000000-0000-0031-0000-000000000003",
+        "combat_personal_quest_failure_does_not_end_boss_attempt",
+        "combat_player_quit_cleans_old_camera_and_binding",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count31_r1",
+        "combat_return_destination_uses_exact_prior_pose_without_correction",
+        "combat_dead_new_session_stays_spectator_and_roster_fixed",
+        "combat_player_barrier_waits_for_restore_and_counter_confirmation",
+        "combat_death_persists_failure_policy_trial_checkpoint",
+        "combat_death_persists_failure_policy_trial_keep",
+        "combat_death_persists_failure_policy_trial_beginning",
+        "combat_death_other_player_run_unchanged_00000000-0000-0031-0000-000000000002",
+        "combat_death_other_player_run_unchanged_00000000-0000-0031-0000-000000000003",
+        "combat_controlled_restore_confirmed_before_play_and_budget_commit",
+        "combat_player_duplicate_request_does_not_reapply_restore",
+        "combat_player_failed_move_HOLD_and_A_independence",
+        "quest_invalid_or_duplicate_rejected",
+        "quest_invalid_or_duplicate_rejected",
+        "combat_quest_real_DB_CAS_failure_HOLD_preserves_original_and_A",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count31_r1",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_count5_r0",
+        "restored_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000003_count7_r0"
+      ],
+      "player_actions_verdict": "NOT_RUN",
+      "not_executed": [
+        "실제 인증 플레이어/로그인·텔레포트",
+        "PostgreSQL 프로세스 재시작",
+        "실제 파일시스템 저장 장애·강제 종료 복구",
+        "TPS/MSPT·장기 부하·메모리 누수",
+        "운영 배포·경제 realm"
+      ]
+    }
+  ],
+  "preflight_note": "첫 경로 소유권 표식 누락으로 프로세스 시작 전 거부. 소유권/미사용 상태 확인 후 표식 준비. 런타임은 총 2묶음.",
+  "final_jar_sha256": "c72a52fa9ce38025b5d60ad0c427bcf099e5a679d0a233fe193471b846f59626",
+  "not_executed": [
+    "실제 인증 플레이어의 치명타·관전·재시작·화면",
+    "새 Paper JVM 복원: 기존 저장 형식/복원 계약 불변",
+    "장기 부하·강제 종료 자동 복구·운영 배포"
+  ]
+}

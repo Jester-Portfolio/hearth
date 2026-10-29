@@ -214,7 +214,7 @@ def main():
     if args.field_encounters:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('field-encounter-verification-enabled: true\n')
-    if args.quest_completion or args.branch_progression:
+    if args.quest_completion or args.branch_progression or args.combat_players:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('quest-completion-verification-enabled: true\n')
     if args.playthrough or args.quest_interactions or args.general_npcs:
@@ -283,7 +283,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.sessionManual=true')
         if args.playthrough or args.quest_interactions or args.general_npcs:
             paper.insert(-3,'-Dhearth.verification.playthrough=true')
-        if args.quest_completion or args.branch_progression:
+        if args.quest_completion or args.branch_progression or args.combat_players:
             paper.insert(-3,'-Dhearth.verification.questCompletion=true')
         if args.field_encounters:
             paper.insert(-3,'-Dhearth.verification.field=true')
