@@ -173,3 +173,9 @@ PL1의 WG/WE 로딩/종료 부분은 실행했고 MV 조합은 미실행입니�
 ## 공유 단계·조건·채팅 투표 확장 — 2026-10-27
 
 기존 Citizens/BetonQuest 및 Paper GUI 비교를 재사용합니다. 단계·온라인 대상·고유 요청·불변 분기는 Hearth의 진행별 PostgreSQL 정본/세션/CAS에 직접 연결하므로 외부 정본을 추가하지 않고 기존 모듈을 확장했습니다. NPC 플랫폼·보호 엔진·라이브러리 선택은 변경하지 않았고 신규 플러그인을 설치하지 않았습니다. 현재 코드/서버 로딩 검사가 외부 플랫폼의 미확인 26.2/Java25 호환성을 확정하는 것은 아닙니다. [공유 배치 기록](s4-shared-story-batch-verification.md)의 실제/제어/미실행 경계를 따릅니다.
+
+## 필드 조우 스폰 — 2026-10-29
+
+공식 [MythicMobs 스포너](https://wiki.mythiccraft.io/mythicmobs/spawners)·[API](https://wiki.mythiccraft.io/mythicmobs/API)는 설정 기반 몹 소환과 연동 API를 제공한다. 복잡한 스킬/보스 제작의 후속 후보로 유지한다. 이번 확인은 문서 수준이며 정확한 Paper 26.2/Java25 배포 호환성·유지보수 보장·메모리·동적 월드 정리는 미검증이다. 버전별 라이선스/재배포·유료 기능 조건도 채택 전에 확인해야 하며 설치·다운로드·외부 코드 재배포는 하지 않았다.
+
+현재의 구역 진입·한 번 소환·스폰 시점 인원/속성 고정은 기존 세션/월드 경계와 [Paper World.spawn](https://jd.papermc.io/paper/26.2/org/bukkit/World.html)·[Attribute](https://jd.papermc.io/paper/26.2/org/bukkit/attribute/Attribute.html)로 좁게 구현한다. 이는 작은 격리 개발 범위의 선택이며 범용 몹/스킬 플랫폼을 직접 재현하거나 MythicMobs를 부적합으로 확정하는 결정이 아니다. 실제 전투 플랫폼 선택·영속 조우/리셋은 별도 후속 범위다. [구현·시험 범위](field-encounters-verification.md)를 따른다.

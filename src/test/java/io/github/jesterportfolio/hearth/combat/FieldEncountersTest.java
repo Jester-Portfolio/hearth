@@ -1,0 +1,37 @@
+package io.github.jesterportfolio.hearth.combat;
+
+import java.util.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static io.github.jesterportfolio.hearth.combat.FieldContent.*;
+import static io.github.jesterportfolio.hearth.combat.FieldEncounters.*;
+
+final class FieldEncountersTest {
+    private static final Point OUT=new Point(-2,64,0),IN=new Point(1,64,1),NEXT=new Point(11,64,1);
+    static Zone zone(String id,int x){return new Zone(id,"공개 조우",new Box(x,x+2,64,68,0,2),new Box(x-1,x+4,63,70,-1,4),new Point(x+1,64,1),List.of(new Tier(1,1,20,2),new Tier(2,2,30,3)));}
+    static final class Fixture implements Port {
+        final Binding a=new Binding(UUID.randomUUID(),UUID.randomUUID(),1),b=new Binding(UUID.randomUUID(),UUID.randomUUID(),1);
+        final UUID p=UUID.randomUUID(),q=UUID.randomUUID();final Set<UUID> live=new HashSet<>();int calls,failAt;boolean removeFails;Runnable onSpawn=()->{};
+        final FieldEncounters engine=new FieldEncounters(new FieldContent(List.of(zone("first",0),zone("next",10))),this,()->{});
+        Fixture(){engine.bind(a);engine.bind(b);}
+        public UUID spawn(Binding b,Zone z,Tier t){calls++;if(calls==failAt)throw new IllegalStateException("SPAWN_FAILED");UUID id=UUID.randomUUID();live.add(id);onSpawn.run();return id;}
+        public void remove(UUID id){if(removeFails)throw new IllegalStateException("REMOVE_FAILED");live.remove(id);}
+        List<Presence> players(Binding b,Point loc){return List.of(new Presence(b,p,loc),new Presence(b,q,loc));}
+        Snapshot first(){return engine.state(a.run(),"first").orElseThrow();}
+        void enter(){engine.enter(a,p,OUT,IN,players(a,IN));}
+    }
+    @Test void crossingUsesUniqueCurrentWorldPopulationAndKeepsDifficulty(){var f=new Fixture();var inputs=new ArrayList<>(f.players(f.a,IN));inputs.add(inputs.getFirst());inputs.add(new Presence(f.b,UUID.randomUUID(),IN));inputs.add(new Presence(f.a,UUID.randomUUID(),new Point(100,64,0)));
+        assertTrue(f.engine.enter(f.a,f.p,IN,IN,inputs).isEmpty());assertEquals(0,f.calls);assertEquals(List.of("first"),f.engine.enter(f.a,f.p,OUT,IN,inputs));var snapshot=f.first();assertEquals(2,snapshot.players());assertEquals(2,snapshot.mobs().size());assertEquals(30,snapshot.difficulty().health());
+        assertTrue(f.engine.enter(f.a,f.p,OUT,IN,List.of(new Presence(f.a,f.p,IN))).isEmpty());assertEquals(snapshot,f.first());assertEquals(2,f.calls);}
+    @Test void followingZoneRecountsAndOtherProgressIsIndependent(){var f=new Fixture();f.enter();f.engine.enter(f.a,f.p,OUT,NEXT,List.of(new Presence(f.a,f.p,NEXT)));assertEquals(1,f.engine.state(f.a.run(),"next").orElseThrow().players());f.engine.enter(f.b,f.p,OUT,IN,List.of(new Presence(f.b,f.p,IN)));assertEquals(2,f.first().players());assertEquals(1,f.engine.state(f.b.run(),"first").orElseThrow().players());assertEquals(4,f.live.size());}
+    @Test void absentOrWrongWorldEntrantCannotTrigger(){var f=new Fixture();assertThrows(IllegalStateException.class,()->f.engine.enter(f.a,f.p,OUT,IN,List.of(new Presence(f.b,f.p,IN))));assertTrue(f.engine.state(f.a.run(),"first").isEmpty());assertEquals(0,f.calls);var wrong=new Binding(f.a.run(),UUID.randomUUID(),1);assertThrows(IllegalStateException.class,()->f.engine.enter(wrong,f.p,OUT,IN,f.players(wrong,IN)));assertThrows(IllegalStateException.class,()->f.engine.bind(new Binding(UUID.randomUUID(),f.a.world(),1)));}
+    @Test void partialFailureRemovesOnlyOwnNewEntitiesAndPreventsRetry(){var f=new Fixture();f.engine.enter(f.b,f.p,OUT,IN,List.of(new Presence(f.b,f.p,IN)));var preserved=Set.copyOf(f.live);f.failAt=3;assertThrows(IllegalStateException.class,f::enter);assertEquals(Phase.ERROR_HOLD,f.first().phase());assertEquals(preserved,f.live);f.enter();assertEquals(3,f.calls);assertEquals(Phase.ACTIVE,f.engine.state(f.b.run(),"first").orElseThrow().phase());}
+    @Test void cleanupFailureKeepsReferencesInHoldAndCanBeRetiredLater(){var f=new Fixture();f.failAt=2;f.removeFails=true;assertThrows(IllegalStateException.class,f::enter);assertEquals(1,f.first().mobs().size());assertEquals(Phase.ERROR_HOLD,f.first().phase());assertThrows(IllegalStateException.class,()->f.engine.retire(f.a.run()));assertFalse(f.engine.current(f.a));f.removeFails=false;f.engine.retire(f.a.run());assertTrue(f.live.isEmpty());assertEquals(Phase.RETIRED,f.first().phase());}
+    @Test void reentrantRequestDoesNotCreateSecondSpawnJob(){var f=new Fixture();f.onSpawn=()->assertTrue(f.engine.enter(f.a,f.p,OUT,IN,f.players(f.a,IN)).isEmpty());f.enter();assertEquals(2,f.calls);assertEquals(Phase.ACTIVE,f.first().phase());}
+    @Test void generationInvalidationDuringSpawnNeverReportsActive(){var f=new Fixture();f.onSpawn=()->f.engine.retire(f.a.run());assertThrows(IllegalStateException.class,f::enter);assertTrue(f.live.isEmpty());assertEquals(Phase.ERROR_HOLD,f.first().phase());assertThrows(IllegalStateException.class,()->f.engine.bind(new Binding(f.a.run(),f.a.world(),2)));}
+    @Test void deathsDoNotRecalculateDifficultyOrRespawnAndCannotAffectOtherRun(){var f=new Fixture();f.enter();var before=f.first();var mob=before.mobs().iterator().next();assertTrue(f.engine.mayAttack(f.a,mob));assertFalse(f.engine.mayAttack(f.b,mob));f.engine.died(f.b,"first",mob);assertEquals(before,f.first());f.engine.died(f.a,"first",mob);f.engine.died(f.a,"first",mob);assertEquals(1,f.first().mobs().size());assertEquals(before.difficulty(),f.first().difficulty());assertFalse(f.engine.mayAttack(f.a,mob));for(UUID id:f.first().mobs())f.engine.died(f.a,"first",id);assertEquals(Phase.CLEARED,f.first().phase());f.enter();assertEquals(2,f.calls);}
+    @Test void retireIsIdempotentKeepsOtherRunAndRejectsOldGeneration(){var f=new Fixture();f.enter();f.engine.enter(f.b,f.p,OUT,IN,f.players(f.b,IN));var other=f.engine.state(f.b.run(),"first");f.engine.retire(f.a.run());f.engine.retire(f.a.run());assertEquals(2,f.live.size());assertEquals(other,f.engine.state(f.b.run(),"first"));assertThrows(IllegalStateException.class,f::enter);assertFalse(f.engine.mayAttack(f.a,UUID.randomUUID()));}
+    static Map<String,Object> definition(){return new HashMap<>(Map.of("id","first","title","공개 조우","entity","ZOMBIE","trigger",Map.of("min-x",0,"max-x",2,"min-y",64,"max-y",68,"min-z",0,"max-z",2),"population",Map.of("min-x",-1,"max-x",4,"min-y",63,"max-y",70,"min-z",-1,"max-z",4),"spawn",Map.of("x",1,"y",64,"z",1),"scaling",List.of(Map.of("players",1,"count",1,"health",20,"attack",2))));}
+    static FieldContent parse(Map<String,Object> zone){return FieldContent.parse(Map.of("format",1,"zones",List.of(zone)));}
+    @Test void contentRejectsBadReferencesBoundsScalingAndDuplicates(){assertEquals(1,parse(definition()).zones().size());for(var change:List.of(Map.of("entity","UNKNOWN"),Map.of("spawn",Map.of("x",Double.NaN,"y",64,"z",0)),Map.of("population",definition().get("trigger")),Map.of("scaling",List.of(Map.of("players",2,"count",1,"health",20,"attack",2))),Map.of("scaling",List.of(Map.of("players",1,"count",1000,"health",20,"attack",2))))){var z=definition();z.putAll(change);assertThrows(IllegalArgumentException.class,()->parse(z));}assertThrows(IllegalArgumentException.class,()->new FieldContent(List.of(zone("same",0),zone("same",10))));assertThrows(IllegalArgumentException.class,()->new Zone("bad","공개",zone("a",0).trigger(),zone("a",0).population(),IN,List.of(new Tier(1,1,20,2),new Tier(1,2,30,3))));}
+}

@@ -1,0 +1,21 @@
+# 새 격리 실행의 합성 조우입니다. 실제 전투 밸런스·재소환 정책이 아닙니다.
+format: 1
+zones:
+  - id: public_field_one
+    title: 공개 첫 조우
+    entity: ZOMBIE
+    trigger: {min-x: 28, max-x: 30, min-y: 64, max-y: 68, min-z: 28, max-z: 30}
+    population: {min-x: 25, max-x: 33, min-y: 62, max-y: 70, min-z: 25, max-z: 33}
+    spawn: {x: 29.5, y: 64, z: 29.5}
+    scaling:
+      - {players: 1, count: 1, health: 20, attack: 2}
+      - {players: 2, count: 2, health: 30, attack: 3}
+  - id: public_field_two
+    title: 공개 다음 조우
+    entity: ZOMBIE
+    trigger: {min-x: 36, max-x: 38, min-y: 64, max-y: 68, min-z: 28, max-z: 30}
+    population: {min-x: 33, max-x: 41, min-y: 62, max-y: 70, min-z: 25, max-z: 33}
+    spawn: {x: 37.5, y: 64, z: 29.5}
+    scaling:
+      - {players: 1, count: 1, health: 20, attack: 2}
+      - {players: 2, count: 2, health: 30, attack: 3}

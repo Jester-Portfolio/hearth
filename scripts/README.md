@@ -63,3 +63,5 @@
 `--sessions --quests --story-batch --quest-completion`은 명시적 규칙 게이트에서 실패/재시작·보상·장 스킵과 두 JVM 복원을 검사한다. [현재 판정·범위](../docs/quest-completion-verification.md)를 먼저 확인한다.
 
 `--sessions --quests --story-batch --branch-progression`은 확정 분기 시작 권한·선택 경로 장 스킵·스마트폰 지급/장 화면·두 JVM 지급 기록 복원을 검사한다. 실제 사용자 조작은 하지 않으며 [범위와 결과](../docs/branch-progression-verification.md)를 따른다.
+
+`--sessions --quests --story-batch --field-encounters`는 한 JVM에서 콘텐츠 필드 조우·실제 몹 속성/사망 이벤트·진행 격리·언로드 정리를 검사한다. 인원/이동은 내부 제어 입력이며 실제 플레이어 행동이 아니다. [제한·결과](../docs/field-encounters-verification.md)를 따른다.

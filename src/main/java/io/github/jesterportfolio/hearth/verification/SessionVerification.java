@@ -7,6 +7,7 @@ import io.github.jesterportfolio.hearth.session.*;
 import io.github.jesterportfolio.hearth.quest.*;
 import io.github.jesterportfolio.hearth.exploration.*;
 import io.github.jesterportfolio.hearth.story.*;
+import io.github.jesterportfolio.hearth.combat.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -83,6 +84,7 @@ public final class SessionVerification implements AutoCloseable {
     private PersonalQuest npcProbe;
     private CompletionStage<PersonalQuest.Session> npcPendingRead;
     private QuestRules questRules=QuestRules.empty();private QuestRewards questRewards;
+    private PaperFieldEncounters fieldEncounters;
     private Object listToken=new Object();
     private CompletionStage<Map<String,QuestStore.Saved>> pendingList;
     private CompletionStage<Void> listBarrier;
@@ -102,6 +104,10 @@ public final class SessionVerification implements AutoCloseable {
         World waiting=Bukkit.getWorlds().getFirst();
         for (int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)waiting.getBlockAt(x,63,z).setType(Material.STONE,false);
         adapter=new PaperSessionAdapter(plugin,coordinator,owner,codec,new Location(waiting,0.5,64,0.5));
+        if(plugin.getConfig().getBoolean("field-encounter-verification-enabled")){
+            var file=new java.io.File(plugin.getDataFolder(),"field-demo.yml");if(!file.exists())plugin.saveResource("field-demo.yml",false);
+            fieldEncounters=new PaperFieldEncounters(plugin,adapter,worlds,FieldContent.parse(YamlConfiguration.loadConfiguration(file).getValues(false)));
+        }
         if(catalog!=null) {
             content=catalog.all().stream().filter(c->c.id().equals("survey_marker")).findFirst().orElse(catalog.all().iterator().next());
             quests=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);quests.requireRules(catalog.requiredRules());store.requireQuestRules(catalog.requiredRules());
@@ -255,6 +261,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "field-encounters" -> fieldEncounters();
         case "branch-progression-start" -> branchProgressionStart();
         case "branch-progression-restored" -> branchProgressionRestored();
         case "quest-completion-start" -> completionStart();
@@ -564,6 +571,32 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> fieldEncounters(){return openAll().thenCompose(v->{
+        CompletionStage<Void> ready=CompletableFuture.completedFuture(null);
+        for(UUID run:List.of(a,b))for(int x:List.of(1,2)){int chunkX=x;ready=ready.thenCompose(done->{var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));return mainResult(world.getChunkAtAsync(chunkX,1)).thenAccept(chunk->{world.addPluginChunkTicket(chunkX,1,plugin);check(world.isChunkLoaded(chunkX,1),"field_controlled_spawn_chunk_prepared");});});}return ready;
+    }).thenRun(()->{
+        var one=fieldEncounters.binding(a);var other=fieldEncounters.binding(b);var from=new FieldContent.Point(24,64,29);var first=new FieldContent.Point(29,64,29);var next=new FieldContent.Point(37,64,29);
+        var p1=new FieldEncounters.Presence(one,a1.playerId(),first);var p2=new FieldEncounters.Presence(one,a2.playerId(),new FieldContent.Point(31,64,29));var wrong=new FieldEncounters.Presence(other,b3.playerId(),first);
+        check(fieldEncounters.count(a)==0&&fieldEncounters.count(b)==0,"field_no_eager_spawning");
+        fieldEncounters.enter(one,a1.playerId(),from,first,List.of(p1,p2,wrong,p1));var snap=fieldEncounters.engine().state(a,"public_field_one").orElseThrow();
+        check(snap.players()==2&&snap.difficulty().count()==2&&fieldEncounters.count(a)==2&&fieldEncounters.count(b)==0,"field_spawn_population_unique_and_run_scoped");
+        for(var entity:fieldEncounters.entities(a))check(entity.getWorld().getUID().equals(one.world())&&entity.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue()==30&&entity.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).getBaseValue()==3&&!entity.isPersistent(),"field_real_entities_fixed_attributes_and_world");
+        fieldEncounters.enter(one,a1.playerId(),from,first,List.of(p1));check(fieldEncounters.count(a)==2&&fieldEncounters.engine().state(a,"public_field_one").orElseThrow().players()==2,"field_reentry_does_not_duplicate_or_rescale");
+        fieldEncounters.enter(one,a1.playerId(),from,next,List.of(new FieldEncounters.Presence(one,a1.playerId(),next)));check(fieldEncounters.engine().state(a,"public_field_two").orElseThrow().players()==1&&fieldEncounters.count(a)==3,"field_next_zone_recounts_population");
+        fieldEncounters.enter(other,b3.playerId(),from,first,List.of(wrong));check(fieldEncounters.count(b)==1&&fieldEncounters.count(a)==3,"field_other_run_independent_encounter");
+        for(UUID id:snap.mobs())((org.bukkit.entity.LivingEntity)Objects.requireNonNull(Bukkit.getEntity(id))).setHealth(0);
+        check(fieldEncounters.engine().state(a,"public_field_one").orElseThrow().phase()==FieldEncounters.Phase.CLEARED&&fieldEncounters.count(a)==1,"field_real_entity_deaths_clear_only_matching_encounter");
+        fieldEncounters.enter(one,a1.playerId(),from,first,List.of(p1,p2));check(fieldEncounters.count(a)==1,"field_cleared_encounter_not_implicitly_reset");
+        var stale=new FieldEncounters.Binding(a,one.world(),one.generation()+1);try{fieldEncounters.enter(stale,a1.playerId(),from,first,List.of(p1));throw new AssertionError("Stale field binding accepted");}catch(IllegalStateException expected){check(expected.getMessage().equals("FIELD_STALE_GENERATION"),"field_stale_binding_rejected");}
+        fieldEncounters.retire(a);check(fieldEncounters.count(a)==0&&fieldEncounters.count(b)==1,"field_A_cleanup_preserves_B_entities");try{fieldEncounters.binding(a);throw new AssertionError("Retired field auto reset");}catch(IllegalStateException expected){check(expected.getMessage().equals("FIELD_RETIRED"),"field_retired_encounter_never_auto_respawns");}
+        try{new PaperFieldEncounters(plugin,adapter,worlds,FieldContent.parse(YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"field-demo.yml")).getValues(false)));throw new AssertionError("Existing field scope recreated");}catch(IllegalStateException expected){check(expected.getMessage().equals("FIELD_RESTART_REVIEW_REQUIRED"),"field_existing_scope_marker_prevents_automatic_recreation");}
+        for(UUID run:List.of(a,b))for(int x:List.of(1,2))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(x,1,plugin);
+    }).thenCompose(v->mainResult(coordinator.disconnect(s1))).thenCompose(v->mainResult(coordinator.disconnect(s2)))
+        .thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
+        .thenRun(()->check(fieldEncounters.count(a)==0&&fieldEncounters.count(b)==1,"field_world_unload_removes_only_A_references"))
+        .thenCompose(v->{one=new Controlled();s1=connect(a1,one);return mainResult(s1.ready());})
+        .thenRun(()->{check(Bukkit.getWorld(worlds.get(a).mapping().physicalId())!=null&&fieldEncounters.count(a)==0,"field_existing_world_reload_does_not_respawn_retired_encounters");fieldEncounters.retire(b);check(fieldEncounters.count(b)==0,"field_all_owned_entities_removed");})
+        .thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,5,0));}
     private CompletionStage<Void> branchProgressionStart(){return openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1));sharedStory.rosterChanged(a1);})
         .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->check(view.exploration().blockedQuests().containsAll(Set.of("branch_one_review","branch_two_review"))&&view.completion().chapters().isEmpty(),"branch_unconfirmed_quests_and_future_chapters_hidden"))
         .thenCompose(v->expect(store.advanceQuest(a1,"branch_one_review",new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1),QuestStore.Phase.ACTIVE),"QUEST_BRANCH_LOCKED"))
@@ -1455,7 +1488,7 @@ public final class SessionVerification implements AutoCloseable {
     public void releaseQuests(UUID run){if(quests!=null)quests.release(run);if(blockEffect!=null){blockEffect.unloaded(run);sharedStory.worldUnloaded(run);}}
     public CompletionStage<Void> shutdown(){
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
-        if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
+        if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
         CompletionStage<Void> other=s3==null ? CompletableFuture.completedFuture(null) : coordinator.disconnect(s3);
         return mainResult(other).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
             if(error!=null && !(expectedHold && "23514".equals(s1.error()) && "MOVE_FAILED".equals(s2.error())
@@ -1489,5 +1522,5 @@ public final class SessionVerification implements AutoCloseable {
         mainResult(store.readInventory(context)).thenAccept(saved->log("MANUAL_DB count="+codec.decode(saved.payload())[0].getAmount()+" revision="+saved.revision()))
             .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
-    @Override public void close(){if(questAdapter!=null)questAdapter.close();autosave.close();adapter.close();}
+    @Override public void close(){if(fieldEncounters!=null)fieldEncounters.close();if(questAdapter!=null)questAdapter.close();autosave.close();adapter.close();}
 }

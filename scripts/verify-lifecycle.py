@@ -76,6 +76,7 @@ def main():
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
     parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
+    parser.add_argument('--field-encounters', action='store_true', help='필드 조우·고정 난이도·진행 격리·정리를 한 JVM에서 검사합니다')
     parser.add_argument('--branch-progression', action='store_true', help='확정 분기·개인 보상/장 화면과 두 JVM 복원을 검사합니다')
     parser.add_argument('--quest-completion', action='store_true', help='실패/재시작·즉시 보상·장 스킵과 두 JVM 복원을 검사합니다')
     parser.add_argument('--general-npcs', action='store_true', help='일반 NPC·일지 대화 연결·연속 조사와 두 JVM 복원을 검사합니다')
@@ -108,6 +109,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.field_encounters and (not args.story_batch or any([args.manual_player,args.branch_progression,args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.world_effects])):
+        parser.error('--field-encounters는 --sessions --quests --story-batch와 단독 실행합니다')
     if args.branch_progression and (not args.story_batch or any([args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.quest_info,args.quest_auto,args.quest_npc,args.quest_start,args.quest_requires,args.quest_list,args.manual_player])):
         parser.error('--branch-progression은 --sessions --quests --story-batch와 함께 실행합니다')
     if args.quest_completion and (not args.story_batch or any([args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages])):
@@ -194,6 +197,9 @@ def main():
         (plugins/'Hearth/quest-demo.yml').write_text(content.partition(cut)[0])
     idle_seconds=10 if args.manual_player else 1
     (plugins/'Hearth/config.yml').write_text(f"quest-verification-enabled: {str(args.quests).lower()}\n"+'verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
+    if args.field_encounters:
+        with (plugins/'Hearth/config.yml').open('a') as config:
+            config.write('field-encounter-verification-enabled: true\n')
     if args.quest_completion or args.branch_progression:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('quest-completion-verification-enabled: true\n')
@@ -265,7 +271,9 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.playthrough=true')
         if args.quest_completion or args.branch_progression:
             paper.insert(-3,'-Dhearth.verification.questCompletion=true')
-        for phase in (['prepare'] if args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
+        if args.field_encounters:
+            paper.insert(-3,'-Dhearth.verification.field=true')
+        for phase in (['prepare'] if args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
             name='paper-'+phase
             monitor.launch(name,paper,runtime)
@@ -287,7 +295,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.branch_progression:
+                        if args.field_encounters:
+                            monitor.action(name,'field-encounters')
+                        elif args.branch_progression:
                             monitor.action(name,'branch-progression-start')
                         elif args.quest_completion:
                             monitor.action(name,'quest-completion-start')
@@ -474,7 +484,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],
