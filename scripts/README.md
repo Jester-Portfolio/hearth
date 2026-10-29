@@ -57,3 +57,5 @@
 `verify-lifecycle.py`의 `--sessions --quests --story-batch --playthrough`는 새 격리 경로에서 기존 개인 퀘스트·공유 진행·탐험을 연결하고 순차 두 JVM에서 안내/코스를 복원한다. [범위·결과](../docs/public-playthrough-verification.md)를 따른다. 기존 자원 상한과 콘텐츠/월드 보존 정책을 유지한다. 실제 사용자 조작은 별도 요청 전 보류한다.
 
 `--sessions --quests --story-batch --npc-topics`는 조건부 NPC 질문·중요 개인 일지·새 JVM 복원과 DB 충돌 보존을 한 묶음으로 검사한다. 실제 채팅/클릭은 실행하지 않는다. [범위·결과](../docs/npc-topics-verification.md)를 따른다.
+
+`--sessions --quests --story-batch --general-npcs`는 일반 NPC·개인 일지 대화 링크·현장 조사/발견과 IDLE·두 JVM 복원을 함께 검사한다. [범위·실패 이력·결과](../docs/general-npc-verification.md)를 따른다. 실제 사용자 조작은 수행하지 않는다.

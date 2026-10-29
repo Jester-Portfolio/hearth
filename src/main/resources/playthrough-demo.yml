@@ -9,5 +9,6 @@ steps:
   - {id: route, kind: QUEST, reference: route_marker, title: 연속 지점 조사, hint: 개방된 구역의 표지를 순서대로 방문하고 안내원에게 보고하세요.}
   - {id: followup, kind: QUEST, reference: route_followup, title: 후속 자동 조사, hint: 선행 조사를 마친 본인이 후속 시작 구역에 새로 진입해 다음 목표들을 방문하세요.}
   - {id: contact, kind: QUEST, reference: contact_route, title: 공개 시설 조사, hint: 대화·레버 확인·방문을 순서대로 진행하고 보고하세요.}
+  - {id: research, kind: QUEST, reference: research_route, title: 현장 정보와 위치 조사, hint: 안내원에게 수락한 뒤 현장 조사원과 대화하고 측정 구역을 확인해 보고하세요.}
   - {id: discovery, kind: PLACE, reference: survey_place, title: 개인 탐험, hint: 공개 탐험 정보를 확인하세요.}
   - {id: shared_finish, kind: STAGE_COMPLETE, reference: trial_open, title: 공동 조사 정리, hint: 등록된 공유 진행의 마지막 조건을 확인하고 마무리하세요.}

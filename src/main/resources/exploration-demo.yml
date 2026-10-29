@@ -15,6 +15,20 @@ shared-stages:
   - id: public_test_stage
     next-goal: 공개 시험 기록을 확인하세요.
 journal:
+  - id: research_clue
+    category: PERSON
+    title: 현장 조사원의 확인 단서
+    summary: 의뢰를 주지 않는 현장 조사원에게 직접 질문했습니다.
+    detail: 현장 대화 뒤 공개 측정 구역을 확인하고 원래 안내원에게 보고합니다. 개인 정보이며 보상이나 공동체 진행을 변경하지 않습니다.
+    version: 1
+    important: true
+  - id: research_visit
+    category: EXPLORATION
+    title: 현장 조사 지점 발견
+    summary: 공개 현장 조사 지점에서 대화했습니다.
+    detail: 이 장소의 발견은 개인 기록이며 거점 이동 해금이나 다른 플레이어의 발견을 발생시키지 않습니다.
+    version: 1
+    important: true
   - id: facility_clue
     category: PERSON
     title: 안내원의 시설 조사 단서
@@ -139,3 +153,15 @@ places:
     bounds: {min-x: 2, max-x: 5, min-y: 64, max-y: 67, min-z: 4, max-z: 7}
     location: {kind: EXACT, x: 3.5, y: 64, z: 5.5}
     journal: guide_record
+  - id: research_corner
+    marker-key: marker_research
+    name: 공개 현장 조사 지점
+    region: public_fields
+    category: 인물 조사
+    visibility: HIDDEN
+    discovery: INTERACTION
+    interaction: npc:field_researcher
+    hub: false
+    bounds: {min-x: 8, max-x: 13, min-y: 64, max-y: 67, min-z: 3, max-z: 8}
+    location: {kind: EXACT, x: 10.5, y: 64, z: 5.5}
+    journal: research_visit

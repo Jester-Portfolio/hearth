@@ -16,7 +16,7 @@ public final class QuestScreens {
             for(int i=0;i<MENUS.size();i++)out.add(new Button(i,MENUS.get(i),destinations[i],null,0));return List.copyOf(out);
         }
         out.add(new Button(45,"이전 화면","home",null,0));
-        if(view.exploration().registered() && Set.of("map","place","region","diary","STORY","PERSON","EXPLORATION","CHRONICLE","fact","event","community","members","story","conditions","branches").contains(page))return explore(view.exploration(),page,id,offset);
+        if(view.exploration().registered() && Set.of("map","place","region","diary","STORY","PERSON","EXPLORATION","CHRONICLE","fact","event","community","members","story","conditions","branches").contains(page))return explore(catalog,view,page,id,offset);
         if(Set.of("quests","reporting","tracked","completed").contains(page)){
             var filter=switch(page){case "reporting"->QuestListView.Filter.REPORTING;case "tracked"->QuestListView.Filter.TRACKED;case "completed"->QuestListView.Filter.COMPLETED;default->QuestListView.Filter.ALL;};
             var entries=QuestListView.filtered(catalog,view.states(),view.journal().tracked(),view.exploration().blockedQuests(),filter);int end=Math.min(entries.size(),offset+36);
@@ -54,7 +54,8 @@ public final class QuestScreens {
     }
     private static Button line(int slot,String text){return new Button(slot,text,"none",null,0);}
     private static String scope(boolean shared){return shared?"S:":"P:";}
-    private static List<Button> explore(ExplorationView view,String page,String id,int offset){
+    private static List<Button> explore(QuestCatalog catalog,QuestJournal.View snapshot,String page,String id,int offset){
+        var view=snapshot.exploration();
         var rows=new ArrayList<Button>();String back="home";
         switch(page){
             case "map"->{for(var r:view.regions())rows.add(new Button(0,"지역: "+r.name()+" · "+r.access(),"region",r.id(),0));for(var p:view.places())rows.add(new Button(0,p.name()+" · "+p.status(),"place",p.key(),0));}
@@ -66,7 +67,8 @@ public final class QuestScreens {
             case "STORY","PERSON","EXPLORATION"->{back="diary";for(var f:view.facts())if(f.category().equals(page))rows.add(new Button(0,(f.shared()?"[공동체] ":"[개인] ")+f.title()+" · "+f.summary(),"fact",scope(f.shared())+f.id(),0));}
             case "CHRONICLE"->{back="diary";for(var e:view.events())rows.add(new Button(0,e.time()+" · "+(e.shared()?"[공동체] ":"[개인] ")+e.title(),"event",scope(e.shared())+e.id()+":"+e.version(),0));}
             case "fact"->{back="diary";var f=view.facts().stream().filter(x->(scope(x.shared())+x.id()).equals(id)).findFirst();if(f.isEmpty())rows.add(line(0,"기록을 확인할 수 없습니다."));else{
-                var x=f.get();for(String text:List.of(x.title(),x.summary(),x.detail(),"정보 버전: "+x.version(),"최초 확인: "+x.first(),"최근 갱신: "+x.updated(),x.shared()?"공동체 공유 기록 · 개인 경험 여부 미판정":"개인 기록"))rows.add(line(0,text));}}
+                var x=f.get();for(String text:List.of(x.title(),x.summary(),x.detail(),"정보 버전: "+x.version(),"최초 확인: "+x.first(),"최근 갱신: "+x.updated(),x.shared()?"공동체 공유 기록 · 개인 경험 여부 미판정":"개인 기록"))rows.add(line(0,text));
+                for(var contact:NpcContacts.forFact(catalog,snapshot,id))rows.add(new Button(0,"관련 NPC와 대화: "+contact.name(),"npc-contact",contact.key(),0));}}
             case "event"->{back="CHRONICLE";var e=view.events().stream().filter(x->(scope(x.shared())+x.id()+":"+x.version()).equals(id)).findFirst();if(e.isEmpty())rows.add(line(0,"기록을 확인할 수 없습니다."));else{var x=e.get();for(String text:List.of(x.title(),x.summary(),x.detail(),"확인 시각: "+x.time(),x.shared()?"공동체 공유 기록":"개인 기록"))rows.add(line(0,text));}}
             case "community"->{rows.add(new Button(0,"구성원","members",null,0));rows.add(new Button(0,"스토리 진행","story",null,0));rows.add(new Button(0,"진행 조건","conditions",null,0));}
             case "members"->{back="community";rows.add(line(0,"현재 서버에서 확인한 진행 연결 · 전체 명단 아님"));for(var m:view.members())rows.add(line(0,(m.online()?"[온라인] ":"[오프라인] ")+m.name()+(m.self()?" (본인)":"")));}

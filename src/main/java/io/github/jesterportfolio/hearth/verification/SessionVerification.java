@@ -248,6 +248,8 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "general-npcs-start" -> generalNpcsStart();
+        case "general-npcs-restored" -> generalNpcsRestored();
         case "npc-topics-start" -> npcTopicsStart();
         case "npc-topics-restored" -> npcTopicsRestored();
         case "interaction-quest-start" -> interactionQuestStart();
@@ -551,6 +553,35 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private void generalNpcCheck(){var w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());questAdapter.ensure(w);questAdapter.ensure(w);
+        var actor=catalog.npc("field_researcher");check(catalog.forNpc(actor.npcId()).isEmpty()&&questAdapter.count(w,actor.npcId())==1&&questAdapter.dialogueAllowed(w,actor),"general_NPC_single_entity_no_fake_quest_and_WG_interaction");}
+    private CompletionStage<Void> generalNpcsStart(){return openAll().thenRun(()->{prepareCourse(a);prepareCourse(b);generalNpcCheck();})
+        .thenCompose(v->finishCourseQuest(a1,s1,"survey_marker")).thenCompose(v->finishCourseQuest(a1,s1,"contact_route"))
+        .thenCompose(v->quests.open(a1,"research_route",s1,()->true)).thenCompose(q->{qa=q;return quests.accept(q,catalog.quest("research_route"));})
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{check(NpcQuestView.build(catalog,"field_researcher",view.states(),c->true).marker()==NpcQuestView.Marker.NONE,"general_NPC_no_quest_marker");
+            check(NpcContacts.forFact(catalog,view,"P:research_clue").isEmpty(),"general_unknown_record_has_no_contact_link");
+            var d=new QuestDialogue(catalog);var w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());questAdapter.ensure(w);var actor=w.getEntitiesByClass(org.bukkit.entity.Villager.class).stream().filter(e->e.getX()>10).findFirst().orElseThrow();
+            check(d.options(a1.playerId(),s1,a,w.getUID(),actor.getUniqueId(),"field_researcher").isEmpty(),"general_dialogue_without_quest_tickets");var scope=d.conversation(a1.playerId());
+            var page=d.beginPages(a1.playerId(),s1,a,w.getUID(),actor.getUniqueId(),"field_researcher").orElseThrow();check(PaperQuestAdapter.pageMessages(catalog,d,page).size()>1&&d.current(scope),"general_pages_bound_to_current_conversation");d.clearWorld(w.getUID());check(!d.current(scope),"general_old_empty_dialogue_invalidated_on_unload");})
+        .thenCompose(v->journal.interactPlace(a1,s1,()->true,"npc:field_researcher",10.5,64,5.5))
+        .thenCompose(v->journal.topic(a1,s1,()->true,"field_researcher","research_clue"))
+        .thenCompose(v->quests.interact(qa,catalog.quest("research_route"),"npc:field_researcher"))
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{check(view.states().get("research_route").objectiveIndex()==1&&view.states().get("research_route").revision()==1,"general_NPC_objective_saved_at_step_one");
+            check(view.exploration().place("research_corner").filter(p->p.discovered()&&!p.hubUnlocked()).isPresent(),"general_personal_place_discovery_not_hub_unlock");
+            check(NpcContacts.resolve(catalog,view,"research_clue:field_researcher").isPresent()&&QuestScreens.screen(catalog,view,"fact","P:research_clue",0).stream().anyMatch(b->b.action().equals("npc-contact")),"general_diary_contact_button_verified_from_own_fact");})
+        .thenCompose(v->generalNpcCycle());}
+    private CompletionStage<Void> generalNpcCycle(){UUID physical=worlds.get(a).mapping().physicalId();return mainResult(coordinator.disconnect(s1)).thenCompose(v->mainResult(coordinator.disconnect(s2)))
+        .thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE)).thenRun(()->check(!questAdapter.tracks(physical)&&Bukkit.getWorld(physical)==null,"general_idle_unload_clears_NPC_world_references"))
+        .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return mainResult(s1.ready()).thenCompose(x->mainResult(s2.ready()));})
+        .thenRun(this::generalNpcCheck);}
+    private CompletionStage<Void> generalNpcsRestored(){return openAll().thenRun(this::generalNpcCheck)
+        .thenCompose(v->quests.open(a1,"research_route",s1,()->true)).thenCompose(q->{qa=q;check(q.saved().objectiveIndex()==1&&q.saved().revision()==1,"general_new_JVM_restores_NPC_objective_index");return quests.reach(q,catalog.quest("research_route"),17,64,7);})
+        .thenCompose(v->quests.advance(qa,QuestStore.Phase.COMPLETED)).thenCompose(v->questRead(a1,"research_route",QuestStore.Phase.COMPLETED,3))
+        .thenCompose(v->journal.interactPlace(a1,s1,()->true,"npc:field_researcher",10.5,64,5.5)).thenCompose(v->journal.topic(a1,s1,()->true,"field_researcher","research_clue"))
+        .thenAccept(view->{check(view.exploration().events().stream().filter(e->e.id().equals("research_clue")).count()==1&&view.journal().notices().stream().filter(n->n.type().equals("PLACE")&&n.quest().equals("research_corner")).count()==1,"general_repeat_interaction_no_duplicate_clue_or_discovery_notice");
+            check(NpcContacts.resolve(catalog,view,"research_clue:field_researcher").isPresent(),"general_new_JVM_restores_personal_diary_contact");})
+        .thenCompose(v->journal.load(a2,s2,()->true)).thenAccept(view->check(view.exploration().facts().isEmpty()&&NpcContacts.resolve(catalog,view,"research_clue:field_researcher").isEmpty(),"general_other_player_no_fact_or_contact"))
+        .thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->check(view.exploration().facts().isEmpty()&&view.states().get("research_route").phase()==QuestStore.Phase.NOT_ACCEPTED,"general_other_run_progress_and_fact_isolated"));}
     private CompletionStage<Void> npcTopicsStart(){return openAll()
         .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{
             var visible=catalog.availableTopics("survey_guide",view.states(),id->journal.questAllowed(a1,id));
@@ -640,7 +671,7 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->sharedStory.cast(a2,s2,()->true,storyVote.id(),"route_one"))
             .thenRun(()->check(Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen()),"course_shared_exploration_unlocked"))
             .thenCompose(v->finishCourseQuest(a1,s1,"route_marker"))
-            .thenCompose(v->finishCourseQuest(a1,s1,"route_followup")).thenCompose(v->finishCourseQuest(a1,s1,"contact_route"))
+            .thenCompose(v->finishCourseQuest(a1,s1,"route_followup")).thenCompose(v->finishCourseQuest(a1,s1,"contact_route")).thenCompose(v->finishCourseQuest(a1,s1,"research_route"))
             .thenCompose(v->journal.enterPlaces(a1,s1,()->true,0,64,0,21,64,21))
             .thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->courseGuide(a1,s1))
             .thenAccept(guide->{check(guide.complete(),"course_all_guidance_completed");World world=Bukkit.getWorld(worlds.get(a).mapping().physicalId());check(world.getBlockAt(37,63,37).getType()==Material.STONE,"course_far_goal_walkable");world.getBlockAt(10,63,10).setType(Material.BRICKS,false);})

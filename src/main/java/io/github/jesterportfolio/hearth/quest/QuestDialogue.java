@@ -16,6 +16,10 @@ public final class QuestDialogue {
     }
     private final QuestCatalog catalog;
     private final Map<UUID,Map<String,Ticket>> current=new HashMap<>();
+    public record Conversation(UUID player,Object session,UUID run,UUID world,UUID entity,String npc){}
+    private final Map<UUID,Conversation> conversations=new HashMap<>();
+    public Conversation conversation(UUID player){return Objects.requireNonNull(conversations.get(player),"No conversation");}
+    public boolean current(Conversation c){return conversations.get(c.player())==c;}
     public record Page(UUID player,Object session,UUID run,UUID world,UUID entity,String npc,int index,UUID nonce){}
     private final Map<UUID,Page> pages=new HashMap<>();
     public Optional<Page> beginPages(UUID player,Object session,UUID run,UUID world,UUID entity,String npc){
@@ -47,7 +51,7 @@ public final class QuestDialogue {
     private final Set<UUID> consumed=new HashSet<>();
     public QuestDialogue(QuestCatalog catalog){this.catalog=catalog;}
     public List<Ticket> options(UUID player,Object session,UUID run,UUID world,UUID entity,String npc){
-        var content=catalog.forNpc(npc);clear(player);var tickets=new LinkedHashMap<String,Ticket>();
+        var content=catalog.forNpc(npc);clear(player);conversations.put(player,new Conversation(player,session,run,world,entity,npc));var tickets=new LinkedHashMap<String,Ticket>();
         for(var c:content)tickets.put(c.id(),new Ticket(player,session,run,world,entity,npc,c.id(),UUID.randomUUID(),"select"));
         current.put(player,tickets);return List.copyOf(tickets.values());
     }
@@ -66,7 +70,7 @@ public final class QuestDialogue {
         return ticket;
     }
     public String command(Ticket t,String action){if(!current(t) || !t.action().equals(action))throw new IllegalArgumentException("Invalid dialogue action");return "/hearthquest "+action+" "+t.npc()+" "+t.quest()+" "+t.nonce();}
-    public void clear(UUID player){clearTopics(player);pages.remove(player);var tickets=current.remove(player);if(tickets!=null)tickets.values().forEach(t->consumed.remove(t.nonce()));}
-    public void clearWorld(UUID world){for(var rows:List.copyOf(topics.values()))if(rows.values().stream().anyMatch(t->t.world().equals(world)))clear(rows.values().iterator().next().player());for(var page:List.copyOf(pages.values()))if(page.world().equals(world))clear(page.player());for(var rows:List.copyOf(current.values()))if(rows.values().stream().anyMatch(t->t.world().equals(world)))clear(rows.values().iterator().next().player());}
-    public void clear(){topics.clear();current.clear();pages.clear();consumed.clear();}
+    public void clear(UUID player){conversations.remove(player);clearTopics(player);pages.remove(player);var tickets=current.remove(player);if(tickets!=null)tickets.values().forEach(t->consumed.remove(t.nonce()));}
+    public void clearWorld(UUID world){for(var c:List.copyOf(conversations.values()))if(c.world().equals(world))clear(c.player());for(var rows:List.copyOf(topics.values()))if(rows.values().stream().anyMatch(t->t.world().equals(world)))clear(rows.values().iterator().next().player());for(var page:List.copyOf(pages.values()))if(page.world().equals(world))clear(page.player());for(var rows:List.copyOf(current.values()))if(rows.values().stream().anyMatch(t->t.world().equals(world)))clear(rows.values().iterator().next().player());}
+    public void clear(){conversations.clear();topics.clear();current.clear();pages.clear();consumed.clear();}
 }

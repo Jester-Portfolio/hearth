@@ -1,0 +1,162 @@
+{
+  "outcome": "PASS",
+  "unit_tests": {
+    "tests": 56,
+    "failures": 0,
+    "errors": 0,
+    "classes": [
+      "GeneralNpcTest",
+      "QuestCatalogTest",
+      "QuestDialogueTest",
+      "NpcPagesTest",
+      "NpcTopicsTest",
+      "NpcQuestViewTest",
+      "ExplorationTest",
+      "QuestNavigationTest",
+      "InteractionQuestTest",
+      "PlaythroughTest"
+    ]
+  },
+  "attempts": [
+    {
+      "outcome": "FAIL",
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+      "workspace": "/tmp/hearth-s4-11.j_p4oua2",
+      "duration_seconds": 35.081,
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "all_owned_processes_and_ports_closed": false,
+      "plugin_sha256": "4a2e653b5ae69530e35f95b0da83231d13de65d6df60c9c651e84834e5ef1d4f",
+      "installed_plugin_sha256": "4a2e653b5ae69530e35f95b0da83231d13de65d6df60c9c651e84834e5ef1d4f",
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "general_NPC_single_entity_no_fake_quest_and_WG_interaction",
+        "course_quest_completed_survey_marker",
+        "course_quest_completed_contact_route",
+        "general_NPC_no_quest_marker",
+        "general_unknown_record_has_no_contact_link"
+      ],
+      "player_actions_verdict": "NOT_RUN",
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 34.695,
+          "shutdown_seconds": 0.208,
+          "max_sampled_rss_kib": 220204,
+          "observed_cpu_seconds": 2.31,
+          "min_sampled_host_available_kib": 11725404
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "ready_seconds": 13.699,
+          "duration_seconds": 31.867,
+          "shutdown_seconds": 4.062,
+          "max_sampled_rss_kib": 1268244,
+          "observed_cpu_seconds": 66.8,
+          "min_sampled_host_available_kib": 11724900
+        }
+      }
+    },
+    {
+      "outcome": "PASS",
+      "failure": null,
+      "workspace": "/tmp/hearth-s4-11.cn8g_t1w",
+      "duration_seconds": 60.96,
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "ba4ec551c5cd345c1d040f618fb355abd33f72d35b3354459091ec128aabdbbd",
+      "installed_plugin_sha256": "ba4ec551c5cd345c1d040f618fb355abd33f72d35b3354459091ec128aabdbbd",
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "general_NPC_single_entity_no_fake_quest_and_WG_interaction",
+        "course_quest_completed_survey_marker",
+        "course_quest_completed_contact_route",
+        "general_NPC_no_quest_marker",
+        "general_unknown_record_has_no_contact_link",
+        "general_dialogue_without_quest_tickets",
+        "general_pages_bound_to_current_conversation",
+        "general_old_empty_dialogue_invalidated_on_unload",
+        "general_NPC_objective_saved_at_step_one",
+        "general_personal_place_discovery_not_hub_unlock",
+        "general_diary_contact_button_verified_from_own_fact",
+        "general_idle_unload_clears_NPC_world_references",
+        "general_NPC_single_entity_no_fake_quest_and_WG_interaction",
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "general_NPC_single_entity_no_fake_quest_and_WG_interaction",
+        "general_new_JVM_restores_NPC_objective_index",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_research_route_COMPLETED_r3",
+        "general_repeat_interaction_no_duplicate_clue_or_discovery_notice",
+        "general_new_JVM_restores_personal_diary_contact",
+        "general_other_player_no_fact_or_contact",
+        "general_other_run_progress_and_fact_isolated"
+      ],
+      "player_actions_verdict": "NOT_RUN",
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 60.258,
+          "shutdown_seconds": 0.108,
+          "max_sampled_rss_kib": 219368,
+          "observed_cpu_seconds": 2.27,
+          "min_sampled_host_available_kib": 11797288
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "ready_seconds": 13.309,
+          "duration_seconds": 39.06,
+          "shutdown_seconds": 3.654,
+          "max_sampled_rss_kib": 1185776,
+          "observed_cpu_seconds": 76.06,
+          "min_sampled_host_available_kib": 11797288
+        },
+        "paper-resume": {
+          "exit_code": 0,
+          "ready_seconds": 8.742,
+          "duration_seconds": 18.267,
+          "shutdown_seconds": 3.529,
+          "max_sampled_rss_kib": 971944,
+          "observed_cpu_seconds": 33.8,
+          "min_sampled_host_available_kib": 12007500
+        }
+      }
+    }
+  ],
+  "first_attempt_followup": "실패 기록의 종료 확인 누락은 그대로 보존. Hikari 종료 로그와 소유 PID 종료·게임/DB 포트 반환을 따로 확인한 뒤 새 경로에서 재시험.",
+  "correction": "시험의 긴 DB 준비 뒤 일반 NPC 조회 직전에 기존 ensure를 호출해 유효한 엔티티를 준비. 게임 코드 변경 없이 JAR 재빌드 후 통합만 재실행.",
+  "scope": "일반 NPC·대화 문맥·일지 연결의 내부 경계/GUI 데이터와 실제 Paper 월드/WorldGuard/PG 저장·두 JVM 복원. 실제 사용자 조작은 미실행.",
+  "not_executed": [
+    "실제 인증 클라이언트 NPC/채팅/GUI/이동",
+    "PostgreSQL 프로세스 재시작",
+    "장기 부하·TPS/MSPT·메모리 누수",
+    "운영 배포"
+  ]
+}

@@ -24,6 +24,20 @@ npcs:
     x: 3.5
     y: 64.0
     z: 5.5
+  - id: field_researcher
+    name: 공개 현장 조사원
+    dialogue-pages:
+      - 저는 의뢰를 주거나 보고를 받지 않습니다. 안내원의 개인 조사 중 필요한 현장 정보를 질문할 수 있습니다.
+      - 직접 확인한 정보는 본인의 일지에서 다시 읽을 수 있습니다. 다른 사람의 기록은 함께 열리지 않습니다.
+    topics:
+      - id: research_clue
+        label: 현장 조사에서는 무엇을 확인하나요?
+        text: 현장 대화 뒤 공개 측정 구역을 방문하고 원래 안내원에게 보고하세요. 직접 질문한 내용은 개인 일지에 기록됩니다.
+        requires-completed: contact_route
+        journal: research_clue
+    x: 10.5
+    y: 64.0
+    z: 5.5
 quests:
   - id: survey_marker
     completion-mode: report
@@ -210,3 +224,19 @@ quests:
       report: '[시설 조사 보고]'
       completed: 공개 시설 조사를 보고했습니다.
       failure: 시설 조사 저장 상태를 확인할 수 없습니다.
+  - id: research_route
+    title: 현장 조사원과 위치 확인
+    npc-id: survey_guide
+    requires-completed: contact_route
+    completion-mode: report
+    objectives:
+      - {description: 공개 현장 조사원에게 대화 걸기, interaction: 'npc:field_researcher', min-x: 9, max-x: 12, min-y: 64, max-y: 67, min-z: 4, max-z: 7, location: {kind: EXACT, x: 10.5, y: 64, z: 5.5}}
+      - {description: 공개 측정 구역 확인, min-x: 16, max-x: 18, min-y: 64, max-y: 67, min-z: 6, max-z: 8, location: {kind: EXACT, x: 17, y: 64, z: 7}}
+    text:
+      offer: 시설 조사 후 현장 조사원에게 대화하고 측정 구역을 확인해 주세요. 질문으로 확인한 단서는 개인 일지에서 다시 볼 수 있습니다.
+      accept: '[현장 확인 수락]'
+      active: 현장 정보와 위치를 순서대로 확인합니다.
+      report-ready: 현장 확인을 마쳤습니다. 원래 안내원에게 보고해 주세요.
+      report: '[현장 확인 보고]'
+      completed: 개인 현장 확인을 보고했습니다.
+      failure: 현장 확인의 저장 상태를 확인할 수 없습니다.

@@ -4,6 +4,9 @@ import java.util.*;
 
 /** 목록을 끝까지 검증한 뒤에만 공개합니다. 초기 로딩 전용이며 게임 정책/자동 이관 엔진이 아닙니다. */
 public final class QuestCatalog {
+    public record Npc(String npcId,String name,double x,double y,double z){}
+    private final Map<String,Npc> actors;
+    public Npc npc(String id){return Objects.requireNonNull(actors.get(id),"Unknown NPC");}
     private final Map<String,QuestContent> quests;
     private final Map<String,List<QuestContent>> npcs;
     private final Map<String,List<String>> pages;
@@ -15,22 +18,26 @@ public final class QuestCatalog {
     public Topic topic(String npc,String id){return topics(npc).stream().filter(t->t.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("Unknown topic"));}
     public List<Topic> availableTopics(String npc,Map<String,io.github.jesterportfolio.hearth.persistence.QuestStore.Saved> rows,java.util.function.Predicate<String> allowed){return topics(npc).stream().filter(t->t.available(rows,allowed)).toList();}
     public List<String> pages(String npc){return Objects.requireNonNull(pages.get(npc),"Unknown NPC");}
-    private QuestCatalog(Map<String,QuestContent> quests,Map<String,List<QuestContent>> npcs,Map<String,List<String>> pages,Map<String,List<Topic>> topics){
-        this.topics=Map.copyOf(topics);this.pages=Map.copyOf(pages);this.quests=Collections.unmodifiableMap(new LinkedHashMap<>(quests));
+    private QuestCatalog(Map<String,QuestContent> quests,Map<String,List<QuestContent>> npcs,Map<String,List<String>> pages,Map<String,List<Topic>> topics,Map<String,Npc> actors){
+        this.actors=Collections.unmodifiableMap(new LinkedHashMap<>(actors));this.topics=Map.copyOf(topics);this.pages=Map.copyOf(pages);this.quests=Collections.unmodifiableMap(new LinkedHashMap<>(quests));
         var groups=new LinkedHashMap<String,List<QuestContent>>();npcs.forEach((id,rows)->groups.put(id,List.copyOf(rows)));this.npcs=Collections.unmodifiableMap(groups);
     }
     public Collection<QuestContent> all(){return quests.values();}
     public Set<String> questIds(){return quests.keySet();}
     public QuestContent quest(String id){return Objects.requireNonNull(quests.get(id),"Unknown quest");}
     public List<QuestContent> forNpc(String id){return Objects.requireNonNull(npcs.get(id),"Unknown NPC");}
-    /** NPC 위치·표시는 동일 정의에서 온 대표값만 사용합니다. */
-    public Collection<QuestContent> npcs(){return npcs.values().stream().map(List::getFirst).toList();}
+    /** 퀘스트 유무와 독립적인 NPC 식별·배치 정의입니다. */
+    public Collection<Npc> npcs(){return actors.values();}
     public boolean linked(String npc,String quest){var c=quests.get(quest);return c!=null && c.npcId().equals(npc);}
     public static QuestCatalog parse(List<?> npcRows,List<?> questRows){
         if(npcRows.isEmpty() || questRows.isEmpty())throw new IllegalArgumentException("Empty quest/NPC content");
         var rawNpcs=new LinkedHashMap<String,Map<?,?>>();
         for(Object row:npcRows){var npc=map(row);String id=id(npc,"id");if(rawNpcs.putIfAbsent(id,npc)!=null)throw new IllegalArgumentException("Duplicate NPC id");}
-        var quests=new LinkedHashMap<String,QuestContent>();var npcs=new LinkedHashMap<String,List<QuestContent>>();
+        var actors=new LinkedHashMap<String,Npc>();var positions=new HashSet<List<Double>>();
+        for(var entry:rawNpcs.entrySet()){var row=entry.getValue();double x=number(row,"x"),y=number(row,"y"),z=number(row,"z");
+            if(y< -64||y>318||Math.abs(x)>29999984||Math.abs(z)>29999984||!positions.add(List.of(Math.floor(x),Math.floor(y),Math.floor(z))))throw new IllegalArgumentException("Invalid or overlapping NPC position");
+            actors.put(entry.getKey(),new Npc(entry.getKey(),string(row,"name"),x,y,z));}
+        var quests=new LinkedHashMap<String,QuestContent>();var npcs=new LinkedHashMap<String,List<QuestContent>>();actors.keySet().forEach(id->npcs.put(id,new ArrayList<>()));
         for(Object row:questRows){
             var quest=map(row);String id=id(quest,"id"),npcId=id(quest,"npc-id");var npc=rawNpcs.get(npcId);
             if(npc==null)throw new IllegalArgumentException("Unknown NPC link");
@@ -64,9 +71,6 @@ public final class QuestCatalog {
             while(next!=null && !done.contains(next)){if(!path.add(next))throw new IllegalArgumentException("Cyclic prerequisite quest");next=quests.get(next).requiresCompleted();}
             done.addAll(path);
         }
-        if(npcs.size()!=rawNpcs.size())throw new IllegalArgumentException("NPC without quest link");
-        var positions=new HashSet<List<Double>>();
-        for(var rows:npcs.values()){var c=rows.getFirst();if(!positions.add(List.of(Math.floor(c.x()),Math.floor(c.y()),Math.floor(c.z()))))throw new IllegalArgumentException("Overlapping NPC positions");}
         var pages=new HashMap<String,List<String>>();
         for(var entry:rawNpcs.entrySet()){var texts=new ArrayList<String>();Object raw=entry.getValue().get("dialogue-pages");
             if(raw!=null){if(!(raw instanceof List<?> list)||list.isEmpty()||list.size()>16)throw new IllegalArgumentException("Invalid dialogue pages");for(Object item:list){if(!(item instanceof String text)||text.isBlank()||text.length()>600)throw new IllegalArgumentException("Invalid dialogue text");texts.add(text);}}
@@ -79,7 +83,8 @@ public final class QuestCatalog {
                     if(!seen.add(key)||label.length()>100||text.length()>1200||requires!=null&&!quests.containsKey(requires))throw new IllegalArgumentException("Invalid NPC topic");
                     list.add(new Topic(key,label,text,requires,journal));}}
             topics.put(entry.getKey(),List.copyOf(list));}
-        return new QuestCatalog(quests,npcs,pages,topics);
+        for(String id:actors.keySet())if(npcs.get(id).isEmpty()&&pages.get(id).isEmpty()&&topics.get(id).isEmpty())throw new IllegalArgumentException("NPC without dialogue or quest link");
+        return new QuestCatalog(quests,npcs,pages,topics,actors);
     }
     private static String interaction(Map<?,?> row,QuestContent.Area bounds,Map<String,Map<?,?>> npcs){
         if(!row.containsKey("interaction"))return null;String value=string(row,"interaction");String[] parts=value.split(":",-1);
