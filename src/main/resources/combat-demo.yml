@@ -1,0 +1,16 @@
+# 새 격리 개발 실행에서만 사용하는 공개 합성 수치입니다.
+format: 1
+id: public_boss_control
+title: 공개 보스 제어 시험
+health-per-player: 20
+attack: 2
+return-protection-ms: 3000
+revival:
+  enabled: true
+  condition: public_rescue
+  pool: SHARED
+  limit: 2
+  health-fraction: 0.5
+  location: START
+  effects:
+    - {type: RESISTANCE, amplifier: 0, ticks: 40}

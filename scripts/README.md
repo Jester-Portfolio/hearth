@@ -65,3 +65,5 @@
 `--sessions --quests --story-batch --branch-progression`은 확정 분기 시작 권한·선택 경로 장 스킵·스마트폰 지급/장 화면·두 JVM 지급 기록 복원을 검사한다. 실제 사용자 조작은 하지 않으며 [범위와 결과](../docs/branch-progression-verification.md)를 따른다.
 
 `--sessions --quests --story-batch --field-encounters`는 한 JVM에서 콘텐츠 필드 조우·실제 몹 속성/사망 이벤트·진행 격리·언로드 정리를 검사한다. 인원/이동은 내부 제어 입력이며 실제 플레이어 행동이 아니다. [제한·결과](../docs/field-encounters-verification.md)를 따른다.
+
+`--sessions --quests --story-batch --combat-state`는 한 JVM에서 고정 참가 명단·일시정지/관전·조건부 부활 경합과 실제 몹 AI/사망 이벤트를 검사한다. 세션·카메라·회복 적용은 제어 포트이며 실제 Player 시험이 아니다. [범위·결과](../docs/combat-state-verification.md)를 따른다.

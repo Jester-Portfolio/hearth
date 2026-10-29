@@ -85,6 +85,7 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<PersonalQuest.Session> npcPendingRead;
     private QuestRules questRules=QuestRules.empty();private QuestRewards questRewards;
     private PaperFieldEncounters fieldEncounters;
+    private PaperCombatTrials combatTrials;private CombatContent combatContent;private final java.util.concurrent.atomic.AtomicLong combatClock=new java.util.concurrent.atomic.AtomicLong();
     private Object listToken=new Object();
     private CompletionStage<Map<String,QuestStore.Saved>> pendingList;
     private CompletionStage<Void> listBarrier;
@@ -104,6 +105,11 @@ public final class SessionVerification implements AutoCloseable {
         World waiting=Bukkit.getWorlds().getFirst();
         for (int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)waiting.getBlockAt(x,63,z).setType(Material.STONE,false);
         adapter=new PaperSessionAdapter(plugin,coordinator,owner,codec,new Location(waiting,0.5,64,0.5));
+        if(plugin.getConfig().getBoolean("combat-state-verification-enabled")){
+            var file=new java.io.File(plugin.getDataFolder(),"combat-demo.yml");if(!file.exists())plugin.saveResource("combat-demo.yml",false);
+            var yaml=YamlConfiguration.loadConfiguration(file);var definition=new HashMap<String,Object>(yaml.getValues(false));var section=Objects.requireNonNull(yaml.getConfigurationSection("revival"),"Missing combat revival");var revival=new HashMap<String,Object>(section.getValues(false));if(section.isConfigurationSection("fixed"))revival.put("fixed",Objects.requireNonNull(section.getConfigurationSection("fixed")).getValues(false));definition.put("revival",revival);
+            combatContent=CombatContent.parse(definition);combatTrials=new PaperCombatTrials(plugin,combatContent,owner,combatClock::get);
+        }
         if(plugin.getConfig().getBoolean("field-encounter-verification-enabled")){
             var file=new java.io.File(plugin.getDataFolder(),"field-demo.yml");if(!file.exists())plugin.saveResource("field-demo.yml",false);
             fieldEncounters=new PaperFieldEncounters(plugin,adapter,worlds,FieldContent.parse(YamlConfiguration.loadConfiguration(file).getValues(false)));
@@ -261,6 +267,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "combat-state" -> combatState();
         case "field-encounters" -> fieldEncounters();
         case "branch-progression-start" -> branchProgressionStart();
         case "branch-progression-restored" -> branchProgressionRestored();
@@ -571,6 +578,41 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private static final class CombatActors implements CombatAttempt.Port {
+        final Map<UUID,UUID> cameras=new HashMap<>();final CompletableFuture<Boolean> applying=new CompletableFuture<>();java.util.function.BooleanSupplier current;CombatContent.Pose appliedPosition;double appliedHealth;List<CombatContent.Effect> appliedEffects;
+        public void freeze(boolean pause){}
+        public void camera(UUID player,UUID target){cameras.put(player,target);}
+        public boolean safe(CombatContent.Pose pose){return true;}
+        public CompletionStage<Boolean> revive(UUID player,CombatContent.Pose position,double health,List<CombatContent.Effect> effects,java.util.function.BooleanSupplier current){this.current=current;appliedPosition=position;appliedHealth=health;appliedEffects=List.copyOf(effects);return applying;}
+    }
+    private CompletionStage<Void> combatState(){
+        var alpha=new CombatActors();var beta=new CombatActors();final CombatAttempt[] trials=new CombatAttempt[2];final Object fresh=new Object();final CompletionStage<?>[] pending=new CompletionStage<?>[2];final UUID request=UUID.randomUUID();
+        return openAll().thenCompose(v->{
+            CompletionStage<Void> ready=CompletableFuture.completedFuture(null);for(UUID run:List.of(a,b))ready=ready.thenCompose(done->{var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));return mainResult(world.getChunkAtAsync(0,0)).thenAccept(chunk->{world.addPluginChunkTicket(0,0,plugin);check(world.isChunkLoaded(0,0),"combat_controlled_start_chunk_prepared");});});return ready;
+        }).thenRun(()->{
+            var poseA=new CombatContent.Pose(worlds.get(a).mapping().physicalId(),3,64,3,21,14);var poseB=new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0);
+            trials[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,poseA),new CombatAttempt.Entrant(a2,s2,poseA)),alpha);
+            trials[1]=combatTrials.start(worlds.get(b),List.of(new CombatAttempt.Entrant(b3,s3,poseB)),beta);var first=trials[0];
+            check(first.snapshot().difficultyPlayers()==2&&combatTrials.mob(a).getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue()==40&&combatTrials.mob(b).getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue()==20,"combat_start_roster_fixed_and_run_scoped_real_mob_health");
+            first.died(a1,s1,poseA);check(alpha.cameras.get(a1.playerId()).equals(a2.playerId())&&first.snapshot().phase()==CombatAttempt.Phase.ACTIVE,"combat_dead_observer_selects_surviving_participant");
+            var exact=new CombatContent.Pose(poseA.world(),7.25,-12,9.75,91,17);first.disconnect(a2,s2,exact);check(first.snapshot().phase()==CombatAttempt.Phase.PAUSED&&!combatTrials.mob(a).hasAI()&&combatTrials.mob(b).hasAI()&&alpha.cameras.get(a1.playerId())==null,"combat_mixed_offline_pause_freezes_only_A_and_detaches_camera");
+            combatClock.addAndGet(1200);first.poll();trials[1].poll();check(first.snapshot().combatMillis()==0&&trials[1].snapshot().combatMillis()==1200,"combat_paused_timer_does_not_advance_other_run_does");
+            check(first.reconnect(a2,fresh).equals(exact),"combat_return_pose_and_direction_exact_without_safe_position_correction");first.returned(a2,fresh);check(!first.playable(a2,fresh)&&first.snapshot().phase()==CombatAttempt.Phase.PAUSED,"combat_return_protection_blocks_participation_and_keeps_pause");
+            combatClock.addAndGet(3000);first.poll();check(first.playable(a2,fresh)&&combatTrials.mob(a).hasAI()&&alpha.cameras.get(a1.playerId()).equals(a2.playerId()),"combat_protection_clock_expires_while_paused_then_AI_camera_resume");
+            first.died(a2,fresh,exact);check(first.snapshot().phase()==CombatAttempt.Phase.WIPE_WAIT&&!combatTrials.mob(a).hasAI(),"combat_all_dead_waits_without_failure_or_automatic_retry");
+            pending[0]=first.revive(a1,s1,request,"public_rescue");check(pending[0]==first.revive(a1,s1,request,"public_rescue")&&first.snapshot().reserved()==1&&!pending[0].toCompletableFuture().isDone(),"combat_duplicate_revival_coalesced_and_shared_slot_reserved");
+            check(alpha.current.getAsBoolean()&&alpha.appliedPosition.equals(poseA)&&alpha.appliedHealth==0.5&&alpha.appliedEffects.equals(combatContent.revival().effects()),"combat_controlled_revival_payload_contains_start_health_and_effects");alpha.applying.complete(true);
+        }).thenCompose(v->mainResult(pending[0])).thenRun(()->{
+            var first=trials[0];check(first.snapshot().phase()==CombatAttempt.Phase.ACTIVE&&first.snapshot().sharedUsed()==1&&first.snapshot().reserved()==0&&combatTrials.mob(a).hasAI(),"combat_verified_controlled_revival_consumes_once_and_resumes_AI");
+            check(first.view(a2,fresh).personal().contains("관전")&&first.view(a2,fresh).revival().contains("1")&&first.snapshot().difficultyPlayers()==2,"combat_private_status_and_fixed_difficulty_after_death_revival");
+            first.failedCondition(false);check(first.snapshot().phase()==CombatAttempt.Phase.ACTIVE,"combat_unrelated_quest_failure_does_not_close_boss");
+            var other=trials[1];var pose=new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0);other.died(b3,s3,pose);pending[1]=other.revive(b3,s3,UUID.randomUUID(),"public_rescue");other.invalidate();check(!beta.current.getAsBoolean(),"combat_invalidated_generation_rejects_external_apply_guard");beta.applying.complete(true);
+        }).thenCompose(v->until(()->pending[1].toCompletableFuture().isDone())).thenRun(()->{
+            check(pending[1].toCompletableFuture().isCompletedExceptionally()&&trials[1].snapshot().phase()==CombatAttempt.Phase.HOLD&&trials[1].snapshot().sharedUsed()==0&&trials[0].snapshot().phase()==CombatAttempt.Phase.ACTIVE,"combat_stale_revival_HOLD_preserves_dead_state_and_other_run");
+            combatTrials.mob(a).setHealth(0);check(trials[0].snapshot().outcome()==CombatAttempt.Outcome.VICTORY&&alpha.cameras.values().stream().allMatch(Objects::isNull),"combat_actual_mob_death_confirms_once_and_cleans_camera_targets");trials[0].failedCondition(true);check(trials[0].snapshot().outcome()==CombatAttempt.Outcome.VICTORY,"combat_late_failure_cannot_replace_confirmed_result");
+            combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
+        }).thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
+    }
     private CompletionStage<Void> fieldEncounters(){return openAll().thenCompose(v->{
         CompletionStage<Void> ready=CompletableFuture.completedFuture(null);
         for(UUID run:List.of(a,b))for(int x:List.of(1,2)){int chunkX=x;ready=ready.thenCompose(done->{var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));return mainResult(world.getChunkAtAsync(chunkX,1)).thenAccept(chunk->{world.addPluginChunkTicket(chunkX,1,plugin);check(world.isChunkLoaded(chunkX,1),"field_controlled_spawn_chunk_prepared");});});}return ready;
@@ -1488,7 +1530,7 @@ public final class SessionVerification implements AutoCloseable {
     public void releaseQuests(UUID run){if(quests!=null)quests.release(run);if(blockEffect!=null){blockEffect.unloaded(run);sharedStory.worldUnloaded(run);}}
     public CompletionStage<Void> shutdown(){
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
-        if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
+        if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
         CompletionStage<Void> other=s3==null ? CompletableFuture.completedFuture(null) : coordinator.disconnect(s3);
         return mainResult(other).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
             if(error!=null && !(expectedHold && "23514".equals(s1.error()) && "MOVE_FAILED".equals(s2.error())
@@ -1522,5 +1564,5 @@ public final class SessionVerification implements AutoCloseable {
         mainResult(store.readInventory(context)).thenAccept(saved->log("MANUAL_DB count="+codec.decode(saved.payload())[0].getAmount()+" revision="+saved.revision()))
             .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
-    @Override public void close(){if(fieldEncounters!=null)fieldEncounters.close();if(questAdapter!=null)questAdapter.close();autosave.close();adapter.close();}
+    @Override public void close(){if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(questAdapter!=null)questAdapter.close();autosave.close();adapter.close();}
 }
