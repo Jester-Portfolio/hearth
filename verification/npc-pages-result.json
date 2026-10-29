@@ -1,0 +1,47 @@
+{
+  "outcome": "PASS",
+  "workspace": "/tmp/hearth-s4-11.dfbiqxdt",
+  "duration_seconds": 33.277,
+  "cleanup_errors": [],
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "b4d7056949f092e5b152d622e6cfcd8983b47261f11f8e3cc7033be4cb4a964d",
+  "installed_plugin_sha256": "b4d7056949f092e5b152d622e6cfcd8983b47261f11f8e3cc7033be4cb4a964d",
+  "unit_tests_passed": 20,
+  "paper_jvms": 1,
+  "postgres_instances": 1,
+  "checks": [
+    "pages_content_loaded",
+    "pages_component_0",
+    "pages_component_1",
+    "pages_component_2",
+    "pages_close_clears_quest_tokens",
+    "pages_read_only_journal"
+  ],
+  "prior_attempt": {
+    "outcome": "FAIL",
+    "workspace": "/tmp/hearth-s4-11.eosjqohq",
+    "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+    "cleanup_errors": [
+      "AssertionError: DB 풀 종료 확인 누락"
+    ]
+  },
+  "processes": {
+    "database": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 212252,
+      "observed_cpu_seconds": 2.32,
+      "min_sampled_host_available_kib": 11925964
+    },
+    "paper-prepare": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 1082424,
+      "observed_cpu_seconds": 59.91,
+      "min_sampled_host_available_kib": 11925964
+    }
+  },
+  "not_executed": [
+    "실제 인증 플레이어의 페이지/퀘스트 클릭·거리 변화",
+    "새 JVM 재시험: 저장 계약 불변",
+    "운영 배포"
+  ]
+}

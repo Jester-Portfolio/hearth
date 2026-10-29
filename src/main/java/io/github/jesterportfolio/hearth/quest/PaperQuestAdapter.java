@@ -162,7 +162,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             .thenComposeAsync(v->{if(tickets.stream().anyMatch(t->!current(p,session,t)))throw new IllegalStateException("STALE_DIALOGUE");return quests.list(session.context(),session,()->players.current(p)==session);},owner).whenCompleteAsync((rows,error)->{
             if(tickets.stream().anyMatch(t->!current(p,session,t)))return;
             if(error!=null){unavailable(p);return;}
-            try {quests.requireListDisplay(session.context(),rows);var messages=selectionMessages(catalog,dialogues,tickets.stream().filter(t->journal.questAllowed(session.context(),t.quest())).toList(),rows);
+            try {quests.requireListDisplay(session.context(),rows);dialogues.beginPages(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc).ifPresent(page->pageMessages(catalog,dialogues,page).forEach(p::sendMessage));var messages=selectionMessages(catalog,dialogues,tickets.stream().filter(t->journal.questAllowed(session.context(),t.quest())).toList(),rows);
                 if(messages.isEmpty())p.sendMessage(Component.text("현재 대화할 퀘스트가 없습니다."));else messages.forEach(p::sendMessage);
                 if(story!=null)story.guide(p,npc);
                 if(playthroughEnabled)p.sendMessage(Component.text("[다음 플레이 안내]").clickEvent(ClickEvent.runCommand("/hearthjourney")));
@@ -190,7 +190,22 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         }
         return List.of(message);
     }
+    public static List<Component> pageMessages(QuestCatalog catalog,QuestDialogue dialogue,QuestDialogue.Page page){
+        if(!dialogue.current(page))throw new IllegalArgumentException("Stale dialogue page");var texts=catalog.pages(page.npc());var out=new ArrayList<Component>();
+        out.add(Component.text("NPC 대화 · "+(page.index()+1)+"/"+texts.size()));out.add(Component.text(texts.get(page.index())));
+        if(page.index()>0)out.add(Component.text("[이전 대화]").clickEvent(ClickEvent.runCommand(dialogue.pageCommand(page,"back"))));
+        if(page.index()+1<texts.size())out.add(Component.text("[다음 대화]").clickEvent(ClickEvent.runCommand(dialogue.pageCommand(page,"next"))));
+        out.add(Component.text("[대화 닫기]").clickEvent(ClickEvent.runCommand(dialogue.pageCommand(page,"close"))));return List.copyOf(out);
+    }
     private boolean command(Player p,String command){
+        if(command.equals("/hearthtalk")||command.startsWith("/hearthtalk ")){
+            var session=players.current(p);if(session==null)return true;
+            try{String[] parts=command.split(" ",-1);if(parts.length!=4||!Set.of("next","back","close").contains(parts[1])||!parts[2].matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid page request");
+                Entity npc=entity(p.getWorld(),parts[2]);if(npc==null||!talkAllowed(p,parts[2],npc.getUniqueId()))throw new IllegalArgumentException("NPC unavailable");
+                UUID nonce=UUID.fromString(parts[3]);if(!nonce.toString().equals(parts[3]))throw new IllegalArgumentException("Invalid nonce");
+                dialogues.turn(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),npc.getUniqueId(),parts[2],nonce,parts[1]).ifPresent(page->pageMessages(catalog,dialogues,page).forEach(p::sendMessage));
+            }catch(IllegalArgumentException error){p.sendMessage(Component.text("현재 유효한 NPC 대화가 아닙니다. 가까이에서 다시 대화해 주세요."));}return true;
+        }
         if(story!=null&&story.command(p,command))return true;
         if(ui.command(p,command))return true;
         if(!command.startsWith("/hearthquest"))return false;

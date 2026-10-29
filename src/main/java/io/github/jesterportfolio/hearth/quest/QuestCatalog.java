@@ -6,8 +6,10 @@ import java.util.*;
 public final class QuestCatalog {
     private final Map<String,QuestContent> quests;
     private final Map<String,List<QuestContent>> npcs;
-    private QuestCatalog(Map<String,QuestContent> quests,Map<String,List<QuestContent>> npcs){
-        this.quests=Collections.unmodifiableMap(new LinkedHashMap<>(quests));
+    private final Map<String,List<String>> pages;
+    public List<String> pages(String npc){return Objects.requireNonNull(pages.get(npc),"Unknown NPC");}
+    private QuestCatalog(Map<String,QuestContent> quests,Map<String,List<QuestContent>> npcs,Map<String,List<String>> pages){
+        this.pages=Map.copyOf(pages);this.quests=Collections.unmodifiableMap(new LinkedHashMap<>(quests));
         var groups=new LinkedHashMap<String,List<QuestContent>>();npcs.forEach((id,rows)->groups.put(id,List.copyOf(rows)));this.npcs=Collections.unmodifiableMap(groups);
     }
     public Collection<QuestContent> all(){return quests.values();}
@@ -58,7 +60,11 @@ public final class QuestCatalog {
         if(npcs.size()!=rawNpcs.size())throw new IllegalArgumentException("NPC without quest link");
         var positions=new HashSet<List<Double>>();
         for(var rows:npcs.values()){var c=rows.getFirst();if(!positions.add(List.of(Math.floor(c.x()),Math.floor(c.y()),Math.floor(c.z()))))throw new IllegalArgumentException("Overlapping NPC positions");}
-        return new QuestCatalog(quests,npcs);
+        var pages=new HashMap<String,List<String>>();
+        for(var entry:rawNpcs.entrySet()){var texts=new ArrayList<String>();Object raw=entry.getValue().get("dialogue-pages");
+            if(raw!=null){if(!(raw instanceof List<?> list)||list.isEmpty()||list.size()>16)throw new IllegalArgumentException("Invalid dialogue pages");for(Object item:list){if(!(item instanceof String text)||text.isBlank()||text.length()>600)throw new IllegalArgumentException("Invalid dialogue text");texts.add(text);}}
+            pages.put(entry.getKey(),List.copyOf(texts));}
+        return new QuestCatalog(quests,npcs,pages);
     }
     private static QuestContent.Area area(Map<?,?> m){
         var a=new QuestContent.Area(number(m,"min-x"),number(m,"max-x"),number(m,"min-y"),number(m,"max-y"),number(m,"min-z"),number(m,"max-z"));

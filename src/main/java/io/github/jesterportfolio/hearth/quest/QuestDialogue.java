@@ -16,6 +16,20 @@ public final class QuestDialogue {
     }
     private final QuestCatalog catalog;
     private final Map<UUID,Map<String,Ticket>> current=new HashMap<>();
+    public record Page(UUID player,Object session,UUID run,UUID world,UUID entity,String npc,int index,UUID nonce){}
+    private final Map<UUID,Page> pages=new HashMap<>();
+    public Optional<Page> beginPages(UUID player,Object session,UUID run,UUID world,UUID entity,String npc){
+        pages.remove(player);if(catalog.pages(npc).isEmpty())return Optional.empty();var page=new Page(player,session,run,world,entity,npc,0,UUID.randomUUID());pages.put(player,page);return Optional.of(page);
+    }
+    public boolean current(Page page){return pages.get(page.player())==page;}
+    public String pageCommand(Page page,String action){if(!current(page)||!Set.of("next","back","close").contains(action))throw new IllegalArgumentException("Stale page");return "/hearthtalk "+action+" "+page.npc()+" "+page.nonce();}
+    public Optional<Page> turn(UUID player,Object session,UUID run,UUID world,UUID entity,String npc,UUID nonce,String action){
+        Page old=pages.get(player);if(old==null||old.session()!=session||!old.run().equals(run)||!old.world().equals(world)||!old.entity().equals(entity)||!old.npc().equals(npc)||!old.nonce().equals(nonce))throw new IllegalArgumentException("Stale page request");
+        if(action.equals("close")){clear(player);return Optional.empty();}
+        int index=old.index()+switch(action){case "next"->1;case "back"->-1;default->throw new IllegalArgumentException("Unknown page action");};
+        if(index<0||index>=catalog.pages(npc).size())throw new IllegalArgumentException("Invalid page index");
+        var next=new Page(player,session,run,world,entity,npc,index,UUID.randomUUID());pages.put(player,next);return Optional.of(next);
+    }
     private final Set<UUID> consumed=new HashSet<>();
     public QuestDialogue(QuestCatalog catalog){this.catalog=catalog;}
     public List<Ticket> options(UUID player,Object session,UUID run,UUID world,UUID entity,String npc){
@@ -38,7 +52,7 @@ public final class QuestDialogue {
         return ticket;
     }
     public String command(Ticket t,String action){if(!current(t) || !t.action().equals(action))throw new IllegalArgumentException("Invalid dialogue action");return "/hearthquest "+action+" "+t.npc()+" "+t.quest()+" "+t.nonce();}
-    public void clear(UUID player){var tickets=current.remove(player);if(tickets!=null)tickets.values().forEach(t->consumed.remove(t.nonce()));}
-    public void clearWorld(UUID world){for(var rows:List.copyOf(current.values()))if(rows.values().stream().anyMatch(t->t.world().equals(world)))clear(rows.values().iterator().next().player());}
-    public void clear(){current.clear();consumed.clear();}
+    public void clear(UUID player){pages.remove(player);var tickets=current.remove(player);if(tickets!=null)tickets.values().forEach(t->consumed.remove(t.nonce()));}
+    public void clearWorld(UUID world){for(var page:List.copyOf(pages.values()))if(page.world().equals(world))clear(page.player());for(var rows:List.copyOf(current.values()))if(rows.values().stream().anyMatch(t->t.world().equals(world)))clear(rows.values().iterator().next().player());}
+    public void clear(){current.clear();pages.clear();consumed.clear();}
 }

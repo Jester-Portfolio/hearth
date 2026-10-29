@@ -76,6 +76,7 @@ def main():
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
     parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
+    parser.add_argument('--npc-pages', action='store_true', help='NPC 대화 페이지와 토큰 정리를 한 JVM에서 검증합니다')
     parser.add_argument('--quest-locations', action='store_true', help='목표 위치 공개의 표시·저장 경계를 한 JVM에서 검증합니다')
     parser.add_argument('--playthrough', action='store_true', help='공개 시험 코스의 연속 플레이 흐름과 두 JVM 복원을 검증합니다')
     parser.add_argument('--quest-navigation', action='store_true', help='보고·추적·알림 동선을 한 JVM에서 검증합니다')
@@ -102,6 +103,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.npc_pages and (not args.story_batch or args.playthrough):
+        parser.error('--npc-pages는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.quest_locations and (not args.story_batch or args.playthrough):
         parser.error('--quest-locations는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.playthrough and (not args.story_batch or any([args.world_effects,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide])):
@@ -240,7 +243,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.sessionManual=true')
         if args.playthrough:
             paper.insert(-3,'-Dhearth.verification.playthrough=true')
-        for phase in (['prepare'] if args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
+        for phase in (['prepare'] if args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
             name='paper-'+phase
             monitor.launch(name,paper,runtime)
@@ -262,7 +265,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.quest_locations:
+                        if args.npc_pages:
+                            monitor.action(name,'npc-pages')
+                        elif args.quest_locations:
                             monitor.action(name,'location-play')
                         elif args.playthrough:
                             monitor.action(name,'playthrough-run')

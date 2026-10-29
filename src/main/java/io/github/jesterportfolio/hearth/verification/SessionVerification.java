@@ -246,6 +246,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "npc-pages" -> npcPages();
         case "location-play" -> locationPlay();
         case "playthrough-run" -> playthroughRun();
         case "playthrough-restored" -> playthroughRestored();
@@ -544,6 +545,14 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> npcPages(){return openAll().thenCompose(v->mainResult(store.readJournal(a1))).thenCompose(before->{
+        var d=new QuestDialogue(catalog);World w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());questAdapter.ensure(w);var entity=w.getEntitiesByClass(org.bukkit.entity.Villager.class).iterator().next();
+        var options=d.options(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide");var page=d.beginPages(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide").orElseThrow();
+        check(catalog.pages("survey_guide").size()==3,"pages_content_loaded");
+        for(int i=0;i<3;i++){check(!PaperQuestAdapter.pageMessages(catalog,d,page).isEmpty(),"pages_component_"+i);if(i<2)page=d.turn(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide",page.nonce(),"next").orElseThrow();}
+        d.turn(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide",page.nonce(),"close");check(!d.current(options.getFirst()),"pages_close_clears_quest_tokens");
+        return mainResult(store.readJournal(a1)).thenAccept(after->check(after.equals(before),"pages_read_only_journal"));
+    });}
     private CompletionStage<Void> locationPlay(){
         return openAll().thenCompose(v->quests.open(a1,content.id(),s1,()->true)).thenCompose(q->{qa=q;return quests.accept(q,content);})
             .thenCompose(v->journal.load(a1,s1,()->true)).thenCompose(view->{

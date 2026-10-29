@@ -8,6 +8,8 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth S4 isolated multiworld verification foundation
 commands:
+  hearthtalk:
+    description: 현재 NPC 대화의 페이지 이동·닫기
   hearthjourney:
     description: 공개 시험 코스의 다음 플레이 안내
   hearthinfo:
