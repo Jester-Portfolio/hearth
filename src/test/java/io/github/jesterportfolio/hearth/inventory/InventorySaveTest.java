@@ -73,4 +73,13 @@ final class InventorySaveTest {
         clock.set(Duration.ofSeconds(90).toNanos()); autosave.tick(); assertEquals(1,f.store.writes.size());
         f.succeed(0); autosave.stop(); clock.set(Duration.ofSeconds(120).toNanos()); assertFalse(autosave.tick());
     }
+    @Test void rewardTransactionWaitsLatestDirtySaveAndLogoutWaitsTransaction(){
+        var f=new Fixture();f.memory.set(payload(2));f.session.markDirty();var grant=new CompletableFuture<InventoryStore.Stored>();var seen=new ArrayList<InventoryStore.Stored>();
+        var work=f.session.transaction(before->{seen.add(before);return grant;},saved->f.memory.set(saved.payload()));f.pump();assertTrue(seen.isEmpty());assertTrue(f.session.transacting());
+        var logout=f.session.closeForLogout();f.succeed(0);assertEquals(1,seen.getFirst().revision());assertEquals(payload(2),seen.getFirst().payload());assertFalse(logout.toCompletableFuture().isDone());grant.complete(new InventoryStore.Stored(payload(3),2));f.pump();assertTrue(work.toCompletableFuture().isDone());assertFalse(work.toCompletableFuture().isCompletedExceptionally());assertFalse(logout.toCompletableFuture().isCompletedExceptionally());assertEquals(2,f.session.revision());assertEquals(payload(3),f.memory.get());assertEquals(1,f.store.writes.size());
+    }
+    @Test void rewardFailurePreservesOriginalAndUncertainCommitHoldWhileCapacityRefusalIsSafe(){
+        for(String code:java.util.List.of("08006","INVENTORY_FULL")){var f=new Fixture();var grant=new CompletableFuture<InventoryStore.Stored>();var work=f.session.transaction(before->grant,saved->f.memory.set(saved.payload()));f.pump();assertTrue(f.session.transaction(before->grant,saved->{}).toCompletableFuture().isCompletedExceptionally());grant.completeExceptionally(new StorageFailure("reward",code));f.pump();assertTrue(work.toCompletableFuture().isCompletedExceptionally());assertEquals(payload(1),f.memory.get());assertEquals(0,f.session.revision());assertEquals(code.equals("INVENTORY_FULL")?null:code,f.session.holdCode());if(!code.equals("INVENTORY_FULL"))assertTrue(f.session.flush().toCompletableFuture().isCompletedExceptionally());}
+    }
+    @Test void staleRewardCallbackCannotApplyAndLeavesHold(){var f=new Fixture();var grant=new CompletableFuture<InventoryStore.Stored>();var work=f.session.transaction(before->grant,saved->f.memory.set(saved.payload()));f.pump();f.valid.set(false);grant.complete(new InventoryStore.Stored(payload(3),1));f.pump();assertTrue(work.toCompletableFuture().isCompletedExceptionally());assertEquals(payload(1),f.memory.get());assertEquals("STALE_CONTEXT",f.session.holdCode());}
 }

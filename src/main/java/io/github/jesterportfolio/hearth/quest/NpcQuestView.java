@@ -21,6 +21,8 @@ public record NpcQuestView(List<Option> options,Marker marker){
                 case NOT_ACCEPTED -> {boolean direct=c.startMode()==QuestContent.StartMode.NPC;label=direct?"수락 가능":"지역 진입으로 시작";priority=direct?1:3;available|=direct;}
                 case ACTIVE -> {label="진행 중";priority=2;}
                 case COMPLETED -> {label="완료";priority=4;}
+                case FAILED -> {label="재시작 대기";priority=2;}
+                case SKIPPED -> {label="장 스킵";priority=5;}
                 default -> throw new IllegalArgumentException("Unknown NPC quest phase");
             }
             out.add(new Option(c.id(),c.title(),label,priority));

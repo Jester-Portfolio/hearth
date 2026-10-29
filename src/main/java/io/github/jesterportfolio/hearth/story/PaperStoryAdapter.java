@@ -13,6 +13,8 @@ import org.bukkit.scheduler.BukkitTask;
 
 /** 기본 채팅의 개발 명령/선택 링크. 별도 투표 GUI·알림 DB를 만들지 않습니다. */
 public final class PaperStoryAdapter implements AutoCloseable {
+    public SharedStory shared(){return story;}
+
     private final PaperSessionAdapter players;private final SharedStory story;private final StoryAccess access;private final Executor owner;private final BukkitTask timer;
     public PaperStoryAdapter(JavaPlugin plugin,PaperSessionAdapter players,SharedStory story,Executor owner){this.players=players;this.story=story;this.owner=owner;access=new StoryAccess(story);
         players.onlineChanged(story::rosterChanged);players.entryAccess((ctx,location)->access.entry(ctx.storyRunId(),location.getX(),location.getY(),location.getZ()));

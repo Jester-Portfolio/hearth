@@ -9,7 +9,7 @@ public final class QuestListView {
     public static boolean available(QuestContent c,Map<String,QuestStore.Saved> rows){
         var own=Objects.requireNonNull(rows.get(c.id()),"Missing quest state");
         return own.phase()!=QuestStore.Phase.NOT_ACCEPTED || c.requiresCompleted()==null
-            || Objects.requireNonNull(rows.get(c.requiresCompleted()),"Missing prerequisite state").phase()==QuestStore.Phase.COMPLETED;
+            || Objects.requireNonNull(rows.get(c.requiresCompleted()),"Missing prerequisite state").satisfies();
     }
     public static final String UNAVAILABLE="조회할 수 있는 퀘스트가 없습니다";
     public record Detail(Entry quest,String npc,String guidance) {}
@@ -24,6 +24,8 @@ public final class QuestListView {
                 case ACTIVE -> "진행 중";
                 case REPORT_READY -> "보고 대기";
                 case COMPLETED -> "완료";
+                case FAILED -> "실패 · 재시작 대기";
+                case SKIPPED -> "장 스킵 · 개인 선행 조건 충족";
                 default -> throw new IllegalArgumentException("Unsupported list phase");
             };
             rows.add(new Entry(id,catalog.quest(id).title(),state.phase(),status));
@@ -33,14 +35,14 @@ public final class QuestListView {
     public enum Filter{ALL,REPORTING,TRACKED,COMPLETED}
     public static List<Entry> filtered(QuestCatalog catalog,Map<String,QuestStore.Saved> states,Set<String> tracked,Set<String> blocked,Filter filter){
         return entries(catalog,states).stream().filter(q->!blocked.contains(q.questId())).filter(q->switch(filter){
-            case ALL->true;case REPORTING->q.phase()==QuestStore.Phase.REPORT_READY;case TRACKED->tracked.contains(q.questId())&&q.phase()!=QuestStore.Phase.COMPLETED;case COMPLETED->q.phase()==QuestStore.Phase.COMPLETED;
-        }).sorted(Comparator.comparingInt((Entry q)->q.phase()==QuestStore.Phase.REPORT_READY?0:tracked.contains(q.questId())&&q.phase()!=QuestStore.Phase.COMPLETED?1:q.phase()==QuestStore.Phase.ACTIVE?2:3).thenComparing(Entry::questId)).toList();
+            case ALL->true;case REPORTING->q.phase()==QuestStore.Phase.REPORT_READY;case TRACKED->tracked.contains(q.questId())&&!states.get(q.questId()).satisfies();case COMPLETED->q.phase()==QuestStore.Phase.COMPLETED;
+        }).sorted(Comparator.comparingInt((Entry q)->q.phase()==QuestStore.Phase.REPORT_READY?0:tracked.contains(q.questId())&&!states.get(q.questId()).satisfies()?1:q.phase()==QuestStore.Phase.ACTIVE?2:3).thenComparing(Entry::questId)).toList();
     }
     /** 목록에서 허용된 항목만 찾아 상세 데이터를 만듭니다. 미수락/미존재의 결과는 같습니다. */
     public static Optional<Detail> detail(QuestCatalog catalog,Map<String,QuestStore.Saved> states,String id) {
         return entries(catalog,states).stream().filter(row->row.questId().equals(id)).findFirst().map(row->{
             var content=catalog.quest(row.questId());
-            String key=switch(row.phase()){case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";default->throw new IllegalArgumentException("Unsupported detail phase");};
+
             return new Detail(row,content.name(),content.detailGuidance(states.get(row.questId())));
         });
     }

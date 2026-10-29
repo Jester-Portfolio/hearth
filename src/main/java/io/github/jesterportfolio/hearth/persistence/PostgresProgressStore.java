@@ -16,9 +16,11 @@ import java.util.function.Consumer;
 import javax.sql.DataSource;
 
 /** Bukkit API/메인 스레드 대기가 없는 최소 JDBC 저장 모듈. 플러그인 부팅에는 아직 연결하지 않습니다. */
-public final class PostgresProgressStore implements ProgressStore, InventoryStore, QuestStore, QuestJournalStore, ExplorationStore, StoryStore {
+public final class PostgresProgressStore implements ProgressStore, InventoryStore, QuestStore, QuestJournalStore, ExplorationStore, StoryStore, QuestCompletionStore {
     private volatile Map<String,ExplorationContent.Fact> questDiary=Map.of();
     public void configureQuestDiary(Map<String,ExplorationContent.Fact> bindings){questDiary=Map.copyOf(bindings);}
+    private volatile io.github.jesterportfolio.hearth.quest.QuestRules questRules=io.github.jesterportfolio.hearth.quest.QuestRules.empty();
+    public void configureQuestRules(io.github.jesterportfolio.hearth.quest.QuestRules rules){questRules=Objects.requireNonNull(rules);}
     public record Failure(String operation, UUID storyRunId, UUID playerId, String code) {}
     private final ServerProgressAccess access;
     private final HikariDataSource pool;
@@ -162,12 +164,12 @@ public final class PostgresProgressStore implements ProgressStore, InventoryStor
         return submit("read_quest",ctx,() -> {
             questAccess(ctx,quest);
             try(var c=pool.getConnection();var st=c.prepareStatement(
-                    "SELECT q.phase,q.revision,q.objective_index FROM hearth_progress.player_progress p LEFT JOIN hearth_progress.personal_quest q ON q.story_run_id=p.story_run_id AND q.player_uuid=p.player_uuid AND q.quest_id=? WHERE p.story_run_id=? AND p.player_uuid=?")) {
+                    "SELECT q.phase,q.revision,q.objective_index,q.deadline_millis FROM hearth_progress.player_progress p LEFT JOIN hearth_progress.personal_quest q ON q.story_run_id=p.story_run_id AND q.player_uuid=p.player_uuid AND q.quest_id=? WHERE p.story_run_id=? AND p.player_uuid=?")) {
                 st.setString(1,quest);st.setObject(2,ctx.storyRunId());st.setObject(3,ctx.playerId());
                 try(var row=st.executeQuery()) {
                     if(!row.next())throw new StorageFailure("quest","MISSING_PLAYER");
                     String phase=row.getString(1);
-                    return phase==null ? new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1) : new QuestStore.Saved(QuestStore.Phase.valueOf(phase),row.getLong(2),row.getInt(3));
+                    return phase==null ? new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1) : new QuestStore.Saved(QuestStore.Phase.valueOf(phase),row.getLong(2),row.getInt(3),row.getLong(4));
                 }
             }
         });
@@ -176,33 +178,76 @@ public final class PostgresProgressStore implements ProgressStore, InventoryStor
         return advanceQuest(ctx,quest,expected,next,expected.objectiveIndex());
     }
     @Override public CompletionStage<QuestStore.Saved> advanceQuest(ServerProgressAccess.Context ctx,String quest,QuestStore.Saved expected,QuestStore.Phase next,int index) {
+        return advanceQuest(ctx,quest,expected,next,index,next==QuestStore.Phase.ACTIVE?expected.deadlineMillis():0);
+    }
+    @Override public CompletionStage<QuestStore.Saved> advanceQuest(ServerProgressAccess.Context ctx,String quest,QuestStore.Saved expected,QuestStore.Phase next,int index,long deadline){
         return submit("advance_quest",ctx,() -> {
             questAccess(ctx,quest);
             boolean step=expected.phase()==QuestStore.Phase.ACTIVE && next==QuestStore.Phase.ACTIVE && index==expected.objectiveIndex()+1;
-            if((!step && (!QuestStore.follows(expected.phase(),next) || index!=expected.objectiveIndex())) || expected.revision()==Long.MAX_VALUE)throw new IllegalArgumentException("Invalid quest transition");
+            boolean fail=expected.phase()==QuestStore.Phase.ACTIVE&&next==QuestStore.Phase.FAILED&&index>=0&&index<=expected.objectiveIndex();
+            boolean retry=expected.phase()==QuestStore.Phase.FAILED&&next==QuestStore.Phase.ACTIVE&&index==expected.objectiveIndex();
+            if(deadline<0||next!=QuestStore.Phase.ACTIVE&&deadline!=0||(!step&&!fail&&!retry&&(!QuestStore.follows(expected.phase(),next)||index!=expected.objectiveIndex()))||expected.revision()==Long.MAX_VALUE)throw new IllegalArgumentException("Invalid quest transition");
             boolean first=expected.phase()==QuestStore.Phase.NOT_ACCEPTED;
-            String sql=first ? "INSERT INTO hearth_progress.personal_quest(story_run_id,player_uuid,quest_id,phase,objective_index) VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING RETURNING revision"
-                : "UPDATE hearth_progress.personal_quest SET phase=?,objective_index=?,revision=revision+1 WHERE story_run_id=? AND player_uuid=? AND quest_id=? AND phase=? AND revision=? AND objective_index=? RETURNING revision";
+            String sql=first ? "INSERT INTO hearth_progress.personal_quest(story_run_id,player_uuid,quest_id,phase,objective_index,deadline_millis) VALUES (?,?,?,?,?,?) ON CONFLICT DO NOTHING RETURNING revision"
+                : "UPDATE hearth_progress.personal_quest SET phase=?,objective_index=?,deadline_millis=?,revision=revision+1 WHERE story_run_id=? AND player_uuid=? AND quest_id=? AND phase=? AND revision=? AND objective_index=? RETURNING revision";
             try(var c=pool.getConnection()) {
                 c.setAutoCommit(false);
                 try {
                     long revision;
                     try(var st=c.prepareStatement(sql)){
-                        if(first){st.setObject(1,ctx.storyRunId());st.setObject(2,ctx.playerId());st.setString(3,quest);st.setString(4,next.name());st.setInt(5,index);}
-                        else {st.setString(1,next.name());st.setInt(2,index);st.setObject(3,ctx.storyRunId());st.setObject(4,ctx.playerId());st.setString(5,quest);st.setString(6,expected.phase().name());st.setLong(7,expected.revision());st.setInt(8,expected.objectiveIndex());}
+                        if(first){st.setObject(1,ctx.storyRunId());st.setObject(2,ctx.playerId());st.setString(3,quest);st.setString(4,next.name());st.setInt(5,index);st.setLong(6,deadline);}
+                        else {st.setString(1,next.name());st.setInt(2,index);st.setLong(3,deadline);st.setObject(4,ctx.storyRunId());st.setObject(5,ctx.playerId());st.setString(6,quest);st.setString(7,expected.phase().name());st.setLong(8,expected.revision());st.setInt(9,expected.objectiveIndex());}
                         try(var row=st.executeQuery()){if(!row.next())throw new StorageFailure("quest","REVISION_CONFLICT_OR_MISSING");revision=row.getLong(1);}
                     }
-                    String kind=first?"STARTED":step?"OBJECTIVE_UPDATED":next==QuestStore.Phase.REPORT_READY?"REPORT_READY":"COMPLETED";
+                    String kind=fail?"FAILED":retry?"RESTARTED":first?"STARTED":step?"OBJECTIVE_UPDATED":next==QuestStore.Phase.REPORT_READY?"REPORT_READY":"COMPLETED";
                     try(var st=c.prepareStatement("INSERT INTO hearth_progress.quest_notification(story_run_id,player_uuid,quest_id,event_revision,kind) VALUES (?,?,?,?,?)")){
                         st.setObject(1,ctx.storyRunId());st.setObject(2,ctx.playerId());st.setString(3,quest);st.setLong(4,revision);st.setString(5,kind);st.executeUpdate();
                     }
                     if(next==QuestStore.Phase.COMPLETED)try(var st=c.prepareStatement("DELETE FROM hearth_progress.quest_tracking WHERE story_run_id=? AND player_uuid=? AND quest_id=?")){owner(st,ctx);st.setString(3,quest);st.executeUpdate();}
                     if(next==QuestStore.Phase.COMPLETED && questDiary.containsKey(quest))writeFact(c,ctx,questDiary.get(quest),false);
-                    c.commit();return new QuestStore.Saved(next,revision,index);
+                    if(next==QuestStore.Phase.COMPLETED)pendingReward(c,ctx,quest,"PENDING");
+                    c.commit();return new QuestStore.Saved(next,revision,index,deadline);
                 }catch(Exception e){c.rollback();throw e;}finally{c.setAutoCommit(true);}
             }
         });
     }
+    private void pendingReward(Connection c,ServerProgressAccess.Context ctx,String quest,String status)throws SQLException{
+        var reward=questRules.rule(quest).reward();if(reward==null)return;
+        try(var st=c.prepareStatement("INSERT INTO hearth_progress.quest_reward(story_run_id,player_uuid,quest_id,reward_hash,status) VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING")){owner(st,ctx);st.setString(3,quest);st.setString(4,reward.fingerprint());st.setString(5,status);st.executeUpdate();}
+    }
+    @Override public CompletionStage<String> rewardStatus(ServerProgressAccess.Context ctx,String quest){return submit("reward_status",ctx,()->{questAccess(ctx,quest);try(var c=pool.getConnection()){playerExists(c,ctx);try(var st=c.prepareStatement("SELECT status FROM hearth_progress.quest_reward WHERE story_run_id=? AND player_uuid=? AND quest_id=?")){owner(st,ctx);st.setString(3,quest);try(var r=st.executeQuery()){return r.next()?r.getString(1):"UNREGISTERED";}}}});}
+    @Override public CompletionStage<InventoryStore.Stored> grantReward(ServerProgressAccess.Context ctx,String quest,String fingerprint,long revision,InventoryPayload payload){return submit("grant_reward",ctx,()->{
+        questAccess(ctx,quest);try(var c=pool.getConnection()){c.setAutoCommit(false);try{
+            String status,hash;try(var st=c.prepareStatement("SELECT r.status,r.reward_hash FROM hearth_progress.quest_reward r JOIN hearth_progress.personal_quest q USING(story_run_id,player_uuid,quest_id) WHERE r.story_run_id=? AND r.player_uuid=? AND r.quest_id=? AND q.phase='COMPLETED' FOR UPDATE OF r")){owner(st,ctx);st.setString(3,quest);try(var r=st.executeQuery()){if(!r.next())throw new StorageFailure("reward","REWARD_NOT_ELIGIBLE");status=r.getString(1);hash=r.getString(2);}}
+            InventoryStore.Stored current;try(var st=c.prepareStatement("SELECT payload,revision FROM hearth_progress.story_inventory WHERE story_run_id=? AND player_uuid=? FOR UPDATE")){owner(st,ctx);try(var r=st.executeQuery()){if(!r.next())throw new StorageFailure("reward","MISSING_INVENTORY");current=new InventoryStore.Stored(InventoryPayload.parse(r.getBytes(1)),r.getLong(2));}}
+            if(current.revision()!=revision)throw new StorageFailure("reward","REVISION_CONFLICT");
+            if(status.equals("GRANTED")){c.commit();return current;}
+            if(!status.equals("PENDING")||!hash.equals(fingerprint))throw new StorageFailure("reward","REWARD_POLICY_MISMATCH");
+            if(revision==Long.MAX_VALUE)throw new StorageFailure("reward","REVISION_OVERFLOW");
+            try(var st=c.prepareStatement("UPDATE hearth_progress.story_inventory SET payload=?,revision=revision+1 WHERE story_run_id=? AND player_uuid=? AND revision=?")){st.setBytes(1,payload.bytes());st.setObject(2,ctx.storyRunId());st.setObject(3,ctx.playerId());st.setLong(4,revision);if(st.executeUpdate()!=1)throw new StorageFailure("reward","REVISION_CONFLICT");}
+            try(var st=c.prepareStatement("UPDATE hearth_progress.quest_reward SET status='GRANTED',inventory_revision=?,granted_at=clock_timestamp() WHERE story_run_id=? AND player_uuid=? AND quest_id=?")){st.setLong(1,revision+1);st.setObject(2,ctx.storyRunId());st.setObject(3,ctx.playerId());st.setString(4,quest);st.executeUpdate();}
+            c.commit();return new InventoryStore.Stored(payload,revision+1);
+        }catch(Exception e){c.rollback();throw e;}finally{c.setAutoCommit(true);}}
+    });}
+    @Override public CompletionStage<Map<String,QuestCompletionStore.ChapterState>> readChapters(ServerProgressAccess.Context ctx){return submit("read_chapters",ctx,()->{try(var c=pool.getConnection()){playerExists(c,ctx);var rows=new HashMap<String,QuestCompletionStore.ChapterState>();try(var st=c.prepareStatement("SELECT chapter_id,content_hash,revision FROM hearth_progress.chapter_skip WHERE story_run_id=? AND player_uuid=?")){owner(st,ctx);try(var r=st.executeQuery()){while(r.next())rows.put(r.getString(1),new QuestCompletionStore.ChapterState(r.getString(1),r.getString(2),r.getLong(3)));}}return Map.copyOf(rows);}});}
+    @Override public CompletionStage<QuestCompletionStore.ChapterState> skipChapter(ServerProgressAccess.Context ctx,io.github.jesterportfolio.hearth.quest.QuestRules.Chapter chapter){return submit("skip_chapter",ctx,()->{
+        var configured=questRules.chapters().get(chapter.id());if(!chapter.equals(configured))throw new StorageFailure("chapter","UNKNOWN_CHAPTER");
+        try(var c=pool.getConnection()){c.setAutoCommit(false);try{
+            playerExists(c,ctx);try(var st=c.prepareStatement("SELECT 1 FROM hearth_progress.player_progress WHERE story_run_id=? AND player_uuid=? FOR UPDATE")){owner(st,ctx);st.executeQuery().close();}
+            try(var st=c.prepareStatement("SELECT 1 FROM hearth_progress.community_story_completion WHERE story_run_id=? AND stage_id=?")){st.setObject(1,ctx.storyRunId());st.setString(2,chapter.sharedStage());try(var r=st.executeQuery()){if(!r.next())throw new StorageFailure("chapter","CHAPTER_NOT_PASSED");}}
+            try(var st=c.prepareStatement("SELECT content_hash FROM hearth_progress.chapter_skip WHERE story_run_id=? AND player_uuid=? AND chapter_id=?")){owner(st,ctx);st.setString(3,chapter.id());try(var r=st.executeQuery()){if(r.next()){if(!r.getString(1).equals(chapter.fingerprint()))throw new StorageFailure("chapter","CHAPTER_CONTENT_MISMATCH");c.commit();return new QuestCompletionStore.ChapterState(chapter.id(),chapter.fingerprint(),0);}}}
+            for(String quest:chapter.required()){
+                try(var st=c.prepareStatement("INSERT INTO hearth_progress.personal_quest(story_run_id,player_uuid,quest_id,phase) VALUES (?,?,?,'SKIPPED') ON CONFLICT DO NOTHING")){owner(st,ctx);st.setString(3,quest);st.executeUpdate();}
+                String phase;try(var st=c.prepareStatement("SELECT phase FROM hearth_progress.personal_quest WHERE story_run_id=? AND player_uuid=? AND quest_id=? FOR UPDATE")){owner(st,ctx);st.setString(3,quest);try(var r=st.executeQuery()){r.next();phase=r.getString(1);}}
+                if(phase.equals("COMPLETED"))continue;
+                try(var st=c.prepareStatement("UPDATE hearth_progress.personal_quest SET phase='SKIPPED',deadline_millis=0,revision=revision+1 WHERE story_run_id=? AND player_uuid=? AND quest_id=? AND phase<>'SKIPPED'")){owner(st,ctx);st.setString(3,quest);st.executeUpdate();}
+                pendingReward(c,ctx,quest,"POLICY_PENDING");
+                try(var st=c.prepareStatement("DELETE FROM hearth_progress.quest_tracking WHERE story_run_id=? AND player_uuid=? AND quest_id=?")){owner(st,ctx);st.setString(3,quest);st.executeUpdate();}
+            }
+            try(var st=c.prepareStatement("INSERT INTO hearth_progress.chapter_skip(story_run_id,player_uuid,chapter_id,content_hash) VALUES (?,?,?,?)")){owner(st,ctx);st.setString(3,chapter.id());st.setString(4,chapter.fingerprint());st.executeUpdate();}
+            c.commit();return new QuestCompletionStore.ChapterState(chapter.id(),chapter.fingerprint(),0);
+        }catch(Exception e){c.rollback();throw e;}finally{c.setAutoCommit(true);}}
+    });}
     private static void owner(PreparedStatement st,ServerProgressAccess.Context ctx)throws SQLException{st.setObject(1,ctx.storyRunId());st.setObject(2,ctx.playerId());}
     private void playerExists(Connection c,ServerProgressAccess.Context ctx)throws SQLException{
         questAccess(ctx,"journal");try(var st=c.prepareStatement("SELECT 1 FROM hearth_progress.player_progress WHERE story_run_id=? AND player_uuid=?")){owner(st,ctx);try(var rs=st.executeQuery()){if(!rs.next())throw new StorageFailure("journal","MISSING_PLAYER");}}
@@ -221,10 +266,10 @@ public final class PostgresProgressStore implements ProgressStore, InventoryStor
     @Override public CompletionStage<Void> track(ServerProgressAccess.Context ctx,String quest,QuestStore.Saved expected,boolean enabled){return submit("track_quest",ctx,()->{
         questAccess(ctx,quest);try(var c=pool.getConnection()){
             c.setAutoCommit(false);try{
-                try(var st=c.prepareStatement("SELECT phase,revision,objective_index FROM hearth_progress.personal_quest WHERE story_run_id=? AND player_uuid=? AND quest_id=? FOR UPDATE")){
+                try(var st=c.prepareStatement("SELECT phase,revision,objective_index,deadline_millis FROM hearth_progress.personal_quest WHERE story_run_id=? AND player_uuid=? AND quest_id=? FOR UPDATE")){
                     owner(st,ctx);st.setString(3,quest);try(var rs=st.executeQuery()){
-                        if(!rs.next() || !new QuestStore.Saved(QuestStore.Phase.valueOf(rs.getString(1)),rs.getLong(2),rs.getInt(3)).equals(expected)
-                            || enabled && expected.phase()!=QuestStore.Phase.ACTIVE && expected.phase()!=QuestStore.Phase.REPORT_READY)throw new StorageFailure("tracking","STALE_OR_UNACCEPTED");
+                        if(!rs.next() || !new QuestStore.Saved(QuestStore.Phase.valueOf(rs.getString(1)),rs.getLong(2),rs.getInt(3),rs.getLong(4)).equals(expected)
+                            || enabled && !Set.of(QuestStore.Phase.ACTIVE,QuestStore.Phase.REPORT_READY,QuestStore.Phase.FAILED).contains(expected.phase()))throw new StorageFailure("tracking","STALE_OR_UNACCEPTED");
                     }
                 }
                 try(var st=c.prepareStatement(enabled?"INSERT INTO hearth_progress.quest_tracking VALUES (?,?,?) ON CONFLICT DO NOTHING":"DELETE FROM hearth_progress.quest_tracking WHERE story_run_id=? AND player_uuid=? AND quest_id=?")){owner(st,ctx);st.setString(3,quest);st.executeUpdate();}
@@ -335,7 +380,7 @@ public final class PostgresProgressStore implements ProgressStore, InventoryStor
     private Map<UUID,Boolean> conditionRows(Connection c,ServerProgressAccess.Context ctx,Set<UUID> players,Set<String> quests)throws SQLException{
         var result=new HashMap<UUID,Boolean>();for(UUID player:players){boolean met=true;
             try(var st=c.prepareStatement("SELECT 1 FROM hearth_progress.player_progress WHERE story_run_id=? AND player_uuid=?")){st.setObject(1,ctx.storyRunId());st.setObject(2,player);try(var rs=st.executeQuery()){if(!rs.next())throw new StorageFailure("story","MISSING_PLAYER");}}
-            for(String quest:quests){questAccess(ctx,quest);try(var st=c.prepareStatement("SELECT phase FROM hearth_progress.personal_quest WHERE story_run_id=? AND player_uuid=? AND quest_id=? FOR SHARE")){st.setObject(1,ctx.storyRunId());st.setObject(2,player);st.setString(3,quest);try(var rs=st.executeQuery()){met&=rs.next()&&rs.getString(1).equals("COMPLETED");}}}result.put(player,met);
+            for(String quest:quests){questAccess(ctx,quest);try(var st=c.prepareStatement("SELECT phase FROM hearth_progress.personal_quest WHERE story_run_id=? AND player_uuid=? AND quest_id=? FOR SHARE")){st.setObject(1,ctx.storyRunId());st.setObject(2,player);st.setString(3,quest);try(var rs=st.executeQuery()){met&=rs.next()&&Set.of("COMPLETED","SKIPPED").contains(rs.getString(1));}}}result.put(player,met);
         }return Map.copyOf(result);
     }
     @Override public CompletionStage<Map<UUID,Boolean>> storyConditions(ServerProgressAccess.Context ctx,Set<UUID> players,Set<String> quests){return submit("story_conditions",ctx,()->{try(var c=pool.getConnection()){playerExists(c,ctx);return conditionRows(c,ctx,players,quests);}});}

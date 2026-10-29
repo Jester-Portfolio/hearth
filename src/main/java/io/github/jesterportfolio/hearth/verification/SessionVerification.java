@@ -82,6 +82,7 @@ public final class SessionVerification implements AutoCloseable {
     private QuestDialogue.Ticket npcPendingTicket;
     private PersonalQuest npcProbe;
     private CompletionStage<PersonalQuest.Session> npcPendingRead;
+    private QuestRules questRules=QuestRules.empty();private QuestRewards questRewards;
     private Object listToken=new Object();
     private CompletionStage<Map<String,QuestStore.Saved>> pendingList;
     private CompletionStage<Void> listBarrier;
@@ -121,8 +122,14 @@ public final class SessionVerification implements AutoCloseable {
                 }
                 journal.exploration(store,explorationContent,new CommunityBoundary(this::storyMembers,(ctx,online)->sharedStory==null?Optional.ofNullable(explorationConditions.get(ctx.storyRunId())):sharedStory.condition(ctx,online)));
             }
+            if(plugin.getConfig().getBoolean("quest-completion-verification-enabled")){
+                if(!Boolean.getBoolean("hearth.verification.questCompletion")||sharedStory==null)throw new IllegalStateException("Quest completion gate missing");
+                var rulesFile=new java.io.File(plugin.getDataFolder(),"quest-rules-demo.yml");if(!rulesFile.exists())plugin.saveResource("quest-rules-demo.yml",false);
+                questRules=QuestRules.parse(YamlConfiguration.loadConfiguration(rulesFile).getValues(false),catalog,sharedStory.content());quests.rules(questRules);quests.beforeChapter(journal::barrier);store.configureQuestRules(questRules);questRewards=new QuestRewards(questRules,store,codec,owner);
+            }
             questAdapter=new PaperQuestAdapter(plugin,adapter,quests,catalog,journal,owner,
                 Set.of(worlds.get(a).mapping().physicalId(),worlds.get(b).mapping().physicalId()));
+            if(questRewards!=null)questAdapter.completion(questRules,questRewards,store);
             if(sharedStory!=null){paperStory=new PaperStoryAdapter(plugin,adapter,sharedStory,owner);questAdapter.story(paperStory);}
             if(plugin.getConfig().getBoolean("playthrough-verification-enabled")){
                 if(sharedStory==null||!Boolean.getBoolean("hearth.verification.playthrough"))throw new IllegalStateException("Playthrough gate missing");
@@ -248,6 +255,8 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "quest-completion-start" -> completionStart();
+        case "quest-completion-restored" -> completionRestored();
         case "general-npcs-start" -> generalNpcsStart();
         case "general-npcs-restored" -> generalNpcsRestored();
         case "npc-topics-start" -> npcTopicsStart();
@@ -553,6 +562,48 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> failAndRetry(String id,int expected){var c=catalog.quest(id);final PersonalQuest.Session[] current={null};return quests.open(a1,id,s1,()->true).thenCompose(q->{current[0]=q;return quests.accept(q,c);})
+        .thenCompose(v->quests.reach(current[0],c,5,64,31)).thenCompose(v->quests.reach(current[0],c,9,64,31)).thenCompose(v->quests.fail(current[0],c,"OBJECTIVE"))
+        .thenCompose(row->{check(row.phase()==QuestStore.Phase.FAILED&&row.objectiveIndex()==expected,"completion_failure_policy_"+id);return expectQuestCode(quests.fail(current[0],c,"OBJECTIVE"),"QUEST_FAILURE_NOT_ALLOWED");})
+        .thenCompose(v->quests.retry(current[0],c)).thenCompose(v->{CompletionStage<?> work=CompletableFuture.completedFuture(null);for(int index=expected;index<3;index++){int x=5+index*4;work=work.thenCompose(done->quests.reach(current[0],c,x,64,31));}return work;})
+        .thenCompose(v->quests.advance(current[0],QuestStore.Phase.COMPLETED)).thenAccept(row->check(row.phase()==QuestStore.Phase.COMPLETED,"completion_retry_flow_"+id));}
+    private CompletionStage<Void> completionStart(){return openAll()
+        .thenCompose(v->expect(quests.skip(a2,s2,()->true,store,questRules.chapters().get("public_review")),"CHAPTER_NOT_PASSED"))
+        .thenCompose(v->failAndRetry("trial_checkpoint",1)).thenCompose(v->failAndRetry("trial_keep",2)).thenCompose(v->failAndRetry("trial_beginning",0))
+        .thenCompose(v->quests.open(a1,"trial_timeout",s1,()->true)).thenCompose(q->{qa=q;return quests.accept(q,catalog.quest("trial_timeout"));})
+        .thenCompose(v->journal.track(a1,s1,()->true,"trial_timeout",true)).thenAccept(view->check(view.journal().tracked().contains("trial_timeout"),"completion_timed_quest_tracking_preserves_deadline_contract"))
+        .thenCompose(v->until(()->qa.saved().phase()==QuestStore.Phase.FAILED)).thenRun(()->check(qa.saved().deadlineMillis()==0,"completion_Paper_scheduler_timeout_persisted"))
+        .thenCompose(v->journal.track(a1,s1,()->true,"trial_timeout",false)).thenCompose(v->journal.track(a1,s1,()->true,"trial_timeout",true)).thenAccept(view->check(view.journal().tracked().contains("trial_timeout"),"completion_failed_quest_tracking_remains_consistent"))
+        .thenCompose(v->mainResult(store.rewardStatus(a1,"trial_checkpoint"))).thenAccept(status->check(status.equals("PENDING"),"completion_reward_pending_registered_with_quest_completion"))
+        .thenCompose(v->expect(store.grantReward(a1,"trial_checkpoint",questRules.rule("trial_checkpoint").reward().fingerprint(),99,one.capture()),"REVISION_CONFLICT"))
+        .thenCompose(v->{one.count(20);coordinator.refresh(s1);return questRewards.claim(coordinator,s1,"trial_checkpoint");})
+        .thenCompose(v->verify(a1,23,2)).thenCompose(v->questRewards.claim(coordinator,s1,"trial_checkpoint")).thenCompose(v->verify(a1,23,2))
+        .thenRun(()->{var full=new ItemStack[41];for(int i=0;i<36;i++)full[i]=new ItemStack(Material.DIRT,64);var before=codec.encode(full);try{questRewards.add(before,questRules.rule("trial_checkpoint").reward());throw new IllegalStateException("Full inventory accepted");}catch(StorageFailure expected){check(expected.code().equals("INVENTORY_FULL")&&codec.equivalent(before,codec.encode(full)),"completion_full_inventory_no_drop_or_partial_change");}})
+        .thenCompose(v->finishCourseQuest(b3,s3,"trial_checkpoint"))
+        .thenCompose(v->mainResult(store.readInventory(b3))).thenCompose(before->{
+            var probe=new InventorySaveSession(store,b3,before.revision(),before::payload,owner,SessionVerification::main,()->true,code->log("EXPECTED_REWARD_HOLD "+code));
+            return expect(probe.transaction(saved->store.grantReward(b3,"trial_checkpoint","wrong-fingerprint",saved.revision(),saved.payload()),saved->{throw new IllegalStateException("Rejected reward applied");}),"REWARD_POLICY_MISMATCH")
+                .thenCompose(done->expect(probe.flush(),"REWARD_POLICY_MISMATCH"))
+                .thenCompose(done->mainResult(store.readInventory(b3))).thenAccept(after->check(after.equals(before)&&probe.holdCode()!=null,"completion_real_DB_reward_rejection_preserves_inventory_and_clean_HOLD"));
+        })
+        .thenCompose(v->mainResult(store.rewardStatus(b3,"trial_checkpoint"))).thenAccept(status->check(status.equals("PENDING"),"completion_failed_reward_keeps_pending_ledger"))
+        .thenCompose(v->finishCourseQuest(a1,s1,"survey_marker")).thenRun(()->storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1)))
+        .thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true))
+        .thenCompose(v->quests.skip(a2,s2,()->true,store,questRules.chapters().get("public_review")))
+        .thenCompose(v->questRead(a2,"trial_checkpoint",QuestStore.Phase.SKIPPED,0)).thenCompose(v->questRead(a2,"path_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+        .thenCompose(v->mainResult(store.rewardStatus(a2,"trial_checkpoint"))).thenAccept(status->check(status.equals("POLICY_PENDING"),"completion_skip_reward_policy_not_invented"))
+        .thenCompose(v->mainResult(store.storyConditions(a1,Set.of(a2.playerId()),Set.of("trial_checkpoint")))).thenAccept(met->check(Boolean.TRUE.equals(met.get(a2.playerId())),"completion_skip_satisfies_personal_next_stage_condition"))
+        .thenCompose(v->mainResult(store.readStory(a1))).thenAccept(saved->check(saved.story().stage().equals("trial_vote")&&saved.completed().equals(Set.of("trial_arrival"))&&saved.branches().isEmpty(),"completion_skip_does_not_reapply_or_rewind_shared_story"))
+        .thenCompose(v->questRead(ctx(b,1),"trial_checkpoint",QuestStore.Phase.NOT_ACCEPTED,-1));}
+    private CompletionStage<Void> completionRestored(){return openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->verify(a1,23,2))
+        .thenCompose(v->questRead(a1,"trial_checkpoint",QuestStore.Phase.COMPLETED,7)).thenCompose(v->questRead(a1,"trial_timeout",QuestStore.Phase.FAILED,1))
+        .thenCompose(v->mainResult(store.rewardStatus(a1,"trial_checkpoint"))).thenAccept(status->check(status.equals("GRANTED"),"completion_new_JVM_reward_grant_restored"))
+        .thenCompose(v->questRewards.claim(coordinator,s1,"trial_checkpoint")).thenCompose(v->verify(a1,23,2))
+        .thenCompose(v->mainResult(store.readChapters(a2))).thenAccept(rows->check(rows.containsKey("public_review"),"completion_new_JVM_chapter_skip_restored"))
+        .thenCompose(v->quests.skip(a2,s2,()->true,store,questRules.chapters().get("public_review"))).thenCompose(v->questRead(a2,"trial_checkpoint",QuestStore.Phase.SKIPPED,0))
+        .thenCompose(v->journal.load(a2,s2,()->true)).thenAccept(view->{check(QuestListView.entries(catalog,view.states()).stream().filter(q->q.questId().equals("trial_checkpoint")).allMatch(q->q.status().contains("스킵")),"completion_UI_skip_not_actual_completion");check(view.exploration().facts().stream().allMatch(ExplorationStore.Fact::shared),"completion_skip_does_not_grant_personal_secrets");})
+        .thenCompose(v->expect(questRewards.claim(coordinator,s2,"trial_checkpoint"),"REWARD_NOT_ELIGIBLE"))
+        .thenRun(()->check(coordinator.playable(s2),"completion_ineligible_reward_preserves_playable_session"));}
     private void generalNpcCheck(){var w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());questAdapter.ensure(w);questAdapter.ensure(w);
         var actor=catalog.npc("field_researcher");check(catalog.forNpc(actor.npcId()).isEmpty()&&questAdapter.count(w,actor.npcId())==1&&questAdapter.dialogueAllowed(w,actor),"general_NPC_single_entity_no_fake_quest_and_WG_interaction");}
     private CompletionStage<Void> generalNpcsStart(){return openAll().thenRun(()->{prepareCourse(a);prepareCourse(b);generalNpcCheck();})
@@ -1169,8 +1220,8 @@ public final class SessionVerification implements AutoCloseable {
                     dialogue.authorize(context.playerId(),token,context.storyRunId(),physical,id,QuestDialogue.Request.parse(dialogue.command(t,"select")));
                     return quests.open(context,t.quest(),token,()->true).thenAccept(q->{
                         var saved=quests.requireDialogue(q);var c=catalog.quest(t.quest());var lines=PaperQuestAdapter.dialogueMessages(c,saved,dialogue,t);
-                        String key=switch(saved.phase()){case NOT_ACCEPTED->"offer";case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";};
-                        check(((net.kyori.adventure.text.TextComponent)lines.getFirst()).content().equals(c.text().get(key)),"npc_personal_dialogue_"+context.storyRunId()+"_"+context.playerId()+"_"+t.quest()+"_"+saved.phase());
+                        String key=switch(saved.phase()){case NOT_ACCEPTED->"offer";case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";case FAILED,SKIPPED->null;};
+                        check(((net.kyori.adventure.text.TextComponent)lines.getFirst()).content().equals(key==null?c.guidance(saved):c.text().get(key)),"npc_personal_dialogue_"+context.storyRunId()+"_"+context.playerId()+"_"+t.quest()+"_"+saved.phase());
                     });
                 });
                 return views.thenCompose(x->listSnapshot(context)).thenAccept(after->check(before.equals(after),"npc_selection_rows_revisions_unchanged"));

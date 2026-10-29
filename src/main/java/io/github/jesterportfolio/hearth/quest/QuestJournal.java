@@ -85,7 +85,7 @@ public final class QuestJournal {
     }
     public CompletionStage<View> load(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){return perform(ctx,token,valid,null);}
     public CompletionStage<View> track(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String quest,boolean enabled){return perform(ctx,token,valid,v->{
-        var row=v.states().get(quest);if(!questAllowed(ctx,quest))throw new IllegalArgumentException("Restricted quest");if(row==null || row.phase()==QuestStore.Phase.NOT_ACCEPTED || enabled && row.phase()==QuestStore.Phase.COMPLETED)throw new IllegalArgumentException("Untrackable quest");
+        var row=v.states().get(quest);if(!questAllowed(ctx,quest))throw new IllegalArgumentException("Restricted quest");if(row==null || row.phase()==QuestStore.Phase.NOT_ACCEPTED || enabled && row.satisfies())throw new IllegalArgumentException("Untrackable quest");
         return store.track(ctx,quest,row,enabled);
     });}
     public CompletionStage<View> hud(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,boolean enabled){return perform(ctx,token,valid,v->store.hud(ctx,v.journal().preferences(),enabled));}
@@ -131,7 +131,7 @@ public final class QuestJournal {
         if(!view.journal().preferences().hudEnabled())return List.of();var lines=new ArrayList<String>();
         for(String id:new TreeSet<>(view.journal().tracked())){
             var state=view.states().get(id);if(state==null)throw new IllegalStateException("Unknown tracked quest");
-            if(!view.exploration().blockedQuests().contains(id)&&(state.phase()==QuestStore.Phase.ACTIVE || state.phase()==QuestStore.Phase.REPORT_READY))lines.add(catalog.quest(id).title()+" — "+catalog.quest(id).guidance(state));
+            if(!view.exploration().blockedQuests().contains(id)&&(state.phase()==QuestStore.Phase.ACTIVE || state.phase()==QuestStore.Phase.REPORT_READY||state.phase()==QuestStore.Phase.FAILED))lines.add(catalog.quest(id).title()+" — "+catalog.quest(id).guidance(state));
         }return List.copyOf(lines);
     }
     private CompletableFuture<Void> discoveryDrain(DiscoveryJob job){return job.result().handle((view,error)->{

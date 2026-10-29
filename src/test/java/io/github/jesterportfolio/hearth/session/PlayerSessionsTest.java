@@ -122,4 +122,8 @@ final class PlayerSessionsTest {
         var next=f.open(id,new Port());f.sessions.disconnect(next);f.pump();f.saved(0,1);
         assertEquals(1,f.store.reads.size());assertTrue(next.closed().toCompletableFuture().isDone());assertEquals(0,f.world.participantCount());
     }
+    @Test void rewardFreezesPlayAndRapidReconnectWaitsCommitWithoutApplyingToOldClient(){
+        var f=new Fixture();var id=UUID.randomUUID();var p=new Port();var old=f.active(id,p);var grant=new CompletableFuture<InventoryStore.Stored>();var reward=f.sessions.inventoryTransaction(old,before->grant);f.pump();assertFalse(f.sessions.playable(old));
+        var closed=f.sessions.disconnect(old);p.online=false;var nextPort=new Port();var next=f.open(id,nextPort);assertFalse(closed.toCompletableFuture().isDone());assertEquals(1,f.store.reads.size());grant.complete(new InventoryStore.Stored(payload(4),1));f.pump();assertTrue(reward.toCompletableFuture().isDone());assertEquals(1,p.applies);assertEquals(2,f.store.reads.size());f.read(1,4,1);assertTrue(f.sessions.playable(next));assertEquals(payload(4),nextPort.memory);
+    }
 }

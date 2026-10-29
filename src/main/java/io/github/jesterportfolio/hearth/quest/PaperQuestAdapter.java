@@ -42,6 +42,11 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final PaperQuestUI ui;
     private io.github.jesterportfolio.hearth.story.PaperStoryAdapter story;
     public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;ui.storyGuide(p->adapter.guide(p,null));}
+    private QuestRules rules=QuestRules.empty();private QuestRewards rewards;private io.github.jesterportfolio.hearth.persistence.QuestCompletionStore completionStore;
+    private final org.bukkit.scheduler.BukkitTask expiry;
+    public void completion(QuestRules definitions,QuestRewards rewardService,io.github.jesterportfolio.hearth.persistence.QuestCompletionStore storage){
+        rules=definitions;rewards=rewardService;completionStore=storage;quests.completed((ctx,id)->{if(rules.rule(id).reward()==null)return;var p=Bukkit.getPlayer(ctx.playerId());if(p==null)return;var s=players.current(p);if(s!=null&&s.context().storyRunId().equals(ctx.storyRunId()))claim(p,s,id);});
+    }
     private boolean closed;
     private boolean playthroughEnabled;
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){playthroughEnabled=true;ui.playthrough(content,shared);}
@@ -50,8 +55,9 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         for(var c:catalog.all())for(var goal:c.goals())if(goal.interaction()!=null&&goal.interaction().startsWith("block:")){var material=Material.matchMaterial(goal.interaction().split(":")[4]);if(material==null||!material.isBlock()||material.isAir())throw new IllegalArgumentException("Unknown objective block material");}
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
-        ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
-        ui.projection((p,v)->{projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
+        ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
+        ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
+        expiry=Bukkit.getScheduler().runTaskTimer(plugin,()->quests.expire(catalog).exceptionally(error->{plugin.getLogger().warning("HEARTH_QUEST_EXPIRY_HOLD");return null;}),20,20);
         Bukkit.getPluginManager().registerEvents(this,plugin);players.questCommand(this::command);
         for(World w:Bukkit.getWorlds())ensure(w);
     }
@@ -136,6 +142,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private boolean current(Player p,PlayerSessions.Session session,QuestDialogue.Ticket t){return talkAllowed(p,t.npc(),t.entity()) && dialogues.current(t) && players.current(p)==session && p.getWorld().getUID().equals(t.world()) && near(p,t.npc(),t.entity());}
     @EventHandler public void load(WorldLoadEvent e){UUID id=e.getWorld().getUID();Bukkit.getScheduler().runTaskLater(plugin,()->{World w=Bukkit.getWorld(id);if(w!=null)ensure(w);},1);}
     @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){UUID id=e.getWorld().getUID();npcs.remove(id);dialogues.clearWorld(id);for(var rows:marks.values())rows.entrySet().removeIf(entry->{if(!entry.getValue().world().equals(id))return false;removeMark(entry.getValue());return true;});}
+    @EventHandler(priority=EventPriority.MONITOR) public void death(org.bukkit.event.entity.PlayerDeathEvent event){var s=players.current(event.getPlayer());if(s!=null)quests.trigger(s.context(),"DEATH",catalog).exceptionally(error->{plugin.getLogger().warning("HEARTH_QUEST_DEATH_HOLD");return null;});}
     @EventHandler public void quit(PlayerQuitEvent e){dialogues.clear(e.getPlayer().getUniqueId());clearVisual(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void click(PlayerInteractAtEntityEvent e){
         String npc=npcId(e.getRightClicked());if(npc==null)return;
@@ -198,8 +205,9 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     /** 인증된 선택의 현재 상태만 표시합니다. 선택용 nonce를 수락/보고에 재사용하지 않습니다. */
     public static List<Component> dialogueMessages(QuestContent c,QuestStore.Saved saved,QuestDialogue dialogues,QuestDialogue.Ticket selected){
         if(!dialogues.current(selected) || !c.id().equals(selected.quest()))throw new IllegalArgumentException("Stale dialogue response");
-        String text=switch(saved.phase()){case NOT_ACCEPTED->"offer";case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";};
-        Component message=Component.text(saved.phase()==QuestStore.Phase.ACTIVE?c.guidance(saved):c.text().get(text));
+        String text=switch(saved.phase()){case NOT_ACCEPTED->"offer";case ACTIVE->"active";case REPORT_READY->"report-ready";case COMPLETED->"completed";case FAILED,SKIPPED->null;};
+        Component message=Component.text(saved.phase()==QuestStore.Phase.ACTIVE||text==null?c.guidance(saved):c.text().get(text));
+        if(saved.phase()==QuestStore.Phase.FAILED)message=message.append(Component.newline()).append(Component.text("[퀘스트 재시작]").clickEvent(ClickEvent.runCommand("/hearthquest retry "+c.id())));
         if(saved.phase()==QuestStore.Phase.NOT_ACCEPTED && c.startMode()==QuestContent.StartMode.NPC || saved.phase()==QuestStore.Phase.REPORT_READY){
             String action=saved.phase()==QuestStore.Phase.NOT_ACCEPTED?"accept":"report";
             var next=dialogues.action(selected,action);
@@ -236,6 +244,26 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(page.index()+1<texts.size())out.add(Component.text("[다음 대화]").clickEvent(ClickEvent.runCommand(dialogue.pageCommand(page,"next"))));
         out.add(Component.text("[대화 닫기]").clickEvent(ClickEvent.runCommand(dialogue.pageCommand(page,"close"))));return List.copyOf(out);
     }
+    private void claim(Player p,PlayerSessions.Session session,String quest){
+        if(rewards==null||!catalog.questIds().contains(quest)||!journal.questAllowed(session.context(),quest)){unavailable(p);return;}
+        players.reward(session,rewards,quest).whenCompleteAsync((v,error)->{if(error!=null){plugin.getLogger().warning("HEARTH_QUEST_REWARD "+io.github.jesterportfolio.hearth.inventory.InventorySaveSession.code(error));if(p.isOnline())p.sendMessage(Component.text("보상을 지급하지 못했습니다. 공간·저장 상태를 확인해 주세요. 미등록/스킵 보상은 지급하지 않습니다."));}else if(players.current(p)==session)p.sendMessage(Component.text("퀘스트 보상 지급 상태를 DB에서 확인했습니다. 중복 지급하지 않습니다."));},owner);
+    }
+    private void chapter(Player p,PlayerSessions.Session session,String action,String id){
+        if(completionStore==null||story==null){unavailable(p);return;}var definition=id==null?null:rules.chapters().get(id);
+        if(action.equals("skip")){
+            if(definition==null){unavailable(p);return;}
+            quests.skip(session.context(),session,()->players.current(p)==session,completionStore,definition).whenCompleteAsync((row,error)->{if(players.current(p)!=session)return;if(error!=null){unavailable(p);return;}p.sendMessage(Component.text("선택한 장의 메인/필수 길목만 스킵했습니다. 실제 완료·보상과 구분하며 공동체 결과는 유지합니다."));},owner);return;
+        }
+        journal.load(session.context(),session,()->players.current(p)==session).thenComposeAsync(view->completionStore.readChapters(session.context()).thenApply(saved->Map.entry(view,saved)),owner).whenCompleteAsync((result,error)->{
+            if(players.current(p)!=session)return;if(error!=null){unavailable(p);return;}
+            try{journal.requireView(session.context(),result.getKey());var shared=story.shared().cached(session.context().storyRunId());
+                var available=rules.chapters().values().stream().filter(c->shared.completed().contains(c.sharedStage())).sorted(Comparator.comparing(QuestRules.Chapter::id)).toList();
+                if(available.isEmpty()){p.sendMessage(Component.text("공동체가 지나온 따라잡기 대상 장이 없습니다."));return;}
+                if(action.equals("play")){if(definition==null||!available.contains(definition))throw new IllegalArgumentException("Unknown chapter");p.sendMessage(Component.text("직접 플레이: "+definition.title()+" · 기존 NPC/지역 시작 조건과 공동체 확정 분기를 따릅니다. 과거 세계 상태를 되돌리지 않습니다."));for(String quest:definition.required())if(journal.questAllowed(session.context(),quest)&&QuestListView.available(catalog.quest(quest),result.getKey().states()))p.sendMessage(Component.text(catalog.quest(quest).title()+" · "+catalog.quest(quest).name()).clickEvent(ClickEvent.runCommand("/hearthquest info "+quest)));return;}
+                for(var c:available)p.sendMessage(Component.text(c.title()+" · "+(result.getValue().containsKey(c.id())?"스킵 기록 있음":"개인 진행 선택")).append(Component.text(" [직접 플레이]").clickEvent(ClickEvent.runCommand("/hearthquest chapter-play "+c.id()))).append(Component.text(" [장 스킵]").clickEvent(ClickEvent.runCommand("/hearthquest chapter-skip "+c.id()))));
+            }catch(RuntimeException invalid){unavailable(p);}
+        },owner);
+    }
     private boolean command(Player p,String command){
         if(command.startsWith("/hearthtalk ask ")){ask(p,command);return true;}
         if(command.equals("/hearthtalk")||command.startsWith("/hearthtalk ")){
@@ -250,6 +278,14 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(ui.command(p,command))return true;
         if(!command.startsWith("/hearthquest"))return false;
         var session=players.current(p);if(session==null)return true;
+        if(command.equals("/hearthquest chapters")){chapter(p,session,"list",null);return true;}
+        if(command.startsWith("/hearthquest retry ")||command.startsWith("/hearthquest claim ")||command.startsWith("/hearthquest chapter-play ")||command.startsWith("/hearthquest chapter-skip ")){
+            var parts=command.split(" ",-1);if(parts.length!=3||!parts[2].matches("[a-z][a-z0-9_]{0,63}")){unavailable(p);return true;}
+            if(parts[1].startsWith("chapter-")){chapter(p,session,parts[1].equals("chapter-skip")?"skip":"play",parts[2]);return true;}
+            if(!catalog.questIds().contains(parts[2])||!journal.questAllowed(session.context(),parts[2])){unavailable(p);return true;}
+            if(parts[1].equals("claim")){claim(p,session,parts[2]);return true;}
+            quests.open(session.context(),parts[2],session,()->players.current(p)==session).thenComposeAsync(q->quests.retry(q,catalog.quest(parts[2])),owner).whenCompleteAsync((saved,error)->{if(players.current(p)!=session)return;if(error!=null)unavailable(p);else p.sendMessage(Component.text("퀘스트를 재시작했습니다. "+catalog.quest(parts[2]).guidance(saved)));},owner);return true;
+        }
         if(command.equals("/hearthquest list")){read(p,session,null);return true;}
         if(command.equals("/hearthquest info") || command.startsWith("/hearthquest info ")) {
             var id=QuestListView.infoId(command);
@@ -342,6 +378,6 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private void unavailable(Player p){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다."));plugin.getLogger().info("HEARTH_QUEST_REQUEST_UNAVAILABLE");}
     private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}
     public void stopUi(){ui.close();}
-    @Override public void close(){ui.close();closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
+    @Override public void close(){expiry.cancel();quests.completed((ctx,id)->{});ui.close();closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
         for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(e->npcId(e)!=null).forEach(Entity::remove);}npcs.clear();marks.values().forEach(rows->rows.values().forEach(this::removeMark));marks.clear();projections.clear();}
 }

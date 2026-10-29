@@ -1,0 +1,849 @@
+{
+  "outcome": "PASS",
+  "unit_results": {
+    "initial": {
+      "io.github.jesterportfolio.hearth.quest.QuestPrerequisiteTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.inventory.InventoryTransitionTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.inventory.InventorySaveTest": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestListViewTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.lifecycle.WorldPersistenceTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.ExplorationTest": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.PlaythroughTest": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.PersonalQuestTest": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.InteractionQuestTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.OneBlockEffectTest": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestDialogueTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestInfoTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.GameInformationTest": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.persistence.PostgresProgressStoreTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestCatalogTest": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestBatchTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.world.TemplateStoreTest": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.NpcQuestViewTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestStartTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.session.PlayerSessionsTest": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.AutomaticQuestTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestCompletionTest": {
+        "tests": 8,
+        "failures": 1,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.SharedStoryTest": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.session.PlayerInteractionRulesTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.NpcTopicsTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestLocationTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.NpcPagesTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.lifecycle.WorldLifecycleTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestNavigationTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.GeneralNpcTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.GameplayGuideTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      }
+    },
+    "rerun": {
+      "io.github.jesterportfolio.hearth.quest.PlaythroughTest": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.ExplorationTest": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.SharedStoryTest": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.PersonalQuestTest": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.InteractionQuestTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.NpcTopicsTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestLocationTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.OneBlockEffectTest": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestDialogueTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestInfoTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.GameInformationTest": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestPrerequisiteTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.NpcPagesTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestCatalogTest": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestBatchTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestNavigationTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.NpcQuestViewTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestListViewTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.GeneralNpcTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestStartTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.AutomaticQuestTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestCompletionTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.GameplayGuideTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      }
+    },
+    "effective": {
+      "io.github.jesterportfolio.hearth.quest.QuestPrerequisiteTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.inventory.InventoryTransitionTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.inventory.InventorySaveTest": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestListViewTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.lifecycle.WorldPersistenceTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.ExplorationTest": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.PlaythroughTest": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.PersonalQuestTest": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.InteractionQuestTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.OneBlockEffectTest": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestDialogueTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestInfoTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.GameInformationTest": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.persistence.PostgresProgressStoreTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestCatalogTest": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestBatchTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.world.TemplateStoreTest": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.NpcQuestViewTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestStartTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.session.PlayerSessionsTest": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.AutomaticQuestTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestCompletionTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.SharedStoryTest": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.session.PlayerInteractionRulesTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.NpcTopicsTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestLocationTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.NpcPagesTest": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.lifecycle.WorldLifecycleTest": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.QuestNavigationTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.GeneralNpcTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.quest.GameplayGuideTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      }
+    },
+    "inventory_session_rerun": {
+      "io.github.jesterportfolio.hearth.session.PlayerInteractionRulesTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.session.PlayerSessionsTest": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.inventory.InventoryTransitionTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      },
+      "io.github.jesterportfolio.hearth.inventory.InventorySaveTest": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0
+      }
+    }
+  },
+  "attempts": [
+    {
+      "outcome": "FAIL",
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-resume",
+      "workspace": "/tmp/hearth-s4-11.6xtsolog",
+      "duration_seconds": 51.082,
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "all_owned_processes_and_ports_closed": false,
+      "plugin_sha256": "0476d8c9518b567a6378930d151eb4e226989252b63708159d687769dcb4b99b",
+      "installed_plugin_sha256": "0476d8c9518b567a6378930d151eb4e226989252b63708159d687769dcb4b99b",
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "rejected_CHAPTER_NOT_PASSED",
+        "completion_failure_policy_trial_checkpoint",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_checkpoint",
+        "completion_failure_policy_trial_keep",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_keep",
+        "completion_failure_policy_trial_beginning",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_beginning",
+        "completion_Paper_scheduler_timeout_persisted",
+        "completion_reward_pending_registered_with_quest_completion",
+        "rejected_REVISION_CONFLICT",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "completion_full_inventory_no_drop_or_partial_change",
+        "course_quest_completed_survey_marker",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_trial_checkpoint_SKIPPED_r0",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_path_marker_NOT_ACCEPTED_r-1",
+        "completion_skip_reward_policy_not_invented",
+        "completion_skip_satisfies_personal_next_stage_condition",
+        "completion_skip_does_not_reapply_or_rewind_shared_story",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_trial_checkpoint_NOT_ACCEPTED_r-1",
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_trial_checkpoint_COMPLETED_r7",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_trial_timeout_FAILED_r1",
+        "completion_new_JVM_reward_grant_restored",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "completion_new_JVM_chapter_skip_restored",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_trial_checkpoint_SKIPPED_r0"
+      ],
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "player_actions_verdict": "NOT_RUN",
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 50.692,
+          "shutdown_seconds": 0.208,
+          "max_sampled_rss_kib": 224680,
+          "observed_cpu_seconds": 2.42,
+          "min_sampled_host_available_kib": 11766016
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "ready_seconds": 14.566,
+          "duration_seconds": 33.24,
+          "shutdown_seconds": 3.678,
+          "max_sampled_rss_kib": 1204760,
+          "observed_cpu_seconds": 60.22,
+          "min_sampled_host_available_kib": 11766016
+        },
+        "paper-resume": {
+          "exit_code": 0,
+          "ready_seconds": 8.867,
+          "duration_seconds": 14.286,
+          "shutdown_seconds": 3.572,
+          "max_sampled_rss_kib": 939940,
+          "observed_cpu_seconds": 28.14,
+          "min_sampled_host_available_kib": 12041604
+        }
+      }
+    },
+    {
+      "outcome": "PASS",
+      "failure": null,
+      "workspace": "/tmp/hearth-s4-11.41zrsiy0",
+      "duration_seconds": 54.172,
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "688596db9170df4380a7b19a86c239a6a7b99699e17db7f656bb6ed85fbac72d",
+      "installed_plugin_sha256": "688596db9170df4380a7b19a86c239a6a7b99699e17db7f656bb6ed85fbac72d",
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "rejected_CHAPTER_NOT_PASSED",
+        "completion_failure_policy_trial_checkpoint",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_checkpoint",
+        "completion_failure_policy_trial_keep",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_keep",
+        "completion_failure_policy_trial_beginning",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_beginning",
+        "completion_Paper_scheduler_timeout_persisted",
+        "completion_reward_pending_registered_with_quest_completion",
+        "rejected_REVISION_CONFLICT",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "completion_full_inventory_no_drop_or_partial_change",
+        "course_quest_completed_survey_marker",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_trial_checkpoint_SKIPPED_r0",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_path_marker_NOT_ACCEPTED_r-1",
+        "completion_skip_reward_policy_not_invented",
+        "completion_skip_satisfies_personal_next_stage_condition",
+        "completion_skip_does_not_reapply_or_rewind_shared_story",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_trial_checkpoint_NOT_ACCEPTED_r-1",
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_trial_checkpoint_COMPLETED_r7",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_trial_timeout_FAILED_r1",
+        "completion_new_JVM_reward_grant_restored",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "completion_new_JVM_chapter_skip_restored",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_trial_checkpoint_SKIPPED_r0",
+        "completion_UI_skip_not_actual_completion",
+        "completion_skip_does_not_grant_personal_secrets",
+        "rejected_REWARD_NOT_ELIGIBLE",
+        "completion_ineligible_reward_preserves_playable_session"
+      ],
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "player_actions_verdict": "NOT_RUN",
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 53.469,
+          "shutdown_seconds": 0.208,
+          "max_sampled_rss_kib": 223040,
+          "observed_cpu_seconds": 2.42,
+          "min_sampled_host_available_kib": 11585464
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "ready_seconds": 13.279,
+          "duration_seconds": 33.896,
+          "shutdown_seconds": 3.67,
+          "max_sampled_rss_kib": 1384984,
+          "observed_cpu_seconds": 63.27,
+          "min_sampled_host_available_kib": 11585464
+        },
+        "paper-resume": {
+          "exit_code": 0,
+          "ready_seconds": 8.856,
+          "duration_seconds": 16.529,
+          "shutdown_seconds": 3.527,
+          "max_sampled_rss_kib": 968488,
+          "observed_cpu_seconds": 31.59,
+          "min_sampled_host_available_kib": 12012512
+        }
+      }
+    },
+    {
+      "outcome": "PASS",
+      "failure": null,
+      "workspace": "/tmp/hearth-s4-11.wfi4n3ms",
+      "duration_seconds": 53.985,
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "7fb193b31fde285a75dc960be19411a852b1d2651bcf1d00fd772c723b0de34f",
+      "installed_plugin_sha256": "7fb193b31fde285a75dc960be19411a852b1d2651bcf1d00fd772c723b0de34f",
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "rejected_CHAPTER_NOT_PASSED",
+        "completion_failure_policy_trial_checkpoint",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_checkpoint",
+        "completion_failure_policy_trial_keep",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_keep",
+        "completion_failure_policy_trial_beginning",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_beginning",
+        "completion_Paper_scheduler_timeout_persisted",
+        "completion_reward_pending_registered_with_quest_completion",
+        "rejected_REVISION_CONFLICT",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "completion_full_inventory_no_drop_or_partial_change",
+        "course_quest_completed_trial_checkpoint",
+        "rejected_REWARD_POLICY_MISMATCH",
+        "rejected_REWARD_POLICY_MISMATCH",
+        "completion_real_DB_reward_rejection_preserves_inventory_and_clean_HOLD",
+        "completion_failed_reward_keeps_pending_ledger",
+        "course_quest_completed_survey_marker",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_trial_checkpoint_SKIPPED_r0",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_path_marker_NOT_ACCEPTED_r-1",
+        "completion_skip_reward_policy_not_invented",
+        "completion_skip_satisfies_personal_next_stage_condition",
+        "completion_skip_does_not_reapply_or_rewind_shared_story",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_trial_checkpoint_NOT_ACCEPTED_r-1",
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_trial_checkpoint_COMPLETED_r7",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_trial_timeout_FAILED_r1",
+        "completion_new_JVM_reward_grant_restored",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "completion_new_JVM_chapter_skip_restored",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_trial_checkpoint_SKIPPED_r0",
+        "completion_UI_skip_not_actual_completion",
+        "completion_skip_does_not_grant_personal_secrets",
+        "rejected_REWARD_NOT_ELIGIBLE",
+        "completion_ineligible_reward_preserves_playable_session"
+      ],
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "player_actions_verdict": "NOT_RUN",
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 53.26,
+          "shutdown_seconds": 0.208,
+          "max_sampled_rss_kib": 220496,
+          "observed_cpu_seconds": 2.3,
+          "min_sampled_host_available_kib": 11875172
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "ready_seconds": 13.065,
+          "duration_seconds": 33.489,
+          "shutdown_seconds": 4.126,
+          "max_sampled_rss_kib": 1063360,
+          "observed_cpu_seconds": 62.45,
+          "min_sampled_host_available_kib": 11875172
+        },
+        "paper-resume": {
+          "exit_code": 0,
+          "ready_seconds": 8.898,
+          "duration_seconds": 16.712,
+          "shutdown_seconds": 3.517,
+          "max_sampled_rss_kib": 981372,
+          "observed_cpu_seconds": 32.11,
+          "min_sampled_host_available_kib": 11985868
+        }
+      }
+    },
+    {
+      "outcome": "PASS",
+      "failure": null,
+      "workspace": "/tmp/hearth-s4-11.tkwk1jp3",
+      "duration_seconds": 56.662,
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "7ff1329a765f269ce66c0922728b7682150695218ca256bfa800a2d5811ac3cf",
+      "installed_plugin_sha256": "7ff1329a765f269ce66c0922728b7682150695218ca256bfa800a2d5811ac3cf",
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "rejected_CHAPTER_NOT_PASSED",
+        "completion_failure_policy_trial_checkpoint",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_checkpoint",
+        "completion_failure_policy_trial_keep",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_keep",
+        "completion_failure_policy_trial_beginning",
+        "multi_rejected_QUEST_FAILURE_NOT_ALLOWED",
+        "completion_retry_flow_trial_beginning",
+        "completion_timed_quest_tracking_preserves_deadline_contract",
+        "completion_Paper_scheduler_timeout_persisted",
+        "completion_failed_quest_tracking_remains_consistent",
+        "completion_reward_pending_registered_with_quest_completion",
+        "rejected_REVISION_CONFLICT",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "completion_full_inventory_no_drop_or_partial_change",
+        "course_quest_completed_trial_checkpoint",
+        "rejected_REWARD_POLICY_MISMATCH",
+        "rejected_REWARD_POLICY_MISMATCH",
+        "completion_real_DB_reward_rejection_preserves_inventory_and_clean_HOLD",
+        "completion_failed_reward_keeps_pending_ledger",
+        "course_quest_completed_survey_marker",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_trial_checkpoint_SKIPPED_r0",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_path_marker_NOT_ACCEPTED_r-1",
+        "completion_skip_reward_policy_not_invented",
+        "completion_skip_satisfies_personal_next_stage_condition",
+        "completion_skip_does_not_reapply_or_rewind_shared_story",
+        "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_trial_checkpoint_NOT_ACCEPTED_r-1",
+        "fixture_prepared_no_login_provisioning",
+        "no_apply_or_admission_before_prepare",
+        "all_sessions_active_after_move",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_trial_checkpoint_COMPLETED_r7",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_trial_timeout_FAILED_r1",
+        "completion_new_JVM_reward_grant_restored",
+        "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count23_r2",
+        "completion_new_JVM_chapter_skip_restored",
+        "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_trial_checkpoint_SKIPPED_r0",
+        "completion_UI_skip_not_actual_completion",
+        "completion_skip_does_not_grant_personal_secrets",
+        "rejected_REWARD_NOT_ELIGIBLE",
+        "completion_ineligible_reward_preserves_playable_session"
+      ],
+      "player_actions_verdict": "NOT_RUN",
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 55.958,
+          "shutdown_seconds": 0.208,
+          "max_sampled_rss_kib": 223788,
+          "observed_cpu_seconds": 2.4,
+          "min_sampled_host_available_kib": 11908044
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "ready_seconds": 13.413,
+          "duration_seconds": 36.212,
+          "shutdown_seconds": 3.653,
+          "max_sampled_rss_kib": 1039936,
+          "observed_cpu_seconds": 65.03,
+          "min_sampled_host_available_kib": 11908044
+        },
+        "paper-resume": {
+          "exit_code": 0,
+          "ready_seconds": 8.909,
+          "duration_seconds": 16.688,
+          "shutdown_seconds": 3.533,
+          "max_sampled_rss_kib": 979852,
+          "observed_cpu_seconds": 31.71,
+          "min_sampled_host_available_kib": 11968644
+        }
+      }
+    }
+  ],
+  "final_source_jar_sha256": "7ff1329a765f269ce66c0922728b7682150695218ca256bfa800a2d5811ac3cf",
+  "first_attempt_cleanup_followup": "Hikari 종료 로그·소유 PID 종료·25585/40877 포트 반환을 따로 확인. 원래 풀 종료 확인 누락은 FAIL 기록 그대로 보존.",
+  "scope": "서버 내부 컨텍스트·제어 인벤토리·실제 격리 Paper/PG. 실제 인증 클라이언트·GUI/죽음 이벤트·자동 보상 메시지 수신은 미실행.",
+  "additional_run_authorization": "기존 상한 이후 사용자의 다음 작업 진행 지시로 추가 1묶음을 수행. 원래 CPU/RAM/600초·두 JVM/PG 1개 제한 유지.",
+  "final_jar_matches_runtime": true,
+  "remaining_scope": [
+    "실제 인증 클라이언트·GUI/죽음 이벤트·자동 보상 메시지 수신",
+    "스킵/재참여 보상·실콘텐츠 오프라인 시간 계산 정책",
+    "과거 퀘스트 인스턴스·연출·NPC 재현",
+    "호위/전투 엔진·실제 콘텐츠와 밸런스·운영 배포"
+  ]
+}

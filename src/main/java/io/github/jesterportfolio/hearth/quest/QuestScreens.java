@@ -25,6 +25,7 @@ public final class QuestScreens {
             navigation(out,offset,entries.size(),page);
             String[] tabs={"quests","reporting","tracked","completed"};String[] names={"전체","보고 가능","추적 중","완료"};
             for(int i=0;i<tabs.length;i++)out.add(new Button(36+i,names[i],tabs[i],null,0));
+            out.add(new Button(52,"장별 따라잡기/스킵","quest-chapters",null,0));
             out.add(new Button(50,"다음 플레이 안내","journey-guide",null,0));
             out.add(new Button(49,"확정된 공동체 분기","branches",null,0));
         }else if(page.equals("detail")){
@@ -34,9 +35,11 @@ public final class QuestScreens {
                 int slot=0;for(String line:QuestListView.detailLines(detail))out.add(new Button(slot++,line,"none",null,0));
                 var row=view.states().get(id);boolean tracked=view.journal().tracked().contains(id);
                 if(row.phase()==QuestStore.Phase.REPORT_READY)out.add(new Button(11,"가까운 NPC와 보고 대화 열기","npc-dialogue",id,0));
+                if(row.phase()==QuestStore.Phase.FAILED)out.add(new Button(12,"퀘스트 재시작","quest-retry",id,0));
+                if(row.phase()==QuestStore.Phase.COMPLETED)out.add(new Button(12,"설정된 보상 확인/받기","quest-reward",id,0));
                 out.add(new Button(46,"알림 목록","notices",null,0));out.add(new Button(48,"추적 중인 퀘스트","tracked",null,0));
                 if(view.exploration().registered())out.add(new Button(49,"공유 진행 안내를 채팅에서 확인","story-guide",null,0));
-                if(row.phase()!=QuestStore.Phase.COMPLETED)out.add(new Button(10,tracked?"추적 해제":"추적","track",id,tracked?0:1));
+                if(!row.satisfies())out.add(new Button(10,tracked?"추적 해제":"추적","track",id,tracked?0:1));
                 out.removeIf(b->b.slot()==45);out.add(new Button(45,"퀘스트 목록","quests",null,0));
             }
         }else if(page.equals("notices")){
@@ -85,5 +88,5 @@ public final class QuestScreens {
         return List.copyOf(out);
     }
     private static void navigation(List<Button> out,int offset,int size,String page){if(offset>0)out.add(new Button(47,"이전 페이지",page,null,Math.max(0,offset-36)));if(offset+36<size)out.add(new Button(51,"다음 페이지",page,null,offset+36));}
-    public static String notice(String kind){return switch(kind){case "PLACE_FOUND"->"장소 발견";case "STARTED"->"퀘스트 시작";case "OBJECTIVE_UPDATED"->"목표 단계 갱신";case "REPORT_READY"->"NPC 보고 가능";case "COMPLETED"->"퀘스트 완료";default->throw new IllegalArgumentException("Unknown notice");};}
+    public static String notice(String kind){return switch(kind){case "PLACE_FOUND"->"장소 발견";case "FAILED"->"퀘스트 실패";case "RESTARTED"->"퀘스트 재시작";case "STARTED"->"퀘스트 시작";case "OBJECTIVE_UPDATED"->"목표 단계 갱신";case "REPORT_READY"->"NPC 보고 가능";case "COMPLETED"->"퀘스트 완료";default->throw new IllegalArgumentException("Unknown notice");};}
 }

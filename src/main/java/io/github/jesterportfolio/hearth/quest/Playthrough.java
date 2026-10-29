@@ -28,7 +28,7 @@ public record Playthrough(List<Step> steps){
         if(shared==null||phase!=SharedStory.Phase.READY&&phase!=SharedStory.Phase.OPEN||shared.story().revision()!=view.exploration().story().revision())return new Guide("플레이 안내 확인 대기",List.of("공유 진행·저장 상태를 확인한 뒤 다시 조회해 주세요."),null,null,false);
         QuestListView.entries(catalog,view.states());
         for(var step:steps){boolean done=switch(step.kind()){
-            case QUEST->view.states().get(step.reference()).phase()==QuestStore.Phase.COMPLETED;
+            case QUEST->view.states().get(step.reference()).satisfies();
             case STAGE->Objects.equals(shared.story().stage(),step.reference())||shared.completed().contains(step.reference());
             case STAGE_COMPLETE->shared.completed().contains(step.reference());
             case PLACE->view.exploration().place(step.reference()).filter(p->p.discovered()).isPresent();

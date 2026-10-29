@@ -49,6 +49,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         this.plugin=plugin;this.sessions=sessions;this.owner=owner;this.codec=codec;this.waiting=waiting.clone();
         Bukkit.getPluginManager().registerEvents(this,plugin);
     }
+    public CompletionStage<Void> reward(PlayerSessions.Session s,io.github.jesterportfolio.hearth.quest.QuestRewards rewards,String quest){main();return rewards.claim(sessions,s,quest);}
     public void fixture(Link link) {
         main();if (links.putIfAbsent(link.context().playerId(),link)!=null) throw new IllegalStateException("Fixture link already exists");
     }

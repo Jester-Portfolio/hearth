@@ -11,7 +11,7 @@ public record QuestContent(String id,String title,String npcId,String name,doubl
     public record Goal(String description,Area area,QuestLocation location,String interaction) {public Goal(String description,Area area){this(description,area,null,null);}public Goal(String description,Area area,QuestLocation location){this(description,area,location,null);}}
     public String detailGuidance(QuestStore.Saved saved){String text=guidance(saved);return saved.phase()==QuestStore.Phase.ACTIVE&&goal(saved).location()!=null?text+" · "+goal(saved).location().text():text;}
     public Goal goal(QuestStore.Saved saved){if(saved.objectiveIndex()>=goals.size())throw new IllegalStateException("Content objective mismatch; preserve progress");return goals.get(saved.objectiveIndex());}
-    public String guidance(QuestStore.Saved saved){return saved.phase()==QuestStore.Phase.ACTIVE?(goals.size()>1?"["+(saved.objectiveIndex()+1)+"/"+goals.size()+"] ":"")+goal(saved).description():text.get(saved.phase()==QuestStore.Phase.REPORT_READY?"report-ready":"completed");}
+    public String guidance(QuestStore.Saved saved){if(saved.phase()==QuestStore.Phase.FAILED)return "퀘스트 실패 · 재시작하면 지정된 진행 지점에서 계속합니다.";if(saved.phase()==QuestStore.Phase.SKIPPED)return "장 단위 스킵 기록입니다. 실제 완료·보상 지급 기록과 구분합니다.";return saved.phase()==QuestStore.Phase.ACTIVE?(goals.size()>1?"["+(saved.objectiveIndex()+1)+"/"+goals.size()+"] ":"")+goal(saved).description():text.get(saved.phase()==QuestStore.Phase.REPORT_READY?"report-ready":"completed");}
     public enum StartMode {
         NPC, AUTOMATIC;
         static StartMode parse(Object value){if("npc".equals(value))return NPC;if("automatic".equals(value))return AUTOMATIC;throw new IllegalArgumentException("Invalid start-mode");}

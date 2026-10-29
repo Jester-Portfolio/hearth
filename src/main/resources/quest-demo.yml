@@ -240,3 +240,67 @@ quests:
       report: '[현장 확인 보고]'
       completed: 개인 현장 확인을 보고했습니다.
       failure: 현장 확인의 저장 상태를 확인할 수 없습니다.
+  - id: trial_checkpoint
+    title: 공개 체크포인트 조사
+    npc-id: survey_guide
+    completion-mode: report
+    objectives:
+      - {description: 첫 조사 구역, min-x: 4, max-x: 6, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+      - {description: 다음 조사 구역, min-x: 8, max-x: 10, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+      - {description: 마지막 조사 구역, min-x: 12, max-x: 14, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+    text:
+      offer: 공개 합성 실패·재시작 및 저장 시험용 조사입니다. 실제 보상 수치와 밸런스를 정하지 않습니다.
+      accept: '[공개 조사 수락]'
+      active: 조사 구역을 순서대로 방문합니다.
+      report-ready: 안내원에게 조사 결과를 보고하세요.
+      report: '[공개 조사 보고]'
+      completed: 공개 조사를 보고했습니다.
+      failure: 공개 조사 저장 상태를 확인할 수 없습니다.
+  - id: trial_keep
+    title: 공개 진행 유지 조사
+    npc-id: survey_guide
+    completion-mode: report
+    objectives:
+      - {description: 첫 조사 구역, min-x: 4, max-x: 6, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+      - {description: 다음 조사 구역, min-x: 8, max-x: 10, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+      - {description: 마지막 조사 구역, min-x: 12, max-x: 14, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+    text:
+      offer: 공개 합성 실패·재시작 및 저장 시험용 조사입니다. 실제 보상 수치와 밸런스를 정하지 않습니다.
+      accept: '[공개 조사 수락]'
+      active: 조사 구역을 순서대로 방문합니다.
+      report-ready: 안내원에게 조사 결과를 보고하세요.
+      report: '[공개 조사 보고]'
+      completed: 공개 조사를 보고했습니다.
+      failure: 공개 조사 저장 상태를 확인할 수 없습니다.
+  - id: trial_beginning
+    title: 공개 처음부터 조사
+    npc-id: survey_guide
+    completion-mode: report
+    objectives:
+      - {description: 첫 조사 구역, min-x: 4, max-x: 6, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+      - {description: 다음 조사 구역, min-x: 8, max-x: 10, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+      - {description: 마지막 조사 구역, min-x: 12, max-x: 14, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+    text:
+      offer: 공개 합성 실패·재시작 및 저장 시험용 조사입니다. 실제 보상 수치와 밸런스를 정하지 않습니다.
+      accept: '[공개 조사 수락]'
+      active: 조사 구역을 순서대로 방문합니다.
+      report-ready: 안내원에게 조사 결과를 보고하세요.
+      report: '[공개 조사 보고]'
+      completed: 공개 조사를 보고했습니다.
+      failure: 공개 조사 저장 상태를 확인할 수 없습니다.
+  - id: trial_timeout
+    title: 공개 시간 제한 조사
+    npc-id: survey_guide
+    completion-mode: report
+    objectives:
+      - {description: 첫 조사 구역, min-x: 4, max-x: 6, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+      - {description: 다음 조사 구역, min-x: 8, max-x: 10, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+      - {description: 마지막 조사 구역, min-x: 12, max-x: 14, min-y: 64, max-y: 67, min-z: 30, max-z: 32}
+    text:
+      offer: 공개 합성 실패·재시작 및 저장 시험용 조사입니다. 실제 보상 수치와 밸런스를 정하지 않습니다.
+      accept: '[공개 조사 수락]'
+      active: 조사 구역을 순서대로 방문합니다.
+      report-ready: 안내원에게 조사 결과를 보고하세요.
+      report: '[공개 조사 보고]'
+      completed: 공개 조사를 보고했습니다.
+      failure: 공개 조사 저장 상태를 확인할 수 없습니다.

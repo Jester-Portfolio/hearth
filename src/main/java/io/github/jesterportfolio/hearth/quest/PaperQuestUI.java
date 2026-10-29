@@ -43,6 +43,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(guide.talkQuest()!=null)p.sendMessage(Component.text("[가까운 담당 NPC와 대화]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney talk "+guide.talkQuest())));
         });
     }
+    private java.util.function.BiConsumer<Player,String> questAction=(p,c)->{};
+    public void questAction(java.util.function.BiConsumer<Player,String> handler){questAction=handler;}
     private java.util.function.BiConsumer<Player,String> npcContact=(p,id)->{};
     public void npcContact(java.util.function.BiConsumer<Player,String> open){npcContact=open;}
     private java.util.function.BiConsumer<Player,String> npcDialogue=(p,id)->{};
@@ -112,6 +114,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(players.current(p)!=s || p.getOpenInventory().getTopInventory()!=screen.inventory)return;
             String action=button.action();
             if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
+            else if(action.equals("quest-retry")||action.equals("quest-reward")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-retry")?"retry ":"claim ")+button.quest());}
+            else if(action.equals("quest-chapters")){p.closeInventory();questAction.accept(p,"/hearthquest chapters");}
             else if(action.equals("npc-contact")){p.closeInventory();npcContact.accept(p,button.quest());}
             else if(action.equals("npc-dialogue")){p.closeInventory();npcDialogue.accept(p,button.quest());}
             else if(action.equals("story-guide")){p.closeInventory();storyGuide.accept(p);}

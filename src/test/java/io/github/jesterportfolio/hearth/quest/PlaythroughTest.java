@@ -19,7 +19,7 @@ final class PlaythroughTest {
         var p=plan(List.of(step("first","QUEST","survey_marker")));var shared=SharedStoryTest.empty();
         for(var phase:QuestStore.Phase.values()){
             var rows=rows(phase);var guide=p.guide(QuestCatalogTest.catalog(),view(rows,shared,Set.of()),shared,SharedStory.Phase.READY);
-            assertEquals(phase==QuestStore.Phase.COMPLETED,guide.complete());
+            assertEquals(phase==QuestStore.Phase.COMPLETED||phase==QuestStore.Phase.SKIPPED,guide.complete());
             assertEquals(phase==QuestStore.Phase.NOT_ACCEPTED||phase==QuestStore.Phase.REPORT_READY?"survey_marker":null,guide.talkQuest());
             assertFalse(Objects.toString(guide.command(),"").contains("accept"));assertFalse(Objects.toString(guide.command(),"").contains("report"));assertEquals(rows(phase),rows);
         }

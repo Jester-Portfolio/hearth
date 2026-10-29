@@ -117,7 +117,7 @@ public final class PlayerSessions {
                 || !(s.world.state()==WorldLifecycle.State.READY || s.world.state()==WorldLifecycle.State.ACTIVE)) throw new LifecycleFailure("STALE_WORLD");
     }
     public boolean playable(Session s) { check.run();return s!=null && s.state==State.ACTIVE && s.connected && connections.get(s.key.player())==s
-        && s.port.connected() && s.world.generation()==s.admission.generation() && s.world.state()==WorldLifecycle.State.ACTIVE; }
+        && s.port.connected() && (s.save==null||!s.save.transacting()) && s.world.generation()==s.admission.generation() && s.world.state()==WorldLifecycle.State.ACTIVE; }
     public void refresh(Session s) {
         check.run();if (!playable(s)) return;
         try { update(s,s.port.capture()); } catch (Exception e) { hold(s,LifecycleFailure.code(e)); }
@@ -125,6 +125,10 @@ public final class PlayerSessions {
     private void update(Session s,InventoryPayload value) {
         validate.accept(value);
         if (!equivalent.test(value,s.snapshot)) { s.snapshot=value;s.save.markDirty(); }
+    }
+    public CompletionStage<Void> inventoryTransaction(Session s,Function<InventoryStore.Stored,CompletionStage<InventoryStore.Stored>> writer){
+        check.run();if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_NOT_ACTIVE"));refresh(s);if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_HOLD"));
+        return s.save.transaction(writer,saved->{validate.accept(saved.payload());s.snapshot=saved.payload();if(s.connected&&!s.closing){requireAdmission(s);s.port.apply(saved.payload());}});
     }
     public void refreshAll() { check.run();for (var s:List.copyOf(connections.values())) refresh(s); }
     public CompletionStage<Void> disconnect(Session s) {

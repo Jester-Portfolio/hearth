@@ -2,6 +2,7 @@ package io.github.jesterportfolio.hearth.inventory;
 
 import io.github.jesterportfolio.hearth.persistence.*;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.*;
 
@@ -15,7 +16,8 @@ public final class InventorySaveSession {
     private final BooleanSupplier current;
     private final Consumer<String> errors;
     private long revision, memoryVersion, savedVersion;
-    private CompletableFuture<Void> inFlight;
+    private CompletableFuture<Void> inFlight,transaction;
+    public boolean transacting(){checkOwner.run();return transaction!=null;}
     private String hold;
     private boolean frozen, closing;
 
@@ -36,6 +38,7 @@ public final class InventorySaveSession {
     public void markDirty() { checkOwner.run(); requireCurrent(); if (frozen || closing) throw new StorageFailure("inventory",closing ? "CLOSED" : "FROZEN"); memoryVersion=Math.incrementExact(memoryVersion); }
     public CompletionStage<Void> flush() {
         checkOwner.run();
+        if(transaction!=null)return transaction;
         if (closing) return CompletableFuture.failedFuture(new StorageFailure("inventory","CLOSED"));
         return flushInternal();
     }
@@ -43,16 +46,28 @@ public final class InventorySaveSession {
     public CompletionStage<Void> flushLatest() {
         checkOwner.run();
         if (!frozen && !closing) return CompletableFuture.failedFuture(new StorageFailure("inventory","FREEZE_REQUIRED"));
-        CompletionStage<Void> prior=inFlight==null ? CompletableFuture.completedFuture(null) : inFlight;
+        CompletionStage<Void> prior=transaction!=null?transaction:inFlight==null ? CompletableFuture.completedFuture(null) : inFlight;
         return prior.thenComposeAsync(v -> flushInternal(),owner);
     }
     public CompletionStage<Void> closeForLogout() { checkOwner.run(); closing=true; frozen=true; return flushLatest(); }
+    /** 최신 일반 저장 후 단일 보상 DB 작업. 종료와 자동 저장도 이 결과를 기다립니다. */
+    public CompletionStage<Void> transaction(Function<InventoryStore.Stored,CompletionStage<InventoryStore.Stored>> writer,Consumer<InventoryStore.Stored> apply){
+        checkOwner.run();if(transaction!=null||frozen||closing||hold!=null)return CompletableFuture.failedFuture(new StorageFailure("inventory","BUSY_OR_HOLD"));
+        freeze();var prior=flushLatest();var result=new CompletableFuture<Void>();transaction=result;final long[] expected={-1};final InventoryPayload[] before={null};
+        prior.thenComposeAsync(v->{requireCurrent();expected[0]=revision;before[0]=capture.get();return writer.apply(new InventoryStore.Stored(before[0],revision));},owner).thenAcceptAsync(saved->{
+            requireCurrent();if(saved==null||saved.revision()<expected[0]||saved.revision()>expected[0]+1||saved.revision()==expected[0]&&!saved.payload().equals(before[0]))throw new StorageFailure("inventory","INVALID_TRANSACTION_RESULT");
+            apply.accept(saved);revision=saved.revision();savedVersion=memoryVersion;
+        },owner).whenCompleteAsync((v,error)->{
+            transaction=null;if(error==null){if(!closing)frozen=false;result.complete(null);}
+            else{String code=code(error);if(Set.of("INVENTORY_FULL","REWARD_NOT_ELIGIBLE","REWARD_UNREGISTERED").contains(code)){if(!closing)frozen=false;}else fail(code);result.completeExceptionally(new StorageFailure("inventory",code));}
+        },owner).exceptionally(error->{result.completeExceptionally(new StorageFailure("inventory","RESULT_DELIVERY_FAILED"));return null;});return result;
+    }
     private CompletionStage<Void> flushInternal() {
         checkOwner.run();
         if (!current.getAsBoolean()) return CompletableFuture.failedFuture(new StorageFailure("inventory","STALE_CONTEXT"));
         if (inFlight!=null) return inFlight;
-        if (!dirty()) return CompletableFuture.completedFuture(null);
         if (hold!=null) return CompletableFuture.failedFuture(new StorageFailure("inventory",hold));
+        if (!dirty()) return CompletableFuture.completedFuture(null);
         final InventoryPayload snapshot;
         try { snapshot=Objects.requireNonNull(capture.get()); }
         catch (RuntimeException invalid) { fail("CAPTURE_FAILED"); return CompletableFuture.failedFuture(new StorageFailure("inventory",hold)); }
