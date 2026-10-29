@@ -609,15 +609,23 @@ public final class SessionVerification implements AutoCloseable {
     }
     private CompletionStage<Void> combatPlayerState(){
         var bridges=new CombatPlayers[2];var actors=new CombatBody[3];final CombatAttempt[] attempts=new CombatAttempt[2];final UUID request=UUID.randomUUID();final CompletionStage<?>[] pending=new CompletionStage<?>[2];
-        return openAll().thenCompose(v->combatQuestSetup()).thenCompose(v->prepareCombatChunks()).thenRun(()->{
+        return openAll().thenCompose(v->combatQuestSetup()).thenCompose(v->journal.track(a1,s1,()->coordinator.playable(s1),"trial_keep",true)).thenAccept(view->check(journal.hudLines(view).size()==1&&!journal.hudLines(view).getFirst().contains("실패"),"combat_initial_quest_HUD_tracks_actual_active_goal")).thenCompose(v->prepareCombatChunks()).thenRun(()->{
             check(combatPlayers!=null,"combat_real_Player_adapter_enabled_without_fake_Player");
             for(int i=0;i<2;i++){UUID run=i==0?a:b;var w=worlds.get(run);bridges[i]=new CombatPlayers(run,w.mapping().physicalId(),w.generation(),w::generation,owner,SessionVerification::main);}
             var poseA=new CombatContent.Pose(worlds.get(a).mapping().physicalId(),3,64,3,31,12);var poseB=new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0);actors[0]=new CombatBody(s1,poseA);actors[1]=new CombatBody(s2,poseA);actors[2]=new CombatBody(s3,poseB);
             attempts[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,poseA),new CombatAttempt.Entrant(a2,s2,poseA)),bridges[0]);bridges[0].attach(attempts[0],List.of(actors[0],actors[1]));
             attempts[1]=combatTrials.start(worlds.get(b),List.of(new CombatAttempt.Entrant(b3,s3,poseB)),bridges[1]);bridges[1].attach(attempts[1],List.of(actors[2]));
+            var healthBoss=combatTrials.mob(a);healthBoss.setHealth(30);var beforeHud=attempts[0].snapshot();
+            var bossView=attempts[0].hud(a1,s1,healthBoss.getHealth(),Objects.requireNonNull(healthBoss.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH)).getValue());
+            var actualBar=PaperCombatHud.create(bossView);check(actualBar.progress()==0.75f&&bossView.visible()&&bossView.action().contains("공동 부활 남음: 2")&&beforeHud.equals(attempts[0].snapshot()),"combat_HUD_real_mob_health_BossBar_factory_and_readonly_counts");
+            check(PaperQuestUI.hudBars(List.of("본인 시험 퀘스트")).size()==1&&actualBar.color()==net.kyori.adventure.bossbar.BossBar.Color.RED,"combat_HUD_independent_bar_preserves_quest_bar_factory");
+            var updates=new CombatHud.Delivery();check(updates.next(bossView,1).notice()&&!updates.next(bossView,2).notice(),"combat_HUD_same_state_chat_not_repeated");
             one.count(31);coordinator.refresh(s1);bridges[0].died(actors[0]);check(!bridges[0].actions(actors[0])&&bridges[0].movement(actors[0]),"combat_player_death_blocks_actions_before_projection");bridges[0].project();check(actors[0].spectator&&actors[0].camera.equals(a2.playerId()),"combat_controlled_spectator_camera_and_inventory31_preserved");
         }).thenCompose(v->{var death=quests.died(a1,s1,()->coordinator.playable(s1),()->bridges[0].actions(actors[0]),catalog);check(death==quests.died(a1,s1,()->true,()->false,catalog)&&!quests.barrier(a).toCompletableFuture().isDone(),"combat_death_duplicate_coalesces_and_joins_world_save_barrier");return death;})
-        .thenCompose(v->combatQuestCheck()).thenRun(()->{
+        .thenCompose(v->combatQuestCheck()).thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{
+            check(view.states().get("trial_keep").phase()==QuestStore.Phase.FAILED&&journal.hudLines(view).size()==1&&journal.hudLines(view).getFirst().contains("실패"),"combat_readonly_connected_HUD_load_while_actions_blocked_no_stale_failed_goal");
+            check(!bridges[0].actions(actors[0])&&attempts[0].hud(a1,s1,30,40).action().contains("관전"),"combat_HUD_read_does_not_unlock_spectator_actions");
+        }).thenRun(()->{
             check(attempts[0].snapshot().phase()==CombatAttempt.Phase.ACTIVE,"combat_personal_quest_failure_does_not_end_boss_attempt");
             var poseA=actors[0].position;actors[0].position=new CombatContent.Pose(poseA.world(),7.125,-24,8.25,92,-13);bridges[0].leave(actors[0]);check(!actors[0].spectator&&!bridges[0].current(actors[0]),"combat_player_quit_cleans_old_camera_and_binding");
         }).thenCompose(v->mainResult(coordinator.disconnect(s1))).thenCompose(v->verify(a1,31,1))
@@ -629,7 +637,8 @@ public final class SessionVerification implements AutoCloseable {
             bridges[1].died(actors[2]);actors[2].failRestore=true;pending[0]=attempts[1].revive(b3,s3,UUID.randomUUID(),"public_rescue");
         }).thenCompose(v->until(()->pending[0].toCompletableFuture().isDone())).thenRun(()->{
             check(pending[0].toCompletableFuture().isCompletedExceptionally()&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD&&attempts[1].snapshot().sharedUsed()==0&&bridges[0].actions(actors[0]),"combat_player_failed_move_HOLD_and_A_independence");
-            bridges[0].close();bridges[1].close();combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
+            check(attempts[1].hud(b3,s3,20,20).action().startsWith("전투 처리 보류")&&!attempts[0].hud(a1,s1,30,40).action().contains("보류"),"combat_HUD_HOLD_and_other_run_feedback_isolated");
+            bridges[0].close();bridges[1].close();check(!attempts[0].hud(a1,s1,30,40).visible()&&attempts[0].view(a1,s1).state().contains("격리 시험 종료"),"combat_HUD_closed_hides_bar_and_explains_outcome");combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
         }).thenCompose(v->combatQuestDatabaseFailure()).thenCompose(v->verify(a1,31,1)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
     private static final class CombatActors implements CombatAttempt.Port {
