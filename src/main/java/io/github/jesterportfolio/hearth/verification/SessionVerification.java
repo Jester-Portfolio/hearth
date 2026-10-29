@@ -108,7 +108,7 @@ public final class SessionVerification implements AutoCloseable {
         adapter=new PaperSessionAdapter(plugin,coordinator,owner,codec,new Location(waiting,0.5,64,0.5));
         if(plugin.getConfig().getBoolean("combat-state-verification-enabled")){
             var file=new java.io.File(plugin.getDataFolder(),"combat-demo.yml");if(!file.exists())plugin.saveResource("combat-demo.yml",false);
-            var yaml=YamlConfiguration.loadConfiguration(file);var definition=new HashMap<String,Object>(yaml.getValues(false));var section=Objects.requireNonNull(yaml.getConfigurationSection("revival"),"Missing combat revival");var revival=new HashMap<String,Object>(section.getValues(false));if(section.isConfigurationSection("fixed"))revival.put("fixed",Objects.requireNonNull(section.getConfigurationSection("fixed")).getValues(false));definition.put("revival",revival);
+            var yaml=YamlConfiguration.loadConfiguration(file);var definition=new HashMap<String,Object>(yaml.getValues(false));var section=Objects.requireNonNull(yaml.getConfigurationSection("revival"),"Missing combat revival");var revival=new HashMap<String,Object>(section.getValues(false));if(section.isConfigurationSection("fixed"))revival.put("fixed",Objects.requireNonNull(section.getConfigurationSection("fixed")).getValues(false));definition.put("revival",revival);if(yaml.isConfigurationSection("retry")){var retry=new HashMap<String,Object>(Objects.requireNonNull(yaml.getConfigurationSection("retry")).getValues(false));retry.put("entry",Objects.requireNonNull(yaml.getConfigurationSection("retry.entry")).getValues(false));definition.put("retry",retry);}
             combatContent=CombatContent.parse(definition);combatTrials=new PaperCombatTrials(plugin,combatContent,owner,plugin.getConfig().getBoolean("combat-player-verification-enabled")?()->System.nanoTime()/1_000_000:combatClock::get);
         }
         if(plugin.getConfig().getBoolean("field-encounter-verification-enabled")){
@@ -159,7 +159,7 @@ public final class SessionVerification implements AutoCloseable {
                 sharedStory.effects(blockEffect);
             }
         }
-        if(plugin.getConfig().getBoolean("combat-player-verification-enabled")){if(combatTrials==null)throw new IllegalStateException("Combat trial required");combatPlayers=new PaperCombatPlayers(plugin,adapter,combatTrials,worlds,owner,(p,session)->{log("COMBAT_PLAYER_DEATH");return questAdapter.combatDeath(p,session);});}
+        if(plugin.getConfig().getBoolean("combat-player-verification-enabled")){if(combatTrials==null)throw new IllegalStateException("Combat trial required");combatPlayers=new PaperCombatPlayers(plugin,adapter,combatTrials,worlds,owner,(p,session)->{log("COMBAT_PLAYER_DEATH");return questAdapter.combatDeath(p,session);},run->quests==null?CompletableFuture.completedFuture(null):quests.barrier(run).thenComposeAsync(v->journal.barrier(run),owner).thenComposeAsync(v->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run),owner));}
     }
     public void combatPlayer(String operation,String profile,String condition){if(combatPlayers==null)throw new IllegalStateException("Combat player mode disabled");switch(operation){case "combat-player-start"->combatPlayers.startOnline(profile);case "combat-player-release"->combatPlayers.release(profile);case "combat-player-revive"->combatPlayers.condition(profile,condition).whenCompleteAsync((v,error)->log("COMBAT_REVIVE "+(error==null?"APPLIED":"HOLD_OR_REJECTED")),owner);default->throw new IllegalArgumentException("Unknown combat fixture operation");}}
     private List<CommunityBoundary.Ref> storyMembers(ServerProgressAccess.Context ctx){var refs=adapter.community(ctx);if(storyTestRoster==null)return refs;return refs.stream().map(ref->new CommunityBoundary.Ref(ref.run(),ref.player(),ref.name(),ctx.storyRunId().equals(a)?storyTestRoster.containsKey(ref.player()):ref.player().equals(b3.playerId()))).toList();}
@@ -607,7 +607,7 @@ public final class SessionVerification implements AutoCloseable {
         var probe=new PersonalQuest(conflict,catalog.questIds(),owner,SessionVerification::main);probe.rules(questRules);
         return rejectQuest(probe.died(b3,s3,()->coordinator.playable(s3),()->false,catalog)).thenCompose(v->rejectQuest(probe.barrier(b))).thenCompose(v->mainResult(store.readQuest(b3,"trial_keep"))).thenAccept(row->check(row.phase()==QuestStore.Phase.ACTIVE&&row.revision()==0&&coordinator.playable(s1),"combat_quest_real_DB_CAS_failure_HOLD_preserves_original_and_A"));
     }
-    private CompletionStage<Void> combatRetryCheck(CombatAttempt attempt,CombatPlayers bridge,CombatBody[] actors){
+    private CompletionStage<CombatRetryVote.Receipt> combatRetryCheck(CombatAttempt attempt,CombatPlayers bridge,CombatBody[] actors){
         var clock=new java.util.concurrent.atomic.AtomicLong(100);var world=worlds.get(a);var notices=new ArrayList<String>();
         var vote=new CombatRetryVote(attempt,owner,SessionVerification::main,clock::get,java.time.Duration.ofSeconds(30),()->world.generation()==attempt.snapshot().generation(),notices::add);
         var oldMob=combatTrials.mob(a).getUniqueId();var first=vote.request(a1,s1);
@@ -622,7 +622,26 @@ public final class SessionVerification implements AutoCloseable {
             long revision=attempt.snapshot().revision();check(vote.request(a1,s1).receipt().equals(confirmed.receipt())&&attempt.snapshot().revision()==revision,"combat_retry_duplicate_request_does_not_apply_again");
             check(combatTrials.mob(a).getUniqueId().equals(oldMob)&&!combatTrials.mob(a).hasAI()&&notices.stream().anyMatch(t->t.contains("아직 연결되지 않아 대기")),"combat_retry_actual_mob_frozen_no_false_next_attempt_spawn");
             vote.close();
-        }).thenCompose(v->verify(a1,31,1)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
+        }).thenCompose(v->verify(a1,31,1)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0)).thenApply(v->vote.view().receipt());
+    }
+    private CompletionStage<Void> combatRestartCheck(CombatRetryVote.Receipt receipt,CombatAttempt[] attempts,CombatPlayers[] bridges,CombatBody[] actors){
+        var old=attempts[0];var previousBridge=bridges[0];var world=worlds.get(a);var nextBridge=new CombatPlayers(a,world.mapping().physicalId(),world.generation(),world::generation,owner,SessionVerification::main);
+        var oldMob=combatTrials.mob(a).getUniqueId();one.count(30);coordinator.refresh(s1);s1.save().flush();one.count(29);coordinator.refresh(s1);
+        var restart=new CombatRestart(old,combatContent.retry(),List.of(actors[0]),()->coordinator.saveRunBoundary(a).thenComposeAsync(v->quests.barrier(a),owner),roster->{
+            previousBridge.close();var next=combatTrials.replace(world,receipt,roster,nextBridge);nextBridge.attach(next,List.of(actors[0]));bridges[0]=nextBridge;attempts[0]=next;return next;
+        },owner,SessionVerification::main,()->world.generation()==old.snapshot().generation()&&coordinator.playable(s1));
+        var work=restart.begin(receipt);check(work==restart.begin(receipt)&&!restart.barrier().toCompletableFuture().isDone(),"combat_restart_duplicate_joins_one_operation_and_save_barrier");
+        return work.thenAccept(next->{
+            var state=next.snapshot();check(!state.attempt().equals(old.snapshot().attempt())&&state.difficultyPlayers()==1&&state.sharedUsed()==0&&state.reserved()==0&&state.members().stream().allMatch(m->m.used()==0&&!m.dead()),"combat_restart_new_online_roster_difficulty_and_revive_budget");
+            check(!combatTrials.mob(a).getUniqueId().equals(oldMob)&&combatTrials.mob(a).getHealth()==20&&Bukkit.getEntity(oldMob)==null&&bridges[0].actions(actors[0])&&actors[0].health==0.5&&CombatPlayers.samePosition(actors[0].position,combatContent.retry().pose(world.mapping().physicalId())),"combat_restart_actual_boss_replaced_only_after_controlled_return_confirmed");
+            var roster=List.of(new CombatAttempt.Entrant(a1,s1,actors[0].position));var same=combatTrials.replace(world,receipt,roster,nextBridge);check(same==next&&same.snapshot().attempt().equals(next.snapshot().attempt()),"combat_restart_backend_duplicate_receipt_never_spawns_second_boss");restart.close();
+        }).thenCompose(v->verify(a1,29,3)).thenCompose(v->mainResult(store.readInventory(a1))).thenCompose(before->{
+            var failed=new io.github.jesterportfolio.hearth.inventory.InventorySaveSession(store,a1,before.revision()+1,before::payload,owner,SessionVerification::main,()->true,code->log("COMBAT_RESTART_EXPECTED_SAVE_FAILURE "+code));failed.markDirty();
+            var probe=new CombatRestart(old,combatContent.retry(),List.of(actors[0]),failed::flush,roster->{throw new AssertionError("Failed DB save must not replace boss");},owner,SessionVerification::main,()->true);
+            var currentBoss=combatTrials.mob(a).getUniqueId();return rejectQuest(probe.begin(receipt)).thenCompose(v->rejectQuest(probe.barrier())).thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(after->{
+                check(after.equals(before)&&failed.dirty()&&failed.holdCode()!=null&&probe.phase()==CombatRestart.Phase.HOLD&&combatTrials.mob(a).getUniqueId().equals(currentBoss),"combat_restart_real_DB_CAS_failure_preserves_inventory_dirty_and_existing_boss");probe.close();
+            });
+        }).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
     private CompletionStage<Void> combatPlayerState(){
         var bridges=new CombatPlayers[2];var actors=new CombatBody[3];final CombatAttempt[] attempts=new CombatAttempt[2];final UUID request=UUID.randomUUID();final CompletionStage<?>[] pending=new CompletionStage<?>[2];
@@ -655,9 +674,9 @@ public final class SessionVerification implements AutoCloseable {
         }).thenCompose(v->until(()->pending[0].toCompletableFuture().isDone())).thenRun(()->{
             check(pending[0].toCompletableFuture().isCompletedExceptionally()&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD&&attempts[1].snapshot().sharedUsed()==0&&bridges[0].actions(actors[0]),"combat_player_failed_move_HOLD_and_A_independence");
             check(attempts[1].hud(b3,s3,20,20).action().startsWith("전투 처리 보류")&&!attempts[0].hud(a1,s1,30,40).action().contains("보류"),"combat_HUD_HOLD_and_other_run_feedback_isolated");
-        }).thenCompose(v->combatRetryCheck(attempts[0],bridges[0],actors)).thenRun(()->{
-            bridges[0].close();bridges[1].close();check(!attempts[0].hud(a1,s1,30,40).visible()&&attempts[0].view(a1,s1).state().contains("재도전 결정"),"combat_HUD_closed_hides_bar_and_explains_outcome");combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
-        }).thenCompose(v->combatQuestDatabaseFailure()).thenCompose(v->verify(a1,31,1)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
+        }).thenRun(()->{bridges[0].died(actors[0]);bridges[0].project();check(actors[0].spectator,"combat_restart_source_can_include_dead_spectator");}).thenCompose(v->combatRetryCheck(attempts[0],bridges[0],actors)).thenCompose(receipt->combatRestartCheck(receipt,attempts,bridges,actors)).thenRun(()->{
+            bridges[0].close();bridges[1].close();check(!attempts[0].hud(a1,s1,30,40).visible()&&attempts[0].view(a1,s1).state().contains("격리 시험 종료"),"combat_HUD_closed_hides_bar_and_explains_outcome");combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
+        }).thenCompose(v->combatQuestDatabaseFailure()).thenCompose(v->verify(a1,29,3)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
     private static final class CombatActors implements CombatAttempt.Port {
         final Map<UUID,UUID> cameras=new HashMap<>();final CompletableFuture<Boolean> applying=new CompletableFuture<>();java.util.function.BooleanSupplier current;CombatContent.Pose appliedPosition;double appliedHealth;List<CombatContent.Effect> appliedEffects;

@@ -15,6 +15,8 @@ public final class CombatRetryVote {
     public record Input(UUID vote,Choice choice){}
     private final CombatAttempt attempt;private final Executor owner;private final Runnable check;private final LongSupplier clock;private final BooleanSupplier current;private final Consumer<String> notice;
     private final long duration;private Map<UUID,Object> roster=Map.of();private final Map<UUID,Choice> votes=new HashMap<>();private UUID id;private long deadline;private Phase phase=Phase.IDLE;
+    private boolean preparationAvailable;
+    public void preparationAvailable(boolean available){check.run();preparationAvailable=available;}
     private Receipt receipt;private CompletableFuture<View> decision;private volatile boolean deliveryFailed;private boolean closed;
     public CombatRetryVote(CombatAttempt attempt,Executor owner,Runnable check,LongSupplier clock,Duration limit,BooleanSupplier current,Consumer<String> notice){
         this.attempt=Objects.requireNonNull(attempt);this.owner=Objects.requireNonNull(owner);this.check=check;this.clock=clock;this.current=current;this.notice=notice;duration=limit.toNanos();if(duration<=0)throw new IllegalArgumentException("Invalid retry vote limit");
@@ -53,13 +55,13 @@ public final class CombatRetryVote {
                 var state=attempt.snapshot();
                 if(state.outcome()!=CombatAttempt.Outcome.RETRY||state.error()!=null){phase=Phase.HOLD;decision.completeExceptionally(new IllegalStateException("COMBAT_RETRY_CLOSE_HOLD"));return;}
                 receipt=new Receipt(state.run(),state.attempt(),id);phase=Phase.RETRY_REQUESTED;
-                announce("재도전 결정으로 기존 도전을 종료했습니다. 다음 도전의 이동·초기화·생성은 아직 연결되지 않아 대기합니다.");decision.complete(view());
+                announce(preparationAvailable?"재도전 결정으로 기존 도전을 종료했습니다. 등록된 보스만 재도전 설정으로 저장·복귀·새 도전 준비를 확인합니다.":"재도전 결정으로 기존 도전을 종료했습니다. 다음 도전의 이동·초기화·생성은 아직 연결되지 않아 대기합니다.");decision.complete(view());
             },owner).exceptionally(error->{deliveryFailed=true;decision.completeExceptionally(error);return null;});return decision;
         }catch(RuntimeException error){return CompletableFuture.failedFuture(error);}
     }
     private int count(Choice choice){return (int)votes.values().stream().filter(v->v==choice).count();}
     public View view(){check.run();return new View(id,phase,roster.size(),count(Choice.YES),count(Choice.NO),count(Choice.ABSTAIN),phase==Phase.OPEN?Math.max(0,(deadline-clock.getAsLong()+999999999L)/1000000000L):0,receipt);}
-    public List<String> lines(){var v=view();String state=switch(v.phase()){case IDLE->"투표 없음";case OPEN->"투표 진행 중";case INPUT_CLOSED->"입력 마감 · 기존 작업 정리 중";case UNDECIDED->"과반수 미달 · 미확정";case CANCELLED->"미확정 투표 취소";case RETRY_REQUESTED->"기존 도전 종료 · 다음 도전 준비 미연결";case HOLD->"재도전 처리 보류";};return List.of("보스 재도전: "+state,"대상 "+v.targets()+" · 찬성 "+v.yes()+" · 반대 "+v.no()+" · 기권 "+v.abstain()+" · 남은 시간 "+v.remainingSeconds()+"초");}
+    public List<String> lines(){var v=view();String state=switch(v.phase()){case IDLE->"투표 없음";case OPEN->"투표 진행 중";case INPUT_CLOSED->"입력 마감 · 기존 작업 정리 중";case UNDECIDED->"과반수 미달 · 미확정";case CANCELLED->"미확정 투표 취소";case RETRY_REQUESTED->preparationAvailable?"기존 도전 종료 · 등록된 다음 도전 준비 확인 필요":"기존 도전 종료 · 다음 도전 준비 미등록";case HOLD->"재도전 처리 보류";};return List.of("보스 재도전: "+state,"대상 "+v.targets()+" · 찬성 "+v.yes()+" · 반대 "+v.no()+" · 기권 "+v.abstain()+" · 남은 시간 "+v.remainingSeconds()+"초");}
     public CompletionStage<Void> barrier(){check.run();if(phase==Phase.HOLD||deliveryFailed)return CompletableFuture.failedFuture(new IllegalStateException("COMBAT_VOTE_HOLD"));return decision==null?CompletableFuture.completedFuture(null):decision.handle((v,error)->{if(phase==Phase.HOLD||deliveryFailed)throw new CompletionException(new IllegalStateException("COMBAT_VOTE_HOLD",error));return null;});}
     public void close(){check.run();closed=true;if(phase==Phase.OPEN)phase=Phase.CANCELLED;if(decision!=null&&!decision.isDone()){phase=Phase.HOLD;decision.completeExceptionally(new IllegalStateException("COMBAT_VOTE_CLOSED"));}}
     public static Optional<Input> input(String line){var p=line.split(" ",-1);if(p.length!=4||!p[0].equals("/hearthcombat")||!p[1].equals("vote"))return Optional.empty();try{UUID id=UUID.fromString(p[2]);if(!id.toString().equals(p[2]))return Optional.empty();return Optional.of(new Input(id,switch(p[3]){case "yes"->Choice.YES;case "no"->Choice.NO;case "abstain"->Choice.ABSTAIN;default->throw new IllegalArgumentException();}));}catch(IllegalArgumentException e){return Optional.empty();}}

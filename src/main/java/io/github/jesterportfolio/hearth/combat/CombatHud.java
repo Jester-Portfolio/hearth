@@ -28,7 +28,7 @@ public final class CombatHud {
         return new View(personal.title(),(float)(health/maximum),visible,action,notice,key);
     }
     public static String outcome(CombatAttempt.Outcome outcome){return switch(outcome){case NONE->"미확정";case VICTORY->"승리";case REQUIRED_FAILURE->"필수 조건 실패";case ALL_OFFLINE->"참가자 전원 접속 종료";case RETRY->"재도전 결정";case RETIRED->"격리 시험 종료";};}
-    public static List<String> help(){return List.of("/hearthcombat status · 본인 전투 상태와 남은 부활 횟수", "/hearthcombat watch · 사망 관전 대상 전환", "사망·복귀 보호·부활 적용 중 전투에 개입할 수 없습니다.", "/hearthcombat retry · 재도전 투표 요청 (관전자도 가능)", "/hearthcombat vote · 투표 상태 확인", "전멸은 자동 재시작되지 않습니다. 투표 통과는 기존 도전 종료까지이며 다음 도전 준비는 아직 연결되지 않았습니다.");}
+    public static List<String> help(){return List.of("/hearthcombat status · 본인 전투 상태와 남은 부활 횟수", "/hearthcombat watch · 사망 관전 대상 전환", "사망·복귀 보호·부활 적용 중 전투에 개입할 수 없습니다.", "/hearthcombat retry · 재도전 투표 요청 (관전자도 가능)", "/hearthcombat vote · 투표 상태 확인", "전멸은 자동 재시작되지 않습니다. 투표 통과 뒤 등록된 보스만 재도전 설정이 있을 때 저장·복귀 확인 후 새 도전을 준비합니다. 길목 초기화는 지원하지 않습니다.");}
     public static boolean command(String line){return Set.of("/hearthcombat","/hearthcombat help","/hearthcombat status","/hearthcombat watch","/hearthcombat retry","/hearthcombat vote").contains(line)||CombatRetryVote.input(line).isPresent();}
     public record Update(boolean boss,boolean action,boolean notice){}
     /** 같은 상태 안내는 한 번, ActionBar 유지 출력은 20틱마다. 수치는 표시 갱신값일 뿐 게임 규칙이 아닙니다. */

@@ -68,4 +68,4 @@
 
 `--sessions --quests --story-batch --combat-state`는 한 JVM에서 고정 참가 명단·일시정지/관전·조건부 부활 경합과 실제 몹 AI/사망 이벤트를 검사한다. 세션·카메라·회복 적용은 제어 포트이며 실제 Player 시험이 아니다. [범위·결과](../docs/combat-state-verification.md)를 따른다.
 
-`--sessions --quests --story-batch --combat-players`는 실제 Player 적용기를 등록한 한 JVM/DB에서 기존 인벤토리 퇴장 저장·재접속과 전투 제어 포트 경합, [재도전 투표·기존 도전 종료](../docs/combat-retry-verification.md)를 검사한다. 실제 접속·카메라/체력/순간이동 성공은 검증하지 않는다. 수동 모드는 사용자 요청 뒤 기존 `--manual-player --operator-ready --profile` 경로를 쓰며 이 시험은 한 JVM으로 제한한다. [범위·명령](../docs/combat-player-verification.md)을 따른다.
+`--sessions --quests --story-batch --combat-players`는 실제 Player 적용기를 등록한 한 JVM/DB에서 기존 인벤토리 퇴장 저장·재접속과 전투 제어 포트 경합, [재도전 투표·기존 도전 종료](../docs/combat-retry-verification.md)와 [보스만 재도전 준비/교체](../docs/combat-restart-verification.md)를 검사한다. 실제 접속·카메라/체력/순간이동 성공은 검증하지 않는다. 수동 모드는 사용자 요청 뒤 기존 `--manual-player --operator-ready --profile` 경로를 쓰며 이 시험은 한 JVM으로 제한한다. [범위·명령](../docs/combat-player-verification.md)을 따른다.

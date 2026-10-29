@@ -130,6 +130,17 @@ public final class PlayerSessions {
         check.run();if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_NOT_ACTIVE"));refresh(s);if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_HOLD"));
         return s.save.transaction(writer,saved->{validate.accept(saved.payload());s.snapshot=saved.payload();if(s.connected&&!s.closing){requireAdmission(s);s.port.apply(saved.payload());}});
     }
+    /** 조작이 제한된 게임 경계에서 기존 in-flight와 최신 dirty를 순서대로 정리합니다. */
+    public CompletionStage<Void> saveBoundary(Session s){
+        check.run();if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_NOT_ACTIVE"));refresh(s);
+        return s.save.flush().thenComposeAsync(v->{if(!playable(s))throw new LifecycleFailure("STALE_SESSION");refresh(s);return s.save.flush();},owner)
+            .thenRunAsync(()->{if(!playable(s)||s.save.dirty()||s.save.saving()||s.save.holdCode()!=null)throw new LifecycleFailure("SESSION_SAVE_NOT_SETTLED");},owner);
+    }
+    public CompletionStage<Void> saveRunBoundary(UUID run){
+        check.run();var work=new ArrayList<CompletableFuture<?>>();
+        for(var s:List.copyOf(leases.values()))if(s.key.run().equals(run))work.add((s.connected&&!s.closing?saveBoundary(s):s.closed).toCompletableFuture());
+        return CompletableFuture.allOf(work.toArray(CompletableFuture[]::new));
+    }
     public void refreshAll() { check.run();for (var s:List.copyOf(connections.values())) refresh(s); }
     public CompletionStage<Void> disconnect(Session s) {
         check.run();Objects.requireNonNull(s);

@@ -14,3 +14,9 @@ revival:
   location: START
   effects:
     - {type: RESISTANCE, amplifier: 0, ticks: 40}
+# 이 위치·회복값은 공개 합성 재도전 시험 설정이며 운영 밸런스가 아닙니다.
+retry:
+  scope: BOSS_ONLY
+  entry: {x: 3.5, y: 64.0, z: 3.5, yaw: 0, pitch: 0}
+  health-fraction: 0.5
+  effects: []
