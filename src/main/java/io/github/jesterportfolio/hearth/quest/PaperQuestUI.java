@@ -29,6 +29,20 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         @Override public Inventory getInventory(){return inventory;}
     }
     private Consumer<Player> storyGuide=p->{};
+    private Playthrough playthrough;
+    private io.github.jesterportfolio.hearth.story.SharedStory sharedStory;
+    public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory story){playthrough=content;sharedStory=story;}
+    private void journey(Player p,PlayerSessions.Session session,String talk){
+        if(playthrough==null){p.sendMessage(Component.text("공개 플레이 안내 콘텐츠가 활성화되지 않았습니다."));return;}
+        if(requests.containsKey(p.getUniqueId())){p.sendMessage(Component.text("기존 조회를 처리 중입니다."));return;}
+        load(p,session,view->{
+            var guide=playthrough.guide(catalog,view,sharedStory.cached(session.context().storyRunId()),sharedStory.phase(session.context().storyRunId()));
+            if(talk!=null){if(!talk.equals(guide.talkQuest())){p.sendMessage(Component.text("현재 안내와 일치하는 NPC 대화가 아닙니다."));return;}npcDialogue.accept(p,talk);return;}
+            p.sendMessage(Component.text("플레이 안내: "+guide.title()));guide.lines().forEach(line->p.sendMessage(Component.text(line)));
+            if(guide.command()!=null)p.sendMessage(Component.text("[안내 열기]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(guide.command())));
+            if(guide.talkQuest()!=null)p.sendMessage(Component.text("[가까운 담당 NPC와 대화]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney talk "+guide.talkQuest())));
+        });
+    }
     private java.util.function.BiConsumer<Player,String> npcDialogue=(p,id)->{};
     public void npcDialogue(java.util.function.BiConsumer<Player,String> open){npcDialogue=open;}
     private BiConsumer<Player,QuestJournal.View> projection=(p,v)->{};
@@ -70,6 +84,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     public boolean command(Player p,String command){
         var s=players.current(p);if(s==null)return false;
+        if(command.equals("/hearthjourney")){journey(p,s,null);return true;}
+        if(command.startsWith("/hearthjourney ")){var args=command.split(" ",-1);if(args.length==3&&args[1].equals("talk")&&args[2].matches("[a-z][a-z0-9_]{0,63}"))journey(p,s,args[2]);else p.sendMessage(Component.text("사용법: /hearthjourney"));return true;}
         if(command.equals("/hearthinfo")||command.startsWith("/hearthinfo ")){
             var query=GameInformation.Query.parse(command);
             if(query.isEmpty()){p.sendMessage(Component.text("사용법: /hearthinfo summary|quests|map|diary|story [페이지]"));return true;}
@@ -92,7 +108,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         Bukkit.getScheduler().runTaskLater(plugin,()->{
             if(players.current(p)!=s || p.getOpenInventory().getTopInventory()!=screen.inventory)return;
             String action=button.action();
-            if(action.equals("npc-dialogue")){p.closeInventory();npcDialogue.accept(p,button.quest());}
+            if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
+            else if(action.equals("npc-dialogue")){p.closeInventory();npcDialogue.accept(p,button.quest());}
             else if(action.equals("story-guide")){p.closeInventory();storyGuide.accept(p);}
             else if(action.equals("track"))request(p,s,journal.track(s.context(),s,()->players.current(p)==s,button.quest(),button.revision()==1),v->open(p,s,v,"detail",button.quest(),0));
             else if(action.equals("hud"))request(p,s,journal.hud(s.context(),s,()->players.current(p)==s,button.revision()==1),v->open(p,s,v,"settings",null,0));

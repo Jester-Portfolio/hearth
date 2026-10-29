@@ -1,0 +1,12 @@
+# 공개 합성 안내입니다. 진행도를 별도 저장하거나 기존 파일을 덮어쓰지 않습니다.
+format: 1
+steps:
+  - {id: survey, kind: QUEST, reference: survey_marker, title: 개인 방문 조사, hint: 안내원과 대화해 수락하고 목표를 방문한 뒤 보고하세요.}
+  - {id: shared_arrival, kind: STAGE, reference: trial_arrival, title: 공동 조사 준비, hint: 각자 방문 조사를 완료한 뒤 공동 진행을 요청하세요.}
+  - {id: shared_vote, kind: STAGE, reference: trial_vote, title: 공동 경로 준비, hint: 접속자 전원 조건을 확인하며 공동 경로 선택 단계로 진행하세요.}
+  - {id: path, kind: QUEST, reference: path_marker, title: 개인 경로 조사, hint: 안내원에게 경로 조사를 수락하고 지정 지점을 방문하세요.}
+  - {id: shared_open, kind: STAGE, reference: trial_open, title: 공유 분기와 탐험, hint: 각자 경로 조사를 마친 뒤 채팅 투표로 공개 경로를 정하세요.}
+  - {id: route, kind: QUEST, reference: route_marker, title: 연속 지점 조사, hint: 개방된 구역의 표지를 순서대로 방문하고 안내원에게 보고하세요.}
+  - {id: followup, kind: QUEST, reference: route_followup, title: 후속 자동 조사, hint: 선행 조사를 마친 본인이 후속 시작 구역에 새로 진입해 다음 목표들을 방문하세요.}
+  - {id: discovery, kind: PLACE, reference: survey_place, title: 개인 탐험, hint: 공개 탐험 정보를 확인하세요.}
+  - {id: shared_finish, kind: STAGE_COMPLETE, reference: trial_open, title: 공동 조사 정리, hint: 등록된 공유 진행의 마지막 조건을 확인하고 마무리하세요.}

@@ -8,6 +8,8 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth S4 isolated multiworld verification foundation
 commands:
+  hearthjourney:
+    description: 공개 시험 코스의 다음 플레이 안내
   hearthinfo:
     description: 본인에게 공개된 게임 정보 조회
   hearthplay:

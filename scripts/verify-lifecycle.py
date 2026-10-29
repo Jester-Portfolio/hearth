@@ -76,6 +76,7 @@ def main():
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
     parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
+    parser.add_argument('--playthrough', action='store_true', help='공개 시험 코스의 연속 플레이 흐름과 두 JVM 복원을 검증합니다')
     parser.add_argument('--quest-navigation', action='store_true', help='보고·추적·알림 동선을 한 JVM에서 검증합니다')
     parser.add_argument('--game-information', action='store_true', help='공개 게임 정보 조회 경계를 한 JVM에서 검증합니다')
     parser.add_argument('--npc-views', action='store_true', help='개인 NPC 표시 데이터·표식 엔티티를 한 JVM에서 검증합니다')
@@ -100,6 +101,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.playthrough and (not args.story_batch or any([args.world_effects,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide])):
+        parser.error('--playthrough는 --sessions --quests --story-batch와 함께 단독 실행합니다')
     if args.quest_navigation and (not args.story_batch or args.world_effects or args.game_information or args.npc_views or args.player_interactions):
         parser.error('--quest-navigation은 --sessions --quests --story-batch와 함께 단독 실행합니다')
     if args.game_information and (not args.story_batch or args.world_effects or args.player_interactions or args.npc_views):
@@ -112,7 +115,7 @@ def main():
         parser.error('--gameplay-guide는 --story-batch와 함께 사용하며 --world-effects와 혼용하지 않습니다')
     if args.world_effects and not args.story_batch:
         parser.error('--world-effects는 --sessions --quests --story-batch가 필요합니다')
-    if args.story_batch and (not args.quests or not args.sessions or args.manual_player or any([args.explore_batch,args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
+    if args.story_batch and (not args.quests or not args.sessions or (args.manual_player and not args.playthrough) or any([args.explore_batch,args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
         parser.error('--story-batch는 자동 --sessions --quests 단독 공유 진행 검증 모드입니다')
     if args.explore_batch and (not args.quests or not args.sessions or args.manual_player or any([args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
         parser.error('--explore-batch는 자동 --sessions --quests 단독 탐험 검증 모드에서만 사용합니다')
@@ -168,6 +171,9 @@ def main():
         (plugins/'Hearth/quest-demo.yml').write_text(content.partition(cut)[0])
     idle_seconds=10 if args.manual_player else 1
     (plugins/'Hearth/config.yml').write_text(f"quest-verification-enabled: {str(args.quests).lower()}\n"+'verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
+    if args.playthrough:
+        with (plugins/'Hearth/config.yml').open('a') as config:
+            config.write('playthrough-verification-enabled: true\n')
     if args.explore_batch or args.story_batch:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('exploration-verification-enabled: true\n')
@@ -229,6 +235,8 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.quests=true')
         if args.manual_player:
             paper.insert(-3,'-Dhearth.verification.sessionManual=true')
+        if args.playthrough:
+            paper.insert(-3,'-Dhearth.verification.playthrough=true')
         for phase in (['prepare'] if args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
             name='paper-'+phase
@@ -251,7 +259,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.quest_navigation:
+                        if args.playthrough:
+                            monitor.action(name,'playthrough-run')
+                        elif args.quest_navigation:
                             monitor.action(name,'navigation-play')
                         elif args.player_interactions:
                             monitor.action(name,'interaction-play')
@@ -347,6 +357,8 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.playthrough:
+                        monitor.action(name,'session-resume'); monitor.action(name,'playthrough-restored')
                     elif args.world_effects:
                         monitor.action(name,'session-resume'); monitor.action(name,'effect-resume'); monitor.action(name,'effect-conflict')
                     elif args.story_batch:

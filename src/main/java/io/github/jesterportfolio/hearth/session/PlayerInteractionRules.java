@@ -23,5 +23,5 @@ public final class PlayerInteractionRules {
         "커서로 집기·드래그·제작·상자/창고 등 컨테이너는 아직 지원하지 않습니다. E키 기본 화면은 유지합니다.",
         "문·울타리 문·다락문·버튼·레버는 WorldGuard 권한이 허용할 때 사용할 수 있습니다.",
         "개인 퀘스트: /hearthquest list · 공유 안내: /hearthstory guide · 스마트폰: /hearthphone",
-        "본인에게 공개된 게임 정보 요약: /hearthinfo");}
+        "본인에게 공개된 게임 정보 요약: /hearthinfo · 공개 코스 안내: /hearthjourney");}
 }

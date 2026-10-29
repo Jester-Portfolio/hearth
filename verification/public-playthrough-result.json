@@ -1,0 +1,63 @@
+{
+  "outcome": "PASS",
+  "workspace": "/tmp/hearth-s4-11.tb3x5dbb",
+  "duration_seconds": 57.858,
+  "cleanup_errors": [],
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "e2aa0970f04c3b4abfa00deba714ded8b2f051341b627975ff8f4fb27eee7e4a",
+  "installed_plugin_sha256": "e2aa0970f04c3b4abfa00deba714ded8b2f051341b627975ff8f4fb27eee7e4a",
+  "unit_tests_passed": 29,
+  "paper_jvms": 2,
+  "postgres_instances": 1,
+  "checks": [
+    "course_first_personal_task",
+    "course_quest_completed_survey_marker",
+    "course_quest_completed_survey_marker",
+    "course_quest_completed_path_marker",
+    "course_quest_completed_path_marker",
+    "course_before_majority_stays_locked",
+    "course_shared_exploration_unlocked",
+    "course_quest_completed_route_marker",
+    "course_automatic_start_route_followup",
+    "course_quest_completed_route_followup",
+    "course_all_guidance_completed",
+    "course_far_goal_walkable",
+    "course_personal_steps_not_shared",
+    "course_personal_diary_recorded",
+    "course_personal_discovery_recorded",
+    "course_personal_notices_recorded",
+    "course_existing_player_floor_preserved",
+    "course_border_restored",
+    "course_other_world_floor_unchanged",
+    "course_new_JVM_guidance_restored",
+    "course_new_JVM_personal_isolation",
+    "course_new_JVM_discovery_restored",
+    "course_new_JVM_diary_restored",
+    "course_new_JVM_multi_step_revisions"
+  ],
+  "processes": {
+    "database": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 224696,
+      "observed_cpu_seconds": 2.37,
+      "min_sampled_host_available_kib": 11608008
+    },
+    "paper-prepare": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 1024112,
+      "observed_cpu_seconds": 74.37,
+      "min_sampled_host_available_kib": 11608008
+    },
+    "paper-resume": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 980540,
+      "observed_cpu_seconds": 31.84,
+      "min_sampled_host_available_kib": 11698772
+    }
+  },
+  "not_executed": [
+    "실제 인증 클라이언트의 코스 이동·NPC·투표·GUI",
+    "새 수동 모드 경로와 사용자 조작",
+    "실제 RPG 콘텐츠·보상·전투·AI·운영 배포"
+  ]
+}

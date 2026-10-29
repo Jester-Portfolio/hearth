@@ -43,6 +43,8 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private io.github.jesterportfolio.hearth.story.PaperStoryAdapter story;
     public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;ui.storyGuide(p->adapter.guide(p,null));}
     private boolean closed;
+    private boolean playthroughEnabled;
+    public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){playthroughEnabled=true;ui.playthrough(content,shared);}
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
@@ -163,6 +165,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             try {quests.requireListDisplay(session.context(),rows);var messages=selectionMessages(catalog,dialogues,tickets.stream().filter(t->journal.questAllowed(session.context(),t.quest())).toList(),rows);
                 if(messages.isEmpty())p.sendMessage(Component.text("현재 대화할 퀘스트가 없습니다."));else messages.forEach(p::sendMessage);
                 if(story!=null)story.guide(p,npc);
+                if(playthroughEnabled)p.sendMessage(Component.text("[다음 플레이 안내]").clickEvent(ClickEvent.runCommand("/hearthjourney")));
             }catch(RuntimeException failure){unavailable(p);}
         },owner);
     }

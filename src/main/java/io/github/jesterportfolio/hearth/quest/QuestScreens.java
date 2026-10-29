@@ -25,6 +25,7 @@ public final class QuestScreens {
             navigation(out,offset,entries.size(),page);
             String[] tabs={"quests","reporting","tracked","completed"};String[] names={"전체","보고 가능","추적 중","완료"};
             for(int i=0;i<tabs.length;i++)out.add(new Button(36+i,names[i],tabs[i],null,0));
+            out.add(new Button(50,"다음 플레이 안내","journey-guide",null,0));
             out.add(new Button(49,"확정된 공동체 분기","branches",null,0));
         }else if(page.equals("detail")){
             var detail=view.exploration().blockedQuests().contains(id)?Optional.<QuestListView.Detail>empty():QuestListView.detail(catalog,view.states(),id);

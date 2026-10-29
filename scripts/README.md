@@ -51,3 +51,7 @@
 
 
 공유 단계 통합은 `verify-lifecycle.py --sessions --quests --story-batch` 단독 모드입니다. 새 DB의 V005 fixture→V006·온라인 조건/채팅 투표 제어 경계·실제 CAS/receipt·DB 대기/실패/불명 응답·공유 탐험/지역 접근·두 JVM 복원을 검사합니다. 기존 stage/자원 감시·새 소유 경로만 재사용하며 다른 자동/수동 모드와 혼합하지 않습니다. 투표 만료는 제어 시계, 실제 채팅·이동/텔레포트는 미실행입니다. [공유 배치 기록](../docs/s4-shared-story-batch-verification.md)을 따릅니다.
+
+## 공개 시험 코스 통합 모드
+
+`verify-lifecycle.py`의 `--sessions --quests --story-batch --playthrough`는 새 격리 경로에서 기존 개인 퀘스트·공유 진행·탐험을 연결하고 순차 두 JVM에서 안내/코스를 복원한다. [범위·결과](../docs/public-playthrough-verification.md)를 따른다. 기존 자원 상한과 콘텐츠/월드 보존 정책을 유지한다. 실제 사용자 조작은 별도 요청 전 보류한다.

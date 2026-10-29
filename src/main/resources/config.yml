@@ -24,3 +24,6 @@ story-verification-enabled: false
 
 # Issue #1 단일 블록 효과. 기존 story 게이트와 별도 JVM 플래그가 모두 필요합니다.
 world-effect-verification-enabled: false
+
+# 새 격리 환경에서만 공개 시험 코스·안내를 켭니다.
+playthrough-verification-enabled: false

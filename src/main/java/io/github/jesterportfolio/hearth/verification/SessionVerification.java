@@ -47,6 +47,8 @@ public final class SessionVerification implements AutoCloseable {
     private SharedStory.VoteView storyVote;private CompletionStage<StoryStore.Snapshot> storySaving;private CompletionStage<Void> storyBarrier;
     private int storyNoticeCount;private SharedStory storyFailureProbe;
     private PaperQuestAdapter questAdapter;
+    private Playthrough playthrough;
+    private final Set<UUID> preparedCourses=new HashSet<>();
     private CompletionStage<Void> exploreWrite,exploreDuplicate,exploreBarrier;
     private Map<String,ExplorationStore.PlaceState> exploreBefore;
     private QuestContent content;
@@ -122,6 +124,11 @@ public final class SessionVerification implements AutoCloseable {
             questAdapter=new PaperQuestAdapter(plugin,adapter,quests,catalog,journal,owner,
                 Set.of(worlds.get(a).mapping().physicalId(),worlds.get(b).mapping().physicalId()));
             if(sharedStory!=null){paperStory=new PaperStoryAdapter(plugin,adapter,sharedStory,owner);questAdapter.story(paperStory);}
+            if(plugin.getConfig().getBoolean("playthrough-verification-enabled")){
+                if(sharedStory==null||!Boolean.getBoolean("hearth.verification.playthrough"))throw new IllegalStateException("Playthrough gate missing");
+                var planFile=new java.io.File(plugin.getDataFolder(),"playthrough-demo.yml");if(!planFile.exists())plugin.saveResource("playthrough-demo.yml",false);
+                playthrough=Playthrough.parse(YamlConfiguration.loadConfiguration(planFile).getValues(false),catalog,sharedStory.content(),explorationContent);questAdapter.playthrough(playthrough,sharedStory);
+            }
             if(plugin.getConfig().getBoolean("world-effect-verification-enabled")){
                 if(sharedStory==null||!Boolean.getBoolean("hearth.verification.worldEffect"))throw new IllegalStateException("World effect gate missing");
                 var effectFile=new java.io.File(plugin.getDataFolder(),"world-effect-demo.yml");if(!effectFile.exists())plugin.saveResource("world-effect-demo.yml",false);
@@ -188,10 +195,30 @@ public final class SessionVerification implements AutoCloseable {
         }
         return work.thenRun(()->check(true,"fixture_prepared_no_login_provisioning"));
     }
+    private void prepareCourse(UUID run){
+        main();if(playthrough==null)return;
+        var mapping=worlds.get(run).mapping();World world=Objects.requireNonNull(Bukkit.getWorld(mapping.physicalId()));
+        if(preparedCourses.contains(world.getUID()))return;
+        if(Bukkit.isTickingWorlds()||!Set.of(a,b).contains(run)||!world.getKey().toString().equals(mapping.worldKey()))throw new IllegalStateException("Course world mismatch");
+        var file=mapping.directory().resolve("hearth-public-course.properties");
+        try{
+            if(java.nio.file.Files.isSymbolicLink(file))throw new IllegalStateException("Course metadata link refused");
+            if(java.nio.file.Files.exists(file)){
+                var saved=new Properties();try(var in=java.nio.file.Files.newInputStream(file)){saved.load(in);}
+                if(!"1".equals(saved.getProperty("version"))||!run.toString().equals(saved.getProperty("run"))||!world.getUID().toString().equals(saved.getProperty("world")))throw new IllegalStateException("Course metadata mismatch");
+            }else{
+                for(int x=0;x<=40;x++)for(int z=0;z<=40;z++){var type=world.getBlockAt(x,63,z).getType();if(!type.isAir()&&type!=Material.STONE)throw new IllegalStateException("Existing course floor conflict; preserve original");}
+                for(int x=0;x<=40;x++)for(int z=0;z<=40;z++)if(world.getBlockAt(x,63,z).getType().isAir())world.getBlockAt(x,63,z).setType(Material.STONE,false);
+                world.getWorldBorder().setCenter(20,20);world.getWorldBorder().setSize(40);
+                java.nio.file.Files.writeString(file,"version=1\nrun="+run+"\nworld="+world.getUID()+"\n",java.nio.file.StandardOpenOption.CREATE_NEW);
+            }
+            preparedCourses.add(world.getUID());
+        }catch(java.io.IOException failure){throw new IllegalStateException("Course preparation failed; preserve data",failure);}
+    }
     private Location destination(UUID run){
         main();World w=Objects.requireNonNull(Bukkit.getWorld(NamespacedKey.fromString(worlds.get(run).mapping().worldKey())));
         // 새 격리 fixture의 도착 발판만 준비합니다. 일반 월드 건축/복귀 정책이 아닙니다.
-        for(int x=1;x<=(manual?15:3);x++)for(int z=1;z<=(manual?15:3);z++)w.getBlockAt(x,63,z).setType(Material.STONE,false);
+        if(playthrough!=null)prepareCourse(run);else for(int x=1;x<=(manual?15:3);x++)for(int z=1;z<=(manual?15:3);z++)w.getBlockAt(x,63,z).setType(Material.STONE,false);
         return new Location(w,2.5,64,2.5);
     }
     private final class Controlled implements PlayerSessions.Port {
@@ -219,6 +246,8 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "playthrough-run" -> playthroughRun();
+        case "playthrough-restored" -> playthroughRestored();
         case "navigation-play" -> navigationPlay();
         case "game-information" -> gameInformation();
         case "npc-views" -> npcViews();
@@ -514,6 +543,45 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> finishCourseQuest(ServerProgressAccess.Context ctx,Object token,String id){
+        var c=catalog.quest(id);final PersonalQuest.Session[] session=new PersonalQuest.Session[1];
+        return quests.open(ctx,id,token,()->true).thenCompose(q->{session[0]=q;if(c.startMode()==QuestContent.StartMode.NPC)return quests.accept(q,c).thenAccept(x->{});
+            var area=c.startArea();return quests.enter(ctx,c,token,()->true,0,64,0,(area.minX()+area.maxX())/2,(area.minY()+area.maxY())/2,(area.minZ()+area.maxZ())/2).thenAccept(x->check(x.isPresent(),"course_automatic_start_"+id));
+        }).thenCompose(v->{CompletionStage<?> work=CompletableFuture.completedFuture(null);
+            for(var goal:c.goals()){var area=goal.area();work=work.thenCompose(x->quests.reach(session[0],c,(area.minX()+area.maxX())/2,(area.minY()+area.maxY())/2,(area.minZ()+area.maxZ())/2));}
+            return work.thenCompose(x->session[0].saved().phase()==QuestStore.Phase.REPORT_READY?quests.advance(session[0],QuestStore.Phase.COMPLETED):CompletableFuture.completedFuture(session[0].saved()));
+        }).thenAccept(row->check(row.phase()==QuestStore.Phase.COMPLETED,"course_quest_completed_"+id));
+    }
+    private CompletionStage<Playthrough.Guide> courseGuide(ServerProgressAccess.Context ctx,Object token){return journal.load(ctx,token,()->true).thenApply(view->playthrough.guide(catalog,view,sharedStory.cached(ctx.storyRunId()),sharedStory.phase(ctx.storyRunId())));}
+    private CompletionStage<Void> playthroughRun(){
+        return openAll().thenRun(()->{prepareCourse(a);prepareCourse(b);storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);})
+            .thenCompose(v->courseGuide(a1,s1)).thenAccept(guide->check("survey_marker".equals(guide.talkQuest()),"course_first_personal_task"))
+            .thenCompose(v->finishCourseQuest(a1,s1,"survey_marker"))
+            .thenCompose(v->expectQuestCode(sharedStory.advance(a1,s1,()->true),"CONDITIONS_UNMET"))
+            .thenCompose(v->questRead(a2,"survey_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->finishCourseQuest(a2,s2,"survey_marker"))
+            .thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true))
+            .thenCompose(v->finishCourseQuest(a1,s1,"path_marker")).thenCompose(v->finishCourseQuest(a2,s2,"path_marker"))
+            .thenCompose(v->sharedStory.openVote(a1,s1,()->true)).thenCompose(vote->{storyVote=vote;return sharedStory.cast(a1,s1,()->true,vote.id(),"route_one");})
+            .thenRun(()->check(!Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen()),"course_before_majority_stays_locked"))
+            .thenCompose(v->sharedStory.cast(a2,s2,()->true,storyVote.id(),"route_one"))
+            .thenRun(()->check(Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen()),"course_shared_exploration_unlocked"))
+            .thenCompose(v->finishCourseQuest(a1,s1,"route_marker"))
+            .thenCompose(v->finishCourseQuest(a1,s1,"route_followup"))
+            .thenCompose(v->journal.enterPlaces(a1,s1,()->true,0,64,0,21,64,21))
+            .thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->courseGuide(a1,s1))
+            .thenAccept(guide->{check(guide.complete(),"course_all_guidance_completed");World world=Bukkit.getWorld(worlds.get(a).mapping().physicalId());check(world.getBlockAt(37,63,37).getType()==Material.STONE,"course_far_goal_walkable");world.getBlockAt(10,63,10).setType(Material.BRICKS,false);})
+            .thenCompose(v->courseGuide(a2,s2)).thenAccept(guide->check(!guide.complete(),"course_personal_steps_not_shared"))
+            .thenCompose(v->questRead(ctx(b,1),"survey_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{check(view.exploration().facts().stream().anyMatch(f->f.id().equals("route_record")),"course_personal_diary_recorded");check(view.exploration().place("survey_place").filter(p->p.discovered()).isPresent(),"course_personal_discovery_recorded");check(!view.journal().notices().isEmpty(),"course_personal_notices_recorded");});
+    }
+    private CompletionStage<Void> playthroughRestored(){
+        return openAll().thenRun(()->{prepareCourse(a);prepareCourse(b);storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);
+            World world=Bukkit.getWorld(worlds.get(a).mapping().physicalId());check(world.getBlockAt(10,63,10).getType()==Material.BRICKS,"course_existing_player_floor_preserved");check(world.getWorldBorder().getSize()==40,"course_border_restored");check(Bukkit.getWorld(worlds.get(b).mapping().physicalId()).getBlockAt(10,63,10).getType()==Material.STONE,"course_other_world_floor_unchanged");})
+            .thenCompose(v->courseGuide(a1,s1)).thenAccept(guide->check(guide.complete(),"course_new_JVM_guidance_restored"))
+            .thenCompose(v->courseGuide(a2,s2)).thenAccept(guide->check(!guide.complete(),"course_new_JVM_personal_isolation"))
+            .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{check(view.exploration().place("survey_place").filter(p->p.discovered()).isPresent(),"course_new_JVM_discovery_restored");check(view.exploration().facts().stream().anyMatch(f->f.id().equals("route_record")),"course_new_JVM_diary_restored");check(view.states().get("route_marker").revision()==4&&view.states().get("route_followup").revision()==2,"course_new_JVM_multi_step_revisions");});
+    }
     private CompletionStage<Void> navigationPlay(){
         return openAll().thenCompose(v->quests.open(a1,content.id(),s1,()->coordinator.playable(s1))).thenCompose(q->{qa=q;return quests.accept(q,content);})
             .thenCompose(v->{var area=content.goals().getFirst().area();return quests.reach(qa,content,(area.minX()+area.maxX())/2,(area.minY()+area.maxY())/2,(area.minZ()+area.maxZ())/2);})
