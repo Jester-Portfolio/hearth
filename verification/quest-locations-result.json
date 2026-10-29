@@ -1,0 +1,42 @@
+{
+  "outcome": "PASS",
+  "workspace": "/tmp/hearth-s4-11.5pw7snq0",
+  "duration_seconds": 32.799,
+  "cleanup_errors": [],
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "8ae2508b4f1381aad20795a528a6cc7919e3014ab864918d8bd4a084f7498fa0",
+  "installed_plugin_sha256": "8ae2508b4f1381aad20795a528a6cc7919e3014ab864918d8bd4a084f7498fa0",
+  "unit_tests_passed": 22,
+  "paper_jvms": 1,
+  "postgres_instances": 1,
+  "checks": [
+    "location_detail_exact",
+    "location_information_command",
+    "location_first_stage_exact",
+    "location_second_stage_area",
+    "location_final_stage_hidden",
+    "location_phone_detail",
+    "location_public_information",
+    "location_report_hides_previous_target"
+  ],
+  "processes": {
+    "database": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 224560,
+      "observed_cpu_seconds": 2.38,
+      "min_sampled_host_available_kib": 11987396
+    },
+    "paper-prepare": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 1047620,
+      "observed_cpu_seconds": 58.09,
+      "min_sampled_host_available_kib": 11987396
+    }
+  },
+  "not_executed": [
+    "실제 클라이언트 목표 위치·채팅·GUI 표시",
+    "미니맵/목표 마커 렌더링",
+    "새 JVM 재시험: 저장 계약 불변",
+    "운영 배포"
+  ]
+}

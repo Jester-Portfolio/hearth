@@ -11,7 +11,7 @@ public record GameInformation(List<Quest> quests,List<Place> places,List<Diary> 
     static GameInformation build(QuestCatalog catalog,QuestJournal.View view){
         var quests=new ArrayList<Quest>();
         for(var q:QuestListView.entries(catalog,view.states()))if(!view.exploration().blockedQuests().contains(q.questId())){
-            var c=catalog.quest(q.questId());quests.add(new Quest(q.title(),c.name(),q.status(),c.guidance(view.states().get(q.questId()))));
+            var c=catalog.quest(q.questId());quests.add(new Quest(q.title(),c.name(),q.status(),c.detailGuidance(view.states().get(q.questId()))));
         }
         var x=view.exploration();var places=x.places().stream().map(p->new Place(p.name(),p.region(),p.location(),p.status(),p.hubUnlocked())).toList();
         var diary=x.facts().stream().map(f->new Diary(f.category(),f.title(),f.summary(),f.detail(),f.shared())).toList();

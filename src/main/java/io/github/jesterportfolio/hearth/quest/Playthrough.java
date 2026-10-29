@@ -35,7 +35,7 @@ public record Playthrough(List<Step> steps){
         };if(done)continue;
             if(step.kind()==Kind.QUEST){var c=catalog.quest(step.reference());var saved=view.states().get(c.id());
                 if(view.exploration().blockedQuests().contains(c.id())||!QuestListView.available(c,view.states()))return new Guide("공유 진행 조건 확인",List.of("현재 접근할 수 있는 퀘스트만 안내합니다. 공동체 진행을 먼저 확인해 주세요."),"/hearthstory guide",null,false);
-                String line=saved.phase()==QuestStore.Phase.NOT_ACCEPTED?c.text().get("offer"):c.guidance(saved);
+                String line=saved.phase()==QuestStore.Phase.NOT_ACCEPTED?c.text().get("offer"):c.detailGuidance(saved);
                 boolean talk=saved.phase()==QuestStore.Phase.REPORT_READY||saved.phase()==QuestStore.Phase.NOT_ACCEPTED&&c.startMode()==QuestContent.StartMode.NPC;
                 return new Guide(c.title(),List.of(step.hint(),line,"담당 NPC: "+c.name()),talk?null:saved.phase()==QuestStore.Phase.NOT_ACCEPTED?"/hearthphone":"/hearthquest info "+c.id(),talk?c.id():null,false);
             }

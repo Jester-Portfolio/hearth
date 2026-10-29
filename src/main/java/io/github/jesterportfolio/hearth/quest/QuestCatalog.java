@@ -28,7 +28,7 @@ public final class QuestCatalog {
             var goals=new ArrayList<QuestContent.Goal>();Map<?,?> goal;
             if(quest.containsKey("objectives")){
                 if(quest.containsKey("objective") || !(quest.get("objectives") instanceof List<?> list) || list.isEmpty())throw new IllegalArgumentException("Invalid objectives");
-                for(Object raw:list){var g=map(raw);goals.add(new QuestContent.Goal(string(g,"description"),area(g)));}
+                for(Object raw:list){var g=map(raw);var bounds=area(g);goals.add(new QuestContent.Goal(string(g,"description"),bounds,g.containsKey("location")?QuestLocation.parse(g.get("location"),bounds):null));}
                 goal=map(((List<?>)quest.get("objectives")).getFirst());
             }else goal=map(quest.get("objective"));
             var text=map(quest.get("text"));var messages=new HashMap<String,String>();
@@ -43,7 +43,7 @@ public final class QuestCatalog {
             QuestContent.Area startArea=null;
             if(start==QuestContent.StartMode.AUTOMATIC){var area=map(quest.get("start-area"));startArea=area(area);}
             else if(quest.containsKey("start-area"))throw new IllegalArgumentException("NPC start must not define start-area");
-            if(goals.isEmpty())goals.add(new QuestContent.Goal(messages.get("active"),area(goal)));
+            if(goals.isEmpty())goals.add(new QuestContent.Goal(messages.get("active"),area(goal),goal.containsKey("location")?QuestLocation.parse(goal.get("location"),area(goal)):null));
             var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,start,startArea,quest.containsKey("requires-completed")?id(quest,"requires-completed"):null,Map.copyOf(messages),goals);
             if(quests.putIfAbsent(id,content)!=null)throw new IllegalArgumentException("Duplicate quest id");
             npcs.computeIfAbsent(npcId,key->new ArrayList<>()).add(content);

@@ -12,6 +12,7 @@ quests:
     title: 시험 지점 방문 조사
     npc-id: survey_guide
     objective:
+      location: {kind: EXACT, x: 13, y: 64, z: 13}
       min-x: 12.0
       max-x: 14.0
       min-y: 64.0
@@ -107,6 +108,7 @@ quests:
     npc-id: survey_guide
     objectives:
       - description: 첫 번째 공개 표지 방문
+        location: {kind: EXACT, x: 21, y: 64, z: 3}
         min-x: 20.0
         max-x: 22.0
         min-y: 64.0
@@ -114,6 +116,7 @@ quests:
         min-z: 2.0
         max-z: 4.0
       - description: 두 번째 공개 표지 방문
+        location: {kind: AREA, min-x: 18, max-x: 24, min-y: 63, max-y: 69, min-z: 6, max-z: 12}
         min-x: 20.0
         max-x: 22.0
         min-y: 64.0
@@ -121,6 +124,7 @@ quests:
         min-z: 8.0
         max-z: 10.0
       - description: 마지막 공개 표지 방문
+        location: {kind: HIDDEN}
         min-x: 20.0
         max-x: 22.0
         min-y: 64.0

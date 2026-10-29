@@ -246,6 +246,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "location-play" -> locationPlay();
         case "playthrough-run" -> playthroughRun();
         case "playthrough-restored" -> playthroughRestored();
         case "navigation-play" -> navigationPlay();
@@ -543,6 +544,18 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> locationPlay(){
+        return openAll().thenCompose(v->quests.open(a1,content.id(),s1,()->true)).thenCompose(q->{qa=q;return quests.accept(q,content);})
+            .thenCompose(v->journal.load(a1,s1,()->true)).thenCompose(view->{
+                var detail=QuestListView.detail(catalog,view.states(),content.id()).orElseThrow();check(detail.guidance().contains("정확한 위치"),"location_detail_exact");
+                check(GameInformation.Query.parse("/hearthinfo quests").isPresent(),"location_information_command");
+                var route=catalog.quest("route_marker");check(route.detailGuidance(new QuestStore.Saved(QuestStore.Phase.ACTIVE,0,0)).contains("정확한 위치"),"location_first_stage_exact");
+                check(route.detailGuidance(new QuestStore.Saved(QuestStore.Phase.ACTIVE,1,1)).contains("탐색 구역"),"location_second_stage_area");
+                var hidden=route.detailGuidance(new QuestStore.Saved(QuestStore.Phase.ACTIVE,2,2));check(hidden.contains("위치 비공개")&&!hidden.contains("21.0"),"location_final_stage_hidden");
+                var screen=new PaperQuestUI.Screen(a1.playerId(),s1,QuestScreens.screen(catalog,view,"detail",content.id(),0),"detail",content.id(),0);check(screen.getInventory().getSize()==54,"location_phone_detail");
+                return questRead(a1,QuestStore.Phase.ACTIVE,0).thenCompose(v->journal.information(a1,s1,()->true)).thenAccept(info->check(info.quests().stream().anyMatch(q->q.guidance().contains("정확한 위치")),"location_public_information"));
+            }).thenCompose(v->quests.reach(qa,content,13,64,13)).thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{check(!QuestListView.detail(catalog,view.states(),content.id()).orElseThrow().guidance().contains("정확한 위치"),"location_report_hides_previous_target");});
+    }
     private CompletionStage<Void> finishCourseQuest(ServerProgressAccess.Context ctx,Object token,String id){
         var c=catalog.quest(id);final PersonalQuest.Session[] session=new PersonalQuest.Session[1];
         return quests.open(ctx,id,token,()->true).thenCompose(q->{session[0]=q;if(c.startMode()==QuestContent.StartMode.NPC)return quests.accept(q,c).thenAccept(x->{});
