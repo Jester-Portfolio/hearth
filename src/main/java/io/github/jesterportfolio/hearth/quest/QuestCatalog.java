@@ -5,6 +5,8 @@ import java.util.*;
 /** 목록을 끝까지 검증한 뒤에만 공개합니다. 초기 로딩 전용이며 게임 정책/자동 이관 엔진이 아닙니다. */
 public final class QuestCatalog {
     public record Npc(String npcId,String name,double x,double y,double z){}
+    private final Set<String> requiredRules;
+    public Set<String> requiredRules(){return requiredRules;}
     private final Map<String,Npc> actors;
     public Npc npc(String id){return Objects.requireNonNull(actors.get(id),"Unknown NPC");}
     private final Map<String,QuestContent> quests;
@@ -18,8 +20,8 @@ public final class QuestCatalog {
     public Topic topic(String npc,String id){return topics(npc).stream().filter(t->t.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("Unknown topic"));}
     public List<Topic> availableTopics(String npc,Map<String,io.github.jesterportfolio.hearth.persistence.QuestStore.Saved> rows,java.util.function.Predicate<String> allowed){return topics(npc).stream().filter(t->t.available(rows,allowed)).toList();}
     public List<String> pages(String npc){return Objects.requireNonNull(pages.get(npc),"Unknown NPC");}
-    private QuestCatalog(Map<String,QuestContent> quests,Map<String,List<QuestContent>> npcs,Map<String,List<String>> pages,Map<String,List<Topic>> topics,Map<String,Npc> actors){
-        this.actors=Collections.unmodifiableMap(new LinkedHashMap<>(actors));this.topics=Map.copyOf(topics);this.pages=Map.copyOf(pages);this.quests=Collections.unmodifiableMap(new LinkedHashMap<>(quests));
+    private QuestCatalog(Map<String,QuestContent> quests,Map<String,List<QuestContent>> npcs,Map<String,List<String>> pages,Map<String,List<Topic>> topics,Map<String,Npc> actors,Set<String> requiredRules){
+        this.requiredRules=Set.copyOf(requiredRules);this.actors=Collections.unmodifiableMap(new LinkedHashMap<>(actors));this.topics=Map.copyOf(topics);this.pages=Map.copyOf(pages);this.quests=Collections.unmodifiableMap(new LinkedHashMap<>(quests));
         var groups=new LinkedHashMap<String,List<QuestContent>>();npcs.forEach((id,rows)->groups.put(id,List.copyOf(rows)));this.npcs=Collections.unmodifiableMap(groups);
     }
     public Collection<QuestContent> all(){return quests.values();}
@@ -38,8 +40,9 @@ public final class QuestCatalog {
             if(y< -64||y>318||Math.abs(x)>29999984||Math.abs(z)>29999984||!positions.add(List.of(Math.floor(x),Math.floor(y),Math.floor(z))))throw new IllegalArgumentException("Invalid or overlapping NPC position");
             actors.put(entry.getKey(),new Npc(entry.getKey(),string(row,"name"),x,y,z));}
         var quests=new LinkedHashMap<String,QuestContent>();var npcs=new LinkedHashMap<String,List<QuestContent>>();actors.keySet().forEach(id->npcs.put(id,new ArrayList<>()));
+        var requiredRules=new HashSet<String>();
         for(Object row:questRows){
-            var quest=map(row);String id=id(quest,"id"),npcId=id(quest,"npc-id");var npc=rawNpcs.get(npcId);
+            var quest=map(row);String id=id(quest,"id");if(quest.containsKey("requires-rules")){if(!(quest.get("requires-rules") instanceof Boolean b))throw new IllegalArgumentException("Invalid rules requirement");if(b)requiredRules.add(id);}String npcId=id(quest,"npc-id");var npc=rawNpcs.get(npcId);
             if(npc==null)throw new IllegalArgumentException("Unknown NPC link");
             var goals=new ArrayList<QuestContent.Goal>();Map<?,?> goal;
             if(quest.containsKey("objectives")){
@@ -84,7 +87,7 @@ public final class QuestCatalog {
                     list.add(new Topic(key,label,text,requires,journal));}}
             topics.put(entry.getKey(),List.copyOf(list));}
         for(String id:actors.keySet())if(npcs.get(id).isEmpty()&&pages.get(id).isEmpty()&&topics.get(id).isEmpty())throw new IllegalArgumentException("NPC without dialogue or quest link");
-        return new QuestCatalog(quests,npcs,pages,topics,actors);
+        return new QuestCatalog(quests,npcs,pages,topics,actors,requiredRules);
     }
     private static String interaction(Map<?,?> row,QuestContent.Area bounds,Map<String,Map<?,?>> npcs){
         if(!row.containsKey("interaction"))return null;String value=string(row,"interaction");String[] parts=value.split(":",-1);

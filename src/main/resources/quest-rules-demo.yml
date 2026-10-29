@@ -24,8 +24,24 @@ quests:
     failures: [TIMEOUT]
     checkpoints: []
     timeout-seconds: 2
+  - id: branch_one_review
+    restart: KEEP
+    failures: []
+    checkpoints: []
+    timeout-seconds: 0
+    reward:
+      items:
+        - {material: STONE, amount: 1}
 chapters:
   - id: public_review
     title: 공개 합성 조사 따라잡기
     shared-stage: trial_arrival
     required-quests: [trial_checkpoint, trial_keep, trial_beginning]
+  - id: public_branch_review
+    title: 공개 확정 경로 따라잡기
+    shared-stage: trial_vote
+    required-quests: []
+    branch-stage: trial_vote
+    branch-quests:
+      route_one: [branch_one_review]
+      route_two: [branch_two_review]

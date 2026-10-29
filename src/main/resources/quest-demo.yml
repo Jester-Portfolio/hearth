@@ -304,3 +304,31 @@ quests:
       report: '[공개 조사 보고]'
       completed: 공개 조사를 보고했습니다.
       failure: 공개 조사 저장 상태를 확인할 수 없습니다.
+  - id: branch_one_review
+    requires-rules: true
+    title: 공개 선택 경로 확인
+    npc-id: survey_guide
+    completion-mode: report
+    objective: {min-x: 16, max-x: 18, min-y: 64, max-y: 67, min-z: 34, max-z: 36}
+    text:
+      offer: 공동체가 확정한 경로의 공개 조사 지점을 확인하고 보고해 주세요.
+      accept: '[선택 경로 확인 수락]'
+      active: 선택된 경로의 조사 지점을 확인합니다.
+      report-ready: 선택 경로 확인 결과를 보고해 주세요.
+      report: '[선택 경로 확인 보고]'
+      completed: 선택된 경로의 확인을 보고했습니다.
+      failure: 선택 경로의 저장 상태를 확인할 수 없습니다.
+  - id: branch_two_review
+    requires-rules: true
+    title: 공개 대안 경로 확인
+    npc-id: survey_guide
+    completion-mode: report
+    objective: {min-x: 24, max-x: 26, min-y: 64, max-y: 67, min-z: 34, max-z: 36}
+    text:
+      offer: 공동체가 확정한 경로의 공개 조사 지점을 확인하고 보고해 주세요.
+      accept: '[선택 경로 확인 수락]'
+      active: 선택된 경로의 조사 지점을 확인합니다.
+      report-ready: 선택 경로 확인 결과를 보고해 주세요.
+      report: '[선택 경로 확인 보고]'
+      completed: 선택된 경로의 확인을 보고했습니다.
+      failure: 선택 경로의 저장 상태를 확인할 수 없습니다.

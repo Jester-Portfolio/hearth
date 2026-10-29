@@ -96,6 +96,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(requests.containsKey(p.getUniqueId())){p.sendMessage(Component.text("이전 정보 조회를 처리 중입니다."));return true;}
             load(p,s,v->journal.projectInformation(s.context(),v,()->players.current(p)==s).lines(query.get()).forEach(line->p.sendMessage(Component.text(line))));return true;
         }
+        if(command.equals("/hearthphone rewards")||command.equals("/hearthphone chapters")){String page=command.endsWith("rewards")?"rewards":"chapters";load(p,s,v->open(p,s,v,page,null,0));return true;}
         if(command.equals("/hearthphone diary")){load(p,s,v->open(p,s,v,"diary",null,0));return true;}
         if(command.equals("/hearthphone")){load(p,s,v->open(p,s,v,"home",null,0));return true;}
         String[] args=command.split(" ",-1);
@@ -115,6 +116,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             String action=button.action();
             if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
             else if(action.equals("quest-retry")||action.equals("quest-reward")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-retry")?"retry ":"claim ")+button.quest());}
+            else if(action.equals("quest-chapter-play")||action.equals("quest-chapter-skip")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-chapter-skip")?"chapter-skip ":"chapter-play ")+button.quest());}
             else if(action.equals("quest-chapters")){p.closeInventory();questAction.accept(p,"/hearthquest chapters");}
             else if(action.equals("npc-contact")){p.closeInventory();npcContact.accept(p,button.quest());}
             else if(action.equals("npc-dialogue")){p.closeInventory();npcDialogue.accept(p,button.quest());}

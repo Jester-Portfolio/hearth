@@ -31,6 +31,8 @@ public final class PersonalQuest {
     }
     private java.util.function.Function<UUID,CompletionStage<Void>> beforeChapter=r->CompletableFuture.completedFuture(null);
     public void beforeChapter(java.util.function.Function<UUID,CompletionStage<Void>> hook){check.run();beforeChapter=hook;}
+    private Set<String> requiredRules=Set.of();
+    public void requireRules(Set<String> ids){check.run();if(!sessions.isEmpty())throw new IllegalStateException("Rules already active");requiredRules=Set.copyOf(ids);}
     private QuestRules rules=QuestRules.empty();private java.util.function.LongSupplier clock=System::currentTimeMillis;
     private final Map<Reader,CompletableFuture<Void>> chapterJobs=new HashMap<>();private final Set<Reader> chapterHolds=new HashSet<>();
     public void rules(QuestRules definitions){check.run();if(!sessions.isEmpty())throw new IllegalStateException("Rules already active");rules=definitions;}
@@ -92,6 +94,7 @@ public final class PersonalQuest {
     }
     /** 선행 조회부터 시작 INSERT까지 같은 세션의 busy/저장 장벽을 유지합니다. */
     private CompletionStage<QuestStore.Saved> begin(Session s,QuestContent c){
+        if(requiredRules.contains(c.id())&&!rules.rules().containsKey(c.id()))return rejected("QUEST_RULES_NOT_READY");
         check.run();if(!current(s))return rejected("STALE_QUEST");
         if(chapterBusy(s.context)||s.busy || s.hold || s.saved==null)return rejected("QUEST_BUSY_OR_HOLD");
         if(s.saved.phase()!=QuestStore.Phase.NOT_ACCEPTED)return rejected("QUEST_ORDER");
@@ -109,7 +112,7 @@ public final class PersonalQuest {
             return store.advanceQuest(s.context,c.id(),expected,QuestStore.Phase.ACTIVE,expected.objectiveIndex(),deadline(c.id()));
         },owner).whenCompleteAsync((row,error)->{
             s.busy=false;Throwable cause=error;while(cause instanceof CompletionException && cause.getCause()!=null)cause=cause.getCause();
-            boolean rejected=cause instanceof IllegalStateException && Set.of("QUEST_LOCKED","QUEST_PREREQUISITE_BUSY","QUEST_PREREQUISITE_CHANGED","STALE_QUEST").contains(Objects.toString(cause.getMessage(),""));
+            boolean rejected=cause instanceof StorageFailure f&&Set.of("QUEST_BRANCH_LOCKED","QUEST_RULES_NOT_READY").contains(f.code())||cause instanceof IllegalStateException && Set.of("QUEST_LOCKED","QUEST_PREREQUISITE_BUSY","QUEST_PREREQUISITE_CHANGED","STALE_QUEST").contains(Objects.toString(cause.getMessage(),""));
             if(error!=null && !rejected){s.hold=true;drain.completeExceptionally(error);}else drain.complete(null);
             if(error!=null)result.completeExceptionally(error);
             else if(current(s)){s.saved=row;notifyChanged(s);result.complete(row);}else result.completeExceptionally(new IllegalStateException("STALE_QUEST"));
@@ -171,7 +174,7 @@ public final class PersonalQuest {
         store.advanceQuest(s.context,s.key.quest(),expected,target,index,deadline).whenCompleteAsync((row,error)->{
             s.busy=false;
             if(error==null&&(row==null||row.phase()!=target||row.objectiveIndex()!=index||row.revision()!=expected.revision()+1||row.deadlineMillis()!=deadline))error=new StorageFailure("quest","INVALID_SAVE_RESULT");
-            if(error!=null){s.hold=true;drained.completeExceptionally(error);result.completeExceptionally(error);}
+            if(error!=null){Throwable cause=error;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();if(cause instanceof StorageFailure f&&Set.of("QUEST_BRANCH_LOCKED","QUEST_RULES_NOT_READY").contains(f.code()))drained.complete(null);else{s.hold=true;drained.completeExceptionally(error);}result.completeExceptionally(error);}
             else{boolean live=current(s);if(live)s.saved=row;drained.complete(null);if(live){notifyChanged(s);result.complete(row);}else result.completeExceptionally(new IllegalStateException("STALE_QUEST"));}
         },owner).exceptionally(error->{drained.completeExceptionally(error);result.completeExceptionally(error);return null;});return result;
     }
@@ -203,7 +206,7 @@ public final class PersonalQuest {
         var prior=CompletableFuture.allOf(barrier(ctx.storyRunId()).toCompletableFuture(),beforeChapter.apply(ctx.storyRunId()).toCompletableFuture());var drained=new CompletableFuture<Void>();var result=new CompletableFuture<QuestCompletionStore.ChapterState>();chapterJobs.put(key,drained);
         prior.thenComposeAsync(v->{if(!valid.getAsBoolean()||closed)throw new IllegalStateException("STALE_CHAPTER");return storage.skipChapter(ctx,chapter);},owner).whenCompleteAsync((row,error)->{
             chapterJobs.remove(key,drained);if(error==null){sessions.keySet().removeIf(k->k.run().equals(ctx.storyRunId())&&k.player().equals(ctx.playerId()));drained.complete(null);try{changed.accept(ctx);}catch(RuntimeException ignored){}if(valid.getAsBoolean())result.complete(row);else result.completeExceptionally(new IllegalStateException("STALE_CHAPTER"));}
-            else{Throwable cause=error;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();boolean known=cause instanceof StorageFailure f&&Set.of("CHAPTER_NOT_PASSED","UNKNOWN_CHAPTER").contains(f.code())||cause instanceof IllegalStateException&&"STALE_CHAPTER".equals(cause.getMessage());if(!known){chapterHolds.add(key);drained.completeExceptionally(error);}else drained.complete(null);result.completeExceptionally(error);}
+            else{Throwable cause=error;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();boolean known=cause instanceof StorageFailure f&&Set.of("CHAPTER_NOT_PASSED","CHAPTER_BRANCH_NOT_CONFIRMED","UNKNOWN_CHAPTER").contains(f.code())||cause instanceof IllegalStateException&&"STALE_CHAPTER".equals(cause.getMessage());if(!known){chapterHolds.add(key);drained.completeExceptionally(error);}else drained.complete(null);result.completeExceptionally(error);}
         },owner);return result;
     }
     public QuestStore.Saved requireDialogue(Session s){

@@ -17,15 +17,17 @@ public final class QuestScreens {
         }
         out.add(new Button(45,"이전 화면","home",null,0));
         if(view.exploration().registered() && Set.of("map","place","region","diary","STORY","PERSON","EXPLORATION","CHRONICLE","fact","event","community","members","story","conditions","branches").contains(page))return explore(catalog,view,page,id,offset);
-        if(Set.of("quests","reporting","tracked","completed").contains(page)){
+        if(Set.of("chapters","chapter-detail","chapter-confirm").contains(page))return completion(view,page,id,offset);
+        if(page.equals("rewards")&&!view.completion().registered())return List.of(new Button(0,"보상 조회 비활성","none",null,0),new Button(45,"이전 화면","quests",null,0));
+        if(Set.of("quests","reporting","tracked","completed","rewards").contains(page)){
             var filter=switch(page){case "reporting"->QuestListView.Filter.REPORTING;case "tracked"->QuestListView.Filter.TRACKED;case "completed"->QuestListView.Filter.COMPLETED;default->QuestListView.Filter.ALL;};
-            var entries=QuestListView.filtered(catalog,view.states(),view.journal().tracked(),view.exploration().blockedQuests(),filter);int end=Math.min(entries.size(),offset+36);
+            var entries=QuestListView.filtered(catalog,view.states(),view.journal().tracked(),view.exploration().blockedQuests(),filter).stream().filter(q->!page.equals("rewards")||Optional.ofNullable(view.completion().rewards().get(q.questId())).map(QuestCompletionView.Reward::claimable).orElse(false)).toList();int end=Math.min(entries.size(),offset+36);
             for(int i=offset;i<end;i++){var q=entries.get(i);out.add(new Button(i-offset,"["+q.status()+"] "+q.title(),"detail",q.questId(),0));}
             if(entries.isEmpty())out.add(new Button(0,"표시할 수 있는 퀘스트가 없습니다.","none",null,0));
             navigation(out,offset,entries.size(),page);
             String[] tabs={"quests","reporting","tracked","completed"};String[] names={"전체","보고 가능","추적 중","완료"};
             for(int i=0;i<tabs.length;i++)out.add(new Button(36+i,names[i],tabs[i],null,0));
-            out.add(new Button(52,"장별 따라잡기/스킵","quest-chapters",null,0));
+            if(view.completion().registered()){out.add(new Button(40,"보상 대기","rewards",null,0));out.add(new Button(52,"장별 따라잡기/스킵","chapters",null,0));}
             out.add(new Button(50,"다음 플레이 안내","journey-guide",null,0));
             out.add(new Button(49,"확정된 공동체 분기","branches",null,0));
         }else if(page.equals("detail")){
@@ -36,7 +38,7 @@ public final class QuestScreens {
                 var row=view.states().get(id);boolean tracked=view.journal().tracked().contains(id);
                 if(row.phase()==QuestStore.Phase.REPORT_READY)out.add(new Button(11,"가까운 NPC와 보고 대화 열기","npc-dialogue",id,0));
                 if(row.phase()==QuestStore.Phase.FAILED)out.add(new Button(12,"퀘스트 재시작","quest-retry",id,0));
-                if(row.phase()==QuestStore.Phase.COMPLETED)out.add(new Button(12,"설정된 보상 확인/받기","quest-reward",id,0));
+                var reward=view.completion().rewards().get(id);if(reward!=null){out.add(new Button(6,reward.label(),"none",null,0));if(reward.claimable())out.add(new Button(12,"미지급 보상 받기","quest-reward",id,0));}
                 out.add(new Button(46,"알림 목록","notices",null,0));out.add(new Button(48,"추적 중인 퀘스트","tracked",null,0));
                 if(view.exploration().registered())out.add(new Button(49,"공유 진행 안내를 채팅에서 확인","story-guide",null,0));
                 if(!row.satisfies())out.add(new Button(10,tracked?"추적 해제":"추적","track",id,tracked?0:1));
@@ -54,6 +56,22 @@ public final class QuestScreens {
         }
         else out.add(new Button(0,"미구현: "+switch(page){case "map"->"월드 지도";case "diary"->"일지";case "community"->"공동체 정보";default->"요청 화면";},"none",null,0));
         return List.copyOf(out);
+    }
+    private static List<Button> completion(QuestJournal.View view,String page,String id,int offset){
+        var rows=new ArrayList<Button>();String back="quests";
+        if(!view.completion().registered())rows.add(line(0,"장별 조회 비활성"));
+        else if(page.equals("chapters"))for(var c:view.completion().chapters())rows.add(new Button(0,c.title()+" · "+(c.skipped()?"스킵 기록":"개인 따라잡기"),"chapter-detail",c.id(),0));
+        else{back="chapters";var found=view.completion().chapter(id);if(found.isEmpty())rows.add(line(0,"조회할 수 있는 장이 없습니다."));else{var c=found.get();rows.add(line(0,c.title()));
+            if(page.equals("chapter-confirm")){back="chapter-detail";rows.add(line(0,"이 장의 메인/필수 길목만 스킵합니다. 서브·공동체 결과는 유지합니다."));rows.add(line(0,"실제 완료/보상과 구분하며 스킵 보상 정책은 미정입니다."));if(!c.skipped())rows.add(new Button(0,"확인: 이 장 스킵","quest-chapter-skip",c.id(),0));}
+            else{if(c.unaccepted()>0)rows.add(line(0,"미수락 필수 퀘스트 "+c.unaccepted()+"개 · 직접 플레이 안내에서 시작 경로를 확인하세요."));for(var part:c.parts())rows.add(new Button(0,"["+part.status()+"] "+part.title(),"detail",part.quest(),0));if(c.skipped())rows.add(line(0,"스킵 기록 보존 · 과거 장면 재현은 미구현"));else{rows.add(new Button(0,"직접 플레이 안내","quest-chapter-play",c.id(),0));rows.add(new Button(0,"장 스킵 확인 화면","chapter-confirm",c.id(),0));}}
+        }}
+        return pageRows(rows,back,page,id,offset);
+    }
+    private static List<Button> pageRows(List<Button> rows,String back,String page,String id,int offset){
+        if(rows.isEmpty())rows.add(line(0,"등록된 정보가 없습니다."));var out=new ArrayList<Button>();int end=Math.min(rows.size(),offset+36);
+        for(int i=offset;i<end;i++){var b=rows.get(i);out.add(new Button(i-offset,b.label(),b.action(),b.quest(),b.revision()));}
+        out.add(new Button(45,"이전 화면",back,back.equals("chapter-detail")?id:null,0));navigation(out,offset,rows.size(),page);
+        for(int i=0;i<out.size();i++){var button=out.get(i);if(button.action().equals(page)&&button.quest()==null)out.set(i,new Button(button.slot(),button.label(),button.action(),id,button.revision()));}return List.copyOf(out);
     }
     private static Button line(int slot,String text){return new Button(slot,text,"none",null,0);}
     private static String scope(boolean shared){return shared?"S:":"P:";}
@@ -80,12 +98,7 @@ public final class QuestScreens {
             case "conditions"->{back="community";view.conditions().lines().forEach(x->rows.add(line(0,x)));}
             default->throw new IllegalArgumentException("Unknown exploration screen");
         }
-        if(rows.isEmpty())rows.add(line(0,"등록된 정보가 없습니다."));var out=new ArrayList<Button>();int end=Math.min(rows.size(),offset+36);
-        for(int i=offset;i<end;i++){var b=rows.get(i);out.add(new Button(i-offset,b.label(),b.action(),b.quest(),b.revision()));}
-        out.add(new Button(45,"이전 화면",back,null,0));navigation(out,offset,rows.size(),page);
-        // 상세 페이지의 다음 요청에는 현재 상세 key를 보존합니다.
-        for(int i=0;i<out.size();i++){var b=out.get(i);if(b.action().equals(page)&&b.quest()==null)out.set(i,new Button(b.slot(),b.label(),b.action(),id,b.revision()));}
-        return List.copyOf(out);
+        return pageRows(rows,back,page,id,offset);
     }
     private static void navigation(List<Button> out,int offset,int size,String page){if(offset>0)out.add(new Button(47,"이전 페이지",page,null,Math.max(0,offset-36)));if(offset+36<size)out.add(new Button(51,"다음 페이지",page,null,offset+36));}
     public static String notice(String kind){return switch(kind){case "PLACE_FOUND"->"장소 발견";case "FAILED"->"퀘스트 실패";case "RESTARTED"->"퀘스트 재시작";case "STARTED"->"퀘스트 시작";case "OBJECTIVE_UPDATED"->"목표 단계 갱신";case "REPORT_READY"->"NPC 보고 가능";case "COMPLETED"->"퀘스트 완료";default->throw new IllegalArgumentException("Unknown notice");};}

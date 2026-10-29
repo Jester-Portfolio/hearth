@@ -9,7 +9,8 @@ import java.util.function.*;
 
 /** 기존 quest list/worker/owner에 연결한 작은 개인 UI 조정자입니다. */
 public final class QuestJournal {
-    public record View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal,ExplorationView exploration){
+    public record View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal,ExplorationView exploration,QuestCompletionView completion){
+        public View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal,ExplorationView exploration){this(states,journal,exploration,QuestCompletionView.empty());}
         public View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal){this(states,journal,ExplorationView.empty());}
         public View{states=Map.copyOf(states);}
     }
@@ -18,9 +19,18 @@ public final class QuestJournal {
     private final Map<Key,CompletableFuture<Void>> pending=new HashMap<>();private final Set<Key> holds=new HashSet<>();private boolean closed;private Consumer<ServerProgressAccess.Context> changed=c->{};
     private Consumer<UUID> sharedChanged=r->{};
     public void sharedChanged(Consumer<UUID> listener){check.run();sharedChanged=listener;}
+    private QuestCompletionStore completionStore;private QuestRules completionRules=QuestRules.empty();private final Map<Key,Long> completionEpoch=new HashMap<>();
+    public void completion(QuestCompletionStore store,QuestRules rules){check.run();completionStore=store;completionRules=rules;}
+    private long epoch(ServerProgressAccess.Context ctx){return completionEpoch.computeIfAbsent(new Key(ctx.storyRunId(),ctx.playerId()),k->0L);}
+    public void invalidateCompletion(ServerProgressAccess.Context ctx){check.run();var key=new Key(ctx.storyRunId(),ctx.playerId());completionEpoch.put(key,Math.incrementExact(epoch(ctx)));try{changed.accept(ctx);}catch(RuntimeException ignored){}}
+    public void invalidateRun(UUID run){check.run();completionEpoch.replaceAll((k,v)->k.run().equals(run)?Math.incrementExact(v):v);try{sharedChanged.accept(run);}catch(RuntimeException ignored){}}
     private SharedStory story;private StoryAccess storyAccess;
     public void sharedStory(SharedStory story,StoryAccess access){check.run();this.story=story;storyAccess=access;story.changed(ctx->{changed.accept(ctx);sharedChanged.accept(ctx.storyRunId());});}
-    public boolean questAllowed(ServerProgressAccess.Context ctx,String id){return storyAccess==null||storyAccess.quest(ctx.storyRunId(),catalog.quest(id));}
+    public boolean questAllowed(ServerProgressAccess.Context ctx,String id){
+        if(catalog.requiredRules().contains(id)&&!completionRules.rules().containsKey(id))return false;
+        if(storyAccess!=null&&!storyAccess.quest(ctx.storyRunId(),catalog.quest(id)))return false;
+        var gate=completionRules.rule(id).branch();if(gate==null)return true;var snapshot=story==null?null:story.cached(ctx.storyRunId());var branch=snapshot==null?null:snapshot.branches().get(gate.stage());return story!=null&&story.healthy(ctx.storyRunId())&&branch!=null&&branch.choice().equals(gate.choice());
+    }
     public Set<String> blocked(ServerProgressAccess.Context ctx){var result=new HashSet<String>();for(String id:catalog.questIds())if(!questAllowed(ctx,id))result.add(id);return Set.copyOf(result);}
     private ExplorationView explorationView(ServerProgressAccess.Context ctx,ExplorationStore.Data raw,List<CommunityBoundary.Member> members){
         if(story==null)return ExplorationView.build(content,raw,members,community.status(ctx,raw.story(),members));
@@ -34,7 +44,7 @@ public final class QuestJournal {
     private final Map<DiscoveryKey,DiscoveryJob> discoveries=new HashMap<>();
     public void exploration(ExplorationStore store,ExplorationContent definitions,CommunityBoundary boundary){check.run();explorationStore=store;content=definitions;community=boundary;}
     public void requireView(ServerProgressAccess.Context ctx,View view){
-        check.run();quests.requireListDisplay(ctx,view.states());
+        check.run();if(completionStore!=null&&(!view.completion().registered()||view.completion().epoch()!=epoch(ctx)))throw new IllegalStateException("STALE_COMPLETION_VIEW");quests.requireListDisplay(ctx,view.states());
         if(story!=null&&(!story.healthy(ctx.storyRunId())||story.cached(ctx.storyRunId()).story().revision()!=view.exploration().story().revision()||!blocked(ctx).equals(view.exploration().blockedQuests())))throw new IllegalStateException("STALE_STORY_VIEW");
         if(community!=null && (!community.members(ctx).equals(view.exploration().members()) || !community.status(ctx,view.exploration().story(),view.exploration().members()).equals(view.exploration().conditions())))throw new IllegalStateException("STALE_COMMUNITY");
     }
@@ -44,11 +54,14 @@ public final class QuestJournal {
     public QuestJournal(QuestJournalStore store,PersonalQuest quests,QuestCatalog catalog,Executor owner,Runnable check){this.store=store;this.quests=quests;this.catalog=catalog;this.owner=owner;this.check=check;}
     private void valid(BooleanSupplier valid){check.run();if(closed || !valid.getAsBoolean())throw new IllegalStateException("STALE_JOURNAL");}
     private CompletionStage<View> read(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){
-        CompletionStage<?> prepared=story==null?CompletableFuture.completedFuture(null):story.load(ctx).thenComposeAsync(s->story.updateConditions(ctx),owner);
+        long epoch=epoch(ctx);CompletionStage<?> prepared=story==null?CompletableFuture.completedFuture(null):story.load(ctx).thenComposeAsync(s->story.updateConditions(ctx),owner);
         return prepared.thenComposeAsync(v->quests.list(ctx,token,valid),owner).thenCompose(rows->store.readJournal(ctx).thenCompose(data->{
             if(content==null)return CompletableFuture.completedFuture(new View(rows,data));
             return explorationStore.readExploration(ctx).thenApplyAsync(raw->{valid(valid);var members=community.members(ctx);return new View(rows,data,explorationView(ctx,raw,members));},owner);
-        })).thenApplyAsync(view->{valid(valid);requireView(ctx,view);return view;},owner);
+        })).thenComposeAsync(view->{
+            if(completionStore==null)return CompletableFuture.completedFuture(view);
+            return completionStore.readRewards(ctx).thenCompose(grants->completionStore.readChapters(ctx).thenApplyAsync(skips->{valid(valid);if(epoch!=epoch(ctx))throw new IllegalStateException("STALE_COMPLETION_VIEW");return new View(view.states(),view.journal(),view.exploration(),QuestCompletionView.build(catalog,completionRules,view.states(),blocked(ctx),grants,skips,story==null?null:story.cached(ctx.storyRunId()),epoch));},owner));
+        },owner).thenApplyAsync(view->{valid(valid);requireView(ctx,view);return view;},owner);
     }
     private CompletionStage<View> perform(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,Function<View,CompletionStage<Void>> write){
         check.run();var key=new Key(ctx.storyRunId(),ctx.playerId());

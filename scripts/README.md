@@ -61,3 +61,5 @@
 `--sessions --quests --story-batch --general-npcs`는 일반 NPC·개인 일지 대화 링크·현장 조사/발견과 IDLE·두 JVM 복원을 함께 검사한다. [범위·실패 이력·결과](../docs/general-npc-verification.md)를 따른다. 실제 사용자 조작은 수행하지 않는다.
 
 `--sessions --quests --story-batch --quest-completion`은 명시적 규칙 게이트에서 실패/재시작·보상·장 스킵과 두 JVM 복원을 검사한다. [현재 판정·범위](../docs/quest-completion-verification.md)를 먼저 확인한다.
+
+`--sessions --quests --story-batch --branch-progression`은 확정 분기 시작 권한·선택 경로 장 스킵·스마트폰 지급/장 화면·두 JVM 지급 기록 복원을 검사한다. 실제 사용자 조작은 하지 않으며 [범위와 결과](../docs/branch-progression-verification.md)를 따른다.

@@ -104,7 +104,7 @@ public final class SessionVerification implements AutoCloseable {
         adapter=new PaperSessionAdapter(plugin,coordinator,owner,codec,new Location(waiting,0.5,64,0.5));
         if(catalog!=null) {
             content=catalog.all().stream().filter(c->c.id().equals("survey_marker")).findFirst().orElse(catalog.all().iterator().next());
-            quests=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);
+            quests=new PersonalQuest(store,catalog.questIds(),owner,SessionVerification::main);quests.requireRules(catalog.requiredRules());store.requireQuestRules(catalog.requiredRules());
             journal=new QuestJournal(store,quests,catalog,owner,SessionVerification::main);
             if(plugin.getConfig().getBoolean("exploration-verification-enabled")){
                 if(!Boolean.getBoolean("hearth.verification.exploration"))throw new IllegalStateException("Exploration gate missing");
@@ -125,7 +125,7 @@ public final class SessionVerification implements AutoCloseable {
             if(plugin.getConfig().getBoolean("quest-completion-verification-enabled")){
                 if(!Boolean.getBoolean("hearth.verification.questCompletion")||sharedStory==null)throw new IllegalStateException("Quest completion gate missing");
                 var rulesFile=new java.io.File(plugin.getDataFolder(),"quest-rules-demo.yml");if(!rulesFile.exists())plugin.saveResource("quest-rules-demo.yml",false);
-                questRules=QuestRules.parse(YamlConfiguration.loadConfiguration(rulesFile).getValues(false),catalog,sharedStory.content());quests.rules(questRules);quests.beforeChapter(journal::barrier);store.configureQuestRules(questRules);questRewards=new QuestRewards(questRules,store,codec,owner);
+                questRules=QuestRules.parse(YamlConfiguration.loadConfiguration(rulesFile).getValues(false),catalog,sharedStory.content());quests.rules(questRules);journal.completion(store,questRules);quests.beforeChapter(run->{journal.invalidateRun(run);return journal.barrier(run);});store.configureQuestRules(questRules);questRewards=new QuestRewards(questRules,store,codec,owner);questRewards.changed(journal::invalidateCompletion);
             }
             questAdapter=new PaperQuestAdapter(plugin,adapter,quests,catalog,journal,owner,
                 Set.of(worlds.get(a).mapping().physicalId(),worlds.get(b).mapping().physicalId()));
@@ -255,6 +255,8 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "branch-progression-start" -> branchProgressionStart();
+        case "branch-progression-restored" -> branchProgressionRestored();
         case "quest-completion-start" -> completionStart();
         case "quest-completion-restored" -> completionRestored();
         case "general-npcs-start" -> generalNpcsStart();
@@ -562,6 +564,35 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> branchProgressionStart(){return openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1));sharedStory.rosterChanged(a1);})
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->check(view.exploration().blockedQuests().containsAll(Set.of("branch_one_review","branch_two_review"))&&view.completion().chapters().isEmpty(),"branch_unconfirmed_quests_and_future_chapters_hidden"))
+        .thenCompose(v->expect(store.advanceQuest(a1,"branch_one_review",new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1),QuestStore.Phase.ACTIVE),"QUEST_BRANCH_LOCKED"))
+        .thenCompose(v->quests.open(a1,"branch_one_review",s1,()->true)).thenCompose(q->{qa=q;return expect(quests.accept(q,catalog.quest("branch_one_review")),"QUEST_BRANCH_LOCKED");}).thenRun(()->check(!qa.held(),"branch_expected_locked_start_does_not_create_HOLD"))
+        .thenCompose(v->finishCourseQuest(a1,s1,"survey_marker")).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true))
+        .thenCompose(v->finishCourseQuest(a1,s1,"path_marker")).thenCompose(v->sharedStory.openVote(a1,s1,()->true))
+        .thenCompose(vote->sharedStory.cast(a1,s1,()->true,vote.id(),"route_one"))
+        .thenCompose(v->expect(store.advanceQuest(a1,"branch_two_review",new QuestStore.Saved(QuestStore.Phase.NOT_ACCEPTED,-1),QuestStore.Phase.ACTIVE),"QUEST_BRANCH_LOCKED"))
+        .thenCompose(v->finishCourseQuest(a1,s1,"branch_one_review"))
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{
+            check(!view.exploration().blockedQuests().contains("branch_one_review")&&view.exploration().blockedQuests().contains("branch_two_review"),"branch_confirmed_line_only_in_public_quest_views");
+            check(view.completion().rewards().get("branch_one_review").claimable()&&QuestScreens.screen(catalog,view,"rewards",null,0).stream().anyMatch(b->"branch_one_review".equals(b.quest())),"branch_pending_reward_list_and_claim_button");
+            var chapter=view.completion().chapter("public_branch_review").orElseThrow();check(chapter.parts().size()==1&&chapter.parts().getFirst().quest().equals("branch_one_review")&&!view.completion().toString().contains("branch_two_review"),"branch_chapter_DTO_excludes_other_line");
+            check(QuestScreens.screen(catalog,view,"chapter-detail","public_branch_review",0).stream().anyMatch(b->b.action().equals("chapter-confirm"))&&QuestScreens.screen(catalog,view,"chapter-confirm","public_branch_review",0).stream().anyMatch(b->b.action().equals("quest-chapter-skip")),"branch_chapter_detail_and_explicit_skip_confirmation");
+            var old=view;journal.invalidateCompletion(a1);try{journal.requireView(a1,old);throw new IllegalStateException("Stale metadata accepted");}catch(IllegalStateException expected){check(expected.getMessage().equals("STALE_COMPLETION_VIEW"),"branch_stale_completion_projection_rejected");}
+        })
+        .thenCompose(v->mainResult(store.readRewards(a1))).thenCompose(before->journal.load(a1,s1,()->true).thenCompose(view->mainResult(store.readRewards(a1))).thenAccept(after->check(before.equals(after),"branch_reward_and_chapter_queries_are_read_only")))
+        .thenCompose(v->quests.skip(a2,s2,()->true,store,questRules.chapters().get("public_branch_review")))
+        .thenCompose(v->questRead(a2,"branch_one_review",QuestStore.Phase.SKIPPED,0)).thenCompose(v->questRead(a2,"branch_two_review",QuestStore.Phase.NOT_ACCEPTED,-1))
+        .thenCompose(v->journal.load(a2,s2,()->true)).thenAccept(view->{
+            check(view.completion().chapter("public_branch_review").orElseThrow().skipped()&&!view.completion().rewards().get("branch_one_review").claimable(),"branch_personal_skip_and_undecided_reward_status");
+            check(view.completion().chapter("public_review").orElseThrow().unaccepted()==3&&QuestScreens.screen(catalog,view,"chapter-detail","public_review",0).stream().noneMatch(b->b.label().contains("체크포인트")),"branch_chapter_does_not_disclose_unaccepted_quest_titles");
+        }).thenCompose(v->questRead(ctx(b,1),"branch_one_review",QuestStore.Phase.NOT_ACCEPTED,-1));}
+    private CompletionStage<Void> branchProgressionRestored(){return openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);})
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenCompose(before->{check(before.completion().rewards().get("branch_one_review").claimable(),"branch_new_JVM_restores_pending_reward_and_selected_chapter");return questRewards.claim(coordinator,s1,"branch_one_review").thenRun(()->{try{journal.requireView(a1,before);throw new IllegalStateException("Old payout view accepted");}catch(IllegalStateException expected){check(expected.getMessage().equals("STALE_COMPLETION_VIEW"),"branch_reward_commit_invalidates_old_projection");}});})
+        .thenCompose(v->verify(a1,33,1)).thenCompose(v->questRewards.claim(coordinator,s1,"branch_one_review")).thenCompose(v->verify(a1,33,1))
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{check(view.completion().rewards().get("branch_one_review").status().equals("GRANTED")&&!view.completion().rewards().get("branch_one_review").claimable()&&QuestScreens.screen(catalog,view,"rewards",null,0).stream().noneMatch(b->"branch_one_review".equals(b.quest())),"branch_paid_reward_removed_from_pending_list");})
+        .thenCompose(v->journal.load(a2,s2,()->true)).thenAccept(view->check(view.completion().chapter("public_branch_review").orElseThrow().skipped()&&view.completion().rewards().get("branch_one_review").status().equals("POLICY_PENDING"),"branch_new_JVM_preserves_skip_and_pending_policy"))
+        .thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->check(view.completion().chapters().isEmpty()&&view.completion().rewards().isEmpty()&&view.states().get("branch_one_review").phase()==QuestStore.Phase.NOT_ACCEPTED,"branch_other_run_chapters_rewards_and_progress_unchanged"));}
     private CompletionStage<Void> failAndRetry(String id,int expected){var c=catalog.quest(id);final PersonalQuest.Session[] current={null};return quests.open(a1,id,s1,()->true).thenCompose(q->{current[0]=q;return quests.accept(q,c);})
         .thenCompose(v->quests.reach(current[0],c,5,64,31)).thenCompose(v->quests.reach(current[0],c,9,64,31)).thenCompose(v->quests.fail(current[0],c,"OBJECTIVE"))
         .thenCompose(row->{check(row.phase()==QuestStore.Phase.FAILED&&row.objectiveIndex()==expected,"completion_failure_policy_"+id);return expectQuestCode(quests.fail(current[0],c,"OBJECTIVE"),"QUEST_FAILURE_NOT_ALLOWED");})

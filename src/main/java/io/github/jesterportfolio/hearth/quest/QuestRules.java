@@ -10,8 +10,14 @@ public record QuestRules(Map<String,Rule> rules,Map<String,Chapter> chapters){
     public enum Restart{KEEP,CHECKPOINT,BEGINNING}
     public record Item(String material,int amount){}
     public record Reward(List<Item> items,String fingerprint){public Reward{items=List.copyOf(items);}}
-    public record Rule(Restart restart,Set<String> failures,List<Integer> checkpoints,long timeoutMillis,Reward reward){public Rule{failures=Set.copyOf(failures);checkpoints=List.copyOf(checkpoints);}}
-    public record Chapter(String id,String title,String sharedStage,List<String> required,String fingerprint){public Chapter{required=List.copyOf(required);}}
+    public record BranchGate(String stage,String choice){}
+    public record Rule(Restart restart,Set<String> failures,List<Integer> checkpoints,long timeoutMillis,Reward reward,BranchGate branch){public Rule(Restart r,Set<String> f,List<Integer> c,long t,Reward w){this(r,f,c,t,w,null);}public Rule{failures=Set.copyOf(failures);checkpoints=List.copyOf(checkpoints);}}
+    public record Chapter(String id,String title,String sharedStage,List<String> required,String fingerprint,String branchStage,Map<String,List<String>> branchQuests){
+        public Chapter(String id,String title,String sharedStage,List<String> required,String fingerprint){this(id,title,sharedStage,required,fingerprint,null,Map.of());}
+        public Chapter{required=List.copyOf(required);var copy=new TreeMap<String,List<String>>();branchQuests.forEach((k,v)->copy.put(k,List.copyOf(v)));branchQuests=Collections.unmodifiableMap(copy);}
+        public List<String> forChoice(String choice){var result=new ArrayList<>(required);if(branchStage!=null){var branch=branchQuests.get(choice);if(branch==null)throw new IllegalArgumentException("Unknown chapter branch");result.addAll(branch);}return List.copyOf(result);}
+        public Optional<List<String>> selected(io.github.jesterportfolio.hearth.persistence.StoryStore.Snapshot shared){if(shared==null||!shared.completed().contains(sharedStage))return Optional.empty();if(branchStage==null)return Optional.of(required);var b=shared.branches().get(branchStage);return b==null||!branchQuests.containsKey(b.choice())?Optional.empty():Optional.of(forChoice(b.choice()));}
+    }
     public static final Rule DEFAULT=new Rule(Restart.KEEP,Set.of(),List.of(),0,null);
     public QuestRules{rules=Map.copyOf(rules);chapters=Map.copyOf(chapters);}
     public static QuestRules empty(){return new QuestRules(Map.of(),Map.of());}
@@ -25,12 +31,25 @@ public record QuestRules(Map<String,Rule> rules,Map<String,Chapter> chapters){
             var checkpoints=new ArrayList<Integer>();for(Object value:list(r,"checkpoints")){int i=integer(value,0,catalog.quest(id).goals().size()-1);if(!checkpoints.isEmpty()&&i<=checkpoints.getLast())throw new IllegalArgumentException("Unordered checkpoints");checkpoints.add(i);}
             if(mode==Restart.CHECKPOINT&&checkpoints.isEmpty()||mode!=Restart.CHECKPOINT&&!checkpoints.isEmpty())throw new IllegalArgumentException("Invalid checkpoint policy");
             Reward reward=null;if(r.containsKey("reward")){var items=new ArrayList<Item>();for(var item:rows(map(r.get("reward")),"items")){String material=text(item,"material");if(!material.matches("[A-Z][A-Z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid reward material");items.add(new Item(material,integer(item.get("amount"),1,2304)));}if(items.isEmpty()||items.size()>16)throw new IllegalArgumentException("Invalid reward items");reward=new Reward(items,hash(items.toString()));}
-            if(rules.putIfAbsent(id,new Rule(mode,failures,checkpoints,timeout,reward))!=null)throw new IllegalArgumentException("Duplicate quest rules");
+            if(rules.putIfAbsent(id,new Rule(mode,failures,checkpoints,timeout,reward,r.containsKey("requires-branch")?gate(map(r.get("requires-branch")),story):null))!=null)throw new IllegalArgumentException("Duplicate quest rules");
         }
         var chapters=new LinkedHashMap<String,Chapter>();var assigned=new HashSet<String>();
-        for(var r:rows(root,"chapters")){String id=id(r,"id"),stage=id(r,"shared-stage");if(story==null||!story.stages().containsKey(stage))throw new IllegalArgumentException("Unknown chapter shared stage");var required=new ArrayList<String>();for(Object v:list(r,"required-quests")){if(!(v instanceof String q)||!catalog.questIds().contains(q)||!assigned.add(q))throw new IllegalArgumentException("Invalid chapter required quest");required.add(q);}if(required.isEmpty())throw new IllegalArgumentException("Empty chapter");var chapter=new Chapter(id,text(r,"title"),stage,required,hash(stage+required));if(chapters.putIfAbsent(id,chapter)!=null)throw new IllegalArgumentException("Duplicate chapter");}
+        for(var r:rows(root,"chapters")){
+            String id=id(r,"id"),stage=id(r,"shared-stage");if(story==null||!story.stages().containsKey(stage))throw new IllegalArgumentException("Unknown chapter shared stage");
+            var required=questList(list(r,"required-quests"),catalog,assigned);for(String q:required)if(rules.getOrDefault(q,DEFAULT).branch()!=null)throw new IllegalArgumentException("Branch quest must be assigned to branch list");String branchStage=null;var branches=new TreeMap<String,List<String>>();
+            if(r.containsKey("branch-stage")||r.containsKey("branch-quests")){
+                branchStage=id(r,"branch-stage");var definition=story.stages().get(branchStage);if(definition==null||definition.choices().isEmpty())throw new IllegalArgumentException("Unknown chapter branch stage");
+                var raw=map(r.get("branch-quests"));var choices=new HashSet<String>();definition.choices().forEach(c->choices.add(c.id()));if(!raw.keySet().equals(choices))throw new IllegalArgumentException("Incomplete chapter branches");
+                for(var choice:choices){if(!(raw.get(choice) instanceof List<?> list))throw new IllegalArgumentException("Invalid chapter branch quests");var ids=questList(list,catalog,assigned);branches.put(choice,ids);
+                    for(String quest:ids){var old=rules.getOrDefault(quest,DEFAULT);var bound=new BranchGate(branchStage,choice);if(old.branch()!=null&&!old.branch().equals(bound))throw new IllegalArgumentException("Conflicting quest branch");rules.put(quest,new Rule(old.restart(),old.failures(),old.checkpoints(),old.timeoutMillis(),old.reward(),bound));}}
+            }
+            if(required.isEmpty()&&branches.values().stream().allMatch(List::isEmpty))throw new IllegalArgumentException("Empty chapter");
+            var chapter=new Chapter(id,text(r,"title"),stage,required,hash(stage+required+(branchStage==null?"":branchStage+branches)),branchStage,branches);if(chapters.putIfAbsent(id,chapter)!=null)throw new IllegalArgumentException("Duplicate chapter");
+        }
         return new QuestRules(rules,chapters);
     }
+    private static List<String> questList(List<?> values,QuestCatalog catalog,Set<String> assigned){var result=new ArrayList<String>();for(Object v:values){if(!(v instanceof String q)||!catalog.questIds().contains(q)||!assigned.add(q))throw new IllegalArgumentException("Invalid chapter required quest");result.add(q);}return List.copyOf(result);}
+    private static BranchGate gate(Map<?,?> r,StoryContent story){String stage=id(r,"stage"),choice=id(r,"choice");if(story==null||!story.stages().containsKey(stage)||story.stage(stage).choices().stream().noneMatch(c->c.id().equals(choice)))throw new IllegalArgumentException("Unknown quest branch gate");return new BranchGate(stage,choice);}
     private static String hash(String value){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}
     private static int integer(Object value,int min,int max){if(!(value instanceof Number n)||n.doubleValue()!=n.intValue()||n.intValue()<min||n.intValue()>max)throw new IllegalArgumentException("Invalid quest rule number");return n.intValue();}
     private static Map<?,?> map(Object v){if(!(v instanceof Map<?,?> m))throw new IllegalArgumentException("Expected rules mapping");return m;}
