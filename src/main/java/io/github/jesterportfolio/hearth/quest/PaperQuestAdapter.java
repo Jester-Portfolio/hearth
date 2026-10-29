@@ -9,7 +9,7 @@ import com.sk89q.worldguard.protection.flags.Flags;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import io.github.jesterportfolio.hearth.persistence.QuestStore;
 import java.util.*;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -47,6 +47,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){playthroughEnabled=true;ui.playthrough(content,shared);}
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
+        for(var c:catalog.all())for(var goal:c.goals())if(goal.interaction()!=null&&goal.interaction().startsWith("block:")){var material=Material.matchMaterial(goal.interaction().split(":")[4]);if(material==null||!material.isBlock()||material.isAir())throw new IllegalArgumentException("Unknown objective block material");}
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         ui.npcDialogue(this::openNpcFromQuest);
@@ -157,7 +158,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(session==null || !talkAllowed(p,npc,entity))return;
         if(story!=null&&!story.access().content(session.context().storyRunId(),p.getX(),p.getY(),p.getZ()))return;
         var tickets=dialogues.options(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc);
-        journal.interactPlace(session.context(),session,()->players.current(p)==session,"npc:"+npc,p.getX(),p.getY(),p.getZ())
+        interactObjectives(p,"npc:"+npc,()->talkAllowed(p,npc,entity)).thenComposeAsync(v->journal.interactPlace(session.context(),session,()->players.current(p)==session,"npc:"+npc,p.getX(),p.getY(),p.getZ()),owner)
             .handleAsync((v,error)->{if(error!=null)plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;},owner)
             .thenComposeAsync(v->{if(tickets.stream().anyMatch(t->!current(p,session,t)))throw new IllegalStateException("STALE_DIALOGUE");return quests.list(session.context(),session,()->players.current(p)==session);},owner).whenCompleteAsync((rows,error)->{
             if(tickets.stream().anyMatch(t->!current(p,session,t)))return;
@@ -281,7 +282,23 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(e.getHand()!=EquipmentSlot.HAND || e.getAction()!=org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK || e.getClickedBlock()==null)return;
         var p=e.getPlayer();var session=players.current(p);var block=e.getClickedBlock();
         if(session==null || !worldIds.contains(p.getWorld().getUID()) || p.getLocation().distanceSquared(block.getLocation())>36)return;
-        journal.interactPlace(session.context(),session,()->players.current(p)==session,"block:"+block.getX()+":"+block.getY()+":"+block.getZ()+":"+block.getType().name(),p.getX(),p.getY(),p.getZ()).exceptionally(error->{plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;});
+        String reference="block:"+block.getX()+":"+block.getY()+":"+block.getZ()+":"+block.getType().name();UUID world=block.getWorld().getUID();
+        interactObjectives(p,reference,()->p.getWorld().getUID().equals(world)&&p.getLocation().distanceSquared(block.getLocation())<=36&&reference.endsWith(":"+block.getType().name())&&blockAllowed(p,block)).thenComposeAsync(v->journal.interactPlace(session.context(),session,()->players.current(p)==session,reference,p.getX(),p.getY(),p.getZ()),owner).exceptionally(error->{plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;});
+    }
+    private boolean blockAllowed(Player p,org.bukkit.block.Block block){
+        var local=com.sk89q.worldguard.bukkit.WorldGuardPlugin.inst().wrapPlayer(p);var platform=WorldGuard.getInstance().getPlatform();
+        return platform.getSessionManager().hasBypass(local,BukkitAdapter.adapt(p.getWorld()))||platform.getRegionContainer().createQuery().testState(BukkitAdapter.adapt(block.getLocation()),local,Flags.INTERACT);
+    }
+    private CompletionStage<Void> interactObjectives(Player p,String reference,java.util.function.BooleanSupplier permitted){
+        var session=players.current(p);if(session==null)return CompletableFuture.completedFuture(null);CompletionStage<Void> work=CompletableFuture.completedFuture(null);
+        for(var c:catalog.all())if(c.goals().stream().anyMatch(g->reference.equals(g.interaction()))&&journal.questAllowed(session.context(),c.id()))work=work.thenComposeAsync(v->{
+            if(players.current(p)!=session||!permitted.getAsBoolean())throw new IllegalStateException("STALE_INTERACTION");
+            return quests.open(session.context(),c.id(),session,()->players.current(p)==session).thenComposeAsync(q->{
+                if(!permitted.getAsBoolean()||!journal.questAllowed(session.context(),c.id()))throw new IllegalStateException("STALE_INTERACTION");
+                var saved=quests.requireDialogue(q);if(saved.phase()!=QuestStore.Phase.ACTIVE||!reference.equals(c.goal(saved).interaction()))return CompletableFuture.completedFuture(null);
+                return quests.interact(q,c,reference).thenAcceptAsync(row->{if(players.current(p)==session&&permitted.getAsBoolean())p.sendMessage(Component.text(c.guidance(row)));},owner);
+            },owner);
+        },owner);return work;
     }
     private void unavailable(Player p){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다."));plugin.getLogger().info("HEARTH_QUEST_REQUEST_UNAVAILABLE");}
     private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}

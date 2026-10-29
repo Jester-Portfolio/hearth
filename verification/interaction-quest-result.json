@@ -1,0 +1,88 @@
+{
+  "outcome": "PASS",
+  "failure": null,
+  "workspace": "/tmp/hearth-s4-11.9tuj9x_5",
+  "duration_seconds": 48.34,
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "cleanup_errors": [],
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "24429812f262bbb8eb3c01191b896681f51dafdab425cdd4c73a86c3fc889384",
+  "installed_plugin_sha256": "24429812f262bbb8eb3c01191b896681f51dafdab425cdd4c73a86c3fc889384",
+  "session_checks": [
+    "fixture_prepared_no_login_provisioning",
+    "no_apply_or_admission_before_prepare",
+    "all_sessions_active_after_move",
+    "course_quest_completed_survey_marker",
+    "multi_rejected_QUEST_GOAL",
+    "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_contact_route_ACTIVE_r1",
+    "interaction_quest_first_target_saved",
+    "fixture_prepared_no_login_provisioning",
+    "no_apply_or_admission_before_prepare",
+    "all_sessions_active_after_move",
+    "interaction_lever_preserved_new_JVM",
+    "interaction_quest_index_restored",
+    "multi_rejected_QUEST_INTERACTION",
+    "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_contact_route_COMPLETED_r4",
+    "quest_row_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_contact_route_NOT_ACCEPTED_r-1",
+    "quest_row_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000001_contact_route_NOT_ACCEPTED_r-1"
+  ],
+  "player_actions_verdict": "NOT_RUN",
+  "not_executed": [
+    "실제 인증 플레이어/로그인·텔레포트",
+    "PostgreSQL 프로세스 재시작",
+    "실제 파일시스템 저장 장애·강제 종료 복구",
+    "TPS/MSPT·장기 부하·메모리 누수",
+    "운영 배포·경제 realm"
+  ],
+  "unit_tests": {
+    "tests": 34,
+    "failures": 0,
+    "errors": 0,
+    "classes": [
+      "InteractionQuestTest",
+      "QuestCatalogTest",
+      "QuestBatchTest",
+      "PersonalQuestTest",
+      "PlaythroughTest"
+    ]
+  },
+  "processes": {
+    "database": {
+      "exit_code": 0,
+      "ready_seconds": null,
+      "duration_seconds": 47.641,
+      "shutdown_seconds": 0.208,
+      "max_sampled_rss_kib": 219208,
+      "observed_cpu_seconds": 2.3,
+      "min_sampled_host_available_kib": 11983748
+    },
+    "paper-prepare": {
+      "exit_code": 0,
+      "ready_seconds": 13.379,
+      "duration_seconds": 28.865,
+      "shutdown_seconds": 3.639,
+      "max_sampled_rss_kib": 1028160,
+      "observed_cpu_seconds": 59.6,
+      "min_sampled_host_available_kib": 11983748
+    },
+    "paper-resume": {
+      "exit_code": 0,
+      "ready_seconds": 8.877,
+      "duration_seconds": 15.74,
+      "shutdown_seconds": 3.516,
+      "max_sampled_rss_kib": 942936,
+      "observed_cpu_seconds": 30.6,
+      "min_sampled_host_available_kib": 12041112
+    }
+  },
+  "scope": "서버 내부 퀘스트 경계와 실제 Paper 월드·PostgreSQL의 두 JVM 복원. 실제 NPC/블록 클릭은 미실행."
+}

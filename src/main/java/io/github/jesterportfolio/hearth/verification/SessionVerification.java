@@ -205,12 +205,14 @@ public final class SessionVerification implements AutoCloseable {
             if(java.nio.file.Files.isSymbolicLink(file))throw new IllegalStateException("Course metadata link refused");
             if(java.nio.file.Files.exists(file)){
                 var saved=new Properties();try(var in=java.nio.file.Files.newInputStream(file)){saved.load(in);}
-                if(!"1".equals(saved.getProperty("version"))||!run.toString().equals(saved.getProperty("run"))||!world.getUID().toString().equals(saved.getProperty("world")))throw new IllegalStateException("Course metadata mismatch");
+                if(!Set.of("1","2").contains(saved.getProperty("version"))||!run.toString().equals(saved.getProperty("run"))||!world.getUID().toString().equals(saved.getProperty("world")))throw new IllegalStateException("Course metadata mismatch");
             }else{
+                var target=world.getBlockAt(7,64,7);if(!target.getType().isAir())throw new IllegalStateException("Existing interaction fixture conflict");
                 for(int x=0;x<=40;x++)for(int z=0;z<=40;z++){var type=world.getBlockAt(x,63,z).getType();if(!type.isAir()&&type!=Material.STONE)throw new IllegalStateException("Existing course floor conflict; preserve original");}
                 for(int x=0;x<=40;x++)for(int z=0;z<=40;z++)if(world.getBlockAt(x,63,z).getType().isAir())world.getBlockAt(x,63,z).setType(Material.STONE,false);
+                var lever=(org.bukkit.block.data.type.Switch)Material.LEVER.createBlockData();lever.setAttachedFace(org.bukkit.block.data.FaceAttachable.AttachedFace.FLOOR);target.setBlockData(lever,false);
                 world.getWorldBorder().setCenter(20,20);world.getWorldBorder().setSize(40);
-                java.nio.file.Files.writeString(file,"version=1\nrun="+run+"\nworld="+world.getUID()+"\n",java.nio.file.StandardOpenOption.CREATE_NEW);
+                java.nio.file.Files.writeString(file,"version=2\nrun="+run+"\nworld="+world.getUID()+"\n",java.nio.file.StandardOpenOption.CREATE_NEW);
             }
             preparedCourses.add(world.getUID());
         }catch(java.io.IOException failure){throw new IllegalStateException("Course preparation failed; preserve data",failure);}
@@ -246,6 +248,8 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "interaction-quest-start" -> interactionQuestStart();
+        case "interaction-quest-restored" -> interactionQuestRestore();
         case "npc-pages" -> npcPages();
         case "location-play" -> locationPlay();
         case "playthrough-run" -> playthroughRun();
@@ -545,6 +549,18 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> interactionQuestStart(){return openAll().thenRun(()->{prepareCourse(a);prepareCourse(b);questAdapter.ensure(Bukkit.getWorld(worlds.get(a).mapping().physicalId()));})
+        .thenCompose(v->finishCourseQuest(a1,s1,"survey_marker"))
+        .thenCompose(v->quests.open(a1,"contact_route",s1,()->true)).thenCompose(q->{qa=q;return quests.accept(q,catalog.quest("contact_route"));})
+        .thenCompose(v->expectQuestCode(quests.reach(qa,catalog.quest("contact_route"),3.5,64,5.5),"QUEST_GOAL"))
+        .thenCompose(v->quests.interact(qa,catalog.quest("contact_route"),"npc:survey_guide"))
+        .thenCompose(v->questRead(a1,"contact_route",QuestStore.Phase.ACTIVE,1)).thenRun(()->{
+            var world=Bukkit.getWorld(worlds.get(a).mapping().physicalId());var lever=(org.bukkit.block.data.type.Switch)world.getBlockAt(7,64,7).getBlockData();lever.setPowered(true);world.getBlockAt(7,64,7).setBlockData(lever,false);check(true,"interaction_quest_first_target_saved");});}
+    private CompletionStage<Void> interactionQuestRestore(){return openAll().thenRun(()->{prepareCourse(a);prepareCourse(b);check(((org.bukkit.block.data.type.Switch)Bukkit.getWorld(worlds.get(a).mapping().physicalId()).getBlockAt(7,64,7).getBlockData()).isPowered(),"interaction_lever_preserved_new_JVM");})
+        .thenCompose(v->quests.open(a1,"contact_route",s1,()->true)).thenCompose(q->{qa=q;check(q.saved().objectiveIndex()==1&&q.saved().revision()==1,"interaction_quest_index_restored");return expectQuestCode(quests.interact(q,catalog.quest("contact_route"),"npc:survey_guide"),"QUEST_INTERACTION");})
+        .thenCompose(v->quests.interact(qa,catalog.quest("contact_route"),"block:7:64:7:LEVER"))
+        .thenCompose(v->quests.reach(qa,catalog.quest("contact_route"),13,64,25)).thenCompose(v->quests.advance(qa,QuestStore.Phase.COMPLETED))
+        .thenCompose(v->questRead(a1,"contact_route",QuestStore.Phase.COMPLETED,4)).thenCompose(v->questRead(a2,"contact_route",QuestStore.Phase.NOT_ACCEPTED,-1)).thenCompose(v->questRead(ctx(b,1),"contact_route",QuestStore.Phase.NOT_ACCEPTED,-1));}
     private CompletionStage<Void> npcPages(){return openAll().thenCompose(v->mainResult(store.readJournal(a1))).thenCompose(before->{
         var d=new QuestDialogue(catalog);World w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());questAdapter.ensure(w);var entity=w.getEntitiesByClass(org.bukkit.entity.Villager.class).iterator().next();
         var options=d.options(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide");var page=d.beginPages(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide").orElseThrow();
@@ -570,7 +586,7 @@ public final class SessionVerification implements AutoCloseable {
         return quests.open(ctx,id,token,()->true).thenCompose(q->{session[0]=q;if(c.startMode()==QuestContent.StartMode.NPC)return quests.accept(q,c).thenAccept(x->{});
             var area=c.startArea();return quests.enter(ctx,c,token,()->true,0,64,0,(area.minX()+area.maxX())/2,(area.minY()+area.maxY())/2,(area.minZ()+area.maxZ())/2).thenAccept(x->check(x.isPresent(),"course_automatic_start_"+id));
         }).thenCompose(v->{CompletionStage<?> work=CompletableFuture.completedFuture(null);
-            for(var goal:c.goals()){var area=goal.area();work=work.thenCompose(x->quests.reach(session[0],c,(area.minX()+area.maxX())/2,(area.minY()+area.maxY())/2,(area.minZ()+area.maxZ())/2));}
+            for(var goal:c.goals()){var area=goal.area();work=work.thenCompose(x->goal.interaction()==null?quests.reach(session[0],c,(area.minX()+area.maxX())/2,(area.minY()+area.maxY())/2,(area.minZ()+area.maxZ())/2):quests.interact(session[0],c,goal.interaction()));}
             return work.thenCompose(x->session[0].saved().phase()==QuestStore.Phase.REPORT_READY?quests.advance(session[0],QuestStore.Phase.COMPLETED):CompletableFuture.completedFuture(session[0].saved()));
         }).thenAccept(row->check(row.phase()==QuestStore.Phase.COMPLETED,"course_quest_completed_"+id));
     }
@@ -589,7 +605,7 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->sharedStory.cast(a2,s2,()->true,storyVote.id(),"route_one"))
             .thenRun(()->check(Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen()),"course_shared_exploration_unlocked"))
             .thenCompose(v->finishCourseQuest(a1,s1,"route_marker"))
-            .thenCompose(v->finishCourseQuest(a1,s1,"route_followup"))
+            .thenCompose(v->finishCourseQuest(a1,s1,"route_followup")).thenCompose(v->finishCourseQuest(a1,s1,"contact_route"))
             .thenCompose(v->journal.enterPlaces(a1,s1,()->true,0,64,0,21,64,21))
             .thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->courseGuide(a1,s1))
             .thenAccept(guide->{check(guide.complete(),"course_all_guidance_completed");World world=Bukkit.getWorld(worlds.get(a).mapping().physicalId());check(world.getBlockAt(37,63,37).getType()==Material.STONE,"course_far_goal_walkable");world.getBlockAt(10,63,10).setType(Material.BRICKS,false);})

@@ -179,3 +179,20 @@ quests:
       report: '[후속 경로 보고]'
       completed: '후속 경로 조사가 완료되었습니다.'
       failure: '후속 경로 저장 상태를 확인할 수 없습니다.'
+  - id: contact_route
+    title: 공개 시설과 대화 조사
+    npc-id: survey_guide
+    requires-completed: survey_marker
+    completion-mode: report
+    objectives:
+      - {description: 안내원에게 조사 대화 다시 걸기, interaction: 'npc:survey_guide', min-x: 2, max-x: 5, min-y: 64, max-y: 67, min-z: 4, max-z: 7}
+      - {description: 허용 구역의 공개 레버 확인, interaction: 'block:7:64:7:LEVER', min-x: 6, max-x: 8, min-y: 64, max-y: 67, min-z: 6, max-z: 8, location: {kind: EXACT, x: 7, y: 64, z: 7}}
+      - {description: 마지막 공개 방문 지점 조사, min-x: 12, max-x: 14, min-y: 64, max-y: 67, min-z: 24, max-z: 26, location: {kind: EXACT, x: 13, y: 64, z: 25}}
+    text:
+      offer: 방문 조사를 보고한 뒤 대화·레버·방문 조사를 순서대로 진행하세요. 보상과 아이템 소모는 없습니다.
+      accept: '[시설 조사 수락]'
+      active: 공개 시설 조사를 진행합니다.
+      report-ready: 시설 조사를 마쳤습니다. 안내원에게 보고해 주세요.
+      report: '[시설 조사 보고]'
+      completed: 공개 시설 조사를 보고했습니다.
+      failure: 시설 조사 저장 상태를 확인할 수 없습니다.

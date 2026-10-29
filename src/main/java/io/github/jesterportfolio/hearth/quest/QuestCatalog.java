@@ -30,7 +30,7 @@ public final class QuestCatalog {
             var goals=new ArrayList<QuestContent.Goal>();Map<?,?> goal;
             if(quest.containsKey("objectives")){
                 if(quest.containsKey("objective") || !(quest.get("objectives") instanceof List<?> list) || list.isEmpty())throw new IllegalArgumentException("Invalid objectives");
-                for(Object raw:list){var g=map(raw);var bounds=area(g);goals.add(new QuestContent.Goal(string(g,"description"),bounds,g.containsKey("location")?QuestLocation.parse(g.get("location"),bounds):null));}
+                for(Object raw:list){var g=map(raw);var bounds=area(g);goals.add(new QuestContent.Goal(string(g,"description"),bounds,g.containsKey("location")?QuestLocation.parse(g.get("location"),bounds):null,interaction(g,bounds,rawNpcs)));}
                 goal=map(((List<?>)quest.get("objectives")).getFirst());
             }else goal=map(quest.get("objective"));
             var text=map(quest.get("text"));var messages=new HashMap<String,String>();
@@ -45,7 +45,7 @@ public final class QuestCatalog {
             QuestContent.Area startArea=null;
             if(start==QuestContent.StartMode.AUTOMATIC){var area=map(quest.get("start-area"));startArea=area(area);}
             else if(quest.containsKey("start-area"))throw new IllegalArgumentException("NPC start must not define start-area");
-            if(goals.isEmpty())goals.add(new QuestContent.Goal(messages.get("active"),area(goal),goal.containsKey("location")?QuestLocation.parse(goal.get("location"),area(goal)):null));
+            if(goals.isEmpty())goals.add(new QuestContent.Goal(messages.get("active"),area(goal),goal.containsKey("location")?QuestLocation.parse(goal.get("location"),area(goal)):null,interaction(goal,area(goal),rawNpcs)));
             var content=new QuestContent(id,string(quest,"title"),npcId,string(npc,"name"),x,y,z,minX,maxX,minY,maxY,minZ,maxZ,quest.containsKey("completion-mode")?QuestContent.CompletionMode.parse(quest.get("completion-mode")):QuestContent.CompletionMode.REPORT,start,startArea,quest.containsKey("requires-completed")?id(quest,"requires-completed"):null,Map.copyOf(messages),goals);
             if(quests.putIfAbsent(id,content)!=null)throw new IllegalArgumentException("Duplicate quest id");
             npcs.computeIfAbsent(npcId,key->new ArrayList<>()).add(content);
@@ -65,6 +65,12 @@ public final class QuestCatalog {
             if(raw!=null){if(!(raw instanceof List<?> list)||list.isEmpty()||list.size()>16)throw new IllegalArgumentException("Invalid dialogue pages");for(Object item:list){if(!(item instanceof String text)||text.isBlank()||text.length()>600)throw new IllegalArgumentException("Invalid dialogue text");texts.add(text);}}
             pages.put(entry.getKey(),List.copyOf(texts));}
         return new QuestCatalog(quests,npcs,pages);
+    }
+    private static String interaction(Map<?,?> row,QuestContent.Area bounds,Map<String,Map<?,?>> npcs){
+        if(!row.containsKey("interaction"))return null;String value=string(row,"interaction");String[] parts=value.split(":",-1);
+        if(parts.length==2&&parts[0].equals("npc")){var npc=npcs.get(parts[1]);if(npc==null||!bounds.contains(number(npc,"x"),number(npc,"y"),number(npc,"z")))throw new IllegalArgumentException("Invalid objective NPC");return value;}
+        if(parts.length!=5||!parts[0].equals("block")||!parts[4].matches("[A-Z][A-Z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid block objective");
+        try{int x=Integer.parseInt(parts[1]),y=Integer.parseInt(parts[2]),z=Integer.parseInt(parts[3]);if(!bounds.contains(x,y,z)||!value.equals("block:"+x+":"+y+":"+z+":"+parts[4]))throw new IllegalArgumentException("Block objective outside bounds");}catch(NumberFormatException error){throw new IllegalArgumentException("Invalid block objective coordinate");}return value;
     }
     private static QuestContent.Area area(Map<?,?> m){
         var a=new QuestContent.Area(number(m,"min-x"),number(m,"max-x"),number(m,"min-y"),number(m,"max-y"),number(m,"min-z"),number(m,"max-z"));

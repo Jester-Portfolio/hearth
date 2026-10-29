@@ -112,7 +112,7 @@ public final class PersonalQuest {
         check.run();if(closed || !valid.getAsBoolean())return rejected("STALE_QUEST");
         if(Math.floor(fx)==Math.floor(tx) && Math.floor(fy)==Math.floor(ty) && Math.floor(fz)==Math.floor(tz))return CompletableFuture.completedFuture(Optional.empty());
         boolean start=c.startMode()==QuestContent.StartMode.AUTOMATIC && c.startArea().entered(fx,fy,fz,tx,ty,tz);
-        boolean goal=c.goals().stream().anyMatch(g->g.area().contains(tx,ty,tz));
+        boolean goal=c.goals().stream().anyMatch(g->g.interaction()==null&&g.area().contains(tx,ty,tz));
         if(!start && !goal)return CompletableFuture.completedFuture(Optional.empty());
         Key key=new Key(context.storyRunId(),context.playerId(),c.id());
         if(movements.containsKey(key))return CompletableFuture.completedFuture(Optional.empty());
@@ -121,7 +121,7 @@ public final class PersonalQuest {
             require(q);if(q.hold)throw new IllegalStateException("QUEST_HOLD");if(q.busy)return CompletableFuture.completedFuture(Optional.<QuestStore.Saved>empty());
             // 시작과 목표가 겹쳐도 이 진입은 시작만 수행합니다.
             if(start && q.saved.phase()==QuestStore.Phase.NOT_ACCEPTED)return start(q,c,tx,ty,tz).thenApply(Optional::of);
-            return goal && q.saved.phase()==QuestStore.Phase.ACTIVE && c.goal(q.saved).area().contains(tx,ty,tz)?reach(q,c,tx,ty,tz).thenApply(Optional::of):CompletableFuture.completedFuture(Optional.<QuestStore.Saved>empty());
+            return goal && q.saved.phase()==QuestStore.Phase.ACTIVE && c.goal(q.saved).interaction()==null && c.goal(q.saved).area().contains(tx,ty,tz)?reach(q,c,tx,ty,tz).thenApply(Optional::of):CompletableFuture.completedFuture(Optional.<QuestStore.Saved>empty());
         },owner).whenCompleteAsync((saved,error)->{
             movements.remove(key,drain);
             Throwable cause=error;while(cause instanceof CompletionException && cause.getCause()!=null)cause=cause.getCause();
@@ -135,7 +135,13 @@ public final class PersonalQuest {
     public CompletionStage<QuestStore.Saved> reach(Session s,QuestContent content,double x,double y,double z) {
         check.run();
         if(!current(s))return rejected("STALE_QUEST");
-        if(!s.key.quest().equals(content.id()) || s.saved==null || s.saved.phase()!=QuestStore.Phase.ACTIVE || !content.goal(s.saved).area().contains(x,y,z))return rejected("QUEST_GOAL");
+        if(!s.key.quest().equals(content.id()) || s.saved==null || s.saved.phase()!=QuestStore.Phase.ACTIVE || content.goal(s.saved).interaction()!=null || !content.goal(s.saved).area().contains(x,y,z))return rejected("QUEST_GOAL");
+        return finishObjective(s,content);
+    }
+    public CompletionStage<QuestStore.Saved> interact(Session s,QuestContent content,String reference){
+        check.run();if(!current(s))return rejected("STALE_QUEST");if(!s.key.quest().equals(content.id())||s.saved==null||s.saved.phase()!=QuestStore.Phase.ACTIVE||reference==null||!reference.equals(content.goal(s.saved).interaction()))return rejected("QUEST_INTERACTION");return finishObjective(s,content);
+    }
+    private CompletionStage<QuestStore.Saved> finishObjective(Session s,QuestContent content){
         if(s.saved.objectiveIndex()+1<content.goals().size())return advance(s,QuestStore.Phase.ACTIVE,false,s.saved.objectiveIndex()+1);
         boolean automatic=content.completionMode()==QuestContent.CompletionMode.AUTOMATIC;
         return advance(s,automatic?QuestStore.Phase.COMPLETED:QuestStore.Phase.REPORT_READY,automatic);
