@@ -66,6 +66,8 @@ public final class HearthPlugin extends JavaPlugin {
         command.setExecutor((sender, ignored, label, args) -> {
             if (!(sender instanceof ConsoleCommandSender) || verification == null) {
                 sender.sendMessage("Only an explicitly gated isolated verification console can run this command.");
+            } else if (lifecycleVerification!=null&&((args.length==2&&(args[0].equals("combat-player-start")||args[0].equals("combat-player-release")))||(args.length==3&&args[0].equals("combat-player-revive")))&&args[1].matches("[A-Za-z0-9_]{3,16}")) {
+                try{lifecycleVerification.combatPlayer(args[0],args[1],args.length==3?args[2]:null);sender.sendMessage("격리 전투 시험 명령 접수");}catch(RuntimeException e){sender.sendMessage("격리 전투 시험 거부: "+e.getMessage());}
             } else if (args.length == 2 && (args[0].equals("session-fixture") || args[0].equals("session-link-existing")) && lifecycleVerification != null) {
                 try { lifecycleVerification.fixturePlayer(args[1],args[0].equals("session-link-existing")); }
                 catch (RuntimeException e) { sender.sendMessage("격리 fixture 준비 거부: "+e.getMessage()); }

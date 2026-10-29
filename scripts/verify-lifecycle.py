@@ -65,6 +65,8 @@ def permitted_session_command(command):
     # 기존 S4-3의 좁은 콘솔 허용 목록과 좌표 제한을 재사용합니다.
     if s42.permitted_manual_command(command):
         return True
+    if re.fullmatch(r'hearthverify combat-player-(?:start|release) [A-Za-z0-9_]{3,16}',command) or re.fullmatch(r'hearthverify combat-player-revive [A-Za-z0-9_]{3,16} public_rescue',command):
+        return True
     return bool(re.fullmatch(r'hearthverify session-(?:fixture|link-existing|status) [A-Za-z0-9_]{3,16}',command))
 
 def main():
@@ -76,6 +78,7 @@ def main():
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
     parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
+    parser.add_argument('--combat-players', action='store_true', help='전투 Player 적용기 로딩·세션 저장/재접속·제어 포트 회복을 검사합니다')
     parser.add_argument('--combat-state', action='store_true', help='보스 참가/일시정지/관전/부활 제어와 실제 몹 AI를 한 JVM에서 검사합니다')
     parser.add_argument('--field-encounters', action='store_true', help='필드 조우·고정 난이도·진행 격리·정리를 한 JVM에서 검사합니다')
     parser.add_argument('--branch-progression', action='store_true', help='확정 분기·개인 보상/장 화면과 두 JVM 복원을 검사합니다')
@@ -110,6 +113,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.combat_players and (not args.story_batch or any([args.combat_state,args.field_encounters,args.branch_progression,args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.world_effects])):
+        parser.error('--combat-players는 --sessions --quests --story-batch와 단독 실행합니다')
     if args.combat_state and (not args.story_batch or any([args.manual_player,args.field_encounters,args.branch_progression,args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.world_effects])):
         parser.error('--combat-state는 --sessions --quests --story-batch와 단독 실행합니다')
     if args.field_encounters and (not args.story_batch or any([args.manual_player,args.branch_progression,args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.world_effects])):
@@ -142,7 +147,7 @@ def main():
         parser.error('--gameplay-guide는 --story-batch와 함께 사용하며 --world-effects와 혼용하지 않습니다')
     if args.world_effects and not args.story_batch:
         parser.error('--world-effects는 --sessions --quests --story-batch가 필요합니다')
-    if args.story_batch and (not args.quests or not args.sessions or (args.manual_player and not args.playthrough) or any([args.explore_batch,args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
+    if args.story_batch and (not args.quests or not args.sessions or (args.manual_player and not (args.playthrough or args.combat_players)) or any([args.explore_batch,args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
         parser.error('--story-batch는 자동 --sessions --quests 단독 공유 진행 검증 모드입니다')
     if args.explore_batch and (not args.quests or not args.sessions or args.manual_player or any([args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
         parser.error('--explore-batch는 자동 --sessions --quests 단독 탐험 검증 모드에서만 사용합니다')
@@ -200,9 +205,12 @@ def main():
         (plugins/'Hearth/quest-demo.yml').write_text(content.partition(cut)[0])
     idle_seconds=10 if args.manual_player else 1
     (plugins/'Hearth/config.yml').write_text(f"quest-verification-enabled: {str(args.quests).lower()}\n"+'verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
-    if args.combat_state:
+    if args.combat_state or args.combat_players:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('combat-state-verification-enabled: true\n')
+    if args.combat_players:
+        with (plugins/'Hearth/config.yml').open('a') as config:
+            config.write('combat-player-verification-enabled: true\n')
     if args.field_encounters:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('field-encounter-verification-enabled: true\n')
@@ -279,9 +287,11 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.questCompletion=true')
         if args.field_encounters:
             paper.insert(-3,'-Dhearth.verification.field=true')
-        if args.combat_state:
+        if args.combat_state or args.combat_players:
             paper.insert(-3,'-Dhearth.verification.combatState=true')
-        for phase in (['prepare'] if args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
+        if args.combat_players:
+            paper.insert(-3,'-Dhearth.verification.combatPlayers=true')
+        for phase in (['prepare'] if args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
             name='paper-'+phase
             monitor.launch(name,paper,runtime)
@@ -303,7 +313,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.combat_state:
+                        if args.combat_players:
+                            monitor.action(name,'combat-player-state')
+                        elif args.combat_state:
                             monitor.action(name,'combat-state')
                         elif args.field_encounters:
                             monitor.action(name,'field-encounters')
@@ -494,7 +506,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    combat_players_mode=args.combat_players, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

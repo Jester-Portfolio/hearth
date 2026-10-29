@@ -19,6 +19,9 @@ import io.github.jesterportfolio.hearth.combat.CombatContent.Effect;
 
 /** 실제 몹 AI/타이머를 확인하는 격리 제어 어댑터. 인증 플레이어 상태 적용기는 별도 포트입니다. */
 public final class PaperCombatTrials implements Listener,AutoCloseable {
+    public interface Access {default boolean target(UUID run,Entity target){return false;}default boolean hit(UUID run,Entity source,Entity target){return false;}}
+    private Access access=new Access(){};
+    public void access(Access access){main();this.access=Objects.requireNonNull(access);}
     private record Trial(WorldLifecycle world,long generation,Zombie mob,CombatAttempt attempt) {}
     private final Map<UUID,Trial> trials=new HashMap<>();private final Set<UUID> retired=new HashSet<>();private final JavaPlugin plugin;private final Executor owner;private final LongSupplier clock;private final CombatContent content;private final BukkitTask timer;private boolean closed;
     public PaperCombatTrials(JavaPlugin plugin,CombatContent content,Executor owner,LongSupplier clock){
@@ -43,9 +46,9 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
     }
     public LivingEntity mob(UUID run){main();return Objects.requireNonNull(trials.get(run)).mob();}
     private void poll(){main();if(closed)return;for(var t:List.copyOf(trials.values()))try{if(t.world().generation()!=t.generation()||Bukkit.getWorld(t.world().mapping().physicalId())==null)t.attempt().invalidate();else t.attempt().poll();}catch(RuntimeException e){t.attempt().invalidate();plugin.getLogger().warning("HEARTH_COMBAT_HOLD "+e.getClass().getSimpleName());}}
-    @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void target(EntityTargetLivingEntityEvent e){if(trials.values().stream().anyMatch(t->t.mob()==e.getEntity()))e.setCancelled(true);}
-    @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void damage(EntityDamageEvent e){if(trials.values().stream().anyMatch(t->t.mob()==e.getEntity()))e.setCancelled(true);}
-    @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void attack(EntityDamageByEntityEvent e){if(trials.values().stream().anyMatch(t->t.mob()==e.getDamager()))e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void target(EntityTargetLivingEntityEvent e){for(var entry:trials.entrySet())if(entry.getValue().mob()==e.getEntity()&&e.getTarget()!=null&&!access.target(entry.getKey(),e.getTarget()))e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void damage(EntityDamageEvent e){for(var entry:trials.entrySet())if(entry.getValue().mob()==e.getEntity()&&(!(e instanceof EntityDamageByEntityEvent hit)||!access.hit(entry.getKey(),hit.getDamager(),e.getEntity())))e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void attack(EntityDamageByEntityEvent e){for(var entry:trials.entrySet())if(entry.getValue().mob()==e.getDamager()&&!access.hit(entry.getKey(),e.getDamager(),e.getEntity()))e.setCancelled(true);}
     @EventHandler public void died(EntityDeathEvent e){for(var t:trials.values())if(t.mob()==e.getEntity()){e.getDrops().clear();e.setDroppedExp(0);t.attempt().victory();}}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void blocks(EntityChangeBlockEvent e){if(trials.values().stream().anyMatch(t->t.mob()==e.getEntity()))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){for(var entry:List.copyOf(trials.entrySet()))if(entry.getValue().world().mapping().physicalId().equals(e.getWorld().getUID()))stop(entry.getKey());}

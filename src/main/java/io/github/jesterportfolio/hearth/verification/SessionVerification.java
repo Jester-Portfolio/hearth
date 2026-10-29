@@ -86,6 +86,7 @@ public final class SessionVerification implements AutoCloseable {
     private QuestRules questRules=QuestRules.empty();private QuestRewards questRewards;
     private PaperFieldEncounters fieldEncounters;
     private PaperCombatTrials combatTrials;private CombatContent combatContent;private final java.util.concurrent.atomic.AtomicLong combatClock=new java.util.concurrent.atomic.AtomicLong();
+    private PaperCombatPlayers combatPlayers;
     private Object listToken=new Object();
     private CompletionStage<Map<String,QuestStore.Saved>> pendingList;
     private CompletionStage<Void> listBarrier;
@@ -108,7 +109,7 @@ public final class SessionVerification implements AutoCloseable {
         if(plugin.getConfig().getBoolean("combat-state-verification-enabled")){
             var file=new java.io.File(plugin.getDataFolder(),"combat-demo.yml");if(!file.exists())plugin.saveResource("combat-demo.yml",false);
             var yaml=YamlConfiguration.loadConfiguration(file);var definition=new HashMap<String,Object>(yaml.getValues(false));var section=Objects.requireNonNull(yaml.getConfigurationSection("revival"),"Missing combat revival");var revival=new HashMap<String,Object>(section.getValues(false));if(section.isConfigurationSection("fixed"))revival.put("fixed",Objects.requireNonNull(section.getConfigurationSection("fixed")).getValues(false));definition.put("revival",revival);
-            combatContent=CombatContent.parse(definition);combatTrials=new PaperCombatTrials(plugin,combatContent,owner,combatClock::get);
+            combatContent=CombatContent.parse(definition);combatTrials=new PaperCombatTrials(plugin,combatContent,owner,plugin.getConfig().getBoolean("combat-player-verification-enabled")?()->System.nanoTime()/1_000_000:combatClock::get);
         }
         if(plugin.getConfig().getBoolean("field-encounter-verification-enabled")){
             var file=new java.io.File(plugin.getDataFolder(),"field-demo.yml");if(!file.exists())plugin.saveResource("field-demo.yml",false);
@@ -158,7 +159,9 @@ public final class SessionVerification implements AutoCloseable {
                 sharedStory.effects(blockEffect);
             }
         }
+        if(plugin.getConfig().getBoolean("combat-player-verification-enabled")){if(combatTrials==null)throw new IllegalStateException("Combat trial required");combatPlayers=new PaperCombatPlayers(plugin,adapter,combatTrials,worlds,owner,ctx->log("COMBAT_PLAYER_DEATH"));}
     }
+    public void combatPlayer(String operation,String profile,String condition){if(combatPlayers==null)throw new IllegalStateException("Combat player mode disabled");switch(operation){case "combat-player-start"->combatPlayers.startOnline(profile);case "combat-player-release"->combatPlayers.release(profile);case "combat-player-revive"->combatPlayers.condition(profile,condition).whenCompleteAsync((v,error)->log("COMBAT_REVIVE "+(error==null?"APPLIED":"HOLD_OR_REJECTED")),owner);default->throw new IllegalArgumentException("Unknown combat fixture operation");}}
     private List<CommunityBoundary.Ref> storyMembers(ServerProgressAccess.Context ctx){var refs=adapter.community(ctx);if(storyTestRoster==null)return refs;return refs.stream().map(ref->new CommunityBoundary.Ref(ref.run(),ref.player(),ref.name(),ctx.storyRunId().equals(a)?storyTestRoster.containsKey(ref.player()):ref.player().equals(b3.playerId()))).toList();}
     private static QuestCatalog loadCatalog(JavaPlugin plugin) {
         java.io.File file=new java.io.File(plugin.getDataFolder(),"quest-demo.yml");
@@ -267,6 +270,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "combat-player-state" -> combatPlayerState();
         case "combat-state" -> combatState();
         case "field-encounters" -> fieldEncounters();
         case "branch-progression-start" -> branchProgressionStart();
@@ -578,6 +582,37 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> prepareCombatChunks(){CompletionStage<Void> ready=CompletableFuture.completedFuture(null);for(UUID run:List.of(a,b))ready=ready.thenCompose(done->{var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));return mainResult(world.getChunkAtAsync(0,0)).thenAccept(chunk->{world.addPluginChunkTicket(0,0,plugin);check(world.isChunkLoaded(0,0),"combat_controlled_start_chunk_prepared");});});return ready;}
+    private final class CombatBody implements CombatPlayers.PlayerPort {
+        final PlayerSessions.Session session;CombatContent.Pose position;boolean spectator,failRestore;UUID camera;double health=1;int applications;
+        CombatBody(PlayerSessions.Session session,CombatContent.Pose position){this.session=session;this.position=position;}
+        public ServerProgressAccess.Context context(){return session.context();}public Object session(){return session;}public CombatContent.Pose position(){return position;}public boolean current(){return coordinator.playable(session);}
+        public void spectator(UUID target){spectator=true;camera=target;}public void clearCamera(){camera=null;}public void cleanup(){spectator=false;camera=null;}
+        public boolean safe(CombatContent.Pose p){return p.world().equals(position.world());}
+        public CompletionStage<Boolean> restore(CombatContent.Pose p,double health,List<CombatContent.Effect> effects,BooleanSupplier valid){applications++;var result=new CompletableFuture<Boolean>();Bukkit.getScheduler().runTaskLater(plugin,()->{if(failRestore||!valid.getAsBoolean()){result.complete(false);return;}this.position=p;this.health=health;spectator=false;result.complete(true);},1);return result;}
+    }
+    private CompletionStage<Void> combatPlayerState(){
+        var bridges=new CombatPlayers[2];var actors=new CombatBody[3];final CombatAttempt[] attempts=new CombatAttempt[2];final UUID request=UUID.randomUUID();final CompletionStage<?>[] pending=new CompletionStage<?>[2];
+        return openAll().thenCompose(v->prepareCombatChunks()).thenRun(()->{
+            check(combatPlayers!=null,"combat_real_Player_adapter_enabled_without_fake_Player");
+            for(int i=0;i<2;i++){UUID run=i==0?a:b;var w=worlds.get(run);bridges[i]=new CombatPlayers(run,w.mapping().physicalId(),w.generation(),w::generation,owner,SessionVerification::main);}
+            var poseA=new CombatContent.Pose(worlds.get(a).mapping().physicalId(),3,64,3,31,12);var poseB=new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0);actors[0]=new CombatBody(s1,poseA);actors[1]=new CombatBody(s2,poseA);actors[2]=new CombatBody(s3,poseB);
+            attempts[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,poseA),new CombatAttempt.Entrant(a2,s2,poseA)),bridges[0]);bridges[0].attach(attempts[0],List.of(actors[0],actors[1]));
+            attempts[1]=combatTrials.start(worlds.get(b),List.of(new CombatAttempt.Entrant(b3,s3,poseB)),bridges[1]);bridges[1].attach(attempts[1],List.of(actors[2]));
+            one.count(31);coordinator.refresh(s1);bridges[0].died(actors[0]);check(!bridges[0].actions(actors[0])&&bridges[0].movement(actors[0]),"combat_player_death_blocks_actions_before_projection");bridges[0].project();check(actors[0].spectator&&actors[0].camera.equals(a2.playerId()),"combat_controlled_spectator_camera_and_inventory31_preserved");
+            actors[0].position=new CombatContent.Pose(poseA.world(),7.125,-24,8.25,92,-13);bridges[0].leave(actors[0]);check(!actors[0].spectator&&!bridges[0].current(actors[0]),"combat_player_quit_cleans_old_camera_and_binding");
+        }).thenCompose(v->mainResult(coordinator.disconnect(s1))).thenCompose(v->verify(a1,31,1))
+        .thenCompose(v->{one=new Controlled();s1=connect(a1,one);return mainResult(s1.ready());}).thenRun(()->{
+            var exact=bridges[0].returnPosition(a1).orElseThrow();check(exact.y()==-24&&exact.yaw()==92&&exact.pitch()==-13,"combat_return_destination_uses_exact_prior_pose_without_correction");actors[0]=new CombatBody(s1,exact);bridges[0].rejoin(actors[0]);check(actors[0].spectator&&!bridges[0].actions(actors[0])&&attempts[0].snapshot().difficultyPlayers()==2,"combat_dead_new_session_stays_spectator_and_roster_fixed");
+            pending[0]=attempts[0].revive(a1,s1,request,"public_rescue");var barrier=bridges[0].barrier();check(!barrier.toCompletableFuture().isDone(),"combat_player_barrier_waits_for_restore_and_counter_confirmation");pending[1]=barrier;
+        }).thenCompose(v->mainResult(pending[0])).thenCompose(v->mainResult(pending[1])).thenRun(()->{
+            bridges[0].project();check(bridges[0].actions(actors[0])&&!actors[0].spectator&&actors[0].health==0.5&&attempts[0].snapshot().sharedUsed()==1,"combat_controlled_restore_confirmed_before_play_and_budget_commit");check(attempts[0].revive(a1,s1,request,"public_rescue").toCompletableFuture().isDone()&&actors[0].applications==1,"combat_player_duplicate_request_does_not_reapply_restore");
+            bridges[1].died(actors[2]);actors[2].failRestore=true;pending[0]=attempts[1].revive(b3,s3,UUID.randomUUID(),"public_rescue");
+        }).thenCompose(v->until(()->pending[0].toCompletableFuture().isDone())).thenRun(()->{
+            check(pending[0].toCompletableFuture().isCompletedExceptionally()&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD&&attempts[1].snapshot().sharedUsed()==0&&bridges[0].actions(actors[0]),"combat_player_failed_move_HOLD_and_A_independence");
+            bridges[0].close();bridges[1].close();combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
+        }).thenCompose(v->verify(a1,31,1)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
+    }
     private static final class CombatActors implements CombatAttempt.Port {
         final Map<UUID,UUID> cameras=new HashMap<>();final CompletableFuture<Boolean> applying=new CompletableFuture<>();java.util.function.BooleanSupplier current;CombatContent.Pose appliedPosition;double appliedHealth;List<CombatContent.Effect> appliedEffects;
         public void freeze(boolean pause){}
@@ -587,9 +622,7 @@ public final class SessionVerification implements AutoCloseable {
     }
     private CompletionStage<Void> combatState(){
         var alpha=new CombatActors();var beta=new CombatActors();final CombatAttempt[] trials=new CombatAttempt[2];final Object fresh=new Object();final CompletionStage<?>[] pending=new CompletionStage<?>[2];final UUID request=UUID.randomUUID();
-        return openAll().thenCompose(v->{
-            CompletionStage<Void> ready=CompletableFuture.completedFuture(null);for(UUID run:List.of(a,b))ready=ready.thenCompose(done->{var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));return mainResult(world.getChunkAtAsync(0,0)).thenAccept(chunk->{world.addPluginChunkTicket(0,0,plugin);check(world.isChunkLoaded(0,0),"combat_controlled_start_chunk_prepared");});});return ready;
-        }).thenRun(()->{
+        return openAll().thenCompose(v->prepareCombatChunks()).thenRun(()->{
             var poseA=new CombatContent.Pose(worlds.get(a).mapping().physicalId(),3,64,3,21,14);var poseB=new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0);
             trials[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,poseA),new CombatAttempt.Entrant(a2,s2,poseA)),alpha);
             trials[1]=combatTrials.start(worlds.get(b),List.of(new CombatAttempt.Entrant(b3,s3,poseB)),beta);var first=trials[0];
@@ -1524,13 +1557,13 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->rejectQuest(probe.barrier(a))))
             .thenCompose(v->matrix());
     }
-    public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)).thenCompose(v2->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run)),owner);}
+    public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run).thenComposeAsync(v->combatPlayers==null?CompletableFuture.completedFuture(null):combatPlayers.barrier(run),owner).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)).thenCompose(v2->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run)),owner);}
     public boolean canUnload(UUID run){return coordinator.canUnload(run) && (quests==null || quests.settled(run) && journal.settled(run) && (sharedStory==null||sharedStory.settled(run)));}
     public CompletionStage<Void> restoreStoryWorld(UUID run){if(blockEffect==null)return CompletableFuture.completedFuture(null);blockEffect.prepared(run);var context=ctx(run,1);return sharedStory.load(context).thenComposeAsync(s->sharedStory.reconcile(context),owner).thenAccept(ok->{});}
     public void releaseQuests(UUID run){if(quests!=null)quests.release(run);if(blockEffect!=null){blockEffect.unloaded(run);sharedStory.worldUnloaded(run);}}
     public CompletionStage<Void> shutdown(){
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
-        if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
+        if(combatPlayers!=null)combatPlayers.close();if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
         CompletionStage<Void> other=s3==null ? CompletableFuture.completedFuture(null) : coordinator.disconnect(s3);
         return mainResult(other).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
             if(error!=null && !(expectedHold && "23514".equals(s1.error()) && "MOVE_FAILED".equals(s2.error())
@@ -1564,5 +1597,5 @@ public final class SessionVerification implements AutoCloseable {
         mainResult(store.readInventory(context)).thenAccept(saved->log("MANUAL_DB count="+codec.decode(saved.payload())[0].getAmount()+" revision="+saved.revision()))
             .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
-    @Override public void close(){if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(questAdapter!=null)questAdapter.close();autosave.close();adapter.close();}
+    @Override public void close(){if(combatPlayers!=null)combatPlayers.close();if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(questAdapter!=null)questAdapter.close();autosave.close();adapter.close();}
 }
