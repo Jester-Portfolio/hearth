@@ -607,6 +607,23 @@ public final class SessionVerification implements AutoCloseable {
         var probe=new PersonalQuest(conflict,catalog.questIds(),owner,SessionVerification::main);probe.rules(questRules);
         return rejectQuest(probe.died(b3,s3,()->coordinator.playable(s3),()->false,catalog)).thenCompose(v->rejectQuest(probe.barrier(b))).thenCompose(v->mainResult(store.readQuest(b3,"trial_keep"))).thenAccept(row->check(row.phase()==QuestStore.Phase.ACTIVE&&row.revision()==0&&coordinator.playable(s1),"combat_quest_real_DB_CAS_failure_HOLD_preserves_original_and_A"));
     }
+    private CompletionStage<Void> combatRetryCheck(CombatAttempt attempt,CombatPlayers bridge,CombatBody[] actors){
+        var clock=new java.util.concurrent.atomic.AtomicLong(100);var world=worlds.get(a);var notices=new ArrayList<String>();
+        var vote=new CombatRetryVote(attempt,owner,SessionVerification::main,clock::get,java.time.Duration.ofSeconds(30),()->world.generation()==attempt.snapshot().generation(),notices::add);
+        var oldMob=combatTrials.mob(a).getUniqueId();var first=vote.request(a1,s1);
+        return vote.cast(a1,s1,first.id(),CombatRetryVote.Choice.YES).thenRun(()->{
+            check(vote.view().phase()==CombatRetryVote.Phase.OPEN&&attempt.snapshot().outcome()==CombatAttempt.Outcome.NONE,"combat_retry_half_votes_never_close_or_recreate_boss");
+            clock.addAndGet(java.time.Duration.ofSeconds(30).toNanos());vote.poll();check(vote.view().phase()==CombatRetryVote.Phase.UNDECIDED,"combat_retry_controlled_30s_timeout_no_automatic_retry");
+        }).thenCompose(v->{var obsolete=vote.request(a1,s1);bridge.leave(actors[1]);vote.poll();var next=vote.view();
+            check(!next.id().equals(obsolete.id())&&next.targets()==1&&next.yes()==0&&attempt.snapshot().difficultyPlayers()==2,"combat_retry_online_change_revotes_without_rescaling_existing_boss");
+            return rejectQuest(vote.cast(a1,s1,obsolete.id(),CombatRetryVote.Choice.YES)).thenCompose(x->{var decision=vote.cast(a1,s1,next.id(),CombatRetryVote.Choice.YES);check(vote.view().phase()==CombatRetryVote.Phase.INPUT_CLOSED&&!vote.barrier().toCompletableFuture().isDone(),"combat_retry_input_closed_and_barrier_before_terminal_confirmation");return decision;});
+        }).thenAccept(confirmed->{
+            check(confirmed.phase()==CombatRetryVote.Phase.RETRY_REQUESTED&&confirmed.receipt()!=null&&confirmed.receipt().attempt().equals(attempt.snapshot().attempt())&&attempt.snapshot().outcome()==CombatAttempt.Outcome.RETRY,"combat_retry_unique_receipt_ends_only_existing_attempt");
+            long revision=attempt.snapshot().revision();check(vote.request(a1,s1).receipt().equals(confirmed.receipt())&&attempt.snapshot().revision()==revision,"combat_retry_duplicate_request_does_not_apply_again");
+            check(combatTrials.mob(a).getUniqueId().equals(oldMob)&&!combatTrials.mob(a).hasAI()&&notices.stream().anyMatch(t->t.contains("아직 연결되지 않아 대기")),"combat_retry_actual_mob_frozen_no_false_next_attempt_spawn");
+            vote.close();
+        }).thenCompose(v->verify(a1,31,1)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
+    }
     private CompletionStage<Void> combatPlayerState(){
         var bridges=new CombatPlayers[2];var actors=new CombatBody[3];final CombatAttempt[] attempts=new CombatAttempt[2];final UUID request=UUID.randomUUID();final CompletionStage<?>[] pending=new CompletionStage<?>[2];
         return openAll().thenCompose(v->combatQuestSetup()).thenCompose(v->journal.track(a1,s1,()->coordinator.playable(s1),"trial_keep",true)).thenAccept(view->check(journal.hudLines(view).size()==1&&!journal.hudLines(view).getFirst().contains("실패"),"combat_initial_quest_HUD_tracks_actual_active_goal")).thenCompose(v->prepareCombatChunks()).thenRun(()->{
@@ -638,7 +655,8 @@ public final class SessionVerification implements AutoCloseable {
         }).thenCompose(v->until(()->pending[0].toCompletableFuture().isDone())).thenRun(()->{
             check(pending[0].toCompletableFuture().isCompletedExceptionally()&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD&&attempts[1].snapshot().sharedUsed()==0&&bridges[0].actions(actors[0]),"combat_player_failed_move_HOLD_and_A_independence");
             check(attempts[1].hud(b3,s3,20,20).action().startsWith("전투 처리 보류")&&!attempts[0].hud(a1,s1,30,40).action().contains("보류"),"combat_HUD_HOLD_and_other_run_feedback_isolated");
-            bridges[0].close();bridges[1].close();check(!attempts[0].hud(a1,s1,30,40).visible()&&attempts[0].view(a1,s1).state().contains("격리 시험 종료"),"combat_HUD_closed_hides_bar_and_explains_outcome");combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
+        }).thenCompose(v->combatRetryCheck(attempts[0],bridges[0],actors)).thenRun(()->{
+            bridges[0].close();bridges[1].close();check(!attempts[0].hud(a1,s1,30,40).visible()&&attempts[0].view(a1,s1).state().contains("재도전 결정"),"combat_HUD_closed_hides_bar_and_explains_outcome");combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
         }).thenCompose(v->combatQuestDatabaseFailure()).thenCompose(v->verify(a1,31,1)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
     private static final class CombatActors implements CombatAttempt.Port {

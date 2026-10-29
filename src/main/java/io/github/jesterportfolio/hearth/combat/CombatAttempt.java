@@ -74,6 +74,8 @@ public final class CombatAttempt {
     public void finish(Outcome result){check.run();if(result==Outcome.NONE)throw new IllegalArgumentException("Missing combat outcome");if(phase==Phase.CLOSED)return;time();outcome=result;phase=Phase.CLOSED;revision++;try{port.freeze(true);frozen=true;for(var p:members.values())camera(p,null);}catch(RuntimeException e){error="COMBAT_CLOSE_PORT_FAILED";}for(var request:requests.values())if(!request.result.isDone())request.result.completeExceptionally(new IllegalStateException("COMBAT_CLOSED"));}
     public void invalidate(){check.run();if(phase!=Phase.CLOSED)hold("COMBAT_STALE_GENERATION");}
     public CompletionStage<Void> barrier(){check.run();return CompletableFuture.allOf(requests.values().stream().map(r->r.result).toArray(CompletableFuture[]::new)).thenRun(()->{check.run();if(error!=null)throw new IllegalStateException("COMBAT_HOLD");});}
+    /** 투표 조정자만 사용하는 현재 세션 식별자. 공개 표시 DTO로 전달하지 않습니다. */
+    Map<UUID,Object> onlineSessions(){check.run();var online=new LinkedHashMap<UUID,Object>();members.values().stream().filter(p->p.online).forEach(p->online.put(p.id,p.token));return Map.copyOf(online);}
     public Snapshot snapshot(){check.run();return new Snapshot(id,run,generation,revision,phase,outcome,members.size(),sharedUsed,reserved,elapsed,error,members.values().stream().map(p->new Member(p.id,p.online,p.dead,p.returning,p.reviving,p.protection>lastClock,p.used,p.camera)).toList());}
     /** 상태를 바꾸거나 DB를 조회하지 않는 본인 전용 표시 경계. */
     public CombatHud.View hud(Context ctx,Object token,double health,double maximum){var own=view(ctx,token);return CombatHud.build(snapshot(),own,ctx.playerId(),health,maximum);}

@@ -33,7 +33,8 @@ public final class PaperCombatHud implements AutoCloseable {
         if(update.notice()){
             p.sendMessage(Component.text(view.notice()));
             if(view.visible())p.sendMessage(Component.text("[본인 전투 상태]").clickEvent(ClickEvent.runCommand("/hearthcombat status"))
-                .append(Component.text(" [관전 대상 전환]").clickEvent(ClickEvent.runCommand("/hearthcombat watch"))));
+                .append(Component.text(" [관전 대상 전환]").clickEvent(ClickEvent.runCommand("/hearthcombat watch")))
+                .append(Component.text(" [재도전 투표]").clickEvent(ClickEvent.runCommand("/hearthcombat retry"))));
         }
     }
     public void clear(Player p,PlayerSessions.Session session,boolean clearAction){
