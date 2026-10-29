@@ -76,6 +76,7 @@ def main():
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
     parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
+    parser.add_argument('--npc-views', action='store_true', help='개인 NPC 표시 데이터·표식 엔티티를 한 JVM에서 검증합니다')
     parser.add_argument('--player-interactions', action='store_true', help='41슬롯 조작 정책·dirty 저장 연결을 한 JVM에서 검증합니다')
     parser.add_argument('--gameplay-guide', action='store_true', help='공유 진행 안내·GUI 연결만 한 JVM에서 검증합니다')
     parser.add_argument('--story-batch', action='store_true', help='두 JVM에서 공유 단계·채팅 투표 제어 경계·분기·접근·복원을 검사합니다')
@@ -97,6 +98,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.npc_views and (not args.story_batch or args.world_effects or args.player_interactions):
+        parser.error('--npc-views는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.player_interactions and (not args.sessions or args.quests or args.manual_player):
         parser.error('--player-interactions는 자동 --sessions 단독으로 실행합니다')
     if args.gameplay_guide and (not args.story_batch or args.world_effects):
@@ -220,7 +223,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.quests=true')
         if args.manual_player:
             paper.insert(-3,'-Dhearth.verification.sessionManual=true')
-        for phase in (['prepare'] if args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
+        for phase in (['prepare'] if args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
             name='paper-'+phase
             monitor.launch(name,paper,runtime)
@@ -253,10 +256,12 @@ motd=Hearth isolated S4-11 verification
                         elif args.story_batch:
                             monitor.action(name,'story-prepare');
                             if args.gameplay_guide: monitor.action(name,'gameplay-guide')
+                            if args.npc_views: monitor.action(name,'npc-views')
                             monitor.action(name,'story-vote')
                             monitor.db('lock-story'); monitor.action(name,'story-persist-start'); monitor.db('unlock')
                             monitor.action(name,'story-persist-done'); monitor.action(name,'story-cycle')
                             if args.gameplay_guide: monitor.action(name,'gameplay-guide')
+                            if args.npc_views: monitor.action(name,'npc-views')
                         elif args.explore_batch:
                             monitor.action(name,'explore-prepare')
                             monitor.db('lock-quest'); monitor.action(name,'explore-pending'); monitor.db('unlock')

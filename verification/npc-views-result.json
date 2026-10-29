@@ -1,0 +1,49 @@
+{
+  "outcome": "PASS",
+  "workspace": "/tmp/hearth-s4-11.6ie5j35p",
+  "duration_seconds": 40.267,
+  "cleanup_errors": [],
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "a3634a7416fc39781e9f520fbca917f2214fc773eeb1a9c833b39387fb5747d5",
+  "installed_plugin_sha256": "a3634a7416fc39781e9f520fbca917f2214fc773eeb1a9c833b39387fb5747d5",
+  "unit_tests_passed": 31,
+  "paper_jvms": 1,
+  "postgres_instances": 1,
+  "checks": [
+    "npc_view_restricted_options_hidden",
+    "npc_marker_private_nonpersistent_AVAILABLE",
+    "npc_marker_removed_AVAILABLE",
+    "npc_marker_private_nonpersistent_REPORT_READY",
+    "npc_marker_removed_REPORT_READY",
+    "npc_view_inventory_unchanged",
+    "npc_default_hidden_until_authorized",
+    "npc_no_duplicate_after_projection",
+    "npc_view_restricted_options_hidden",
+    "npc_marker_private_nonpersistent_AVAILABLE",
+    "npc_marker_removed_AVAILABLE",
+    "npc_marker_private_nonpersistent_REPORT_READY",
+    "npc_marker_removed_REPORT_READY",
+    "npc_view_inventory_unchanged",
+    "npc_default_hidden_until_authorized",
+    "npc_no_duplicate_after_projection"
+  ],
+  "processes": {
+    "database": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 219076,
+      "observed_cpu_seconds": 2.3,
+      "min_sampled_host_available_kib": 11546156
+    },
+    "paper-prepare": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 1065920,
+      "observed_cpu_seconds": 66.67,
+      "min_sampled_host_available_kib": 11546156
+    }
+  },
+  "not_executed": [
+    "실제 인증 플레이어별 화면·표식 색/거리·NPC 가시성",
+    "실제 NPC 클릭·새 JVM 재시험·장기 부하",
+    "미니맵 NPC 마커·운영 활성화"
+  ]
+}

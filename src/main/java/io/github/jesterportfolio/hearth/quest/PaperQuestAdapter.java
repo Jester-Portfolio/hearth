@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.concurrent.Executor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.*;
@@ -34,6 +35,10 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final NamespacedKey tag;
     // World/Entity 객체 대신 물리 식별자만 보관합니다. 개인 저장 소유권은 논리 진행 키입니다.
     private final Map<UUID,Map<String,UUID>> npcs=new HashMap<>();
+    private record Projection(PlayerSessions.Session session,QuestJournal.View view){}
+    private record Mark(UUID world,UUID entity,NpcQuestView.Marker marker){}
+    private final Map<UUID,Projection> projections=new HashMap<>();
+    private final Map<UUID,Map<String,Mark>> marks=new HashMap<>();
     private final PaperQuestUI ui;
     private io.github.jesterportfolio.hearth.story.PaperStoryAdapter story;
     public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;ui.storyGuide(p->adapter.guide(p,null));}
@@ -42,6 +47,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
+        ui.projection((p,v)->{projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
         Bukkit.getPluginManager().registerEvents(this,plugin);players.questCommand(this::command);
         for(World w:Bukkit.getWorlds())ensure(w);
     }
@@ -57,11 +63,42 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             existing.forEach(Entity::remove);
             var npc=w.spawn(new Location(w,content.x(),content.y(),content.z()),Villager.class,v->{
                 v.setAI(false);v.setGravity(false);v.setInvulnerable(true);v.setSilent(true);v.setCollidable(false);
-                v.setPersistent(false);v.customName(Component.text(content.name()));v.setCustomNameVisible(true);
+                v.setPersistent(false);v.setVisibleByDefault(false);v.customName(Component.text(content.name()));v.setCustomNameVisible(true);
                 v.getPersistentDataContainer().set(tag,PersistentDataType.STRING,content.npcId());
             });
             tracked.put(content.npcId(),npc.getUniqueId());
         }
+    }
+    private boolean npcPermitted(Player p,String npc){
+        var session=players.current(p);if(session==null)return false;
+        var c=catalog.forNpc(npc).getFirst();return story==null||story.access().content(session.context().storyRunId(),c.x(),c.y(),c.z());
+    }
+    private void removeMark(Mark mark){Entity e=Bukkit.getEntity(mark.entity());if(e!=null)e.remove();}
+    private void clearVisual(Player p){
+        projections.remove(p.getUniqueId());var old=marks.remove(p.getUniqueId());if(old!=null)old.values().forEach(this::removeMark);
+        for(var rows:npcs.values())for(UUID id:rows.values()){Entity e=Bukkit.getEntity(id);if(e!=null&&p.canSee(e))p.hideEntity(plugin,e);}
+    }
+    /** 기존 표시 주기에서 호출하며 DB를 조회하지 않습니다. */
+    private boolean render(Player p){
+        var data=projections.get(p.getUniqueId());var session=players.current(p);
+        if(data==null){clearVisual(p);return true;}
+        try{if(closed||session==null||session!=data.session())throw new IllegalStateException("STALE_NPC_VIEW");journal.requireView(session.context(),data.view());}
+        catch(RuntimeException invalid){clearVisual(p);return false;}
+        var own=marks.computeIfAbsent(p.getUniqueId(),id->new HashMap<>());
+        for(var c:catalog.npcs()){
+            Entity npc=entity(p.getWorld(),c.npcId());
+            boolean visible=npc!=null&&npc.isValid()&&npcPermitted(p,c.npcId());
+            if(npc!=null){if(visible&&!p.canSee(npc))p.showEntity(plugin,npc);else if(!visible&&p.canSee(npc))p.hideEntity(plugin,npc);}
+            var marker=visible&&p.getLocation().distanceSquared(npc.getLocation())<=256?NpcQuestView.build(catalog,c.npcId(),data.view().states(),q->journal.questAllowed(session.context(),q.id())).marker():NpcQuestView.Marker.NONE;
+            Mark old=own.get(c.npcId());Entity oldEntity=old==null?null:Bukkit.getEntity(old.entity());
+            if(old!=null&&(marker!=old.marker()||oldEntity==null||!old.world().equals(p.getWorld().getUID()))){removeMark(old);own.remove(c.npcId());old=null;}
+            if(marker!=NpcQuestView.Marker.NONE&&old==null){var display=markerEntity(p.getWorld(),npc.getLocation().add(0,2.2,0),marker);own.put(c.npcId(),new Mark(p.getWorld().getUID(),display.getUniqueId(),marker));p.showEntity(plugin,display);}
+        }
+        return true;
+    }
+    public static TextDisplay markerEntity(World world,Location location,NpcQuestView.Marker marker){
+        if(marker==NpcQuestView.Marker.NONE)throw new IllegalArgumentException("Empty NPC marker");
+        return world.spawn(location,TextDisplay.class,e->{e.setPersistent(false);e.setVisibleByDefault(false);e.setGravity(false);e.setBillboard(Display.Billboard.CENTER);e.setShadowed(true);e.text(Component.text(marker==NpcQuestView.Marker.REPORT_READY?"!":"?",marker==NpcQuestView.Marker.REPORT_READY?NamedTextColor.GREEN:NamedTextColor.YELLOW));});
     }
     private static int chunk(double coordinate){return (int)Math.floor(coordinate)>>4;}
     private static String regionId(QuestContent c){return c.npcId().equals("survey_guide")?"hearth_demo_dialogue":"hearth_demo_dialogue_"+c.npcId();}
@@ -91,15 +128,15 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public boolean tracks(UUID world){return npcs.containsKey(world);}
     private Entity entity(World w,String npc){var map=npcs.get(w.getUID());UUID id=map==null?null:map.get(npc);return id==null?null:w.getEntity(id);}
     private boolean near(Player p,String npc,UUID id){Entity e=entity(p.getWorld(),npc);return e!=null && e.isValid() && e.getUniqueId().equals(id) && p.getLocation().distanceSquared(e.getLocation())<=16;}
-    private boolean current(Player p,PlayerSessions.Session session,QuestDialogue.Ticket t){return dialogues.current(t) && players.current(p)==session && p.getWorld().getUID().equals(t.world()) && near(p,t.npc(),t.entity());}
+    private boolean current(Player p,PlayerSessions.Session session,QuestDialogue.Ticket t){return npcPermitted(p,t.npc()) && dialogues.current(t) && players.current(p)==session && p.getWorld().getUID().equals(t.world()) && near(p,t.npc(),t.entity());}
     @EventHandler public void load(WorldLoadEvent e){UUID id=e.getWorld().getUID();Bukkit.getScheduler().runTaskLater(plugin,()->{World w=Bukkit.getWorld(id);if(w!=null)ensure(w);},1);}
-    @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){npcs.remove(e.getWorld().getUID());dialogues.clearWorld(e.getWorld().getUID());}
-    @EventHandler public void quit(PlayerQuitEvent e){dialogues.clear(e.getPlayer().getUniqueId());}
+    @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){UUID id=e.getWorld().getUID();npcs.remove(id);dialogues.clearWorld(id);for(var rows:marks.values())rows.entrySet().removeIf(entry->{if(!entry.getValue().world().equals(id))return false;removeMark(entry.getValue());return true;});}
+    @EventHandler public void quit(PlayerQuitEvent e){dialogues.clear(e.getPlayer().getUniqueId());clearVisual(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void click(PlayerInteractAtEntityEvent e){
         String npc=npcId(e.getRightClicked());if(npc==null)return;
         e.setCancelled(true);if(e.getHand()!=EquipmentSlot.HAND)return;
         Player p=e.getPlayer();var session=players.current(p);UUID entity=e.getRightClicked().getUniqueId();
-        if(session==null || !near(p,npc,entity))return;
+        if(session==null || !near(p,npc,entity) || !npcPermitted(p,npc))return;
         if(story!=null&&!story.access().content(session.context().storyRunId(),p.getX(),p.getY(),p.getZ()))return;
         var tickets=dialogues.options(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc);
         journal.interactPlace(session.context(),session,()->players.current(p)==session,"npc:"+npc,p.getX(),p.getY(),p.getZ())
@@ -114,7 +151,10 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         },owner);
     }
     public static List<Component> selectionMessages(QuestCatalog catalog,QuestDialogue dialogues,List<QuestDialogue.Ticket> tickets,Map<String,QuestStore.Saved> rows){
-        return selectionMessages(catalog,dialogues,tickets.stream().filter(t->QuestListView.available(catalog.quest(t.quest()),rows)).toList());
+        var byQuest=new HashMap<String,QuestDialogue.Ticket>();tickets.forEach(t->byQuest.put(t.quest(),t));
+        if(tickets.isEmpty())return List.of();
+        var view=NpcQuestView.build(catalog,tickets.getFirst().npc(),rows,c->byQuest.containsKey(c.id()));
+        return view.options().stream().map(option->(Component)Component.text("["+option.status()+"] "+option.title()).clickEvent(ClickEvent.runCommand(dialogues.command(byQuest.get(option.quest()),"select")))).toList();
     }
     public static List<Component> selectionMessages(QuestCatalog catalog,QuestDialogue dialogues,List<QuestDialogue.Ticket> tickets){
         return tickets.stream().map(t->(Component)Component.text("["+catalog.quest(t.quest()).title()+"]").clickEvent(ClickEvent.runCommand(dialogues.command(t,"select")))).toList();
@@ -211,5 +251,5 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}
     public void stopUi(){ui.close();}
     @Override public void close(){ui.close();closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
-        for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(e->npcId(e)!=null).forEach(Entity::remove);}npcs.clear();}
+        for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(e->npcId(e)!=null).forEach(Entity::remove);}npcs.clear();marks.values().forEach(rows->rows.values().forEach(this::removeMark));marks.clear();projections.clear();}
 }

@@ -219,6 +219,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "npc-views" -> npcViews();
         case "interaction-play" -> interactionPlay();
         case "gameplay-guide" -> gameplayGuide();
         case "story-prepare" -> storyPrepare();
@@ -511,6 +512,23 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> npcViews(){
+        return quests.list(a1,s1,()->coordinator.playable(s1)).thenAccept(rows->{
+            quests.requireListDisplay(a1,rows);World w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());
+            var before=one.capture();
+            for(var c:catalog.npcs()){
+                var view=NpcQuestView.build(catalog,c.npcId(),rows,q->journal.questAllowed(a1,q.id()));
+                check(view.options().stream().noneMatch(q->!journal.questAllowed(a1,q.quest())),"npc_view_restricted_options_hidden");
+            }
+            for(var marker:List.of(NpcQuestView.Marker.AVAILABLE,NpcQuestView.Marker.REPORT_READY)){
+                var e=PaperQuestAdapter.markerEntity(w,new Location(w,3.5,66.2,5.5),marker);
+                check(!e.isVisibleByDefault()&&!e.isPersistent(),"npc_marker_private_nonpersistent_"+marker);e.remove();check(!e.isValid(),"npc_marker_removed_"+marker);
+            }
+            check(codec.equivalent(one.capture(),before),"npc_view_inventory_unchanged");
+            check(w.getEntitiesByClass(org.bukkit.entity.Villager.class).stream().filter(e->e.getPersistentDataContainer().has(new NamespacedKey(plugin,"quest_demo_npc"))).allMatch(e->!e.isVisibleByDefault()),"npc_default_hidden_until_authorized");
+            questAdapter.ensure(w);for(var c:catalog.npcs())check(questAdapter.count(w,c.npcId())==1,"npc_no_duplicate_after_projection");
+        });
+    }
     private CompletionStage<Void> interactionPlay(){
         var beforeB=new InventoryStore.Stored[1];
         return openAll().thenCompose(v->mainResult(store.readInventory(ctx(b,1)))).thenCompose(v->{beforeB[0]=v;
