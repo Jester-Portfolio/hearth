@@ -30,6 +30,12 @@ public final class QuestListView {
         }
         return List.copyOf(rows);
     }
+    public enum Filter{ALL,REPORTING,TRACKED,COMPLETED}
+    public static List<Entry> filtered(QuestCatalog catalog,Map<String,QuestStore.Saved> states,Set<String> tracked,Set<String> blocked,Filter filter){
+        return entries(catalog,states).stream().filter(q->!blocked.contains(q.questId())).filter(q->switch(filter){
+            case ALL->true;case REPORTING->q.phase()==QuestStore.Phase.REPORT_READY;case TRACKED->tracked.contains(q.questId())&&q.phase()!=QuestStore.Phase.COMPLETED;case COMPLETED->q.phase()==QuestStore.Phase.COMPLETED;
+        }).sorted(Comparator.comparingInt((Entry q)->q.phase()==QuestStore.Phase.REPORT_READY?0:tracked.contains(q.questId())&&q.phase()!=QuestStore.Phase.COMPLETED?1:q.phase()==QuestStore.Phase.ACTIVE?2:3).thenComparing(Entry::questId)).toList();
+    }
     /** 목록에서 허용된 항목만 찾아 상세 데이터를 만듭니다. 미수락/미존재의 결과는 같습니다. */
     public static Optional<Detail> detail(QuestCatalog catalog,Map<String,QuestStore.Saved> states,String id) {
         return entries(catalog,states).stream().filter(row->row.questId().equals(id)).findFirst().map(row->{

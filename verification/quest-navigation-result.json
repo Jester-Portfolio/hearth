@@ -1,0 +1,49 @@
+{
+  "outcome": "PASS",
+  "workspace": "/tmp/hearth-s4-11.wjbhdy5l",
+  "duration_seconds": 35.92,
+  "cleanup_errors": [],
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "202eab44948d2c2108bd1732e2d91af2e34917e8a5c14fd78f8c4fd16209631e",
+  "installed_plugin_sha256": "202eab44948d2c2108bd1732e2d91af2e34917e8a5c14fd78f8c4fd16209631e",
+  "unit_tests": {
+    "tests": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "paper_jvms": 1,
+  "postgres_instances": 1,
+  "checks": [
+    "navigation_report_ready",
+    "navigation_screen_quests",
+    "navigation_screen_reporting",
+    "navigation_screen_tracked",
+    "navigation_screen_completed",
+    "navigation_screen_notices",
+    "navigation_report_conversation_link",
+    "navigation_inventory_unchanged",
+    "navigation_completed_tracking_cleared",
+    "navigation_completed_removed_from_report_list"
+  ],
+  "processes": {
+    "database": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 218296,
+      "observed_cpu_seconds": 2.36,
+      "min_sampled_host_available_kib": 11822380
+    },
+    "paper-prepare": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 1239900,
+      "observed_cpu_seconds": 63.28,
+      "min_sampled_host_available_kib": 11822380
+    }
+  },
+  "not_executed": [
+    "실제 NPC/GUI 클릭·거리·WorldGuard 플레이어 권한 확인",
+    "실제 클라이언트 보고·추적·알림 화면",
+    "새 JVM 재시험: 저장 계약 불변",
+    "운영 배포"
+  ]
+}

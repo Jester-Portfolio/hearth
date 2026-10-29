@@ -219,6 +219,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "navigation-play" -> navigationPlay();
         case "game-information" -> gameInformation();
         case "npc-views" -> npcViews();
         case "interaction-play" -> interactionPlay();
@@ -513,6 +514,23 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> navigationPlay(){
+        return openAll().thenCompose(v->quests.open(a1,content.id(),s1,()->coordinator.playable(s1))).thenCompose(q->{qa=q;return quests.accept(q,content);})
+            .thenCompose(v->{var area=content.goals().getFirst().area();return quests.reach(qa,content,(area.minX()+area.maxX())/2,(area.minY()+area.maxY())/2,(area.minZ()+area.maxZ())/2);})
+            .thenCompose(v->journal.track(a1,s1,()->coordinator.playable(s1),content.id(),true)).thenCompose(view->{
+                check(view.states().get(content.id()).phase()==QuestStore.Phase.REPORT_READY,"navigation_report_ready");var inventory=one.capture();
+                for(String page:List.of("quests","reporting","tracked","completed","notices")){
+                    var buttons=QuestScreens.screen(catalog,view,page,null,0);var screen=new PaperQuestUI.Screen(a1.playerId(),s1,buttons,page,null,0);
+                    check(screen.getInventory().getSize()==54&&buttons.size()==buttons.stream().map(QuestScreens.Button::slot).distinct().count(),"navigation_screen_"+page);
+                }
+                check(QuestScreens.screen(catalog,view,"detail",content.id(),0).stream().anyMatch(b->b.action().equals("npc-dialogue")),"navigation_report_conversation_link");
+                check(codec.equivalent(one.capture(),inventory),"navigation_inventory_unchanged");
+                return questRead(a1,QuestStore.Phase.REPORT_READY,1);
+            }).thenCompose(v->quests.advance(qa,QuestStore.Phase.COMPLETED)).thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1)))
+            .thenCompose(view->{check(!view.journal().tracked().contains(content.id()),"navigation_completed_tracking_cleared");check(QuestListView.filtered(catalog,view.states(),view.journal().tracked(),view.exploration().blockedQuests(),QuestListView.Filter.REPORTING).isEmpty(),"navigation_completed_removed_from_report_list");
+                return questRead(a1,QuestStore.Phase.COMPLETED,2).thenCompose(v->questRead(a2,QuestStore.Phase.NOT_ACCEPTED,-1)).thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1));
+            });
+    }
     private CompletionStage<Void> gameInformation(){
         return mainResult(store.readJournal(a1)).thenCompose(before->journal.information(a1,s1,()->coordinator.playable(s1)).thenCompose(info->{
             for(String section:List.of("summary","quests","map","diary","story"))check(!info.lines(new GameInformation.Query(section,1)).isEmpty(),"information_section_"+section);

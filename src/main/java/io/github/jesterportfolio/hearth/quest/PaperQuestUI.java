@@ -29,6 +29,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         @Override public Inventory getInventory(){return inventory;}
     }
     private Consumer<Player> storyGuide=p->{};
+    private java.util.function.BiConsumer<Player,String> npcDialogue=(p,id)->{};
+    public void npcDialogue(java.util.function.BiConsumer<Player,String> open){npcDialogue=open;}
     private BiConsumer<Player,QuestJournal.View> projection=(p,v)->{};
     private Consumer<Player> clearProjection=p->{};
     private Predicate<Player> projectionTick=p->true;
@@ -90,7 +92,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         Bukkit.getScheduler().runTaskLater(plugin,()->{
             if(players.current(p)!=s || p.getOpenInventory().getTopInventory()!=screen.inventory)return;
             String action=button.action();
-            if(action.equals("story-guide")){p.closeInventory();storyGuide.accept(p);}
+            if(action.equals("npc-dialogue")){p.closeInventory();npcDialogue.accept(p,button.quest());}
+            else if(action.equals("story-guide")){p.closeInventory();storyGuide.accept(p);}
             else if(action.equals("track"))request(p,s,journal.track(s.context(),s,()->players.current(p)==s,button.quest(),button.revision()==1),v->open(p,s,v,"detail",button.quest(),0));
             else if(action.equals("hud"))request(p,s,journal.hud(s.context(),s,()->players.current(p)==s,button.revision()==1),v->open(p,s,v,"settings",null,0));
             else if(action.startsWith("setting:"))request(p,s,journal.setting(s.context(),s,()->players.current(p)==s,action.substring(8),button.revision()==1),v->open(p,s,v,"settings",null,0));

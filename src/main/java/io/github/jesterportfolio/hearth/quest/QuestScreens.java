@@ -17,10 +17,14 @@ public final class QuestScreens {
         }
         out.add(new Button(45,"이전 화면","home",null,0));
         if(view.exploration().registered() && Set.of("map","place","region","diary","STORY","PERSON","EXPLORATION","CHRONICLE","fact","event","community","members","story","conditions","branches").contains(page))return explore(view.exploration(),page,id,offset);
-        if(page.equals("quests")){
-            var entries=QuestListView.entries(catalog,view.states()).stream().filter(q->!view.exploration().blockedQuests().contains(q.questId())).toList();int end=Math.min(entries.size(),offset+36);
+        if(Set.of("quests","reporting","tracked","completed").contains(page)){
+            var filter=switch(page){case "reporting"->QuestListView.Filter.REPORTING;case "tracked"->QuestListView.Filter.TRACKED;case "completed"->QuestListView.Filter.COMPLETED;default->QuestListView.Filter.ALL;};
+            var entries=QuestListView.filtered(catalog,view.states(),view.journal().tracked(),view.exploration().blockedQuests(),filter);int end=Math.min(entries.size(),offset+36);
             for(int i=offset;i<end;i++){var q=entries.get(i);out.add(new Button(i-offset,"["+q.status()+"] "+q.title(),"detail",q.questId(),0));}
-            navigation(out,offset,entries.size(),"quests");
+            if(entries.isEmpty())out.add(new Button(0,"표시할 수 있는 퀘스트가 없습니다.","none",null,0));
+            navigation(out,offset,entries.size(),page);
+            String[] tabs={"quests","reporting","tracked","completed"};String[] names={"전체","보고 가능","추적 중","완료"};
+            for(int i=0;i<tabs.length;i++)out.add(new Button(36+i,names[i],tabs[i],null,0));
             out.add(new Button(49,"확정된 공동체 분기","branches",null,0));
         }else if(page.equals("detail")){
             var detail=view.exploration().blockedQuests().contains(id)?Optional.<QuestListView.Detail>empty():QuestListView.detail(catalog,view.states(),id);
@@ -28,6 +32,9 @@ public final class QuestScreens {
             else{
                 int slot=0;for(String line:QuestListView.detailLines(detail))out.add(new Button(slot++,line,"none",null,0));
                 var row=view.states().get(id);boolean tracked=view.journal().tracked().contains(id);
+                if(row.phase()==QuestStore.Phase.REPORT_READY)out.add(new Button(11,"가까운 NPC와 보고 대화 열기","npc-dialogue",id,0));
+                out.add(new Button(46,"알림 목록","notices",null,0));out.add(new Button(48,"추적 중인 퀘스트","tracked",null,0));
+                if(view.exploration().registered())out.add(new Button(49,"공유 진행 안내를 채팅에서 확인","story-guide",null,0));
                 if(row.phase()!=QuestStore.Phase.COMPLETED)out.add(new Button(10,tracked?"추적 해제":"추적","track",id,tracked?0:1));
                 out.removeIf(b->b.slot()==45);out.add(new Button(45,"퀘스트 목록","quests",null,0));
             }
