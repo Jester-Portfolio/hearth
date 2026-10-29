@@ -15,6 +15,20 @@ shared-stages:
   - id: public_test_stage
     next-goal: 공개 시험 기록을 확인하세요.
 journal:
+  - id: facility_clue
+    category: PERSON
+    title: 안내원의 시설 조사 단서
+    summary: 안내원에게 시설 조사 순서를 질문했습니다.
+    detail: 안내원 대화, 공개 레버 확인, 마지막 조사 지점 방문 후 보고합니다. 질문한 본인의 정보이며 다른 플레이어에게 공유하지 않습니다.
+    version: 1
+    important: true
+  - id: facility_result
+    category: PERSON
+    title: 안내원의 시설 조사 정리
+    summary: 시설 조사 완료 후 안내원의 정리를 들었습니다.
+    detail: 개인 조사의 완료 결과를 확인한 공개 합성 대화 기록입니다. 보상이나 공동체 상태를 변경하지 않습니다.
+    version: 1
+    important: true
   - id: village_record
     category: EXPLORATION
     title: 공개 거점 방문

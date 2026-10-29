@@ -165,6 +165,8 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             if(error!=null){unavailable(p);return;}
             try {quests.requireListDisplay(session.context(),rows);dialogues.beginPages(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc).ifPresent(page->pageMessages(catalog,dialogues,page).forEach(p::sendMessage));var messages=selectionMessages(catalog,dialogues,tickets.stream().filter(t->journal.questAllowed(session.context(),t.quest())).toList(),rows);
                 if(messages.isEmpty())p.sendMessage(Component.text("현재 대화할 퀘스트가 없습니다."));else messages.forEach(p::sendMessage);
+                var topics=dialogues.topicOptions(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc,catalog.availableTopics(npc,rows,id->journal.questAllowed(session.context(),id)));
+                topicMessages(catalog,dialogues,topics).forEach(p::sendMessage);
                 if(story!=null)story.guide(p,npc);
                 if(playthroughEnabled)p.sendMessage(Component.text("[다음 플레이 안내]").clickEvent(ClickEvent.runCommand("/hearthjourney")));
             }catch(RuntimeException failure){unavailable(p);}
@@ -191,6 +193,28 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         }
         return List.of(message);
     }
+    public static List<Component> topicMessages(QuestCatalog catalog,QuestDialogue dialogue,List<QuestDialogue.TopicTicket> topics){
+        return topics.stream().map(t->(Component)Component.text("[질문] "+catalog.topic(t.npc(),t.topic()).label()).clickEvent(ClickEvent.runCommand(dialogue.topicCommand(t)))).toList();
+    }
+    private boolean currentTopic(Player p,PlayerSessions.Session session,QuestDialogue.TopicTicket ticket){
+        return players.current(p)==session&&dialogues.current(ticket)&&p.getWorld().getUID().equals(ticket.world())&&talkAllowed(p,ticket.npc(),ticket.entity());
+    }
+    private void ask(Player p,String command){
+        var session=players.current(p);if(session==null)return;final QuestDialogue.TopicTicket ticket;
+        try{String[] parts=command.split(" ",-1);if(parts.length!=5||!parts[2].matches("[a-z][a-z0-9_]{0,63}")||!parts[3].matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid topic request");
+            var npc=entity(p.getWorld(),parts[2]);if(npc==null||!talkAllowed(p,parts[2],npc.getUniqueId()))throw new IllegalArgumentException("NPC unavailable");
+            var nonce=UUID.fromString(parts[4]);if(!nonce.toString().equals(parts[4]))throw new IllegalArgumentException("Invalid nonce");
+            ticket=dialogues.authorizeTopic(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),npc.getUniqueId(),parts[2],parts[3],nonce);
+        }catch(IllegalArgumentException e){p.sendMessage(Component.text("현재 유효한 질문이 아닙니다. 가까이에서 다시 대화해 주세요."));return;}
+        journal.topic(session.context(),session,()->currentTopic(p,session,ticket),ticket.npc(),ticket.topic()).whenCompleteAsync((view,error)->{
+            if(!currentTopic(p,session,ticket))return;
+            if(error!=null){unavailable(p);return;}
+            try{journal.requireView(session.context(),view);var topic=catalog.topic(ticket.npc(),ticket.topic());if(!topic.available(view.states(),id->journal.questAllowed(session.context(),id)))throw new IllegalStateException("TOPIC_LOCKED");
+                p.sendMessage(Component.text(topic.text()));
+                if(topic.journal()!=null)p.sendMessage(Component.text("[개인 일지 확인]").clickEvent(ClickEvent.runCommand("/hearthphone diary")));
+            }catch(RuntimeException failure){unavailable(p);}
+        },owner);
+    }
     public static List<Component> pageMessages(QuestCatalog catalog,QuestDialogue dialogue,QuestDialogue.Page page){
         if(!dialogue.current(page))throw new IllegalArgumentException("Stale dialogue page");var texts=catalog.pages(page.npc());var out=new ArrayList<Component>();
         out.add(Component.text("NPC 대화 · "+(page.index()+1)+"/"+texts.size()));out.add(Component.text(texts.get(page.index())));
@@ -199,6 +223,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         out.add(Component.text("[대화 닫기]").clickEvent(ClickEvent.runCommand(dialogue.pageCommand(page,"close"))));return List.copyOf(out);
     }
     private boolean command(Player p,String command){
+        if(command.startsWith("/hearthtalk ask ")){ask(p,command);return true;}
         if(command.equals("/hearthtalk")||command.startsWith("/hearthtalk ")){
             var session=players.current(p);if(session==null)return true;
             try{String[] parts=command.split(" ",-1);if(parts.length!=4||!Set.of("next","back","close").contains(parts[1])||!parts[2].matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid page request");

@@ -70,6 +70,19 @@ public final class QuestJournal {
             if(error==null)result.complete(view);else result.completeExceptionally(error);
         },owner);return result;
     }
+    /** 서버가 검증한 현재 대화에서만 호출합니다. 기록 조회나 일반 인사는 이 경로를 사용하지 않습니다. */
+    public CompletionStage<View> topic(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String npc,String topic){
+        check.run();final QuestCatalog.Topic definition;
+        try{definition=catalog.topic(npc,topic);}catch(RuntimeException e){return CompletableFuture.failedFuture(e);}
+        if(definition.journal()==null)return load(ctx,token,valid).thenApplyAsync(view->{valid(valid);requireView(ctx,view);if(!definition.available(view.states(),id->questAllowed(ctx,id)))throw new IllegalStateException("TOPIC_LOCKED");return view;},owner);
+        Function<View,CompletionStage<Void>> write=view->{
+            if(!definition.available(view.states(),id->questAllowed(ctx,id)))throw new IllegalStateException("TOPIC_LOCKED");
+            if(content==null||explorationStore==null)throw new IllegalStateException("TOPIC_JOURNAL_UNAVAILABLE");
+            var fact=content.facts().get(definition.journal());if(fact==null||!fact.important())throw new IllegalStateException("TOPIC_JOURNAL_UNAVAILABLE");
+            return explorationStore.recordFact(ctx,fact,false).thenAccept(first->{});
+        };
+        return perform(ctx,token,valid,write);
+    }
     public CompletionStage<View> load(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){return perform(ctx,token,valid,null);}
     public CompletionStage<View> track(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String quest,boolean enabled){return perform(ctx,token,valid,v->{
         var row=v.states().get(quest);if(!questAllowed(ctx,quest))throw new IllegalArgumentException("Restricted quest");if(row==null || row.phase()==QuestStore.Phase.NOT_ACCEPTED || enabled && row.phase()==QuestStore.Phase.COMPLETED)throw new IllegalArgumentException("Untrackable quest");

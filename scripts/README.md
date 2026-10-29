@@ -55,3 +55,5 @@
 ## 공개 시험 코스 통합 모드
 
 `verify-lifecycle.py`의 `--sessions --quests --story-batch --playthrough`는 새 격리 경로에서 기존 개인 퀘스트·공유 진행·탐험을 연결하고 순차 두 JVM에서 안내/코스를 복원한다. [범위·결과](../docs/public-playthrough-verification.md)를 따른다. 기존 자원 상한과 콘텐츠/월드 보존 정책을 유지한다. 실제 사용자 조작은 별도 요청 전 보류한다.
+
+`--sessions --quests --story-batch --npc-topics`는 조건부 NPC 질문·중요 개인 일지·새 JVM 복원과 DB 충돌 보존을 한 묶음으로 검사한다. 실제 채팅/클릭은 실행하지 않는다. [범위·결과](../docs/npc-topics-verification.md)를 따른다.

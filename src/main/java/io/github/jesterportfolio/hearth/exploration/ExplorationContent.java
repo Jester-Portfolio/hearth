@@ -24,6 +24,7 @@ public record ExplorationContent(Map<String,Region> regions,Map<String,Place> pl
             if(facts.putIfAbsent(id,fact)!=null)throw new IllegalArgumentException("Duplicate fact");
             if(row.containsKey("quest-completed")){String quest=id(row,"quest-completed");if(!quests.questIds().contains(quest))throw new IllegalArgumentException("Unknown quest diary binding");if(bindings.putIfAbsent(quest,id)!=null)throw new IllegalArgumentException("Duplicate quest diary binding");}
         }
+        for(var npc:quests.npcs())for(var topic:quests.topics(npc.npcId()))if(topic.journal()!=null){var fact=facts.get(topic.journal());if(fact==null||!fact.important())throw new IllegalArgumentException("Unknown or unimportant NPC topic journal");}
         var sharedGoals=new HashMap<String,String>();
         if(root.containsKey("shared-stages"))for(var row:list(root,"shared-stages")){
             String stage=id(row,"id");if(sharedGoals.putIfAbsent(stage,text(row,"next-goal"))!=null)throw new IllegalArgumentException("Duplicate shared stage");

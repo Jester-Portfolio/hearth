@@ -248,6 +248,8 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "npc-topics-start" -> npcTopicsStart();
+        case "npc-topics-restored" -> npcTopicsRestored();
         case "interaction-quest-start" -> interactionQuestStart();
         case "interaction-quest-restored" -> interactionQuestRestore();
         case "npc-pages" -> npcPages();
@@ -549,6 +551,39 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> npcTopicsStart(){return openAll()
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{
+            var visible=catalog.availableTopics("survey_guide",view.states(),id->journal.questAllowed(a1,id));
+            check(visible.size()==1&&visible.getFirst().id().equals("personal_rules"),"topics_locked_labels_and_answers_not_offered");
+        })
+        .thenCompose(v->expectQuestCode(journal.topic(a1,s1,()->true,"survey_guide","facility_clue"),"TOPIC_LOCKED"))
+        .thenCompose(v->journal.topic(a1,s1,()->true,"survey_guide","personal_rules"))
+        .thenAccept(view->check(view.exploration().facts().isEmpty()&&view.journal().notices().isEmpty(),"topics_general_answer_no_diary_or_notification"))
+        .thenCompose(v->finishCourseQuest(a1,s1,"survey_marker"))
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenCompose(before->{
+            check(catalog.availableTopics("survey_guide",before.states(),id->true).size()==2,"topics_personal_completion_unlocks_question");
+            var d=new QuestDialogue(catalog);World w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());questAdapter.ensure(w);var npc=w.getEntitiesByClass(org.bukkit.entity.Villager.class).iterator().next();
+            var options=d.topicOptions(a1.playerId(),s1,a,w.getUID(),npc.getUniqueId(),"survey_guide",catalog.availableTopics("survey_guide",before.states(),id->true));
+            check(PaperQuestAdapter.topicMessages(catalog,d,options).size()==2,"topics_Paper_chat_components_current_allowed_questions");
+            var t=options.stream().filter(x->x.topic().equals("facility_clue")).findFirst().orElseThrow();
+            d.authorizeTopic(a1.playerId(),s1,a,w.getUID(),npc.getUniqueId(),t.npc(),t.topic(),t.nonce());
+            try{d.authorizeTopic(a1.playerId(),s1,a,w.getUID(),npc.getUniqueId(),t.npc(),t.topic(),t.nonce());throw new IllegalStateException("Duplicate topic accepted");}catch(IllegalArgumentException expected){check(true,"topics_duplicate_nonce_rejected");}
+            return journal.topic(a1,s1,()->d.current(t),t.npc(),t.topic()).thenCompose(view->journal.topic(a1,s1,()->d.current(t),t.npc(),t.topic()))
+                .thenAccept(view->{check(view.exploration().facts().stream().filter(f->f.id().equals("facility_clue")&&!f.shared()).count()==1&&view.exploration().events().stream().filter(e->e.id().equals("facility_clue")).count()==1,"topics_important_answer_one_personal_fact_and_chronicle");
+                    check(before.journal().equals(view.journal())&&before.states().equals(view.states()),"topics_answers_do_not_change_quests_or_notifications");
+                    check(QuestScreens.screen(catalog,view,"PERSON",null,0).stream().anyMatch(b->b.quest()!=null&&b.quest().equals("P:facility_clue")),"topics_smartphone_personal_diary_link");d.clearWorld(w.getUID());check(!d.current(t),"topics_world_unload_invalidates_question_tokens");});
+        });}
+    private CompletionStage<Void> npcTopicsRestored(){return openAll()
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{check(view.exploration().facts().stream().anyMatch(f->f.id().equals("facility_clue"))&&view.exploration().events().stream().filter(e->e.id().equals("facility_clue")).count()==1,"topics_new_JVM_personal_fact_and_chronicle_restored");
+            check(QuestScreens.screen(catalog,view,"fact","P:facility_clue",0).stream().anyMatch(b->b.label().contains("안내원")),"topics_restored_diary_details_public_to_owner");})
+        .thenCompose(v->journal.load(a2,s2,()->true)).thenAccept(view->check(view.exploration().facts().isEmpty()&&catalog.availableTopics("survey_guide",view.states(),id->true).size()==1,"topics_P2_no_private_answer_or_fact"))
+        .thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->check(view.exploration().facts().isEmpty(),"topics_other_run_private_fact_isolation"))
+        .thenCompose(v->finishCourseQuest(a2,s2,"survey_marker"))
+        .thenCompose(v->mainResult(store.recordFact(a2,new ExplorationContent.Fact("facility_clue","PERSON","보존할 기존 기록","기존 요약","기존 상세",1,true),false)))
+        .thenCompose(v->{var probe=new QuestJournal(store,quests,catalog,owner,SessionVerification::main);probe.exploration(store,explorationContent,new CommunityBoundary(c->List.of(),(c,ids)->Optional.empty()));
+            return expect(probe.topic(a2,s2,()->true,"survey_guide","facility_clue"),"FACT_VERSION_CONFLICT").thenRun(()->check(!probe.settled(a)&&probe.barrier(a).toCompletableFuture().isCompletedExceptionally()&&probe.settled(b),"topics_DB_conflict_preserves_HOLD_and_other_run"));})
+        .thenCompose(v->mainResult(store.readExploration(a2))).thenAccept(raw->check(raw.facts().size()==1&&raw.facts().getFirst().title().equals("보존할 기존 기록")&&raw.events().size()==1,"topics_DB_failure_preserves_original_fact_and_history"))
+        .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->check(view.exploration().facts().stream().anyMatch(f->f.id().equals("facility_clue")&&!f.title().equals("보존할 기존 기록")),"topics_failure_other_player_record_unchanged"));}
     private CompletionStage<Void> interactionQuestStart(){return openAll().thenRun(()->{prepareCourse(a);prepareCourse(b);questAdapter.ensure(Bukkit.getWorld(worlds.get(a).mapping().physicalId()));})
         .thenCompose(v->finishCourseQuest(a1,s1,"survey_marker"))
         .thenCompose(v->quests.open(a1,"contact_route",s1,()->true)).thenCompose(q->{qa=q;return quests.accept(q,catalog.quest("contact_route"));})

@@ -76,6 +76,7 @@ def main():
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
     parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
+    parser.add_argument('--npc-topics', action='store_true', help='조건부 NPC 질문·개인 일지·두 JVM 복원을 검사합니다')
     parser.add_argument('--quest-interactions', action='store_true', help='상호작용 목표와 두 JVM 복원을 검사합니다')
     parser.add_argument('--npc-pages', action='store_true', help='NPC 대화 페이지와 토큰 정리를 한 JVM에서 검증합니다')
     parser.add_argument('--quest-locations', action='store_true', help='목표 위치 공개의 표시·저장 경계를 한 JVM에서 검증합니다')
@@ -104,6 +105,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.npc_topics and (not args.story_batch or args.playthrough or args.quest_interactions or args.npc_pages):
+        parser.error('--npc-topics는 --sessions --quests --story-batch와 함께 단독 시나리오로 실행합니다')
     if args.quest_interactions and (not args.story_batch or args.playthrough):
         parser.error('--quest-interactions는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.npc_pages and (not args.story_batch or args.playthrough):
@@ -177,6 +180,7 @@ def main():
         with zipfile.ZipFile(args.plugin) as jar:
             content=jar.read('quest-demo.yml').decode('utf-8')
         cut='  - id: route_marker\n' if args.quest_requires else '  - id: entry_marker\n' if args.quest_info or args.quest_list else '  - id: followup_marker\n'
+        content=re.sub(r'(?ms)^    topics:\n.*?(?=^    \S)', '', content)
         (plugins/'Hearth/quest-demo.yml').write_text(content.partition(cut)[0])
     idle_seconds=10 if args.manual_player else 1
     (plugins/'Hearth/config.yml').write_text(f"quest-verification-enabled: {str(args.quests).lower()}\n"+'verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
@@ -268,7 +272,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.quest_interactions:
+                        if args.npc_topics:
+                            monitor.action(name,'npc-topics-start')
+                        elif args.quest_interactions:
                             monitor.action(name,'interaction-quest-start')
                         elif args.npc_pages:
                             monitor.action(name,'npc-pages')
@@ -372,6 +378,8 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.npc_topics:
+                        monitor.action(name,'session-resume'); monitor.action(name,'npc-topics-restored')
                     elif args.quest_interactions:
                         monitor.action(name,'session-resume'); monitor.action(name,'interaction-quest-restored')
                     elif args.playthrough:
@@ -439,7 +447,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

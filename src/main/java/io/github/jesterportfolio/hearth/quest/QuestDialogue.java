@@ -30,6 +30,20 @@ public final class QuestDialogue {
         if(index<0||index>=catalog.pages(npc).size())throw new IllegalArgumentException("Invalid page index");
         var next=new Page(player,session,run,world,entity,npc,index,UUID.randomUUID());pages.put(player,next);return Optional.of(next);
     }
+    public record TopicTicket(UUID player,Object session,UUID run,UUID world,UUID entity,String npc,String topic,UUID nonce){}
+    private final Map<UUID,Map<String,TopicTicket>> topics=new HashMap<>();
+    public List<TopicTicket> topicOptions(UUID player,Object session,UUID run,UUID world,UUID entity,String npc,List<QuestCatalog.Topic> available){
+        clearTopics(player);var issued=new LinkedHashMap<String,TopicTicket>();
+        for(var topic:available){if(catalog.topic(npc,topic.id())!=topic)throw new IllegalArgumentException("Unknown topic definition");issued.put(topic.id(),new TopicTicket(player,session,run,world,entity,npc,topic.id(),UUID.randomUUID()));}
+        topics.put(player,issued);return List.copyOf(issued.values());
+    }
+    public boolean current(TopicTicket t){var rows=topics.get(t.player());return rows!=null&&rows.get(t.topic())==t;}
+    public TopicTicket authorizeTopic(UUID player,Object session,UUID run,UUID world,UUID entity,String npc,String topic,UUID nonce){
+        var rows=topics.get(player);var t=rows==null?null:rows.get(topic);
+        if(t==null||t.session()!=session||!t.run().equals(run)||!t.world().equals(world)||!t.entity().equals(entity)||!t.npc().equals(npc)||!t.nonce().equals(nonce)||!consumed.add(nonce))throw new IllegalArgumentException("Stale topic request");return t;
+    }
+    public String topicCommand(TopicTicket t){if(!current(t))throw new IllegalArgumentException("Stale topic");return "/hearthtalk ask "+t.npc()+" "+t.topic()+" "+t.nonce();}
+    private void clearTopics(UUID player){var rows=topics.remove(player);if(rows!=null)rows.values().forEach(t->consumed.remove(t.nonce()));}
     private final Set<UUID> consumed=new HashSet<>();
     public QuestDialogue(QuestCatalog catalog){this.catalog=catalog;}
     public List<Ticket> options(UUID player,Object session,UUID run,UUID world,UUID entity,String npc){
@@ -52,7 +66,7 @@ public final class QuestDialogue {
         return ticket;
     }
     public String command(Ticket t,String action){if(!current(t) || !t.action().equals(action))throw new IllegalArgumentException("Invalid dialogue action");return "/hearthquest "+action+" "+t.npc()+" "+t.quest()+" "+t.nonce();}
-    public void clear(UUID player){pages.remove(player);var tickets=current.remove(player);if(tickets!=null)tickets.values().forEach(t->consumed.remove(t.nonce()));}
-    public void clearWorld(UUID world){for(var page:List.copyOf(pages.values()))if(page.world().equals(world))clear(page.player());for(var rows:List.copyOf(current.values()))if(rows.values().stream().anyMatch(t->t.world().equals(world)))clear(rows.values().iterator().next().player());}
-    public void clear(){current.clear();pages.clear();consumed.clear();}
+    public void clear(UUID player){clearTopics(player);pages.remove(player);var tickets=current.remove(player);if(tickets!=null)tickets.values().forEach(t->consumed.remove(t.nonce()));}
+    public void clearWorld(UUID world){for(var rows:List.copyOf(topics.values()))if(rows.values().stream().anyMatch(t->t.world().equals(world)))clear(rows.values().iterator().next().player());for(var page:List.copyOf(pages.values()))if(page.world().equals(world))clear(page.player());for(var rows:List.copyOf(current.values()))if(rows.values().stream().anyMatch(t->t.world().equals(world)))clear(rows.values().iterator().next().player());}
+    public void clear(){topics.clear();current.clear();pages.clear();consumed.clear();}
 }

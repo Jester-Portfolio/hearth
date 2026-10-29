@@ -7,9 +7,16 @@ public final class QuestCatalog {
     private final Map<String,QuestContent> quests;
     private final Map<String,List<QuestContent>> npcs;
     private final Map<String,List<String>> pages;
+    public record Topic(String id,String label,String text,String requiresCompleted,String journal){
+        public boolean available(Map<String,io.github.jesterportfolio.hearth.persistence.QuestStore.Saved> rows,java.util.function.Predicate<String> allowed){return requiresCompleted==null||allowed.test(requiresCompleted)&&rows.containsKey(requiresCompleted)&&rows.get(requiresCompleted).phase()==io.github.jesterportfolio.hearth.persistence.QuestStore.Phase.COMPLETED;}
+    }
+    private final Map<String,List<Topic>> topics;
+    public List<Topic> topics(String npc){return Objects.requireNonNull(topics.get(npc),"Unknown NPC");}
+    public Topic topic(String npc,String id){return topics(npc).stream().filter(t->t.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("Unknown topic"));}
+    public List<Topic> availableTopics(String npc,Map<String,io.github.jesterportfolio.hearth.persistence.QuestStore.Saved> rows,java.util.function.Predicate<String> allowed){return topics(npc).stream().filter(t->t.available(rows,allowed)).toList();}
     public List<String> pages(String npc){return Objects.requireNonNull(pages.get(npc),"Unknown NPC");}
-    private QuestCatalog(Map<String,QuestContent> quests,Map<String,List<QuestContent>> npcs,Map<String,List<String>> pages){
-        this.pages=Map.copyOf(pages);this.quests=Collections.unmodifiableMap(new LinkedHashMap<>(quests));
+    private QuestCatalog(Map<String,QuestContent> quests,Map<String,List<QuestContent>> npcs,Map<String,List<String>> pages,Map<String,List<Topic>> topics){
+        this.topics=Map.copyOf(topics);this.pages=Map.copyOf(pages);this.quests=Collections.unmodifiableMap(new LinkedHashMap<>(quests));
         var groups=new LinkedHashMap<String,List<QuestContent>>();npcs.forEach((id,rows)->groups.put(id,List.copyOf(rows)));this.npcs=Collections.unmodifiableMap(groups);
     }
     public Collection<QuestContent> all(){return quests.values();}
@@ -64,7 +71,15 @@ public final class QuestCatalog {
         for(var entry:rawNpcs.entrySet()){var texts=new ArrayList<String>();Object raw=entry.getValue().get("dialogue-pages");
             if(raw!=null){if(!(raw instanceof List<?> list)||list.isEmpty()||list.size()>16)throw new IllegalArgumentException("Invalid dialogue pages");for(Object item:list){if(!(item instanceof String text)||text.isBlank()||text.length()>600)throw new IllegalArgumentException("Invalid dialogue text");texts.add(text);}}
             pages.put(entry.getKey(),List.copyOf(texts));}
-        return new QuestCatalog(quests,npcs,pages);
+        var topics=new HashMap<String,List<Topic>>();
+        for(var entry:rawNpcs.entrySet()){
+            var list=new ArrayList<Topic>();var seen=new HashSet<String>();Object raw=entry.getValue().get("topics");
+            if(raw!=null){if(!(raw instanceof List<?> rows)||rows.isEmpty()||rows.size()>16)throw new IllegalArgumentException("Invalid NPC topics");
+                for(Object value:rows){var row=map(value);String key=id(row,"id"),label=string(row,"label"),text=string(row,"text"),requires=row.containsKey("requires-completed")?id(row,"requires-completed"):null,journal=row.containsKey("journal")?id(row,"journal"):null;
+                    if(!seen.add(key)||label.length()>100||text.length()>1200||requires!=null&&!quests.containsKey(requires))throw new IllegalArgumentException("Invalid NPC topic");
+                    list.add(new Topic(key,label,text,requires,journal));}}
+            topics.put(entry.getKey(),List.copyOf(list));}
+        return new QuestCatalog(quests,npcs,pages,topics);
     }
     private static String interaction(Map<?,?> row,QuestContent.Area bounds,Map<String,Map<?,?>> npcs){
         if(!row.containsKey("interaction"))return null;String value=string(row,"interaction");String[] parts=value.split(":",-1);
