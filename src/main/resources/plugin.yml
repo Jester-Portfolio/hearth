@@ -8,6 +8,8 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth S4 isolated multiworld verification foundation
 commands:
+  hearthinfo:
+    description: 본인에게 공개된 게임 정보 조회
   hearthplay:
     description: 격리 플레이 조작 안내
   hearthquest:

@@ -68,6 +68,12 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     public boolean command(Player p,String command){
         var s=players.current(p);if(s==null)return false;
+        if(command.equals("/hearthinfo")||command.startsWith("/hearthinfo ")){
+            var query=GameInformation.Query.parse(command);
+            if(query.isEmpty()){p.sendMessage(Component.text("사용법: /hearthinfo summary|quests|map|diary|story [페이지]"));return true;}
+            if(requests.containsKey(p.getUniqueId())){p.sendMessage(Component.text("이전 정보 조회를 처리 중입니다."));return true;}
+            load(p,s,v->journal.projectInformation(s.context(),v,()->players.current(p)==s).lines(query.get()).forEach(line->p.sendMessage(Component.text(line))));return true;
+        }
         if(command.equals("/hearthphone")){load(p,s,v->open(p,s,v,"home",null,0));return true;}
         String[] args=command.split(" ",-1);
         if(args.length==2 && args[0].equals("/hearthquest") && args[1].equals("tracked")){

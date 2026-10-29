@@ -1,0 +1,50 @@
+{
+  "outcome": "PASS",
+  "workspace": "/tmp/hearth-s4-11.ve3a510t",
+  "duration_seconds": 37.755,
+  "cleanup_errors": [],
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "b233a2f71b6088682edba8ec763d1757f4b19a0a27eb77144dc1129075d7b029",
+  "installed_plugin_sha256": "b233a2f71b6088682edba8ec763d1757f4b19a0a27eb77144dc1129075d7b029",
+  "unit_tests_passed": 24,
+  "paper_jvms": 1,
+  "postgres_instances": 1,
+  "checks": [
+    "information_section_summary",
+    "information_section_quests",
+    "information_section_map",
+    "information_section_diary",
+    "information_section_story",
+    "information_no_owner_identifiers",
+    "information_shared_revision_unchanged",
+    "information_notices_preferences_tracking_unchanged",
+    "information_section_summary",
+    "information_section_quests",
+    "information_section_map",
+    "information_section_diary",
+    "information_section_story",
+    "information_no_owner_identifiers",
+    "information_shared_revision_unchanged",
+    "information_notices_preferences_tracking_unchanged"
+  ],
+  "processes": {
+    "database": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 222640,
+      "observed_cpu_seconds": 2.35,
+      "min_sampled_host_available_kib": 11867388
+    },
+    "paper-prepare": {
+      "exit_code": 0,
+      "max_sampled_rss_kib": 1115584,
+      "observed_cpu_seconds": 62.03,
+      "min_sampled_host_available_kib": 11867388
+    }
+  },
+  "not_executed": [
+    "실제 인증 클라이언트 채팅 명령·화면",
+    "AI 모델·검색·캐시·응답 연동",
+    "새 JVM 재시험: 저장 계약 불변",
+    "운영 배포"
+  ]
+}

@@ -219,6 +219,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-cycle" -> effectCycle();
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
+        case "game-information" -> gameInformation();
         case "npc-views" -> npcViews();
         case "interaction-play" -> interactionPlay();
         case "gameplay-guide" -> gameplayGuide();
@@ -512,6 +513,14 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->{effectWorld(a).getBlockAt(effectDefinition.x(),effectDefinition.y(),effectDefinition.z()).setType(Material.GOLD_BLOCK,false);var pending=sharedStory.reconcile(a1);blockEffect.unloaded(a);sharedStory.worldUnloaded(a);return pending;})
         .thenAccept(ok->check(!ok&&effectBlock(a)==Material.GOLD_BLOCK&&!sharedStory.effectStatus(a).equals("APPLIED"),"effect_stale_prepared_generation_never_writes_or_reports_applied"))
         .thenRun(()->blockEffect.prepared(a)).thenCompose(v->effectCycle()).thenAccept(v->check(blockEffect.writes()==writes+1,"effect_reload_converges_missing_effect_from_expected_state"));}
+    private CompletionStage<Void> gameInformation(){
+        return mainResult(store.readJournal(a1)).thenCompose(before->journal.information(a1,s1,()->coordinator.playable(s1)).thenCompose(info->{
+            for(String section:List.of("summary","quests","map","diary","story"))check(!info.lines(new GameInformation.Query(section,1)).isEmpty(),"information_section_"+section);
+            check(!info.toString().contains(a.toString())&&!info.toString().contains(a1.playerId().toString()),"information_no_owner_identifiers");
+            var previous=sharedStory.cached(a);
+            return mainResult(store.readStory(a1)).thenCompose(after->{check(after.equals(previous),"information_shared_revision_unchanged");return mainResult(store.readJournal(a1));}).thenAccept(after->check(after.equals(before),"information_notices_preferences_tracking_unchanged"));
+        }));
+    }
     private CompletionStage<Void> npcViews(){
         return quests.list(a1,s1,()->coordinator.playable(s1)).thenAccept(rows->{
             quests.requireListDisplay(a1,rows);World w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());
