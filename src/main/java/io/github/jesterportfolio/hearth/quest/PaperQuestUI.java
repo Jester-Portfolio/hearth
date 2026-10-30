@@ -24,7 +24,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             this.page=page;this.quest=quest;this.offset=offset;
             this.player=player;this.session=session;var map=new HashMap<Integer,QuestScreens.Button>();rows.forEach(b->map.put(b.slot(),b));buttons=Map.copyOf(map);
             inventory=Bukkit.createInventory(this,54,Component.text("Hearth 개발 스마트폰"));
-            for(var b:rows){var item=new ItemStack(Material.PAPER);var meta=item.getItemMeta();meta.displayName(Component.text(b.label()));item.setItemMeta(meta);inventory.setItem(b.slot(),item);}
+            for(var b:rows){var item=new ItemStack(Set.of("detail","book","npc-select").contains(b.action())?Material.BOOK:Material.PAPER);var meta=item.getItemMeta();meta.displayName(Component.text(b.label()));if(Set.of("detail","book","npc-select").contains(b.action()))meta.lore(List.of(Component.text("클릭하여 상세 내용을 책으로 읽기")));item.setItemMeta(meta);inventory.setItem(b.slot(),item);}
         }
         @Override public Inventory getInventory(){return inventory;}
     }
@@ -42,6 +42,29 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(guide.command()!=null)p.sendMessage(Component.text("[안내 열기]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(guide.command())));
             if(guide.talkQuest()!=null)p.sendMessage(Component.text("[가까운 담당 NPC와 대화]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney talk "+guide.talkQuest())));
         });
+    }
+    @FunctionalInterface public interface NpcSelection{void select(Player player,String npc,String quest,Long revision);}
+    private NpcSelection npcSelection=(p,n,q,v)->{};
+    public void npcSelection(NpcSelection select){npcSelection=select;}
+    public void openNpc(Player p,PlayerSessions.Session session,String npc,Map<String,io.github.jesterportfolio.hearth.persistence.QuestStore.Saved> rows){
+        if(closed||players.current(p)!=session||!p.getItemOnCursor().isEmpty())throw new IllegalStateException("GUI unavailable");
+        quests.requireListDisplay(session.context(),rows);
+        p.openInventory(new Screen(p.getUniqueId(),session,QuestScreens.npc(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0),"npc",npc,0).inventory);
+    }
+    public static net.kyori.adventure.inventory.Book book(QuestBookView view,List<Component> actions){
+        var pages=new ArrayList<Component>();view.pages().forEach(page->pages.add(Component.text(page)));
+        if(!actions.isEmpty()){Component page=Component.text("퀘스트 진행\n\n");for(var action:actions)page=page.append(action).append(Component.newline()).append(Component.newline());pages.add(page);}
+        return net.kyori.adventure.inventory.Book.book(Component.text(view.title()),Component.text("Hearth"),pages);
+    }
+    public void showBook(Player p,PlayerSessions.Session session,QuestBookView view,List<Component> actions){
+        if(closed||players.current(p)!=session||!p.getItemOnCursor().isEmpty())throw new IllegalStateException("STALE_QUEST_BOOK");
+        p.closeInventory();p.openBook(book(view,actions));
+    }
+    private void acceptedBook(Player p,PlayerSessions.Session session,QuestJournal.View view,String id){
+        journal.requireView(session.context(),view);
+        var detail=QuestBookView.accepted(catalog,view.states(),view.exploration().blockedQuests(),id);
+        if(detail.isEmpty()){p.sendMessage(Component.text(QuestListView.UNAVAILABLE));return;}
+        showBook(p,session,detail.get(),List.of(Component.text("[진행 관리]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthquest manage "+id)),Component.text("[퀘스트 목록]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthquest list"))));
     }
     private java.util.function.BiConsumer<Player,String> questAction=(p,c)->{};
     public void questAction(java.util.function.BiConsumer<Player,String> handler){questAction=handler;}
@@ -123,6 +146,12 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(requests.containsKey(p.getUniqueId())){p.sendMessage(Component.text("이전 정보 조회를 처리 중입니다."));return true;}
             load(p,s,v->journal.projectInformation(s.context(),v,()->players.current(p)==s).lines(query.get()).forEach(line->p.sendMessage(Component.text(line))));return true;
         }
+        if(command.equals("/hearthquest list")){load(p,s,v->open(p,s,v,"quests",null,0));return true;}
+        if(command.startsWith("/hearthquest info ")||command.startsWith("/hearthquest manage ")){
+            String[] parts=command.split(" ",-1);
+            if(parts.length!=3||!parts[2].matches("[a-z][a-z0-9_]{0,63}")){p.sendMessage(Component.text(QuestListView.UNAVAILABLE));return true;}
+            load(p,s,v->{if(parts[1].equals("info"))acceptedBook(p,s,v,parts[2]);else open(p,s,v,"detail",parts[2],0);});return true;
+        }
         if(command.equals("/hearthphone rewards")||command.equals("/hearthphone chapters")){String page=command.endsWith("rewards")?"rewards":"chapters";load(p,s,v->open(p,s,v,page,null,0));return true;}
         if(command.equals("/hearthphone diary")){load(p,s,v->open(p,s,v,"diary",null,0));return true;}
         if(command.equals("/hearthphone")){load(p,s,v->open(p,s,v,"home",null,0));return true;}
@@ -141,7 +170,10 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         Bukkit.getScheduler().runTaskLater(plugin,()->{
             if(players.current(p)!=s || p.getOpenInventory().getTopInventory()!=screen.inventory)return;
             String action=button.action();
-            if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
+            if(action.equals("detail")||action.equals("book"))load(p,s,v->acceptedBook(p,s,v,button.quest()));
+            else if(action.equals("npc-select")||action.equals("npc-action")){p.closeInventory();npcSelection.select(p,screen.quest,button.quest(),action.equals("npc-action")?button.revision():null);}
+            else if(action.equals("npc-close"))p.closeInventory();
+            else if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
             else if(action.equals("quest-retry")||action.equals("quest-reward")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-retry")?"retry ":"claim ")+button.quest());}
             else if(action.equals("quest-chapter-play")||action.equals("quest-chapter-skip")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-chapter-skip")?"chapter-skip ":"chapter-play ")+button.quest());}
             else if(action.equals("quest-chapters")){p.closeInventory();questAction.accept(p,"/hearthquest chapters");}
@@ -153,7 +185,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             else if(action.startsWith("setting:"))request(p,s,journal.setting(s.context(),s,()->players.current(p)==s,action.substring(8),button.revision()==1),v->open(p,s,v,"settings",null,0));
             else if(action.equals("place-notice"))request(p,s,journal.readPlaceNotice(s.context(),s,()->players.current(p)==s,button.quest()),v->open(p,s,v,"place",button.quest(),0));
             else if(action.equals("read-all"))request(p,s,journal.readAll(s.context(),s,()->players.current(p)==s),v->open(p,s,v,"notices",null,0));
-            else if(action.equals("notice"))request(p,s,journal.readNotice(s.context(),s,()->players.current(p)==s,button.quest(),button.revision()),v->open(p,s,v,"detail",button.quest(),0));
+            else if(action.equals("notice"))request(p,s,journal.readNotice(s.context(),s,()->players.current(p)==s,button.quest(),button.revision()),v->acceptedBook(p,s,v,button.quest()));
             else load(p,s,v->open(p,s,v,action,button.quest(),(int)button.revision()));
         },1);
     }

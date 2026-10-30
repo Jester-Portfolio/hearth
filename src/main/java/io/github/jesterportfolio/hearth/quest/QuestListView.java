@@ -20,18 +20,15 @@ public final class QuestListView {
         for(String id:new TreeSet<>(catalog.questIds())) {
             var state=Objects.requireNonNull(states.get(id));
             if(state.phase()==QuestStore.Phase.NOT_ACCEPTED)continue;
-            String status=switch(state.phase()) {
-                case ACTIVE -> "진행 중";
-                case REPORT_READY -> "보고 대기";
-                case COMPLETED -> "완료";
-                case FAILED -> "실패 · 재시작 대기";
-                case SKIPPED -> "장 스킵 · 개인 선행 조건 충족";
-                default -> throw new IllegalArgumentException("Unsupported list phase");
-            };
+            String status=status(state.phase());
             rows.add(new Entry(id,catalog.quest(id).title(),state.phase(),status));
         }
         return List.copyOf(rows);
     }
+    public static String status(QuestStore.Phase phase){return switch(phase){
+        case NOT_ACCEPTED->"미수락";case ACTIVE->"진행 중";case REPORT_READY->"보고 대기";case COMPLETED->"완료";
+        case FAILED->"실패 · 재시작 대기";case SKIPPED->"장 스킵 · 개인 선행 조건 충족";
+    };}
     public enum Filter{ALL,REPORTING,TRACKED,COMPLETED}
     public static List<Entry> filtered(QuestCatalog catalog,Map<String,QuestStore.Saved> states,Set<String> tracked,Set<String> blocked,Filter filter){
         return entries(catalog,states).stream().filter(q->!blocked.contains(q.questId())).filter(q->switch(filter){

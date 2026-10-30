@@ -951,6 +951,16 @@ public final class SessionVerification implements AutoCloseable {
                     check(screen.getInventory().getSize()==54&&buttons.size()==buttons.stream().map(QuestScreens.Button::slot).distinct().count(),"navigation_screen_"+page);
                 }
                 check(QuestScreens.screen(catalog,view,"detail",content.id(),0).stream().anyMatch(b->b.action().equals("npc-dialogue")),"navigation_report_conversation_link");
+                var bookView=QuestBookView.accepted(catalog,view.states(),view.exploration().blockedQuests(),content.id()).orElseThrow();
+                var book=PaperQuestUI.book(bookView,List.of(Component.text("[퀘스트 목록]")));
+                check(book.pages().size()==bookView.pages().size()+1&&book.title().equals(Component.text(content.title())),"quest_book_real_Adventure_title_pages");
+                var npcButtons=QuestScreens.npc(catalog,content.npcId(),view.states(),q->journal.questAllowed(a1,q.id()),0);
+                var npcScreen=new PaperQuestUI.Screen(a1.playerId(),s1,npcButtons,"npc",content.npcId(),0);
+                var choice=npcButtons.stream().filter(button->content.id().equals(button.quest())&&button.action().equals("npc-select")).findFirst().orElseThrow();
+                var icon=npcScreen.getInventory().getItem(choice.slot());
+                check(icon.getType()==Material.BOOK&&icon.getItemMeta().displayName().equals(Component.text(choice.label())),"quest_NPC_GUI_item_title_status_book_icon");
+                check(npcButtons.stream().anyMatch(button->content.id().equals(button.quest())&&button.action().equals("npc-action")&&button.revision()==1),"quest_NPC_GUI_report_action_current_revision");
+                check(QuestBookView.accepted(catalog,view.states(),view.exploration().blockedQuests(),"unknown").isEmpty(),"quest_book_unknown_no_information");
                 check(codec.equivalent(one.capture(),inventory),"navigation_inventory_unchanged");
                 return questRead(a1,QuestStore.Phase.REPORT_READY,1);
             }).thenCompose(v->quests.advance(qa,QuestStore.Phase.COMPLETED)).thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1)))
@@ -1191,7 +1201,7 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<Void> batchUi(){return journal.load(a1,s1,()->true).thenAccept(view->{
         var before=one.capture();check(QuestScreens.screen(catalog,view,"home",null,0).size()==6,"batch_six_phone_menus");
         var rows=QuestScreens.screen(catalog,view,"detail","route_marker",0);
-        check(rows.stream().anyMatch(b->b.label().contains("[2/3]")) && rows.stream().anyMatch(b->b.action().equals("track")),"batch_GUI_current_step_and_track_button");
+        check(rows.stream().anyMatch(b->b.action().equals("book")) && rows.stream().anyMatch(b->b.action().equals("track"))&&QuestBookView.accepted(catalog,view.states(),view.exploration().blockedQuests(),"route_marker").orElseThrow().pages().toString().replace("\n","").contains("[2/3]"),"batch_GUI_book_current_step_and_track_button");
         var screen=new PaperQuestUI.Screen(a1.playerId(),s1,rows,"detail","route_marker",0);
         check(screen.getInventory().getSize()==54 && screen.getInventory().getHolder()==screen && codec.equivalent(before,one.capture()),"batch_real_Paper_GUI_inventory_holder_no_41slot_change");
         var enabled=new QuestJournal.View(view.states(),new io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Journal(view.journal().tracked(),new io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Preferences(true,0),view.journal().notices()));

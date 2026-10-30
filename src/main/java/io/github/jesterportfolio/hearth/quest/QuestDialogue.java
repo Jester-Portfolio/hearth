@@ -55,6 +55,12 @@ public final class QuestDialogue {
         for(var c:content)tickets.put(c.id(),new Ticket(player,session,run,world,entity,npc,c.id(),UUID.randomUUID(),"select"));
         current.put(player,tickets);return List.copyOf(tickets.values());
     }
+    /** 서버가 소유한 현재 아이템창의 선택만 기존 nonce 검증 경로로 전달합니다. */
+    public Ticket selection(UUID player,Object session,String npc,String quest){
+        var scope=conversation(player);var rows=current.get(player);var ticket=rows==null?null:rows.get(quest);
+        if(scope.session()!=session||!scope.npc().equals(npc)||ticket==null||!ticket.action().equals("select")||consumed.contains(ticket.nonce()))throw new IllegalArgumentException("Stale GUI dialogue");
+        return ticket;
+    }
     public boolean current(Ticket ticket){var rows=current.get(ticket.player());return rows!=null && rows.get(ticket.quest())==ticket;}
     /** 선택 응답에서만 새 수락/보고 토큰을 만듭니다. 다른 퀘스트 선택지는 그대로 유지합니다. */
     public Ticket action(Ticket selected,String action){

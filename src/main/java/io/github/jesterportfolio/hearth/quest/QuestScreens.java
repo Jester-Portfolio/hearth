@@ -11,6 +11,7 @@ public final class QuestScreens {
     public static final List<String> MENUS=List.of("퀘스트","월드 지도","일지","공동체","알림","설정");
     public static List<Button> screen(QuestCatalog catalog,QuestJournal.View view,String page,String id,int offset){
         var out=new ArrayList<Button>();
+        if(page.equals("npc"))return npc(catalog,id,view.states(),c->!view.exploration().blockedQuests().contains(c.id()),offset);
         if(page.equals("home")){
             String[] destinations={"quests","map","diary","community","notices","settings"};
             for(int i=0;i<MENUS.size();i++)out.add(new Button(i,MENUS.get(i),destinations[i],null,0));return List.copyOf(out);
@@ -23,7 +24,7 @@ public final class QuestScreens {
             var filter=switch(page){case "reporting"->QuestListView.Filter.REPORTING;case "tracked"->QuestListView.Filter.TRACKED;case "completed"->QuestListView.Filter.COMPLETED;default->QuestListView.Filter.ALL;};
             var entries=QuestListView.filtered(catalog,view.states(),view.journal().tracked(),view.exploration().blockedQuests(),filter).stream().filter(q->!page.equals("rewards")||Optional.ofNullable(view.completion().rewards().get(q.questId())).map(QuestCompletionView.Reward::claimable).orElse(false)).toList();int end=Math.min(entries.size(),offset+36);
             for(int i=offset;i<end;i++){var q=entries.get(i);out.add(new Button(i-offset,"["+q.status()+"] "+q.title(),"detail",q.questId(),0));}
-            if(entries.isEmpty())out.add(new Button(0,"표시할 수 있는 퀘스트가 없습니다.","none",null,0));
+            if(entries.isEmpty())out.add(new Button(0,page.equals("quests")?"수락한 퀘스트가 없습니다":"표시할 수 있는 퀘스트가 없습니다.","none",null,0));
             navigation(out,offset,entries.size(),page);
             String[] tabs={"quests","reporting","tracked","completed"};String[] names={"전체","보고 가능","추적 중","완료"};
             for(int i=0;i<tabs.length;i++)out.add(new Button(36+i,names[i],tabs[i],null,0));
@@ -34,7 +35,7 @@ public final class QuestScreens {
             var detail=view.exploration().blockedQuests().contains(id)?Optional.<QuestListView.Detail>empty():QuestListView.detail(catalog,view.states(),id);
             if(detail.isEmpty())out.add(new Button(0,QuestListView.UNAVAILABLE,"none",null,0));
             else{
-                int slot=0;for(String line:QuestListView.detailLines(detail))out.add(new Button(slot++,line,"none",null,0));
+                out.add(new Button(0,"["+detail.get().quest().status()+"] "+detail.get().quest().title(),"book",id,0));
                 var row=view.states().get(id);boolean tracked=view.journal().tracked().contains(id);
                 if(row.phase()==QuestStore.Phase.REPORT_READY)out.add(new Button(11,"가까운 NPC와 보고 대화 열기","npc-dialogue",id,0));
                 if(row.phase()==QuestStore.Phase.FAILED)out.add(new Button(12,"퀘스트 재시작","quest-retry",id,0));
@@ -56,6 +57,21 @@ public final class QuestScreens {
         }
         else out.add(new Button(0,"미구현: "+switch(page){case "map"->"월드 지도";case "diary"->"일지";case "community"->"공동체 정보";default->"요청 화면";},"none",null,0));
         return List.copyOf(out);
+    }
+    public static List<Button> npc(QuestCatalog catalog,String npc,Map<String,QuestStore.Saved> states,java.util.function.Predicate<QuestContent> allowed,int offset){
+        var options=NpcQuestView.build(catalog,npc,states,allowed).options();var buttons=new ArrayList<Button>();
+        for(int i=offset;i<Math.min(options.size(),offset+18);i++){
+            var q=options.get(i);var state=states.get(q.quest());var content=catalog.quest(q.quest());
+            buttons.add(new Button(i-offset,"["+q.status()+"] "+q.title(),"npc-select",q.quest(),state.revision()));
+            if(state.phase()==QuestStore.Phase.REPORT_READY||state.phase()==QuestStore.Phase.NOT_ACCEPTED&&content.startMode()==QuestContent.StartMode.NPC)
+                buttons.add(new Button(18+i-offset,(state.phase()==QuestStore.Phase.NOT_ACCEPTED?"수락: ":"보고: ")+q.title(),"npc-action",q.quest(),state.revision()));
+        }
+        if(options.isEmpty())buttons.add(new Button(0,"현재 대화할 퀘스트가 없습니다.","none",null,0));
+        buttons.add(new Button(45,"대화 닫기","npc-close",null,0));
+        if(offset>0)buttons.add(new Button(47,"이전 페이지","npc",npc,Math.max(0,offset-18)));
+        if(offset+18<options.size())buttons.add(new Button(51,"다음 페이지","npc",npc,offset+18));
+        for(int i=0;i<buttons.size();i++){var b=buttons.get(i);if(b.action().equals("npc"))buttons.set(i,new Button(b.slot(),b.label(),b.action(),npc,b.revision()));}
+        return List.copyOf(buttons);
     }
     private static List<Button> completion(QuestJournal.View view,String page,String id,int offset){
         var rows=new ArrayList<Button>();String back="quests";
