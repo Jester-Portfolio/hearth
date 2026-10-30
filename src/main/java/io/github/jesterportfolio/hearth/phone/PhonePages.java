@@ -26,6 +26,9 @@ public final class PhonePages {
             case "diary"->{var d=data.diary().get(index);title=d.title();lines=List.of(d.shared()?"공동체 공유 기록 · 개인 완료/보상과 별개":"개인 기록",d.category(),d.summary(),d.detail());}
             default->throw new IllegalArgumentException("UNKNOWN_PHONE_SECTION");
         }
+        return text(title,lines);
+    }
+    public static Detail text(String title,List<String> lines){
         // 개별 본문 길이를 제한하되 다음 페이지에서 남은 내용도 읽을 수 있게 합니다.
         String text=String.join("\n\n",lines);int[] points=text.codePoints().toArray();var pages=new ArrayList<String>();
         for(int i=0;i<points.length;i+=480)pages.add(new String(points,i,Math.min(480,points.length-i)));

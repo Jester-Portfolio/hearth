@@ -988,9 +988,29 @@ public final class SessionVerification implements AutoCloseable {
                         .thenCompose(saved->{var target=io.github.jesterportfolio.hearth.phone.PhoneQuestLinks.notices(catalog,saved).stream().filter(n->n.source().revision()==0&&n.source().quest().equals(content.id())).findFirst().orElseThrow();check(target.source().read()&&target.section().equals("quests"),"phone_notice_read_saved_and_target_resolved");return journal.readAll(a1,s1,()->coordinator.playable(s1));})
                         .thenCompose(saved->{check(io.github.jesterportfolio.hearth.phone.PhoneQuestLinks.notices(catalog,saved).stream().allMatch(n->n.source().read()),"phone_all_notices_read_DB");return mainResult(store.readJournal(a2));})
                         .thenCompose(other->{check(other.notices().isEmpty(),"phone_notice_other_player_unchanged");return mainResult(store.readJournal(ctx(b,1)));})
-                        .thenCompose(other->{check(other.notices().isEmpty(),"phone_notice_other_run_unchanged");check(codec.equivalent(before,one.capture()),"phone_notice_inventory_unchanged");return questRead(a1,QuestStore.Phase.COMPLETED,2);});
+                        .thenCompose(other->{check(other.notices().isEmpty(),"phone_notice_other_run_unchanged");check(codec.equivalent(before,one.capture()),"phone_notice_inventory_unchanged");return questRead(a1,QuestStore.Phase.COMPLETED,2).thenCompose(v2->phoneLibrary());});
                 });
             });
+    }
+    private CompletionStage<Void> phoneLibrary(){
+        var before=one.capture();
+        var fact=new io.github.jesterportfolio.hearth.exploration.ExplorationContent.Fact("phone_personal_note","PERSON","공개 시험 인물 기록","합성 요약","개인이 확인한 시험 정보",1,true);
+        var updated=new io.github.jesterportfolio.hearth.exploration.ExplorationContent.Fact(fact.id(),fact.category(),fact.title(),fact.summary(),"갱신된 공개 합성 정보",2,true);
+        var shared=new io.github.jesterportfolio.hearth.exploration.ExplorationContent.Fact("phone_shared_note","STORY","공개 시험 공동 기록","공유 요약","시험용 공유 기록",1,true);
+        return mainResult(store.recordFact(a1,fact,false)).thenCompose(v->mainResult(store.recordFact(a1,updated,false))).thenCompose(v->mainResult(store.recordFact(a1,shared,true)))
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{
+                journal.projectInformation(a1,view,()->coordinator.playable(s1));
+                for(String section:List.of("tracked","reporting","completed","STORY","PERSON","EXPLORATION","CHRONICLE","regions","members","shared","conditions","branches")){
+                    var rows=io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,section);
+                    for(var row:rows)if(row.targetSection()==null){var text=io.github.jesterportfolio.hearth.phone.PhonePages.text(row.title(),row.lines());check(!text.pages().isEmpty(),"phone_library_detail_"+section);}
+                }
+                check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"PERSON").stream().anyMatch(row->row.lines().contains("갱신된 공개 합성 정보")),"phone_library_updated_personal_fact_DB");
+                check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"CHRONICLE").size()==3,"phone_library_old_and_new_events_DB");
+                check(codec.equivalent(before,one.capture()),"phone_library_inventory_preserved");
+            }).thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->{
+                check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"PERSON").isEmpty(),"phone_library_other_player_no_private_fact");
+                check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"STORY").size()==1,"phone_library_same_run_shared_fact");
+            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records"));
     }
     private CompletionStage<Void> gameInformation(){
         return mainResult(store.readJournal(a1)).thenCompose(before->journal.information(a1,s1,()->coordinator.playable(s1)).thenCompose(info->{

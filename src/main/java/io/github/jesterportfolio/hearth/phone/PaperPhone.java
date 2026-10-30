@@ -59,6 +59,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private void app(Player p,int app){
         if(app==0){chat(p);return;}var s=advance(p);
         if(app==5){settings(p,s);return;}
+        if(app==4){libraryMenu(p,s,"diary");return;}
         if(app==2){info(p,s,"연구",List.of("연구 기능은 아직 구현되지 않았습니다."));return;}
         String section=app==1?"quests":app==3?"map":"diary";
         browse(p,s,section,1);
@@ -78,18 +79,26 @@ public final class PaperPhone implements Listener,AutoCloseable {
             for(var entry:rows.entries())actions.add(button(p,s,entry.label(),()->detail(p,advance(p),view,section,entry.index(),1,page)));
             if(page>1)actions.add(button(p,s,"이전 페이지",()->browseSnapshot(p,advance(p),view,section,page-1)));
             if(page<rows.total())actions.add(button(p,s,"다음 페이지",()->browseSnapshot(p,advance(p),view,section,page+1)));
-            if(section.equals("quests"))actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
+            if(section.equals("quests")){
+                actions.add(button(p,s,"추적 중",()->loadLibrary(p,advance(p),"tracked",1)));
+                actions.add(button(p,s,"보고 가능",()->loadLibrary(p,advance(p),"reporting",1)));
+                actions.add(button(p,s,"완료",()->loadLibrary(p,advance(p),"completed",1)));
+                actions.add(button(p,s,"확정된 공유 분기",()->loadLibrary(p,advance(p),"branches",1)));
+                actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
+            }
+            if(section.equals("map"))actions.add(button(p,s,"공개 지역·접근 상태",()->loadLibrary(p,advance(p),"regions",1)));
             actions.add(button(p,s,"새로고침",()->browse(p,advance(p),section,1)));actions.add(button(p,s,"홈",()->home(p)));
             String title=switch(section){case "quests"->"퀘스트";case "map"->"월드 지도 정보";default->"기록";};
             show(p,s,title,List.of(DialogBody.plainMessage(Component.text(rows.entries().isEmpty()?"조회 가능한 정보가 없습니다.":"항목을 눌러 상세 내용을 확인하세요. "+page+" / "+rows.total()))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("정보가 변경됐거나 저장 중입니다. 홈에서 앱을 다시 열어 주세요."));}
     }
-    private void detail(Player p,Screen s,QuestJournal.View view,String section,int index,int page,int listPage){
+    private void detail(Player p,Screen s,QuestJournal.View view,String section,int index,int page,int listPage){detail(p,s,view,section,index,page,listPage,section);}
+    private void detail(Player p,Screen s,QuestJournal.View view,String section,int index,int page,int listPage,String returnSection){
         if(!valid(p,s))return;
         try{
             var detail=PhonePages.detail(information(p,s,view),section,index);var actions=new ArrayList<ActionButton>();
-            if(page>1)actions.add(button(p,s,"앞 내용",()->detail(p,advance(p),view,section,index,page-1,listPage)));
-            if(page<detail.pages().size())actions.add(button(p,s,"다음 내용",()->detail(p,advance(p),view,section,index,page+1,listPage)));
+            if(page>1)actions.add(button(p,s,"앞 내용",()->detail(p,advance(p),view,section,index,page-1,listPage,returnSection)));
+            if(page<detail.pages().size())actions.add(button(p,s,"다음 내용",()->detail(p,advance(p),view,section,index,page+1,listPage,returnSection)));
             if(section.equals("quests")){
                 var quest=PhoneQuestLinks.quests(catalog,view).get(index);
                 if(quest.trackable()||quest.tracked())actions.add(button(p,s,quest.tracked()?"추적 해제":"추적",()->{
@@ -101,9 +110,47 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 if(quest.reporting())actions.add(button(p,s,"가까운 NPC와 보고 대화",()->{information(p,s,view);advance(p);p.closeDialog();report.accept(p,quest.id());}));
                 actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
             }
-            actions.add(button(p,s,"목록",()->browseSnapshot(p,advance(p),view,section,listPage)));actions.add(button(p,s,"홈",()->home(p)));
+            actions.add(button(p,s,"목록",()->{var next=advance(p);if(returnSection.equals(section))browseSnapshot(p,next,view,section,listPage);else librarySnapshot(p,next,view,returnSection,listPage);}));actions.add(button(p,s,"홈",()->home(p)));
             show(p,s,detail.title(),List.of(DialogBody.plainMessage(Component.text(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1)))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("현재 정보로 다시 조회해 주세요."));}
+    }
+    private void libraryMenu(Player p,Screen s,String menu){
+        var actions=new ArrayList<ActionButton>();
+        String[] sections=menu.equals("diary")?new String[]{"STORY","PERSON","EXPLORATION","CHRONICLE"}:new String[]{"members","shared","conditions"};
+        for(String section:sections)actions.add(button(p,s,PhoneLibrary.title(section),()->loadLibrary(p,advance(p),section,1)));
+        if(menu.equals("diary"))actions.add(button(p,s,"공동체 정보",()->libraryMenu(p,advance(p),"community")));
+        actions.add(button(p,s,"홈",()->home(p)));
+        show(p,s,menu.equals("diary")?"기록":"공동체",List.of(DialogBody.plainMessage(Component.text(menu.equals("diary")?"개인 기록과 공동체 공유 기록을 구분합니다.":"구성원·스토리 진행·진행 조건만 확인합니다. 가입/초대/탈퇴/권한 관리 기능은 없습니다."))),List.of(),actions);
+    }
+    private void loadLibrary(Player p,Screen s,String section,int page){
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"조회 오류",List.of("빈 기록으로 처리하지 않습니다. 다시 조회해 주세요."));return;}librarySnapshot(p,s,view,section,page);
+        },owner);
+    }
+    private void librarySnapshot(Player p,Screen s,QuestJournal.View view,String section,int page){
+        if(!valid(p,s))return;
+        try{
+            information(p,s,view);var rows=PhoneLibrary.rows(catalog,view,section);int total=Math.max(1,(rows.size()+5)/6),current=Math.min(Math.max(page,1),total);var actions=new ArrayList<ActionButton>();
+            for(int i=(current-1)*6;i<Math.min(rows.size(),current*6);i++){int index=i;var row=rows.get(i);actions.add(button(p,s,row.title(),()->{
+                var next=advance(p);if(row.targetSection()!=null)detail(p,next,view,row.targetSection(),row.targetIndex(),1,current,section);else libraryDetail(p,next,view,section,index,1,current);
+            }));}
+            if(current>1)actions.add(button(p,s,"이전 페이지",()->librarySnapshot(p,advance(p),view,section,current-1)));
+            if(current<total)actions.add(button(p,s,"다음 페이지",()->librarySnapshot(p,advance(p),view,section,current+1)));
+            actions.add(button(p,s,"새로고침",()->loadLibrary(p,advance(p),section,1)));
+            actions.add(button(p,s,"분류 메뉴",()->{var next=advance(p);if(Set.of("tracked","reporting","completed","branches").contains(section))browse(p,next,"quests",1);else if(section.equals("regions"))browse(p,next,"map",1);else libraryMenu(p,next,Set.of("members","shared","conditions").contains(section)?"community":"diary");}));
+            actions.add(button(p,s,"홈",()->home(p)));
+            show(p,s,PhoneLibrary.title(section),List.of(DialogBody.plainMessage(Component.text(rows.isEmpty()?"현재 공개된 정보가 없습니다.":current+" / "+total))),List.of(),actions);
+        }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
+    }
+    private void libraryDetail(Player p,Screen s,QuestJournal.View view,String section,int index,int page,int listPage){
+        if(!valid(p,s))return;
+        try{
+            information(p,s,view);var entry=PhoneLibrary.rows(catalog,view,section).get(index);var text=PhonePages.text(entry.title(),entry.lines());var actions=new ArrayList<ActionButton>();
+            if(page>1)actions.add(button(p,s,"앞 내용",()->libraryDetail(p,advance(p),view,section,index,page-1,listPage)));
+            if(page<text.pages().size())actions.add(button(p,s,"다음 내용",()->libraryDetail(p,advance(p),view,section,index,page+1,listPage)));
+            actions.add(button(p,s,"목록",()->librarySnapshot(p,advance(p),view,section,listPage)));actions.add(button(p,s,"홈",()->home(p)));
+            show(p,s,text.title(),List.of(DialogBody.plainMessage(Component.text(page+" / "+text.pages().size()+"\n\n"+text.pages().get(page-1)))),List.of(),actions);
+        }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
     }
     private void notices(Player p,Screen s,int page){
         journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
