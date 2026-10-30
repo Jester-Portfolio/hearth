@@ -23,4 +23,21 @@ final class PhoneChatTest {
     @Test void timeoutReleasesBusyWithoutInventingAnswer()throws Exception{
         var chat=new PhoneChat(q->new CompletableFuture<>(),Runnable::run,20);assertThrows(ExecutionException.class,()->chat.submit("대기").toCompletableFuture().get(1,TimeUnit.SECONDS));assertFalse(chat.busy());assertNotNull(chat.error());assertTrue(chat.history().isEmpty());
     }
+    @Test void retryUsesOnlyFailedQuestionAndClearIsSessionLocal(){
+        var answers=new java.util.ArrayList<String>();var calls=new java.util.concurrent.atomic.AtomicInteger();
+        var chat=new PhoneChat(q->{answers.add(q);return calls.getAndIncrement()==0?CompletableFuture.failedFuture(new IllegalStateException()):CompletableFuture.completedFuture("성공");},Runnable::run);
+        var other=new PhoneChat(LocalAssistant.mock(),Runnable::run);other.submit("다른 개인").toCompletableFuture().join();
+        assertTrue(chat.submit("실패한 질문").toCompletableFuture().isCompletedExceptionally());assertTrue(chat.canRetry());chat.retry().toCompletableFuture().join();
+        assertEquals(java.util.List.of("실패한 질문","실패한 질문"),answers);assertFalse(chat.canRetry());chat.clear();assertTrue(chat.history().isEmpty());assertNull(chat.question());assertFalse(other.history().isEmpty());
+    }
+    @Test void clearAndRetryCannotInterruptPendingOrClosedChat(){
+        var pending=new CompletableFuture<String>();var chat=new PhoneChat(q->pending,Runnable::run);chat.submit("대기");assertThrows(IllegalStateException.class,chat::clear);assertTrue(chat.retry().toCompletableFuture().isCompletedExceptionally());
+        pending.completeExceptionally(new IllegalStateException());assertTrue(chat.canRetry());chat.close();assertFalse(chat.canRetry());assertThrows(IllegalStateException.class,chat::clear);
+    }
+
+    @Test void invalidInputCannotRetryAnEarlierSuccessfulQuestion(){
+        var chat=new PhoneChat(LocalAssistant.mock(),Runnable::run);chat.submit("이전 성공").toCompletableFuture().join();
+        assertTrue(chat.submit("").toCompletableFuture().isCompletedExceptionally());assertFalse(chat.canRetry());assertTrue(chat.retry().toCompletableFuture().isCompletedExceptionally());assertEquals(1,chat.history().size());
+    }
+
 }

@@ -961,6 +961,11 @@ public final class SessionVerification implements AutoCloseable {
                 if(plugin.getConfig().getBoolean("phone-dialog-enabled",false)){
                     var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose("HEARTH OS",List.of(io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text("공개 Dialog 시험"))),List.of(io.papermc.paper.registry.data.dialog.input.DialogInput.text("question",Component.text("질문")).maxLength(256).build()),List.of(io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("홈")).build()));
                     check(dialog!=null,"phone_actual_Paper_Dialog_input_factory");
+                    var data=journal.projectInformation(a1,view,()->coordinator.playable(s1));
+                    var page=io.github.jesterportfolio.hearth.phone.PhonePages.list(data,"quests",1);
+                    check(!page.entries().isEmpty(),"phone_apps_own_accepted_quest_list");
+                    var detail=io.github.jesterportfolio.hearth.phone.PhonePages.detail(data,"quests",page.entries().getFirst().index());
+                    check(!detail.pages().isEmpty(),"phone_apps_own_quest_detail");
                 }
                 check(icon.getType()==Material.BOOK&&icon.getItemMeta().displayName().equals(Component.text(choice.label())),"quest_NPC_GUI_item_title_status_book_icon");
                 check(npcButtons.stream().anyMatch(button->content.id().equals(button.quest())&&button.action().equals("npc-action")&&button.revision()==1),"quest_NPC_GUI_report_action_current_revision");
@@ -969,7 +974,13 @@ public final class SessionVerification implements AutoCloseable {
                 return questRead(a1,QuestStore.Phase.REPORT_READY,1);
             }).thenCompose(v->quests.advance(qa,QuestStore.Phase.COMPLETED)).thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1)))
             .thenCompose(view->{check(!view.journal().tracked().contains(content.id()),"navigation_completed_tracking_cleared");check(QuestListView.filtered(catalog,view.states(),view.journal().tracked(),view.exploration().blockedQuests(),QuestListView.Filter.REPORTING).isEmpty(),"navigation_completed_removed_from_report_list");
-                return questRead(a1,QuestStore.Phase.COMPLETED,2).thenCompose(v->questRead(a2,QuestStore.Phase.NOT_ACCEPTED,-1)).thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1));
+                return questRead(a1,QuestStore.Phase.COMPLETED,2).thenCompose(v->questRead(a2,QuestStore.Phase.NOT_ACCEPTED,-1)).thenCompose(v->questRead(ctx(b,1),QuestStore.Phase.NOT_ACCEPTED,-1)).thenCompose(v->{
+                    if(!plugin.getConfig().getBoolean("phone-dialog-enabled",false))return CompletableFuture.completedFuture(null);
+                    var before=one.capture();return journal.setting(a1,s1,()->coordinator.playable(s1),"minimap",false)
+                        .thenCompose(saved->{check(!saved.journal().preferences().minimapEnabled(),"phone_settings_DB_marker_toggle");return mainResult(store.readJournal(a2));})
+                        .thenCompose(other->{check(other.preferences().minimapEnabled(),"phone_settings_other_player_unchanged");return mainResult(store.readJournal(ctx(b,1)));})
+                        .thenAccept(other->{check(other.preferences().minimapEnabled(),"phone_settings_other_run_unchanged");check(codec.equivalent(before,one.capture()),"phone_settings_inventory_unchanged");});
+                });
             });
     }
     private CompletionStage<Void> gameInformation(){

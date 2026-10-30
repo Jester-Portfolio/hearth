@@ -49,7 +49,7 @@ public final class QuestJournal {
         if(community!=null && (!community.members(ctx).equals(view.exploration().members()) || !community.status(ctx,view.exploration().story(),view.exploration().members()).equals(view.exploration().conditions())))throw new IllegalStateException("STALE_COMMUNITY");
     }
     public CompletionStage<GameInformation> information(ServerProgressAccess.Context ctx,Object token,BooleanSupplier current){return load(ctx,token,current).thenApplyAsync(view->projectInformation(ctx,view,current),owner);}
-    GameInformation projectInformation(ServerProgressAccess.Context ctx,View view,BooleanSupplier current){valid(current);var key=new Key(ctx.storyRunId(),ctx.playerId());if(holds.contains(key)||pending.containsKey(key))throw new IllegalStateException("INFORMATION_BUSY_OR_HOLD");requireView(ctx,view);return GameInformation.build(catalog,view);}
+    public GameInformation projectInformation(ServerProgressAccess.Context ctx,View view,BooleanSupplier current){valid(current);var key=new Key(ctx.storyRunId(),ctx.playerId());if(holds.contains(key)||pending.containsKey(key))throw new IllegalStateException("INFORMATION_BUSY_OR_HOLD");requireView(ctx,view);return GameInformation.build(catalog,view);}
     public void changed(Consumer<ServerProgressAccess.Context> listener){check.run();changed=listener;}
     public QuestJournal(QuestJournalStore store,PersonalQuest quests,QuestCatalog catalog,Executor owner,Runnable check){this.store=store;this.quests=quests;this.catalog=catalog;this.owner=owner;this.check=check;}
     private void valid(BooleanSupplier valid){check.run();if(closed || !valid.getAsBoolean())throw new IllegalStateException("STALE_JOURNAL");}
