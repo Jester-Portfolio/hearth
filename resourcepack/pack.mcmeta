@@ -1,0 +1,13 @@
+{
+  "pack": {
+    "description": "Hearth 개발 스마트폰 Dialog UI",
+    "min_format": [
+      88,
+      0
+    ],
+    "max_format": [
+      88,
+      0
+    ]
+  }
+}

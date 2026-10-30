@@ -27,3 +27,9 @@ world-effect-verification-enabled: false
 
 # 새 격리 환경에서만 공개 시험 코스·안내를 켭니다.
 playthrough-verification-enabled: false
+
+# 기존 격리 퀘스트/세션 게이트 안에서만 동작하는 Dialog 프로토타입.
+phone-dialog-enabled: false
+phone-ai-mode: mock
+# local 모드: 인증정보 없는 루프백 HTTP text/plain 프로토콜만 지원합니다.
+phone-ai-endpoint: http://127.0.0.1:11435/ask

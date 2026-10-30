@@ -958,6 +958,10 @@ public final class SessionVerification implements AutoCloseable {
                 var npcScreen=new PaperQuestUI.Screen(a1.playerId(),s1,npcButtons,"npc",content.npcId(),0);
                 var choice=npcButtons.stream().filter(button->content.id().equals(button.quest())&&button.action().equals("npc-select")).findFirst().orElseThrow();
                 var icon=npcScreen.getInventory().getItem(choice.slot());
+                if(plugin.getConfig().getBoolean("phone-dialog-enabled",false)){
+                    var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose("HEARTH OS",List.of(io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text("공개 Dialog 시험"))),List.of(io.papermc.paper.registry.data.dialog.input.DialogInput.text("question",Component.text("질문")).maxLength(256).build()),List.of(io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("홈")).build()));
+                    check(dialog!=null,"phone_actual_Paper_Dialog_input_factory");
+                }
                 check(icon.getType()==Material.BOOK&&icon.getItemMeta().displayName().equals(Component.text(choice.label())),"quest_NPC_GUI_item_title_status_book_icon");
                 check(npcButtons.stream().anyMatch(button->content.id().equals(button.quest())&&button.action().equals("npc-action")&&button.revision()==1),"quest_NPC_GUI_report_action_current_revision");
                 check(QuestBookView.accepted(catalog,view.states(),view.exploration().blockedQuests(),"unknown").isEmpty(),"quest_book_unknown_no_information");

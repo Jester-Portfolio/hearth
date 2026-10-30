@@ -40,6 +40,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final Map<UUID,Projection> projections=new HashMap<>();
     private final Map<UUID,Map<String,Mark>> marks=new HashMap<>();
     private final PaperQuestUI ui;
+    private final io.github.jesterportfolio.hearth.phone.PaperPhone phone;
     private io.github.jesterportfolio.hearth.story.PaperStoryAdapter story;
     public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;ui.storyGuide(p->adapter.guide(p,null));}
     private QuestRules rules=QuestRules.empty();private QuestRewards rewards;private io.github.jesterportfolio.hearth.persistence.QuestCompletionStore completionStore;
@@ -56,6 +57,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         for(var c:catalog.all())for(var goal:c.goals())if(goal.interaction()!=null&&goal.interaction().startsWith("block:")){var material=Material.matchMaterial(goal.interaction().split(":")[4]);if(material==null||!material.isBlock()||material.isAir())throw new IllegalArgumentException("Unknown objective block material");}
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
+        phone=plugin.getConfig().getBoolean("phone-dialog-enabled",false)?new io.github.jesterportfolio.hearth.phone.PaperPhone(plugin,players,journal,owner):null;
         ui.npcSelection((p,npc,quest,revision)->{var s=players.current(p);if(s==null)return;try{var t=dialogues.selection(p.getUniqueId(),s,npc,quest);command(p,dialogues.command(t,"select"),revision);}catch(RuntimeException invalid){unavailable(p,invalid);}});
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
         ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
@@ -294,6 +296,8 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             }catch(IllegalArgumentException error){p.sendMessage(Component.text("현재 유효한 NPC 대화가 아닙니다. 가까이에서 다시 대화해 주세요."));}return true;
         }
         if(story!=null&&story.command(p,command))return true;
+        if(phone!=null&&players.current(p)!=null&&phone.command(p,command))return true;
+        if(command.equals("/hearthphone legacy"))return ui.command(p,"/hearthphone");
         if(ui.command(p,command))return true;
         if(!command.startsWith("/hearthquest"))return false;
         var session=players.current(p);if(session==null)return true;
@@ -409,6 +413,6 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private void unavailable(Player p){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다."));plugin.getLogger().info("HEARTH_QUEST_REQUEST_UNAVAILABLE");}
     private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}
     public void stopUi(){ui.close();}
-    @Override public void close(){if(closed)return;closed=true;expiry.cancel();quests.completed((ctx,id)->{});try{ui.close();}finally{HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
+    @Override public void close(){if(closed)return;closed=true;expiry.cancel();quests.completed((ctx,id)->{});try{io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(phone,ui);}finally{HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
         for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(e->npcId(e)!=null).forEach(Entity::remove);}npcs.clear();marks.values().forEach(rows->rows.values().forEach(this::removeMark));marks.clear();projections.clear();loadingDialogues.clear();}}
 }

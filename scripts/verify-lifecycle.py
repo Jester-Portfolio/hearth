@@ -89,6 +89,7 @@ def main():
     parser.add_argument('--npc-pages', action='store_true', help='NPC 대화 페이지와 토큰 정리를 한 JVM에서 검증합니다')
     parser.add_argument('--quest-locations', action='store_true', help='목표 위치 공개의 표시·저장 경계를 한 JVM에서 검증합니다')
     parser.add_argument('--playthrough', action='store_true', help='공개 시험 코스의 연속 플레이 흐름과 두 JVM 복원을 검증합니다')
+    parser.add_argument('--phone-dialog',action='store_true',help='기존 navigation 시험에서 Dialog 프로토타입을 함께 초기화합니다')
     parser.add_argument('--quest-navigation', action='store_true', help='보고·추적·알림 동선을 한 JVM에서 검증합니다')
     parser.add_argument('--game-information', action='store_true', help='공개 게임 정보 조회 경계를 한 JVM에서 검증합니다')
     parser.add_argument('--npc-views', action='store_true', help='개인 NPC 표시 데이터·표식 엔티티를 한 JVM에서 검증합니다')
@@ -135,6 +136,8 @@ def main():
         parser.error('--quest-locations는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.playthrough and (not args.story_batch or any([args.world_effects,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide])):
         parser.error('--playthrough는 --sessions --quests --story-batch와 함께 단독 실행합니다')
+    if args.phone_dialog and not args.quest_navigation:
+        parser.error("--phone-dialog는 --quest-navigation이 필요합니다")
     if args.quest_navigation and (not args.story_batch or args.world_effects or args.game_information or args.npc_views or args.player_interactions):
         parser.error('--quest-navigation은 --sessions --quests --story-batch와 함께 단독 실행합니다')
     if args.game_information and (not args.story_batch or args.world_effects or args.player_interactions or args.npc_views):
@@ -205,6 +208,8 @@ def main():
         (plugins/'Hearth/quest-demo.yml').write_text(content.partition(cut)[0])
     idle_seconds=10 if args.manual_player else 1
     (plugins/'Hearth/config.yml').write_text(f"quest-verification-enabled: {str(args.quests).lower()}\n"+'verification-enabled: true\ndb-verification-enabled: false\ninventory-verification-enabled: false\nlifecycle-verification-enabled: true\n'+f'lifecycle-test-idle-seconds: {idle_seconds}\n')
+    if args.phone_dialog:
+        with (plugins/'Hearth/config.yml').open('a') as config:config.write('phone-dialog-enabled: true\n')
     if args.combat_state or args.combat_players:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('combat-state-verification-enabled: true\n')
