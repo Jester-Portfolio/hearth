@@ -9,7 +9,7 @@ import java.util.*;
 public record Playthrough(List<Step> steps){
     public enum Kind{QUEST,STAGE,STAGE_COMPLETE,PLACE}
     public record Step(String id,Kind kind,String reference,String title,String hint){}
-    public record Guide(String title,List<String> lines,String command,String talkQuest,boolean complete){public Guide{lines=List.copyOf(lines);}}
+    public record Guide(String title,List<String> lines,String command,String talkQuest,boolean complete,String quest){public Guide(String title,List<String> lines,String command,String talkQuest,boolean complete){this(title,lines,command,talkQuest,complete,null);}public Guide{lines=List.copyOf(lines);}}
     public Playthrough{steps=List.copyOf(steps);}
     public static Playthrough parse(Map<?,?> root,QuestCatalog quests,StoryContent story,ExplorationContent exploration){
         if(!(root.get("format") instanceof Number n)||n.doubleValue()!=1||!(root.get("steps") instanceof List<?> rows)||rows.isEmpty()||rows.size()>64)throw new IllegalArgumentException("Invalid playthrough format");
@@ -37,7 +37,7 @@ public record Playthrough(List<Step> steps){
                 if(view.exploration().blockedQuests().contains(c.id())||!QuestListView.available(c,view.states()))return new Guide("공유 진행 조건 확인",List.of("현재 접근할 수 있는 퀘스트만 안내합니다. 공동체 진행을 먼저 확인해 주세요."),"/hearthstory guide",null,false);
                 String line=saved.phase()==QuestStore.Phase.NOT_ACCEPTED?c.text().get("offer"):c.detailGuidance(saved);
                 boolean talk=saved.phase()==QuestStore.Phase.REPORT_READY||saved.phase()==QuestStore.Phase.NOT_ACCEPTED&&c.startMode()==QuestContent.StartMode.NPC;
-                return new Guide(c.title(),List.of(step.hint(),line,"담당 NPC: "+c.name()),talk?null:saved.phase()==QuestStore.Phase.NOT_ACCEPTED?"/hearthphone":"/hearthquest info "+c.id(),talk?c.id():null,false);
+                return new Guide(c.title(),List.of(step.hint(),line,"담당 NPC: "+c.name()),talk?null:saved.phase()==QuestStore.Phase.NOT_ACCEPTED?"/hearthphone":"/hearthquest info "+c.id(),talk?c.id():null,false,c.id());
             }
             if(step.kind()==Kind.PLACE)return new Guide("개인 탐험 진행",List.of("개방된 지역을 탐험하고 지도·일지에서 본인이 발견한 정보를 확인하세요. 다른 사람의 발견은 자동 공유하지 않습니다."),"/hearthphone",null,false);
             return new Guide(step.title(),List.of(step.hint(),"접속 중인 공동체 구성원의 조건을 확인한 뒤 기존 공유 진행·채팅 투표로 진행합니다."),"/hearthstory guide",null,false);

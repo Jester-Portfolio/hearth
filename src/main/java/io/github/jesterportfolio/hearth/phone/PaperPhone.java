@@ -198,12 +198,30 @@ public final class PaperPhone implements Listener,AutoCloseable {
         if(playthrough==null||sharedStory==null){info(p,s,"플레이 안내",List.of("현재 개발 콘텐츠에 다음 플레이 안내가 등록되지 않았습니다."));return;}
         journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
             if(!valid(p,s))return;if(error!=null){info(p,s,"안내 조회 실패",List.of("현재 상태로 다시 조회해 주세요."));return;}
-            try{information(p,s,view);var guide=playthrough.guide(catalog,view,sharedStory.cached(s.session().context().storyRunId()),sharedStory.phase(s.session().context().storyRunId()));var actions=new ArrayList<ActionButton>();
-                if(guide.talkQuest()!=null)actions.add(button(p,s,"가까운 담당 NPC와 대화",()->{information(p,s,view);advance(p);p.closeDialog();report.accept(p,guide.talkQuest());}));
-                if("/hearthstory guide".equals(guide.command()))actions.add(button(p,s,"공동 조사 안내",()->{information(p,s,view);sharedProgress(p,advance(p));}));
-                actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
+            try{information(p,s,view);var page=journeyView(s,view);var guide=page.guide();var actions=new ArrayList<ActionButton>();
+                for(var link:page.links())actions.add(button(p,s,link.label(),()->journeyAction(p,s,page,link)));
+                actions.add(button(p,s,"안내 새로고침",()->journey(p,advance(p))));actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
                 show(p,s,guide.title(),guide.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
             }catch(RuntimeException stale){info(p,s,"안내 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
+        },owner);
+    }
+    private QuestJourneyView.Page journeyView(Screen s,QuestJournal.View view){var run=s.session().context().storyRunId();return QuestJourneyView.build(playthrough,catalog,view,sharedStory.cached(run),sharedStory.phase(run));}
+    private void journeyAction(Player p,Screen s,QuestJourneyView.Page expected,QuestJourneyView.Link link){
+        var waiting=advance(p);journal.load(waiting.session().context(),waiting.session(),()->valid(p,waiting)).whenCompleteAsync((view,error)->{
+            if(!valid(p,waiting))return;if(error!=null){info(p,waiting,"안내 조회 실패",List.of("행동을 적용하지 않았습니다. 현재 상태로 다시 조회해 주세요."));return;}
+            try{information(p,waiting,view);QuestJourneyView.require(journeyView(waiting,view),expected,link);
+                switch(link.action()){
+                    case DETAIL->detail(p,advance(p),view,"quests",PhoneQuestLinks.questIndex(catalog,view,link.quest()),1,1);
+                    case TALK->{advance(p);p.closeDialog();report.accept(p,link.quest());}
+                    case RETRY->confirm(p,waiting,view,PhoneCompletion.Operation.RETRY,link.quest());
+                    case TRACK,UNTRACK->{var next=advance(p);journal.track(next.session().context(),next.session(),()->valid(p,next),link.quest(),link.action()==QuestJourneyView.Action.TRACK).whenCompleteAsync((saved,failure)->{if(!valid(p,next))return;if(failure!=null)info(p,next,"추적 저장 실패",List.of("저장 성공으로 표시하지 않습니다."));else journey(p,next);},owner);}
+                    case SHARED->sharedProgress(p,advance(p));
+                    case MAP->browse(p,advance(p),"map",1);
+                    case DIARY->libraryMenu(p,advance(p),"diary");
+                    case NOTICES->notices(p,advance(p),1);
+                    case REWARDS->completionList(p,advance(p),"rewards",1);
+                }
+            }catch(RuntimeException stale){info(p,waiting,"안내 상태 변경",List.of("목표·추적·공유 진행이 달라졌습니다. 현재 상태로 다시 조회해 주세요."));}
         },owner);
     }
     private void sharedProgress(Player p,Screen s){

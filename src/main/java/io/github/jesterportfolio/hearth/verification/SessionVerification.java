@@ -961,11 +961,27 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->courseGuide(a2,s2)).thenAccept(guide->check(!guide.complete(),"course_new_JVM_personal_isolation"))
             .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{check(view.exploration().place("survey_place").filter(p->p.discovered()).isPresent(),"course_new_JVM_discovery_restored");check(view.exploration().facts().stream().anyMatch(f->f.id().equals("route_record")),"course_new_JVM_diary_restored");check(view.states().get("route_marker").revision()==4&&view.states().get("route_followup").revision()==2,"course_new_JVM_multi_step_revisions");});
     }
+    private void journeyScreens(QuestJournal.View view){
+        var plan=new Playthrough(List.of(new Playthrough.Step("current",Playthrough.Kind.QUEST,content.id(),"공개 안내","현재 시험 목표 안내")));
+        var before=one.capture();var page=QuestJourneyView.build(plan,catalog,view,sharedStory.cached(a),sharedStory.phase(a));
+        check(page.links().stream().anyMatch(link->link.action()==QuestJourneyView.Action.DETAIL)&&page.links().stream().anyMatch(link->link.action()==QuestJourneyView.Action.TALK),"journey_current_goal_detail_and_report_link");
+        check(page.links().stream().anyMatch(link->link.action()==QuestJourneyView.Action.UNTRACK),"journey_current_tracking_action_from_DB");
+        var actions=page.links().stream().map(link->(Component)Component.text(link.label()).clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney"))).toList();
+        var book=PaperQuestUI.book(new QuestBookView(page.guide().title(),page.guide().lines()),actions);
+        check(book.pages().size()==page.guide().lines().size()+(actions.size()+2)/3,"journey_book_action_pages_three_buttons_each");
+        check(book.pages().stream().flatMap(c->c.children().stream()).filter(c->c.clickEvent()!=null).count()==actions.size(),"journey_book_all_action_components_preserved");
+        try{PaperQuestUI.book(new QuestBookView("과도한 페이지",Collections.nCopies(99,"공개 내용")),Collections.nCopies(4,Component.text("확인")));throw new IllegalStateException("Oversized book accepted");}catch(IllegalArgumentException expected){check(expected.getMessage().equals("QUEST_BOOK_TOO_LONG"),"journey_book_total_page_budget_rejected_without_truncation");}
+        var buttons=QuestScreens.npcJourney(QuestScreens.npc(catalog,content.npcId(),view.states(),q->true,0),true);var inventory=new PaperQuestUI.Screen(a1.playerId(),s1,buttons,"npc",content.npcId(),0);
+        check(inventory.getInventory().getItem(39)!=null&&buttons.size()==buttons.stream().map(QuestScreens.Button::slot).distinct().count(),"journey_NPC_menu_single_entry_no_overlap");
+        var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose(page.guide().title(),page.guide().lines().stream().map(line->io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text(line))).toList(),List.of(),page.links().stream().map(link->io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text(link.label())).build()).toList());check(dialog!=null,"journey_actual_Dialog_factory_from_current_actions");
+        var held=QuestJourneyView.build(plan,catalog,view,sharedStory.cached(a),SharedStory.Phase.HOLD);try{QuestJourneyView.require(held,page,page.links().getFirst());throw new IllegalStateException("HOLD action accepted");}catch(IllegalStateException expected){check(expected.getMessage().equals("STALE_JOURNEY_ACTION"),"journey_HOLD_stale_action_rejected");}
+        check(codec.equivalent(before,one.capture()),"journey_reading_keeps_inventory_snapshot");
+    }
     private CompletionStage<Void> navigationPlay(){
         return openAll().thenCompose(v->quests.open(a1,content.id(),s1,()->coordinator.playable(s1))).thenCompose(q->{qa=q;return quests.accept(q,content);})
             .thenCompose(v->{var area=content.goals().getFirst().area();return quests.reach(qa,content,(area.minX()+area.maxX())/2,(area.minY()+area.maxY())/2,(area.minZ()+area.maxZ())/2);})
             .thenCompose(v->journal.track(a1,s1,()->coordinator.playable(s1),content.id(),true)).thenCompose(view->{
-                check(view.states().get(content.id()).phase()==QuestStore.Phase.REPORT_READY,"navigation_report_ready");var inventory=one.capture();
+                check(view.states().get(content.id()).phase()==QuestStore.Phase.REPORT_READY,"navigation_report_ready");journeyScreens(view);var inventory=one.capture();
                 for(String page:List.of("quests","reporting","tracked","completed","notices")){
                     var buttons=QuestScreens.screen(catalog,view,page,null,0);var screen=new PaperQuestUI.Screen(a1.playerId(),s1,buttons,page,null,0);
                     check(screen.getInventory().getSize()==54&&buttons.size()==buttons.stream().map(QuestScreens.Button::slot).distinct().count(),"navigation_screen_"+page);

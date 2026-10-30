@@ -79,6 +79,9 @@ public final class QuestScreens {
     public static List<Button> npcGuide(List<Button> rows,boolean registered){
         if(!registered)return rows;var buttons=new ArrayList<>(rows);buttons.add(new Button(38,"공동 조사 안내","npc-story",null,0));return List.copyOf(buttons);
     }
+    public static List<Button> npcJourney(List<Button> rows,boolean registered){
+        if(!registered)return rows;var buttons=new ArrayList<>(rows);buttons.add(new Button(39,"다음 플레이 안내","npc-journey",null,0));return List.copyOf(buttons);
+    }
     public static List<Button> npcTopics(QuestCatalog catalog,String npc,Map<String,QuestStore.Saved> states,java.util.function.Predicate<QuestContent> allowed,int offset){
         if(!states.keySet().equals(catalog.questIds()))throw new IllegalArgumentException("Incomplete NPC state");
         var topics=catalog.availableTopics(npc,states,id->allowed.test(catalog.quest(id)));var out=new ArrayList<Button>();

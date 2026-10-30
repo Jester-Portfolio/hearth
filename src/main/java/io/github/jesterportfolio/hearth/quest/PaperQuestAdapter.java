@@ -50,8 +50,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     }
     private final Set<UUID> loadingDialogues=new HashSet<>();
     private boolean closed;
-    private boolean playthroughEnabled;
-    public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){playthroughEnabled=true;ui.playthrough(content,shared);if(phone!=null)phone.playthrough(content,shared);}
+    public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){ui.playthrough(content,shared);if(phone!=null)phone.playthrough(content,shared);}
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
         for(var c:catalog.all())for(var goal:c.goals())if(goal.interaction()!=null&&goal.interaction().startsWith("block:")){var material=Material.matchMaterial(goal.interaction().split(":")[4]);if(material==null||!material.isBlock()||material.isAir())throw new IllegalArgumentException("Unknown objective block material");}
@@ -192,6 +191,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             var scope=dialogues.conversation(p.getUniqueId());if(scope.session()!=session||!scope.npc().equals(npc)||!p.getWorld().getUID().equals(scope.world())||!talkAllowed(p,npc,scope.entity()))throw new IllegalArgumentException("STALE_NPC_MENU");
             if(action.equals("npc-close")){dialogues.clear(p.getUniqueId());p.closeInventory();return;}
             if(action.equals("npc-topic")){command(p,dialogues.topicCommand(dialogues.topicSelection(p.getUniqueId(),session,npc,topic)));return;}
+            if(action.equals("npc-journey")){ui.journey(p,()->dialogues.current(scope)&&talkAllowed(p,npc,scope.entity()),List.of(Component.text("[NPC 선택창]").clickEvent(ClickEvent.runCommand(dialogues.menuCommand(scope)))));return;}
             if(action.equals("npc-story")){if(story==null||!story.shared().content().guideNpcs().contains(npc))throw new IllegalArgumentException("UNREGISTERED_STORY_GUIDE");storyBook(p,()->dialogues.current(scope)&&talkAllowed(p,npc,scope.entity()),List.of(Component.text("[NPC 선택창]").clickEvent(ClickEvent.runCommand(dialogues.menuCommand(scope)))));return;}
             if(action.equals("npc-read")){command(p,"/hearthtalk read "+npc+" "+scope.nonce());return;}
             conversation(p,npc,scope.entity(),false,action.equals("npc-topics-open")?"npc-topics":"npc");
@@ -234,7 +234,6 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             try {quests.requireListDisplay(session.context(),rows);
                 dialogues.topicOptions(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc,catalog.availableTopics(npc,rows,id->journal.questAllowed(session.context(),id)));
                 ui.openNpc(p,session,npc,rows,page,valid);
-                if(playthroughEnabled)p.sendMessage(Component.text("[다음 플레이 안내]").clickEvent(ClickEvent.runCommand("/hearthjourney")));
             }catch(RuntimeException failure){unavailable(p,failure);}
         },owner);
     }

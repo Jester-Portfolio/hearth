@@ -36,16 +36,34 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     private Playthrough playthrough;
     private io.github.jesterportfolio.hearth.story.SharedStory sharedStory;
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory story){playthrough=content;sharedStory=story;}
-    private void journey(Player p,PlayerSessions.Session session,String talk){
-        if(playthrough==null){p.sendMessage(Component.text("공개 플레이 안내 콘텐츠가 활성화되지 않았습니다."));return;}
+    public void journey(Player p,BooleanSupplier current,List<Component> back){var session=players.current(p);if(session!=null)journey(p,session,null,current,back);}
+    private void journey(Player p,PlayerSessions.Session session,String talk){journey(p,session,talk,()->true,List.of());}
+    private QuestJourneyView.Page journeyView(PlayerSessions.Session session,QuestJournal.View view){return QuestJourneyView.build(playthrough,catalog,view,sharedStory.cached(session.context().storyRunId()),sharedStory.phase(session.context().storyRunId()));}
+    private void journey(Player p,PlayerSessions.Session session,String talk,BooleanSupplier current,List<Component> back){
+        if(playthrough==null||sharedStory==null){p.sendMessage(Component.text("현재 콘텐츠에 플레이 안내가 등록되지 않았습니다."));return;}
         if(requests.containsKey(p.getUniqueId())){p.sendMessage(Component.text("기존 조회를 처리 중입니다."));return;}
         load(p,session,view->{
-            var guide=playthrough.guide(catalog,view,sharedStory.cached(session.context().storyRunId()),sharedStory.phase(session.context().storyRunId()));
-            if(talk!=null){if(!talk.equals(guide.talkQuest())){p.sendMessage(Component.text("현재 안내와 일치하는 NPC 대화가 아닙니다."));return;}npcDialogue.accept(p,talk);return;}
-            p.sendMessage(Component.text("플레이 안내: "+guide.title()));guide.lines().forEach(line->p.sendMessage(Component.text(line)));
-            if(guide.command()!=null)p.sendMessage(Component.text("[안내 열기]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(guide.command())));
-            if(guide.talkQuest()!=null)p.sendMessage(Component.text("[가까운 담당 NPC와 대화]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney talk "+guide.talkQuest())));
+            if(!current.getAsBoolean())return;var page=journeyView(session,view);var guide=page.guide();
+            if(talk!=null){if(!talk.equals(guide.talkQuest()))throw new IllegalArgumentException("STALE_JOURNEY_NPC");npcDialogue.accept(p,talk);return;}
+            var actions=new ArrayList<Component>();for(var link:page.links())actions.add(Component.text(link.label()).clickEvent(net.kyori.adventure.text.event.ClickEvent.callback(audience->{
+                if(!(audience instanceof Player who)||!who.getUniqueId().equals(p.getUniqueId()))return;
+                Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(p)!=session||!current.getAsBoolean())return;
+                    load(p,session,fresh->{if(!current.getAsBoolean())return;QuestJourneyView.require(journeyView(session,fresh),page,link);journeyAction(p,session,fresh,link,current,back);});
+                },1);
+            },net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build())));
+            actions.addAll(back);actions.add(Component.text("안내 새로고침").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney")));
+            showBook(p,session,new QuestBookView(guide.title(),QuestBookView.paginate(guide.lines())),actions);
         });
+    }
+    private void journeyAction(Player p,PlayerSessions.Session session,QuestJournal.View view,QuestJourneyView.Link link,BooleanSupplier current,List<Component> back){
+        switch(link.action()){
+            case DETAIL->acceptedBook(p,session,view,link.quest());
+            case TALK->npcDialogue.accept(p,link.quest());
+            case RETRY->questAction.accept(p,"/hearthquest retry "+link.quest());
+            case TRACK,UNTRACK->request(p,session,journal.track(session.context(),session,()->players.current(p)==session&&current.getAsBoolean(),link.quest(),link.action()==QuestJourneyView.Action.TRACK),saved->{if(current.getAsBoolean())journey(p,session,null,current,back);});
+            case SHARED->storyGuide.accept(p);
+            case MAP,DIARY,NOTICES,REWARDS->open(p,session,view,link.action().name().toLowerCase(java.util.Locale.ROOT),null,0);
+        }
     }
     @FunctionalInterface public interface NpcSelection{void select(Player player,String npc,String quest,Long revision);}
     private NpcSelection npcSelection=(p,n,q,v)->{};
@@ -60,12 +78,13 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         quests.requireListDisplay(session.context(),rows);
         var buttons=page.equals("npc-topics")?QuestScreens.npcTopics(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0):QuestScreens.npc(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0);
         if(!valid.getAsBoolean())throw new IllegalStateException("STALE_NPC_MENU");
-        if(page.equals("npc"))buttons=QuestScreens.npcGuide(buttons,storyNpc.test(npc));
+        if(page.equals("npc")){buttons=QuestScreens.npcGuide(buttons,storyNpc.test(npc));buttons=QuestScreens.npcJourney(buttons,playthrough!=null);}
         p.openInventory(new Screen(p.getUniqueId(),session,buttons,page,npc,0,valid).inventory);
     }
     public static net.kyori.adventure.inventory.Book book(QuestBookView view,List<Component> actions){
         var pages=new ArrayList<Component>();view.pages().forEach(page->pages.add(Component.text(page)));
-        if(!actions.isEmpty()){Component page=Component.text("대화 및 진행\n\n");for(var action:actions)page=page.append(action).append(Component.newline()).append(Component.newline());pages.add(page);}
+        for(int start=0;start<actions.size();start+=3){Component page=Component.text("대화 및 진행\n\n");for(var action:actions.subList(start,Math.min(actions.size(),start+3)))page=page.append(action).append(Component.newline()).append(Component.newline());pages.add(page);}
+        if(pages.size()>100)throw new IllegalArgumentException("QUEST_BOOK_TOO_LONG");
         return net.kyori.adventure.inventory.Book.book(Component.text(view.title()),Component.text("Hearth"),pages);
     }
     public void showBook(Player p,PlayerSessions.Session session,QuestBookView view,List<Component> actions){
@@ -151,7 +170,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(!(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen previous)||!previous.dialogueValid.getAsBoolean())return;
             valid=previous.dialogueValid;
         }
-        var buttons=QuestScreens.screen(catalog,view,page,quest,Math.max(0,offset));if(page.equals("npc"))buttons=QuestScreens.npcGuide(buttons,storyNpc.test(quest));
+        var buttons=QuestScreens.screen(catalog,view,page,quest,Math.max(0,offset));if(page.equals("npc")){buttons=QuestScreens.npcGuide(buttons,storyNpc.test(quest));buttons=QuestScreens.npcJourney(buttons,playthrough!=null);}
         p.openInventory(new Screen(p.getUniqueId(),s,buttons,page,quest,Math.max(0,offset),valid).inventory);
     }
     public boolean command(Player p,String command){
@@ -190,7 +209,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             String action=button.action();
             if(action.equals("detail")||action.equals("book"))load(p,s,v->acceptedBook(p,s,v,button.quest()));
             else if(action.equals("npc-select")||action.equals("npc-action")){p.closeInventory();npcSelection.select(p,screen.quest,button.quest(),action.equals("npc-action")?button.revision():null);}
-            else if(Set.of("npc-read","npc-topics-open","npc-topic","npc-menu","npc-close","npc-story").contains(action)){p.closeInventory();npcNavigation.open(p,screen.quest,action,button.quest());}
+            else if(Set.of("npc-read","npc-topics-open","npc-topic","npc-menu","npc-close","npc-story","npc-journey").contains(action)){p.closeInventory();npcNavigation.open(p,screen.quest,action,button.quest());}
             else if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
             else if(action.equals("quest-retry")||action.equals("quest-reward")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-retry")?"retry ":"claim ")+button.quest());}
             else if(action.equals("quest-chapter-play")||action.equals("quest-chapter-skip")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-chapter-skip")?"chapter-skip ":"chapter-play ")+button.quest());}
