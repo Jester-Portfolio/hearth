@@ -42,7 +42,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final PaperQuestUI ui;
     private final io.github.jesterportfolio.hearth.phone.PaperPhone phone;
     private io.github.jesterportfolio.hearth.story.PaperStoryAdapter story;
-    public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;ui.storyGuide(p->adapter.guide(p,null));if(phone!=null)phone.storyGuide(p->adapter.guide(p,null));}
+    public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;ui.storyNpcs(npc->adapter.shared().content().guideNpcs().contains(npc));ui.storyGuide(p->storyBook(p,()->true,List.of()));if(phone!=null){phone.storyProgress(adapter.shared(),adapter::request);}}
     private QuestRules rules=QuestRules.empty();private QuestRewards rewards;private io.github.jesterportfolio.hearth.persistence.QuestCompletionStore completionStore;
     private final org.bukkit.scheduler.BukkitTask expiry;
     public void completion(QuestRules definitions,QuestRewards rewardService,io.github.jesterportfolio.hearth.persistence.QuestCompletionStore storage){
@@ -192,9 +192,29 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             var scope=dialogues.conversation(p.getUniqueId());if(scope.session()!=session||!scope.npc().equals(npc)||!p.getWorld().getUID().equals(scope.world())||!talkAllowed(p,npc,scope.entity()))throw new IllegalArgumentException("STALE_NPC_MENU");
             if(action.equals("npc-close")){dialogues.clear(p.getUniqueId());p.closeInventory();return;}
             if(action.equals("npc-topic")){command(p,dialogues.topicCommand(dialogues.topicSelection(p.getUniqueId(),session,npc,topic)));return;}
+            if(action.equals("npc-story")){if(story==null||!story.shared().content().guideNpcs().contains(npc))throw new IllegalArgumentException("UNREGISTERED_STORY_GUIDE");storyBook(p,()->dialogues.current(scope)&&talkAllowed(p,npc,scope.entity()),List.of(Component.text("[NPC 선택창]").clickEvent(ClickEvent.runCommand(dialogues.menuCommand(scope)))));return;}
             if(action.equals("npc-read")){command(p,"/hearthtalk read "+npc+" "+scope.nonce());return;}
             conversation(p,npc,scope.entity(),false,action.equals("npc-topics-open")?"npc-topics":"npc");
         }catch(RuntimeException stale){unavailable(p,stale);}
+    }
+    private void storyBook(Player p,java.util.function.BooleanSupplier current,List<Component> back){
+        var session=players.current(p);if(story==null||session==null||!current.getAsBoolean())return;
+        java.util.function.BooleanSupplier valid=()->!closed&&players.current(p)==session&&current.getAsBoolean();
+        journal.load(session.context(),session,valid).whenCompleteAsync((view,error)->{
+            if(!valid.getAsBoolean())return;if(error!=null){unavailable(p);return;}
+            try{journal.requireView(session.context(),view);var shared=story.shared();var panel=io.github.jesterportfolio.hearth.story.StoryGuide.panel(session.context().storyRunId(),shared.content(),shared.cached(session.context().storyRunId()),shared.phase(session.context().storyRunId()),view.exploration().conditions());var actions=new ArrayList<Component>(back);
+                panel.action().ifPresent(action->actions.add(Component.text(action.label()).clickEvent(ClickEvent.callback(audience->{
+                    if(!(audience instanceof Player who)||!who.getUniqueId().equals(p.getUniqueId()))return;
+                    Bukkit.getScheduler().runTaskLater(plugin,()->{if(!valid.getAsBoolean())return;
+                        try{journal.requireView(session.context(),view);}catch(RuntimeException stale){unavailable(p);return;}
+                        story.request(p,action,valid).whenCompleteAsync((result,failure)->{if(!valid.getAsBoolean())return;if(failure!=null){unavailable(p);return;}
+                            if(action.command().equals("/hearthstory vote")){p.closeInventory();p.sendMessage(Component.text("공유 분기 선택은 채팅의 투표 선택지를 이용해 주세요."));}else storyBook(p,current,back);
+                        },owner);
+                    },1);
+                },net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build()))));
+                ui.showBook(p,session,new QuestBookView("공동 조사 안내",QuestBookView.paginate(panel.lines())),actions);
+            }catch(RuntimeException stale){unavailable(p);}
+        },owner);
     }
     private void conversation(Player p,String npc,UUID entity){conversation(p,npc,entity,true,"npc");}
     private void conversation(Player p,String npc,UUID entity,boolean interaction,String page){
@@ -214,7 +234,6 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             try {quests.requireListDisplay(session.context(),rows);
                 dialogues.topicOptions(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc,catalog.availableTopics(npc,rows,id->journal.questAllowed(session.context(),id)));
                 ui.openNpc(p,session,npc,rows,page,valid);
-                if(story!=null)story.guide(p,npc);
                 if(playthroughEnabled)p.sendMessage(Component.text("[다음 플레이 안내]").clickEvent(ClickEvent.runCommand("/hearthjourney")));
             }catch(RuntimeException failure){unavailable(p,failure);}
         },owner);

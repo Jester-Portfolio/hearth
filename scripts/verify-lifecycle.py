@@ -94,6 +94,7 @@ def main():
     parser.add_argument('--game-information', action='store_true', help='공개 게임 정보 조회 경계를 한 JVM에서 검증합니다')
     parser.add_argument('--npc-views', action='store_true', help='개인 NPC 표시 데이터·표식 엔티티를 한 JVM에서 검증합니다')
     parser.add_argument('--player-interactions', action='store_true', help='41슬롯 조작 정책·dirty 저장 연결을 한 JVM에서 검증합니다')
+    parser.add_argument('--guide-safety-only', action='store_true', help='공동 조사 화면 요청의 실제 SQL 실패·불명 결과만 기존 도구로 추가 검사합니다')
     parser.add_argument('--gameplay-guide', action='store_true', help='공유 진행 안내·GUI 연결만 한 JVM에서 검증합니다')
     parser.add_argument('--story-batch', action='store_true', help='두 JVM에서 공유 단계·채팅 투표 제어 경계·분기·접근·복원을 검사합니다')
     parser.add_argument('--explore-batch', action='store_true', help='두 JVM에서 탐험·일지·공동체·발견 알림·설정과 V005를 검사합니다')
@@ -136,8 +137,8 @@ def main():
         parser.error('--quest-locations는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.playthrough and (not args.story_batch or any([args.world_effects,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide])):
         parser.error('--playthrough는 --sessions --quests --story-batch와 함께 단독 실행합니다')
-    if args.phone_dialog and not (args.quest_navigation or args.quest_completion):
-        parser.error("--phone-dialog는 --quest-navigation 또는 --quest-completion이 필요합니다")
+    if args.phone_dialog and not (args.quest_navigation or args.quest_completion or args.gameplay_guide):
+        parser.error("--phone-dialog는 --quest-navigation, --quest-completion 또는 --gameplay-guide가 필요합니다")
     if args.quest_navigation and (not args.story_batch or args.world_effects or args.game_information or args.npc_views or args.player_interactions):
         parser.error('--quest-navigation은 --sessions --quests --story-batch와 함께 단독 실행합니다')
     if args.game_information and (not args.story_batch or args.world_effects or args.player_interactions or args.npc_views):
@@ -146,6 +147,8 @@ def main():
         parser.error('--npc-views는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.player_interactions and (not args.sessions or args.quests or args.manual_player):
         parser.error('--player-interactions는 자동 --sessions 단독으로 실행합니다')
+    if args.guide_safety_only and not args.gameplay_guide:
+        parser.error('--guide-safety-only는 --gameplay-guide가 필요합니다')
     if args.gameplay_guide and (not args.story_batch or args.world_effects):
         parser.error('--gameplay-guide는 --story-batch와 함께 사용하며 --world-effects와 혼용하지 않습니다')
     if args.world_effects and not args.story_batch:
@@ -350,6 +353,9 @@ motd=Hearth isolated S4-11 verification
                             monitor.action(name,'effect-db-recover')
                             monitor.db('lock-story'); monitor.action(name,'effect-pending'); monitor.db('unlock')
                             monitor.action(name,'effect-applied'); monitor.action(name,'effect-cycle')
+                        elif args.guide_safety_only:
+                            monitor.db('story-fail-on'); monitor.action(name,'guide-safety'); monitor.db('story-fail-off')
+                            monitor.action(name,'story-unknown')
                         elif args.story_batch:
                             monitor.action(name,'story-prepare');
                             if args.gameplay_guide: monitor.action(name,'gameplay-guide')

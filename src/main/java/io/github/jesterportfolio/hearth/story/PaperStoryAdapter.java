@@ -31,6 +31,10 @@ public final class PaperStoryAdapter implements AutoCloseable {
         }
         sendVote(player,run);
     }
+    public CompletionStage<?> request(Player p,StoryGuide.Action action,java.util.function.BooleanSupplier current){
+        var session=players.current(p);if(session==null||!current.getAsBoolean())return CompletableFuture.failedFuture(new IllegalStateException("STALE_STORY_SESSION"));
+        return story.act(session.context(),session,()->players.current(p)==session&&current.getAsBoolean(),action);
+    }
     public boolean command(Player p,String command){if(!command.startsWith("/hearthstory"))return false;var s=players.current(p);if(s==null)return true;var ctx=s.context();String[] args=command.split(" ",-1);CompletionStage<?> work;
         try{if(args.length==2&&args[1].equals("guide")){guide(p,null);return true;}
             else if(args.length==2&&args[1].equals("next"))work=story.advance(ctx,s,()->players.current(p)==s);

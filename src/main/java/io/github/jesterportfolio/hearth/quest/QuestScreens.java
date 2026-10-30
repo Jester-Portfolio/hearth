@@ -42,7 +42,7 @@ public final class QuestScreens {
                 if(row.phase()==QuestStore.Phase.FAILED)out.add(new Button(12,"퀘스트 재시작","quest-retry",id,0));
                 var reward=view.completion().rewards().get(id);if(reward!=null){out.add(new Button(6,reward.label(),"none",null,0));if(reward.claimable())out.add(new Button(12,"미지급 보상 받기","quest-reward",id,0));}
                 out.add(new Button(46,"알림 목록","notices",null,0));out.add(new Button(48,"추적 중인 퀘스트","tracked",null,0));
-                if(view.exploration().registered())out.add(new Button(49,"공유 진행 안내를 채팅에서 확인","story-guide",null,0));
+                if(view.exploration().registered())out.add(new Button(49,"공동 조사 안내","story-guide",null,0));
                 if(!row.satisfies())out.add(new Button(10,tracked?"추적 해제":"추적","track",id,tracked?0:1));
                 out.removeIf(b->b.slot()==45);out.add(new Button(45,"퀘스트 목록","quests",null,0));
             }
@@ -75,6 +75,9 @@ public final class QuestScreens {
         if(offset+18<options.size())buttons.add(new Button(51,"다음 페이지","npc",npc,offset+18));
         for(int i=0;i<buttons.size();i++){var b=buttons.get(i);if(b.action().equals("npc"))buttons.set(i,new Button(b.slot(),b.label(),b.action(),npc,b.revision()));}
         return List.copyOf(buttons);
+    }
+    public static List<Button> npcGuide(List<Button> rows,boolean registered){
+        if(!registered)return rows;var buttons=new ArrayList<>(rows);buttons.add(new Button(38,"공동 조사 안내","npc-story",null,0));return List.copyOf(buttons);
     }
     public static List<Button> npcTopics(QuestCatalog catalog,String npc,Map<String,QuestStore.Saved> states,java.util.function.Predicate<QuestContent> allowed,int offset){
         if(!states.keySet().equals(catalog.questIds()))throw new IllegalArgumentException("Incomplete NPC state");
@@ -120,7 +123,7 @@ public final class QuestScreens {
             case "event"->{back="CHRONICLE";var e=view.events().stream().filter(x->(scope(x.shared())+x.id()+":"+x.version()).equals(id)).findFirst();if(e.isEmpty())rows.add(line(0,"기록을 확인할 수 없습니다."));else{var x=e.get();for(String text:List.of(x.title(),x.summary(),x.detail(),"확인 시각: "+x.time(),x.shared()?"공동체 공유 기록":"개인 기록"))rows.add(line(0,text));}}
             case "community"->{rows.add(new Button(0,"구성원","members",null,0));rows.add(new Button(0,"스토리 진행","story",null,0));rows.add(new Button(0,"진행 조건","conditions",null,0));}
             case "members"->{back="community";rows.add(line(0,"현재 서버에서 확인한 진행 연결 · 전체 명단 아님"));for(var m:view.members())rows.add(line(0,(m.online()?"[온라인] ":"[오프라인] ")+m.name()+(m.self()?" (본인)":"")));}
-            case "story"->{back="community";rows.add(new Button(0,"공유 진행 안내를 채팅에서 확인","story-guide",null,0));rows.add(line(0,"세계 효과: "+switch(view.effectStatus()){case "APPLIED"->"블록 확인 완료";case "NOT_REQUIRED"->"대상 효과 없음";case "NOT_IMPLEMENTED"->"미구현";case "EFFECT_CONFLICT"->"충돌·미적용";case "PENDING"->"확인 대기";default->"확인 실패";}));rows.add(line(0,view.story().title()==null?"현재 공유 단계 미등록":"현재 공유 단계: "+view.story().title()));rows.add(line(0,view.nextGoal()==null?"다음 공유 목표 미등록":"다음 공유 목표: "+view.nextGoal()));rows.add(line(0,view.story().explorationOpen()==null?"자유 탐험 개방 상태 미등록":view.story().explorationOpen()?"공유 자유 탐험 개방":"공유 자유 탐험 미개방"));}
+            case "story"->{back="community";rows.add(new Button(0,"공동 조사 안내","story-guide",null,0));rows.add(line(0,"세계 효과: "+switch(view.effectStatus()){case "APPLIED"->"블록 확인 완료";case "NOT_REQUIRED"->"대상 효과 없음";case "NOT_IMPLEMENTED"->"미구현";case "EFFECT_CONFLICT"->"충돌·미적용";case "PENDING"->"확인 대기";default->"확인 실패";}));rows.add(line(0,view.story().title()==null?"현재 공유 단계 미등록":"현재 공유 단계: "+view.story().title()));rows.add(line(0,view.nextGoal()==null?"다음 공유 목표 미등록":"다음 공유 목표: "+view.nextGoal()));rows.add(line(0,view.story().explorationOpen()==null?"자유 탐험 개방 상태 미등록":view.story().explorationOpen()?"공유 자유 탐험 개방":"공유 자유 탐험 미개방"));}
             case "branches"->{back="quests";for(String branch:view.branches())rows.add(line(0,"확정 분기: "+branch));}
             case "conditions"->{back="community";view.conditions().lines().forEach(x->rows.add(line(0,x)));}
             default->throw new IllegalArgumentException("Unknown exploration screen");

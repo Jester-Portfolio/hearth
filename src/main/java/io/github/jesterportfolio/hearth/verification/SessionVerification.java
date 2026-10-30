@@ -46,7 +46,7 @@ public final class SessionVerification implements AutoCloseable {
     private Map<UUID,Object> storyTestRoster;private final java.util.concurrent.atomic.AtomicLong storyClock=new java.util.concurrent.atomic.AtomicLong();
     private final Map<UUID,ServerProgressAccess.Context> storyActors=new HashMap<>();
     private SharedStory.VoteView storyVote;private CompletionStage<StoryStore.Snapshot> storySaving;private CompletionStage<Void> storyBarrier;
-    private int storyNoticeCount;private SharedStory storyFailureProbe;
+    private int storyNoticeCount;private SharedStory storyFailureProbe;private StoryGuide.Action oldGuideAction;
     private PaperQuestAdapter questAdapter;
     private Playthrough playthrough;
     private final Set<UUID> preparedCourses=new HashSet<>();
@@ -293,6 +293,7 @@ public final class SessionVerification implements AutoCloseable {
         case "npc-views" -> npcViews();
         case "interaction-play" -> interactionPlay();
         case "gameplay-guide" -> gameplayGuide();
+        case "guide-safety" -> openAll().thenCompose(v->storyFailure());
         case "story-prepare" -> storyPrepare();
         case "story-vote" -> storyVote();
         case "story-persist-start" -> storyPersistStart();
@@ -1089,6 +1090,7 @@ public final class SessionVerification implements AutoCloseable {
             });
         });
     }
+    private StoryGuide.Action guideAction(UUID run){return StoryGuide.panel(run,sharedStory.content(),sharedStory.cached(run),sharedStory.phase(run),new CommunityBoundary.Status(false,List.of("진행 조건 확인 필요"))).action().orElseThrow();}
     private CompletionStage<Void> gameplayGuide(){
         var before=sharedStory.cached(a);var lines=StoryGuide.lines(sharedStory.content(),before,sharedStory.phase(a));
         check(sharedStory.content().guideNpcs().contains("survey_guide"),"guide_content_npc_link");
@@ -1096,18 +1098,29 @@ public final class SessionVerification implements AutoCloseable {
         check(lines.stream().noneMatch(line->line.text().contains("survey_marker")||line.text().contains("path_marker")),"guide_private_condition_ids_hidden");
         return journal.load(a1,s1,()->coordinator.playable(s1)).thenCompose(view->{
             var buttons=QuestScreens.screen(catalog,view,"story",null,0);
-            check(buttons.stream().anyMatch(button->button.action().equals("story-guide")),"guide_gui_chat_only");
+            check(buttons.stream().anyMatch(button->button.action().equals("story-guide")),"guide_GUI_shared_book_entry");
+            var panel=StoryGuide.panel(a,sharedStory.content(),sharedStory.cached(a),sharedStory.phase(a),view.exploration().conditions());
+            var actions=panel.action().stream().map(action->Component.text(action.label())).map(c->(Component)c).toList();var book=PaperQuestUI.book(new QuestBookView("공동 조사 안내",panel.lines()),actions);
+            check(!book.pages().isEmpty()&&panel.lines().stream().noneMatch(line->line.contains("survey_marker")||line.contains("path_marker")),"guide_Paper_book_public_summary_no_private_conditions");
+            var npcRows=QuestScreens.npcGuide(QuestScreens.npc(catalog,"survey_guide",view.states(),q->true,0),sharedStory.content().guideNpcs().contains("survey_guide"));
+            check(npcRows.stream().filter(button->button.action().equals("npc-story")).count()==1,"guide_NPC_inventory_single_shared_entry");
+            if(plugin.getConfig().getBoolean("phone-dialog-enabled",false)){
+                var dialogActions=panel.action().stream().map(action->io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text(action.label())).width(110).build()).toList();
+                var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose("공동 조사 안내",panel.lines().stream().map(line->io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text(line))).toList(),List.of(),dialogActions);
+                check(dialog!=null&&panel.action().stream().noneMatch(action->action.command().startsWith("/hearthstory vote ")),"guide_Dialog_request_only_no_ballot_choices");
+            }
             return mainResult(store.readStory(a1));
         }).thenAccept(saved->{main();check(saved.equals(before),"guide_read_only_revision_unchanged");});
     }
     private CompletionStage<Void> storyPrepare(){var legacy=ctx(new UUID(42,99),99);return openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);sharedStory.rosterChanged(b3);})
         .thenCompose(v->mainResult(store.readExploration(legacy))).thenAccept(data->check(data.story().revision()==3 && data.story().stage().equals("public_test_stage") && data.places().get("public_village").hub(),"story_V005_rows_preserved_after_V006"))
         .thenCompose(v->seedList(a1,"survey_marker",QuestStore.Phase.COMPLETED))
-        .thenCompose(v->expectQuestCode(sharedStory.advance(a1,s1,()->true),"CONDITIONS_UNMET"))
+        .thenCompose(v->{oldGuideAction=guideAction(a);return expectQuestCode(sharedStory.act(a1,s1,()->true,oldGuideAction),"CONDITIONS_UNMET");})
         .thenRun(()->check(sharedStory.cached(a).story().stage()==null && !paperStory.access().entry(a,21,64,21) && paperStory.access().entry(a,2,64,2) && !paperStory.access().content(a,21,64,3),"story_P2_blocks_first_stage_ENTRY_CONTENT_OPEN_separate"))
         .thenCompose(v->seedList(a2,"survey_marker",QuestStore.Phase.COMPLETED))
-        .thenCompose(v->{var first=sharedStory.advance(a1,s1,()->true);var duplicate=expectQuestCode(sharedStory.advance(a2,s2,()->true),"STORY_BUSY_OR_HOLD");return first.thenCombine(duplicate,(s,x)->s);})
-        .thenAccept(s->check(s.story().stage().equals("trial_arrival")&&s.story().revision()==0,"story_single_initial_CAS_shared_state"))
+        .thenCompose(v->{var first=sharedStory.act(a1,s1,()->true,oldGuideAction);var duplicate=expectQuestCode(sharedStory.act(a2,s2,()->true,oldGuideAction),"STALE_STORY_ACTION");return first.thenCombine(duplicate,(s,x)->s);})
+        .thenAccept(value->{var s=(StoryStore.Snapshot)value;check(s.story().stage().equals("trial_arrival")&&s.story().revision()==0,"story_single_initial_CAS_shared_state");})
+        .thenCompose(v->expectQuestCode(sharedStory.act(a1,s1,()->true,oldGuideAction),"STALE_STORY_ACTION"))
         .thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenAccept(s->check(s.completed().contains("trial_arrival")&&s.story().stage().equals("trial_vote"),"story_completion_history_and_next_stage"))
         .thenCompose(v->seedList(a1,"path_marker",QuestStore.Phase.COMPLETED))
         .thenCompose(v->expectQuestCode(sharedStory.openVote(a1,s1,()->true),"CONDITIONS_UNMET"))
@@ -1165,16 +1178,16 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->after.load(confirmed)).thenCompose(v->after.advance(confirmed,token,()->true)).thenCompose(v->after.advance(confirmed,token,()->true)).thenRun(()->applied[0]=0)
             .thenCompose(v->after.openVote(confirmed,token,()->true)).thenCompose(vote->expect(after.cast(confirmed,token,()->true,vote.id(),"route_one"),"COMMIT_UNKNOWN"))
             .thenRun(()->check(after.cached(confirmed.storyRunId()).story().stage().equals("trial_vote")&&applied[0]==0,"story_committed_SQL_unknown_response_no_early_cache_or_effect"))
-            .thenCompose(v->after.resolve(confirmed)).thenAccept(saved->check(saved.branches().get("trial_vote").choice().equals("route_one")&&applied[0]==1&&after.effectStatus(confirmed.storyRunId()).equals("NOT_IMPLEMENTED"),"story_same_request_receipt_positive_resolve_once_not_real_world_effect"))
+            .thenCompose(v->after.resolve(confirmed)).thenCompose(saved->{check(saved.branches().get("trial_vote").choice().equals("route_one"),"story_same_request_receipt_resolved_branch");return after.barrier(confirmed.storyRunId());}).thenRun(()->check(applied[0]==1&&after.effectStatus(confirmed.storyRunId()).equals("NOT_IMPLEMENTED"),"story_same_request_receipt_positive_resolve_once_not_real_world_effect"))
             .thenCompose(v->expectQuestCode(after.resolve(confirmed),"NO_UNKNOWN_REQUEST"));}
-    private CompletionStage<Void> storyFailure(){var ctx=ctx(new UUID(42,14),14);Object token=new Object();storyFailureProbe=storyProbe(store,ctx,token);return mainResult(store.createRun(ctx.storyRunId(),"story-failure-only"))
+    private CompletionStage<Void> storyFailure(){var ctx=ctx(new UUID(42,14),14);Object token=new Object();storyFailureProbe=storyProbe(store,ctx,token);var before=new StoryStore.Snapshot[2];return mainResult(store.readStory(a1)).thenAccept(value->before[0]=value).thenCompose(v->mainResult(store.readStory(b3))).thenAccept(value->before[1]=value).thenCompose(v->mainResult(store.createRun(ctx.storyRunId(),"story-failure-only")))
         .thenCompose(v->mainResult(store.createPlayer(ctx,"story-failure-only"))).thenCompose(v->seedList(ctx,"survey_marker",QuestStore.Phase.COMPLETED)).thenCompose(v->storyFailureProbe.load(ctx))
-        .thenCompose(v->expect(storyFailureProbe.advance(ctx,token,()->true),"23514"))
+        .thenCompose(v->{var action=StoryGuide.panel(ctx.storyRunId(),storyFailureProbe.content(),storyFailureProbe.cached(ctx.storyRunId()),storyFailureProbe.phase(ctx.storyRunId()),new CommunityBoundary.Status(false,List.of("진행 조건 확인 필요"))).action().orElseThrow();return expect(storyFailureProbe.act(ctx,token,()->true,action),"23514");})
         .thenRun(()->check(storyFailureProbe.phase(ctx.storyRunId())==SharedStory.Phase.HOLD&&storyFailureProbe.barrier(ctx.storyRunId()).toCompletableFuture().isCompletedExceptionally(),"story_SQL_failure_probe_HOLD_preserved"))
         .thenCompose(v->mainResult(store.readStory(ctx))).thenAccept(s->check(s.story().stage()==null&&s.branches().isEmpty()&&s.completed().isEmpty(),"story_SQL_failure_no_false_stage_branch_or_completion"))
         .thenCompose(v->mainResult(store.readExploration(ctx))).thenAccept(d->check(d.facts().isEmpty()&&d.events().isEmpty(),"story_SQL_failure_no_partial_shared_diary"))
-        .thenCompose(v->mainResult(store.readStory(a1))).thenAccept(s->check(s.story().revision()==2&&s.branches().size()==1,"story_failed_run_other_run_A_unchanged"))
-        .thenCompose(v->mainResult(store.readStory(b3))).thenAccept(s->check(s.story().stage()==null,"story_failed_run_other_run_B_unchanged"));}
+        .thenCompose(v->mainResult(store.readStory(a1))).thenAccept(s->check(s.equals(before[0]),"story_failed_run_other_run_A_unchanged"))
+        .thenCompose(v->mainResult(store.readStory(b3))).thenAccept(s->check(s.equals(before[1]),"story_failed_run_other_run_B_unchanged"));}
     private CompletionStage<QuestJournal.View> exploreView(ServerProgressAccess.Context ctx,Object token){return journal.load(ctx,token,()->true);}
     private CompletionStage<Void> exploreEntry(double x,double z){return journal.enterPlaces(a1,s1,()->coordinator.playable(s1),-10,64,-10,x,64,z);}
     private ExplorationContent.Fact sharedFact(){return new ExplorationContent.Fact("shared_test_event","STORY","공개 공동 기록","합성 공유 사건","실제 스토리 엔진이 아닌 격리 저장 인터페이스 시험입니다.",1,true);}

@@ -1,12 +1,27 @@
 package io.github.jesterportfolio.hearth.story;
 
 import io.github.jesterportfolio.hearth.persistence.StoryStore;
+import io.github.jesterportfolio.hearth.exploration.CommunityBoundary;
 import java.util.*;
 
 /** NPC와 채팅이 공유하는 공개 진행 안내. 조회만 하며 다음 분기/개인 조건 ID를 내보내지 않습니다. */
 public final class StoryGuide {
     private StoryGuide(){}
     public record Line(String text,String command){}
+    /** 서버에서 보유하는 요청 표식이며 클라이언트가 진행 소유권을 선택하지 않습니다. */
+    public record Action(UUID run,long revision,String stage,String command,String label){}
+    public record Panel(List<String> lines,Optional<Action> action){public Panel{lines=List.copyOf(lines);}}
+    public static Panel panel(UUID run,StoryContent content,StoryStore.Snapshot saved,SharedStory.Phase phase,CommunityBoundary.Status conditions){
+        var guide=lines(content,saved,phase);var text=new ArrayList<String>();
+        guide.stream().filter(line->line.command()==null).forEach(line->text.add(line.text()));
+        boolean available=saved!=null&&phase!=SharedStory.Phase.HOLD&&phase!=SharedStory.Phase.RESULT_UNKNOWN;
+        if(available){text.add("다음 중요 진행 조건");text.addAll(conditions.lines());}
+        var action=available?guide.stream().filter(line->Set.of("/hearthstory next","/hearthstory vote").contains(line.command()==null?"":line.command())).findFirst().map(line->new Action(run,saved.story().revision(),saved.story().stage(),line.command(),line.text())):Optional.<Action>empty();
+        return new Panel(text,action);
+    }
+    public static void require(StoryContent content,UUID run,StoryStore.Snapshot saved,SharedStory.Phase phase,Action action){
+        if(action==null||!run.equals(action.run())||saved==null||phase!=SharedStory.Phase.READY||saved.story().revision()!=action.revision()||!Objects.equals(saved.story().stage(),action.stage())||lines(content,saved,phase).stream().noneMatch(line->Objects.equals(action.command(),line.command())&&Set.of("/hearthstory next","/hearthstory vote").contains(action.command())))throw new IllegalStateException("STALE_STORY_ACTION");
+    }
     public static List<Line> lines(StoryContent content,StoryStore.Snapshot saved,SharedStory.Phase phase){
         if(saved==null || phase==SharedStory.Phase.HOLD || phase==SharedStory.Phase.RESULT_UNKNOWN)
             return List.of(new Line("공유 진행을 확인할 수 없습니다. 저장 상태 확인이 필요합니다.",null));

@@ -121,6 +121,12 @@ public final class SharedStory {
         notify(ctx.storyRunId(),request.choice()==null?"공유 단계 저장을 확인했습니다.":"공동체 분기를 저장·확정했습니다: "+request.label());
         reconcile(ctx);
     }
+    /** 현재 화면의 요청을 기존 전이 경로로만 연결합니다. 대상·조건은 실행 시 재검사합니다. */
+    public CompletionStage<?> act(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,StoryGuide.Action action){
+        try{StoryGuide.require(content,ctx.storyRunId(),cached(ctx.storyRunId()),phase(ctx.storyRunId()),action);
+            return action.command().equals("/hearthstory next")?advance(ctx,token,valid):openVote(ctx,token,valid);
+        }catch(RuntimeException rejected){return CompletableFuture.failedFuture(rejected);}
+    }
     public CompletionStage<StoryStore.Snapshot> advance(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){if(run(ctx.storyRunId()).phase!=Phase.READY)return CompletableFuture.failedFuture(new IllegalStateException("STORY_BUSY_OR_HOLD"));return start(ctx,()->{
         var r=run(ctx.storyRunId());actor(ctx,token,valid);var c=current(r);if(c!=null&&!c.choices().isEmpty())throw new IllegalStateException("VOTE_REQUIRED");if(c!=null&&r.saved.completed().contains(c.id()))throw new IllegalStateException("STORY_FINISHED");r.phase=Phase.CHECKING;var target=content.target(c,null);
         return evaluate(ctx,target,true).thenComposeAsync(v->{actor(ctx,token,valid);return persist(ctx,request(ctx,UUID.randomUUID(),null,r.online),false);},owner);

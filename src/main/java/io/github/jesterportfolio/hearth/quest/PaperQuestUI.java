@@ -31,6 +31,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         @Override public Inventory getInventory(){return inventory;}
     }
     private Consumer<Player> storyGuide=p->{};
+    private Predicate<String> storyNpc=npc->false;
+    public void storyNpcs(Predicate<String> registered){storyNpc=registered;}
     private Playthrough playthrough;
     private io.github.jesterportfolio.hearth.story.SharedStory sharedStory;
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory story){playthrough=content;sharedStory=story;}
@@ -58,6 +60,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         quests.requireListDisplay(session.context(),rows);
         var buttons=page.equals("npc-topics")?QuestScreens.npcTopics(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0):QuestScreens.npc(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0);
         if(!valid.getAsBoolean())throw new IllegalStateException("STALE_NPC_MENU");
+        if(page.equals("npc"))buttons=QuestScreens.npcGuide(buttons,storyNpc.test(npc));
         p.openInventory(new Screen(p.getUniqueId(),session,buttons,page,npc,0,valid).inventory);
     }
     public static net.kyori.adventure.inventory.Book book(QuestBookView view,List<Component> actions){
@@ -148,7 +151,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(!(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen previous)||!previous.dialogueValid.getAsBoolean())return;
             valid=previous.dialogueValid;
         }
-        p.openInventory(new Screen(p.getUniqueId(),s,QuestScreens.screen(catalog,view,page,quest,Math.max(0,offset)),page,quest,Math.max(0,offset),valid).inventory);
+        var buttons=QuestScreens.screen(catalog,view,page,quest,Math.max(0,offset));if(page.equals("npc"))buttons=QuestScreens.npcGuide(buttons,storyNpc.test(quest));
+        p.openInventory(new Screen(p.getUniqueId(),s,buttons,page,quest,Math.max(0,offset),valid).inventory);
     }
     public boolean command(Player p,String command){
         var s=players.current(p);if(s==null)return false;
@@ -186,7 +190,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             String action=button.action();
             if(action.equals("detail")||action.equals("book"))load(p,s,v->acceptedBook(p,s,v,button.quest()));
             else if(action.equals("npc-select")||action.equals("npc-action")){p.closeInventory();npcSelection.select(p,screen.quest,button.quest(),action.equals("npc-action")?button.revision():null);}
-            else if(Set.of("npc-read","npc-topics-open","npc-topic","npc-menu","npc-close").contains(action)){p.closeInventory();npcNavigation.open(p,screen.quest,action,button.quest());}
+            else if(Set.of("npc-read","npc-topics-open","npc-topic","npc-menu","npc-close","npc-story").contains(action)){p.closeInventory();npcNavigation.open(p,screen.quest,action,button.quest());}
             else if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
             else if(action.equals("quest-retry")||action.equals("quest-reward")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-retry")?"retry ":"claim ")+button.quest());}
             else if(action.equals("quest-chapter-play")||action.equals("quest-chapter-skip")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-chapter-skip")?"chapter-skip ":"chapter-play ")+button.quest());}

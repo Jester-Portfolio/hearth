@@ -35,8 +35,9 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private final Map<PlayerSessions.Session,Boolean> actionResults=new IdentityHashMap<>();
     private final Set<PlayerSessions.Session> pendingActions=Collections.newSetFromMap(new IdentityHashMap<>());
     private Playthrough playthrough;private io.github.jesterportfolio.hearth.story.SharedStory sharedStory;
-    private Consumer<Player> storyGuide=p->{};
-    public void storyGuide(Consumer<Player> handler){storyGuide=handler;}
+    @FunctionalInterface public interface StoryRequest{java.util.concurrent.CompletionStage<?> request(Player player,io.github.jesterportfolio.hearth.story.StoryGuide.Action action,java.util.function.BooleanSupplier current);}
+    private StoryRequest storyRequest=(p,a,v)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("STORY_DISABLED"));
+    public void storyProgress(io.github.jesterportfolio.hearth.story.SharedStory shared,StoryRequest request){sharedStory=shared;storyRequest=request;}
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory story){playthrough=content;sharedStory=story;}
     private final Map<UUID,Screen> screens=new HashMap<>();private final JavaPlugin plugin;private final PaperSessionAdapter players;
     private final QuestJournal journal;private final QuestCatalog catalog;
@@ -199,10 +200,32 @@ public final class PaperPhone implements Listener,AutoCloseable {
             if(!valid(p,s))return;if(error!=null){info(p,s,"안내 조회 실패",List.of("현재 상태로 다시 조회해 주세요."));return;}
             try{information(p,s,view);var guide=playthrough.guide(catalog,view,sharedStory.cached(s.session().context().storyRunId()),sharedStory.phase(s.session().context().storyRunId()));var actions=new ArrayList<ActionButton>();
                 if(guide.talkQuest()!=null)actions.add(button(p,s,"가까운 담당 NPC와 대화",()->{information(p,s,view);advance(p);p.closeDialog();report.accept(p,guide.talkQuest());}));
-                if("/hearthstory guide".equals(guide.command()))actions.add(button(p,s,"공유 진행 안내",()->{information(p,s,view);advance(p);p.closeDialog();storyGuide.accept(p);}));
+                if("/hearthstory guide".equals(guide.command()))actions.add(button(p,s,"공동 조사 안내",()->{information(p,s,view);sharedProgress(p,advance(p));}));
                 actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
                 show(p,s,guide.title(),guide.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
             }catch(RuntimeException stale){info(p,s,"안내 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
+        },owner);
+    }
+    private void sharedProgress(Player p,Screen s){
+        if(sharedStory==null){info(p,s,"공동 조사 안내",List.of("공유 진행 엔진이 연결되지 않았습니다."));return;}
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"조회 오류",List.of("공유 진행을 확인하지 못했습니다. 진행을 확정하지 않았습니다."));return;}
+            try{information(p,s,view);var run=s.session().context().storyRunId();var panel=io.github.jesterportfolio.hearth.story.StoryGuide.panel(run,sharedStory.content(),sharedStory.cached(run),sharedStory.phase(run),view.exploration().conditions());var actions=new ArrayList<ActionButton>();
+                panel.action().ifPresent(action->actions.add(button(p,s,action.label(),()->{information(p,s,view);requestSharedProgress(p,s,action);})));
+                actions.add(button(p,s,"새로고침",()->sharedProgress(p,advance(p))));actions.add(button(p,s,"스토리 진행",()->loadLibrary(p,advance(p),"shared",1)));actions.add(button(p,s,"홈",()->home(p)));
+                show(p,s,"공동 조사 안내",panel.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
+            }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
+        },owner);
+    }
+    private void requestSharedProgress(Player p,Screen s,io.github.jesterportfolio.hearth.story.StoryGuide.Action action){
+        if(!pendingActions.add(s.session()))throw new IllegalStateException("STORY_REQUEST_PENDING");
+        var waiting=advance(p);show(p,waiting,"진행 조건 확인 중",List.of(DialogBody.plainMessage(Component.text("접속 대상과 저장 결과를 확인 중입니다. 아직 공유 결과가 확정되지 않았습니다."))),List.of(),List.of(button(p,waiting,"홈",()->home(p))));
+        java.util.concurrent.CompletionStage<?> work;
+        try{work=storyRequest.request(p,action,()->valid(p,waiting));}catch(RuntimeException error){work=java.util.concurrent.CompletableFuture.failedFuture(error);}
+        work.whenCompleteAsync((result,error)->{pendingActions.remove(s.session());if(!valid(p,waiting))return;
+            if(error!=null){info(p,waiting,"진행 보류",List.of("접속 대상·조건·저장 상태를 확인하지 못했습니다. 진행을 확정하지 않았습니다."));return;}
+            if(action.command().equals("/hearthstory vote")){advance(p);p.closeDialog();p.sendMessage(Component.text("분기 투표가 시작됐습니다. 채팅의 선택지로 투표해 주세요. 분기는 아직 확정되지 않았습니다."));}
+            else sharedProgress(p,advance(p));
         },owner);
     }
     private void libraryMenu(Player p,Screen s,String menu){
@@ -227,6 +250,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
             }));}
             if(current>1)actions.add(button(p,s,"이전 페이지",()->librarySnapshot(p,advance(p),view,section,current-1)));
             if(current<total)actions.add(button(p,s,"다음 페이지",()->librarySnapshot(p,advance(p),view,section,current+1)));
+            if(Set.of("shared","conditions").contains(section)&&sharedStory!=null)actions.add(button(p,s,"공동 조사 안내",()->{information(p,s,view);sharedProgress(p,advance(p));}));
             actions.add(button(p,s,"새로고침",()->loadLibrary(p,advance(p),section,1)));
             actions.add(button(p,s,"분류 메뉴",()->{var next=advance(p);if(Set.of("tracked","reporting","completed","branches").contains(section))browse(p,next,"quests",1);else if(section.equals("regions"))browse(p,next,"map",1);else libraryMenu(p,next,Set.of("members","shared","conditions").contains(section)?"community":"diary");}));
             actions.add(button(p,s,"홈",()->home(p)));
