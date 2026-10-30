@@ -11,6 +11,7 @@ public final class QuestScreens {
     public static final List<String> MENUS=List.of("퀘스트","월드 지도","일지","공동체","알림","설정");
     public static List<Button> screen(QuestCatalog catalog,QuestJournal.View view,String page,String id,int offset){
         var out=new ArrayList<Button>();
+        if(page.equals("npc-topics"))return npcTopics(catalog,id,view.states(),c->!view.exploration().blockedQuests().contains(c.id()),offset);
         if(page.equals("npc"))return npc(catalog,id,view.states(),c->!view.exploration().blockedQuests().contains(c.id()),offset);
         if(page.equals("home")){
             String[] destinations={"quests","map","diary","community","notices","settings"};
@@ -67,11 +68,21 @@ public final class QuestScreens {
                 buttons.add(new Button(18+i-offset,(state.phase()==QuestStore.Phase.NOT_ACCEPTED?"수락: ":"보고: ")+q.title(),"npc-action",q.quest(),state.revision()));
         }
         if(options.isEmpty())buttons.add(new Button(0,"현재 대화할 퀘스트가 없습니다.","none",null,0));
+        if(!catalog.pages(npc).isEmpty())buttons.add(new Button(36,"대화 읽기","npc-read",null,0));
+        if(!catalog.availableTopics(npc,states,id->allowed.test(catalog.quest(id))).isEmpty())buttons.add(new Button(37,"질문 선택","npc-topics-open",null,0));
         buttons.add(new Button(45,"대화 닫기","npc-close",null,0));
         if(offset>0)buttons.add(new Button(47,"이전 페이지","npc",npc,Math.max(0,offset-18)));
         if(offset+18<options.size())buttons.add(new Button(51,"다음 페이지","npc",npc,offset+18));
         for(int i=0;i<buttons.size();i++){var b=buttons.get(i);if(b.action().equals("npc"))buttons.set(i,new Button(b.slot(),b.label(),b.action(),npc,b.revision()));}
         return List.copyOf(buttons);
+    }
+    public static List<Button> npcTopics(QuestCatalog catalog,String npc,Map<String,QuestStore.Saved> states,java.util.function.Predicate<QuestContent> allowed,int offset){
+        if(!states.keySet().equals(catalog.questIds()))throw new IllegalArgumentException("Incomplete NPC state");
+        var topics=catalog.availableTopics(npc,states,id->allowed.test(catalog.quest(id)));var out=new ArrayList<Button>();
+        for(int i=offset;i<Math.min(topics.size(),offset+36);i++)out.add(new Button(i-offset,topics.get(i).label(),"npc-topic",topics.get(i).id(),0));
+        if(topics.isEmpty())out.add(new Button(0,"현재 질문할 항목이 없습니다.","none",null,0));
+        out.add(new Button(45,"NPC 선택창","npc-menu",null,0));out.add(new Button(49,"대화 닫기","npc-close",null,0));navigation(out,offset,topics.size(),"npc-topics");
+        for(int i=0;i<out.size();i++){var b=out.get(i);if(b.action().equals("npc-topics"))out.set(i,new Button(b.slot(),b.label(),b.action(),npc,b.revision()));}return List.copyOf(out);
     }
     private static List<Button> completion(QuestJournal.View view,String page,String id,int offset){
         var rows=new ArrayList<Button>();String back="quests";

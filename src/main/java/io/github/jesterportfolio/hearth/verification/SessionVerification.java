@@ -284,6 +284,7 @@ public final class SessionVerification implements AutoCloseable {
         case "interaction-quest-start" -> interactionQuestStart();
         case "interaction-quest-restored" -> interactionQuestRestore();
         case "npc-pages" -> npcPages();
+        case "npc-dialogue-book" -> npcTopicsStart().thenCompose(v->npcTopicsIsolation()).thenCompose(v->npcPagesPrepared());
         case "location-play" -> locationPlay();
         case "playthrough-run" -> playthroughRun();
         case "playthrough-restored" -> playthroughRestored();
@@ -865,6 +866,8 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<Void> npcTopicsRestored(){return openAll()
         .thenCompose(v->journal.load(a1,s1,()->true)).thenAccept(view->{check(view.exploration().facts().stream().anyMatch(f->f.id().equals("facility_clue"))&&view.exploration().events().stream().filter(e->e.id().equals("facility_clue")).count()==1,"topics_new_JVM_personal_fact_and_chronicle_restored");
             check(QuestScreens.screen(catalog,view,"fact","P:facility_clue",0).stream().anyMatch(b->b.label().contains("안내원")),"topics_restored_diary_details_public_to_owner");})
+        .thenCompose(v->npcTopicsIsolation());}
+    private CompletionStage<Void> npcTopicsIsolation(){return CompletableFuture.<Void>completedFuture(null)
         .thenCompose(v->journal.load(a2,s2,()->true)).thenAccept(view->check(view.exploration().facts().isEmpty()&&catalog.availableTopics("survey_guide",view.states(),id->true).size()==1,"topics_P2_no_private_answer_or_fact"))
         .thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->check(view.exploration().facts().isEmpty(),"topics_other_run_private_fact_isolation"))
         .thenCompose(v->finishCourseQuest(a2,s2,"survey_marker"))
@@ -885,13 +888,26 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->quests.interact(qa,catalog.quest("contact_route"),"block:7:64:7:LEVER"))
         .thenCompose(v->quests.reach(qa,catalog.quest("contact_route"),13,64,25)).thenCompose(v->quests.advance(qa,QuestStore.Phase.COMPLETED))
         .thenCompose(v->questRead(a1,"contact_route",QuestStore.Phase.COMPLETED,4)).thenCompose(v->questRead(a2,"contact_route",QuestStore.Phase.NOT_ACCEPTED,-1)).thenCompose(v->questRead(ctx(b,1),"contact_route",QuestStore.Phase.NOT_ACCEPTED,-1));}
-    private CompletionStage<Void> npcPages(){return openAll().thenCompose(v->mainResult(store.readJournal(a1))).thenCompose(before->{
+    private CompletionStage<Void> npcPages(){return openAll().thenCompose(v->npcPagesPrepared());}
+    private CompletionStage<Void> npcPagesPrepared(){return mainResult(store.readJournal(a1)).thenCompose(before->{
         var d=new QuestDialogue(catalog);World w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());questAdapter.ensure(w);var entity=w.getEntitiesByClass(org.bukkit.entity.Villager.class).iterator().next();
         var options=d.options(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide");var page=d.beginPages(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide").orElseThrow();
         check(catalog.pages("survey_guide").size()==3,"pages_content_loaded");
         for(int i=0;i<3;i++){check(!PaperQuestAdapter.pageMessages(catalog,d,page).isEmpty(),"pages_component_"+i);if(i<2)page=d.turn(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide",page.nonce(),"next").orElseThrow();}
         d.turn(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide",page.nonce(),"close");check(!d.current(options.getFirst()),"pages_close_clears_quest_tokens");
-        return mainResult(store.readJournal(a1)).thenAccept(after->check(after.equals(before),"pages_read_only_journal"));
+        return journal.load(a1,s1,()->true).thenCompose(view->{
+            var rows=view.states();var menu=QuestScreens.npc(catalog,"survey_guide",rows,id->true,0);var topics=QuestScreens.npcTopics(catalog,"survey_guide",rows,id->true,0);
+            var screen=new PaperQuestUI.Screen(a1.playerId(),s1,menu,"npc","survey_guide",0);var topicScreen=new PaperQuestUI.Screen(a1.playerId(),s1,topics,"npc-topics","survey_guide",0);
+            check(screen.getInventory().getSize()==54&&topicScreen.getInventory().getSize()==54&&menu.stream().anyMatch(bu->bu.action().equals("npc-read"))&&topics.stream().filter(bu->bu.action().equals("npc-topic")).count()==2,"dialogue_inventory_and_question_menu");
+            var tickets=d.options(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide");var scope=d.conversation(a1.playerId());
+            check(d.authorizeMenu(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),"survey_guide",scope.nonce())==scope,"dialogue_menu_bound_to_context");
+            var selected=tickets.stream().filter(t->t.quest().equals("path_marker")).findFirst().orElseThrow();d.authorize(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),QuestDialogue.Request.parse(d.command(selected,"select")));var accept=d.action(selected,"accept");
+            var acceptButton=net.kyori.adventure.text.Component.text("수락").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(d.command(accept,"accept")));var declineButton=net.kyori.adventure.text.Component.text("거절").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(d.declineCommand(accept)));
+            var book=PaperQuestUI.book(new QuestBookView("공개 대화",List.of("공개 시험 안내")),List.of(acceptButton,declineButton));
+            check(book.pages().size()==2&&book.pages().getLast().children().stream().filter(c->c.clickEvent()!=null).count()==2,"dialogue_book_accept_decline_components");
+            d.decline(a1.playerId(),s1,a,w.getUID(),entity.getUniqueId(),QuestDialogue.Request.parse(d.declineCommand(accept)));check(!d.current(accept)&&!d.current(scope),"dialogue_decline_invalidates_accept_and_menu");
+            return quests.listAfterPending(a1,s1,()->true).thenAccept(after->check(rows.equals(after),"dialogue_read_and_decline_quest_rows_revision_unchanged"));
+        }).thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(after->check(after.equals(before),"pages_read_only_journal"));
     });}
     private CompletionStage<Void> locationPlay(){
         return openAll().thenCompose(v->quests.open(a1,content.id(),s1,()->true)).thenCompose(q->{qa=q;return quests.accept(q,content);})

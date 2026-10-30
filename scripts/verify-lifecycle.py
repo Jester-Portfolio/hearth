@@ -126,8 +126,8 @@ def main():
         parser.error('--quest-completion은 --sessions --quests --story-batch와 함께 실행합니다')
     if args.general_npcs and (not args.story_batch or any([args.playthrough,args.quest_interactions,args.npc_topics,args.npc_pages])):
         parser.error('--general-npcs는 --sessions --quests --story-batch와 함께 단독 시나리오로 실행합니다')
-    if args.npc_topics and (not args.story_batch or args.playthrough or args.quest_interactions or args.npc_pages):
-        parser.error('--npc-topics는 --sessions --quests --story-batch와 함께 단독 시나리오로 실행합니다')
+    if args.npc_topics and (not args.story_batch or args.playthrough or args.quest_interactions):
+        parser.error('--npc-topics는 --sessions --quests --story-batch와 실행하며 --npc-pages로 읽기 경계를 함께 검사할 수 있습니다')
     if args.quest_interactions and (not args.story_batch or args.playthrough):
         parser.error('--quest-interactions는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.npc_pages and (not args.story_batch or args.playthrough):
@@ -331,7 +331,7 @@ motd=Hearth isolated S4-11 verification
                         elif args.general_npcs:
                             monitor.action(name,'general-npcs-start')
                         elif args.npc_topics:
-                            monitor.action(name,'npc-topics-start')
+                            monitor.action(name,'npc-dialogue-book' if args.npc_pages else 'npc-topics-start')
                         elif args.quest_interactions:
                             monitor.action(name,'interaction-quest-start')
                         elif args.npc_pages:
@@ -507,7 +507,7 @@ motd=Hearth isolated S4-11 verification
             outcome='FAIL'
         result=dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, workspace=str(root),
                     duration_seconds=round(time.monotonic()-monitor.started,3), limits=dict(total_seconds=600,work_seconds=550,
-                    paper_starts_max=1 if args.phone_dialog or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
+                    paper_starts_max=1 if args.npc_pages or args.phone_dialog or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],

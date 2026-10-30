@@ -8,7 +8,7 @@ public final class QuestDialogue {
     public record Request(String action,String npc,String quest,UUID nonce) {
         public static Request parse(String command){
             String[] parts=command.split(" ",-1);
-            if(parts.length!=5 || !parts[0].equals("/hearthquest") || !Set.of("select","accept","report").contains(parts[1])
+            if(parts.length!=5 || !parts[0].equals("/hearthquest") || !Set.of("select","accept","report","decline").contains(parts[1])
                 || !parts[2].matches("[a-z][a-z0-9_]{0,63}") || !parts[3].matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid quest request");
             UUID nonce=UUID.fromString(parts[4]);if(!nonce.toString().equals(parts[4]))throw new IllegalArgumentException("Invalid conversation nonce");
             return new Request(parts[1],parts[2],parts[3],nonce);
@@ -16,10 +16,20 @@ public final class QuestDialogue {
     }
     private final QuestCatalog catalog;
     private final Map<UUID,Map<String,Ticket>> current=new HashMap<>();
-    public record Conversation(UUID player,Object session,UUID run,UUID world,UUID entity,String npc){}
+    public record Conversation(UUID player,Object session,UUID run,UUID world,UUID entity,String npc,UUID nonce){}
     private final Map<UUID,Conversation> conversations=new HashMap<>();
     public Conversation conversation(UUID player){return Objects.requireNonNull(conversations.get(player),"No conversation");}
     public boolean current(Conversation c){return conversations.get(c.player())==c;}
+    public String menuCommand(Conversation scope){if(!current(scope))throw new IllegalArgumentException("STALE_MENU");return "/hearthtalk menu "+scope.npc()+" "+scope.nonce();}
+    public String endCommand(Conversation scope){return menuCommand(scope).replace("/hearthtalk menu ","/hearthtalk end ");}
+    public Conversation authorizeMenu(UUID player,Object session,UUID run,UUID world,UUID entity,String npc,UUID nonce){
+        var scope=conversations.get(player);
+        if(scope==null||scope.session()!=session||!scope.run().equals(run)||!scope.world().equals(world)||!scope.entity().equals(entity)||!scope.npc().equals(npc)||!scope.nonce().equals(nonce))throw new IllegalArgumentException("STALE_MENU");return scope;
+    }
+    public TopicTicket topicSelection(UUID player,Object session,String npc,String topic){
+        var scope=conversation(player);var rows=topics.get(player);var ticket=rows==null?null:rows.get(topic);
+        if(scope.session()!=session||!scope.npc().equals(npc)||ticket==null||consumed.contains(ticket.nonce()))throw new IllegalArgumentException("STALE_TOPIC");return ticket;
+    }
     public record Page(UUID player,Object session,UUID run,UUID world,UUID entity,String npc,int index,UUID nonce){}
     private final Map<UUID,Page> pages=new HashMap<>();
     public Optional<Page> beginPages(UUID player,Object session,UUID run,UUID world,UUID entity,String npc){
@@ -51,7 +61,7 @@ public final class QuestDialogue {
     private final Set<UUID> consumed=new HashSet<>();
     public QuestDialogue(QuestCatalog catalog){this.catalog=catalog;}
     public List<Ticket> options(UUID player,Object session,UUID run,UUID world,UUID entity,String npc){
-        var content=catalog.forNpc(npc);clear(player);conversations.put(player,new Conversation(player,session,run,world,entity,npc));var tickets=new LinkedHashMap<String,Ticket>();
+        var content=catalog.forNpc(npc);clear(player);conversations.put(player,new Conversation(player,session,run,world,entity,npc,UUID.randomUUID()));var tickets=new LinkedHashMap<String,Ticket>();
         for(var c:content)tickets.put(c.id(),new Ticket(player,session,run,world,entity,npc,c.id(),UUID.randomUUID(),"select"));
         current.put(player,tickets);return List.copyOf(tickets.values());
     }
@@ -74,6 +84,11 @@ public final class QuestDialogue {
             || !ticket.npc().equals(request.npc()) || !ticket.quest().equals(request.quest()) || !ticket.nonce().equals(request.nonce())
             || !ticket.action().equals(request.action()) || !catalog.linked(request.npc(),request.quest()) || !consumed.add(ticket.nonce()))throw new IllegalArgumentException("Stale or invalid conversation");
         return ticket;
+    }
+    public String declineCommand(Ticket ticket){if(!current(ticket)||!ticket.action().equals("accept"))throw new IllegalArgumentException("DECLINE_UNAVAILABLE");return "/hearthquest decline "+ticket.npc()+" "+ticket.quest()+" "+ticket.nonce();}
+    public void decline(UUID player,Object session,UUID run,UUID world,UUID entity,Request request){
+        if(!request.action().equals("decline"))throw new IllegalArgumentException("DECLINE_UNAVAILABLE");
+        authorize(player,session,run,world,entity,new Request("accept",request.npc(),request.quest(),request.nonce()));clear(player);
     }
     public String command(Ticket t,String action){if(!current(t) || !t.action().equals(action))throw new IllegalArgumentException("Invalid dialogue action");return "/hearthquest "+action+" "+t.npc()+" "+t.quest()+" "+t.nonce();}
     public void clear(UUID player){conversations.remove(player);clearTopics(player);pages.remove(player);var tickets=current.remove(player);if(tickets!=null)tickets.values().forEach(t->consumed.remove(t.nonce()));}

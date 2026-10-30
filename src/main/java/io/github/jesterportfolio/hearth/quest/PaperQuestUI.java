@@ -19,8 +19,10 @@ import org.bukkit.scheduler.BukkitTask;
 /** 개발 모드 전용 슬롯 GUI/독립 BossBar. E키와 하단 인벤토리는 대체하지 않습니다. */
 public final class PaperQuestUI implements Listener,AutoCloseable {
     public static final class Screen implements InventoryHolder {
-        final UUID player;final Object session;final String page,quest;final int offset;final Map<Integer,QuestScreens.Button> buttons;final Inventory inventory;
-        public Screen(UUID player,Object session,List<QuestScreens.Button> rows,String page,String quest,int offset){
+        final BooleanSupplier dialogueValid;final UUID player;final Object session;final String page,quest;final int offset;final Map<Integer,QuestScreens.Button> buttons;final Inventory inventory;
+        public Screen(UUID player,Object session,List<QuestScreens.Button> rows,String page,String quest,int offset){this(player,session,rows,page,quest,offset,()->true);}
+        public Screen(UUID player,Object session,List<QuestScreens.Button> rows,String page,String quest,int offset,BooleanSupplier dialogueValid){
+            this.dialogueValid=dialogueValid;
             this.page=page;this.quest=quest;this.offset=offset;
             this.player=player;this.session=session;var map=new HashMap<Integer,QuestScreens.Button>();rows.forEach(b->map.put(b.slot(),b));buttons=Map.copyOf(map);
             inventory=Bukkit.createInventory(this,54,Component.text("Hearth 개발 스마트폰"));
@@ -46,14 +48,21 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     @FunctionalInterface public interface NpcSelection{void select(Player player,String npc,String quest,Long revision);}
     private NpcSelection npcSelection=(p,n,q,v)->{};
     public void npcSelection(NpcSelection select){npcSelection=select;}
-    public void openNpc(Player p,PlayerSessions.Session session,String npc,Map<String,io.github.jesterportfolio.hearth.persistence.QuestStore.Saved> rows){
+    @FunctionalInterface public interface NpcNavigation{void open(Player player,String npc,String action,String topic);}
+    private NpcNavigation npcNavigation=(p,n,a,t)->{};
+    public void npcNavigation(NpcNavigation handler){npcNavigation=handler;}
+    public void openNpc(Player p,PlayerSessions.Session session,String npc,Map<String,io.github.jesterportfolio.hearth.persistence.QuestStore.Saved> rows){openNpc(p,session,npc,rows,"npc");}
+    public void openNpc(Player p,PlayerSessions.Session session,String npc,Map<String,io.github.jesterportfolio.hearth.persistence.QuestStore.Saved> rows,String page){openNpc(p,session,npc,rows,page,()->true);}
+    public void openNpc(Player p,PlayerSessions.Session session,String npc,Map<String,io.github.jesterportfolio.hearth.persistence.QuestStore.Saved> rows,String page,BooleanSupplier valid){
         if(closed||players.current(p)!=session||!p.getItemOnCursor().isEmpty())throw new IllegalStateException("GUI unavailable");
         quests.requireListDisplay(session.context(),rows);
-        p.openInventory(new Screen(p.getUniqueId(),session,QuestScreens.npc(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0),"npc",npc,0).inventory);
+        var buttons=page.equals("npc-topics")?QuestScreens.npcTopics(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0):QuestScreens.npc(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0);
+        if(!valid.getAsBoolean())throw new IllegalStateException("STALE_NPC_MENU");
+        p.openInventory(new Screen(p.getUniqueId(),session,buttons,page,npc,0,valid).inventory);
     }
     public static net.kyori.adventure.inventory.Book book(QuestBookView view,List<Component> actions){
         var pages=new ArrayList<Component>();view.pages().forEach(page->pages.add(Component.text(page)));
-        if(!actions.isEmpty()){Component page=Component.text("퀘스트 진행\n\n");for(var action:actions)page=page.append(action).append(Component.newline()).append(Component.newline());pages.add(page);}
+        if(!actions.isEmpty()){Component page=Component.text("대화 및 진행\n\n");for(var action:actions)page=page.append(action).append(Component.newline()).append(Component.newline());pages.add(page);}
         return net.kyori.adventure.inventory.Book.book(Component.text(view.title()),Component.text("Hearth"),pages);
     }
     public void showBook(Player p,PlayerSessions.Session session,QuestBookView view,List<Component> actions){
@@ -102,7 +111,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(!requests.containsKey(p.getUniqueId()) && (attempted.get(p.getUniqueId())!=s || dirty.remove(p.getUniqueId()))){attempted.put(p.getUniqueId(),s);load(p,s,v->{if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen screen && screen.session==s)open(p,s,v,screen.page,screen.quest,screen.offset);});}
         }},20,20);
     }
-    public boolean allowed(Player p,Inventory inventory){return inventory.getHolder() instanceof Screen s && s.player.equals(p.getUniqueId()) && players.current(p)==s.session && !closed;}
+    public boolean allowed(Player p,Inventory inventory){return inventory.getHolder() instanceof Screen s && s.player.equals(p.getUniqueId()) && players.current(p)==s.session && s.dialogueValid.getAsBoolean() && !closed;}
     private void clearBars(Player p){var old=bars.remove(p.getUniqueId());if(old!=null)old.forEach(p::hideBossBar);}
     public static List<BossBar> hudBars(List<String> lines){return lines.stream().map(line->BossBar.bossBar(Component.text(line),0,BossBar.Color.WHITE,BossBar.Overlay.PROGRESS)).toList();}
     private void showHud(Player p,QuestJournal.View view){clearBars(p);var list=hudBars(journal.hudLines(view));list.forEach(p::showBossBar);bars.put(p.getUniqueId(),list);}
@@ -134,7 +143,12 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     private void open(Player p,PlayerSessions.Session s,QuestJournal.View view,String page,String quest,int offset){
         if(players.current(p)!=s || !p.getItemOnCursor().isEmpty())throw new IllegalStateException("GUI unavailable");
-        p.openInventory(new Screen(p.getUniqueId(),s,QuestScreens.screen(catalog,view,page,quest,Math.max(0,offset)),page,quest,Math.max(0,offset)).inventory);
+        BooleanSupplier valid=()->true;
+        if(Set.of("npc","npc-topics").contains(page)){
+            if(!(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen previous)||!previous.dialogueValid.getAsBoolean())return;
+            valid=previous.dialogueValid;
+        }
+        p.openInventory(new Screen(p.getUniqueId(),s,QuestScreens.screen(catalog,view,page,quest,Math.max(0,offset)),page,quest,Math.max(0,offset),valid).inventory);
     }
     public boolean command(Player p,String command){
         var s=players.current(p);if(s==null)return false;
@@ -168,11 +182,11 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         e.setCancelled(true);if(e.getClickedInventory()!=screen.inventory || e.getClick()!=ClickType.LEFT || !allowed(p,screen.inventory))return;
         var button=screen.buttons.get(e.getRawSlot());if(button==null || button.action().equals("none"))return;var s=players.current(p);
         Bukkit.getScheduler().runTaskLater(plugin,()->{
-            if(players.current(p)!=s || p.getOpenInventory().getTopInventory()!=screen.inventory)return;
+            if(players.current(p)!=s || p.getOpenInventory().getTopInventory()!=screen.inventory || !screen.dialogueValid.getAsBoolean())return;
             String action=button.action();
             if(action.equals("detail")||action.equals("book"))load(p,s,v->acceptedBook(p,s,v,button.quest()));
             else if(action.equals("npc-select")||action.equals("npc-action")){p.closeInventory();npcSelection.select(p,screen.quest,button.quest(),action.equals("npc-action")?button.revision():null);}
-            else if(action.equals("npc-close"))p.closeInventory();
+            else if(Set.of("npc-read","npc-topics-open","npc-topic","npc-menu","npc-close").contains(action)){p.closeInventory();npcNavigation.open(p,screen.quest,action,button.quest());}
             else if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
             else if(action.equals("quest-retry")||action.equals("quest-reward")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-retry")?"retry ":"claim ")+button.quest());}
             else if(action.equals("quest-chapter-play")||action.equals("quest-chapter-skip")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-chapter-skip")?"chapter-skip ":"chapter-play ")+button.quest());}

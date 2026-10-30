@@ -59,6 +59,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         phone=plugin.getConfig().getBoolean("phone-dialog-enabled",false)?new io.github.jesterportfolio.hearth.phone.PaperPhone(plugin,players,journal,catalog,owner):null;
         if(phone!=null){phone.report(this::openNpcFromQuest);phone.completion(this::phoneCompletion);}
+        ui.npcNavigation(this::npcNavigation);
         ui.npcSelection((p,npc,quest,revision)->{var s=players.current(p);if(s==null)return;try{var t=dialogues.selection(p.getUniqueId(),s,npc,quest);command(p,dialogues.command(t,"select"),revision);}catch(RuntimeException invalid){unavailable(p,invalid);}});
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
         ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
@@ -185,7 +186,18 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             }catch(RuntimeException invalid){unavailable(p);}
         },owner);
     }
-    private void conversation(Player p,String npc,UUID entity){
+    private void npcNavigation(Player p,String npc,String action,String topic){
+        var session=players.current(p);if(session==null)return;
+        try{
+            var scope=dialogues.conversation(p.getUniqueId());if(scope.session()!=session||!scope.npc().equals(npc)||!p.getWorld().getUID().equals(scope.world())||!talkAllowed(p,npc,scope.entity()))throw new IllegalArgumentException("STALE_NPC_MENU");
+            if(action.equals("npc-close")){dialogues.clear(p.getUniqueId());p.closeInventory();return;}
+            if(action.equals("npc-topic")){command(p,dialogues.topicCommand(dialogues.topicSelection(p.getUniqueId(),session,npc,topic)));return;}
+            if(action.equals("npc-read")){command(p,"/hearthtalk read "+npc+" "+scope.nonce());return;}
+            conversation(p,npc,scope.entity(),false,action.equals("npc-topics-open")?"npc-topics":"npc");
+        }catch(RuntimeException stale){unavailable(p,stale);}
+    }
+    private void conversation(Player p,String npc,UUID entity){conversation(p,npc,entity,true,"npc");}
+    private void conversation(Player p,String npc,UUID entity,boolean interaction,String page){
         var session=players.current(p);
         if(closed || session==null || !talkAllowed(p,npc,entity) || loadingDialogues.contains(p.getUniqueId()))return;
         if(story!=null&&!story.access().content(session.context().storyRunId(),p.getX(),p.getY(),p.getZ()))return;
@@ -193,15 +205,15 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         var context=dialogues.conversation(p.getUniqueId());
         java.util.function.BooleanSupplier valid=()->!closed&&players.current(p)==session&&dialogues.current(context)&&p.getWorld().getUID().equals(context.world())&&talkAllowed(p,npc,entity);
         loadingDialogues.add(p.getUniqueId());
-        interactObjectives(p,"npc:"+npc,()->talkAllowed(p,npc,entity)).thenComposeAsync(v->journal.interactPlace(session.context(),session,valid,"npc:"+npc,p.getX(),p.getY(),p.getZ()),owner)
+        (interaction?interactObjectives(p,"npc:"+npc,()->talkAllowed(p,npc,entity)).thenComposeAsync(v->journal.interactPlace(session.context(),session,valid,"npc:"+npc,p.getX(),p.getY(),p.getZ()),owner):CompletableFuture.<Void>completedFuture(null))
             .handleAsync((v,error)->{if(error!=null)plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;},owner)
             .thenComposeAsync(v->{if(!valid.getAsBoolean()||tickets.stream().anyMatch(t->!current(p,session,t)))throw new IllegalStateException("STALE_DIALOGUE");return quests.listAfterPending(session.context(),session,valid);},owner).whenCompleteAsync((rows,error)->{
             loadingDialogues.remove(p.getUniqueId());
             if(!valid.getAsBoolean()||tickets.stream().anyMatch(t->!current(p,session,t)))return;
             if(error!=null){unavailable(p,error);return;}
-            try {quests.requireListDisplay(session.context(),rows);dialogues.beginPages(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc).ifPresent(page->pageMessages(catalog,dialogues,page).forEach(p::sendMessage));if(!catalog.forNpc(npc).isEmpty())ui.openNpc(p,session,npc,rows);
-                var topics=dialogues.topicOptions(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc,catalog.availableTopics(npc,rows,id->journal.questAllowed(session.context(),id)));
-                topicMessages(catalog,dialogues,topics).forEach(p::sendMessage);
+            try {quests.requireListDisplay(session.context(),rows);
+                dialogues.topicOptions(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc,catalog.availableTopics(npc,rows,id->journal.questAllowed(session.context(),id)));
+                ui.openNpc(p,session,npc,rows,page,valid);
                 if(story!=null)story.guide(p,npc);
                 if(playthroughEnabled)p.sendMessage(Component.text("[다음 플레이 안내]").clickEvent(ClickEvent.runCommand("/hearthjourney")));
             }catch(RuntimeException failure){unavailable(p,failure);}
@@ -224,14 +236,14 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         var action=dialogueAction(c,saved,dialogues,selected);if(action.isPresent())message=message.append(Component.newline()).append(action.get());
         return List.of(message);
     }
-    private record DialogueAction(String label,String command){Component component(){return Component.text(label).clickEvent(ClickEvent.runCommand(command));}}
+    private record DialogueAction(String label,String command,String decline){Component component(){return Component.text(label).clickEvent(ClickEvent.runCommand(command));}}
     private static Optional<Component> dialogueAction(QuestContent c,QuestStore.Saved saved,QuestDialogue dialogues,QuestDialogue.Ticket selected){return dialogueRequest(c,saved,dialogues,selected).map(DialogueAction::component);}
     private static Optional<DialogueAction> dialogueRequest(QuestContent c,QuestStore.Saved saved,QuestDialogue dialogues,QuestDialogue.Ticket selected){
         if(!dialogues.current(selected)||!c.id().equals(selected.quest()))throw new IllegalArgumentException("STALE_DIALOGUE");
-        if(saved.phase()==QuestStore.Phase.FAILED)return Optional.of(new DialogueAction("[퀘스트 재시작]","/hearthquest retry "+c.id()));
+        if(saved.phase()==QuestStore.Phase.FAILED)return Optional.of(new DialogueAction("[퀘스트 재시작]","/hearthquest retry "+c.id(),null));
         if(saved.phase()==QuestStore.Phase.NOT_ACCEPTED&&c.startMode()==QuestContent.StartMode.NPC||saved.phase()==QuestStore.Phase.REPORT_READY){
             String action=saved.phase()==QuestStore.Phase.NOT_ACCEPTED?"accept":"report";var next=dialogues.action(selected,action);
-            return Optional.of(new DialogueAction(c.text().get(action),dialogues.command(next,action)));
+            return Optional.of(new DialogueAction(c.text().get(action),dialogues.command(next,action),action.equals("accept")?dialogues.declineCommand(next):null));
         }
         return Optional.empty();
     }
@@ -253,10 +265,20 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             if(!currentTopic(p,session,ticket))return;
             if(error!=null){unavailable(p);return;}
             try{journal.requireView(session.context(),view);var topic=catalog.topic(ticket.npc(),ticket.topic());if(!topic.available(view.states(),id->journal.questAllowed(session.context(),id)))throw new IllegalStateException("TOPIC_LOCKED");
-                p.sendMessage(Component.text(topic.text()));
-                if(topic.journal()!=null)p.sendMessage(Component.text("[개인 일지 확인]").clickEvent(ClickEvent.runCommand("/hearthphone diary")));
+                var actions=new ArrayList<Component>();actions.add(Component.text("[NPC 선택창]").clickEvent(ClickEvent.runCommand(dialogues.menuCommand(dialogues.conversation(p.getUniqueId())))));
+                actions.add(Component.text("[대화 닫기]").clickEvent(ClickEvent.runCommand(dialogues.endCommand(dialogues.conversation(p.getUniqueId())))));
+                if(topic.journal()!=null)actions.add(Component.text("[개인 일지 확인]").clickEvent(ClickEvent.runCommand("/hearthphone diary")));
+                ui.showBook(p,session,new QuestBookView(topic.label(),QuestBookView.paginate(List.of(catalog.npc(ticket.npc()).name(),topic.text()))),actions);
             }catch(RuntimeException failure){unavailable(p);}
         },owner);
+    }
+    private void pageBook(Player p,PlayerSessions.Session session,QuestDialogue.Page page){
+        var actions=new ArrayList<Component>();
+        if(page.index()>0)actions.add(Component.text("[이전 대화]").clickEvent(ClickEvent.runCommand(dialogues.pageCommand(page,"back"))));
+        if(page.index()+1<catalog.pages(page.npc()).size())actions.add(Component.text("[다음 대화]").clickEvent(ClickEvent.runCommand(dialogues.pageCommand(page,"next"))));
+        actions.add(Component.text("[NPC 선택창]").clickEvent(ClickEvent.runCommand(dialogues.menuCommand(dialogues.conversation(p.getUniqueId())))));
+        actions.add(Component.text("[대화 닫기]").clickEvent(ClickEvent.runCommand(dialogues.pageCommand(page,"close"))));
+        ui.showBook(p,session,new QuestBookView(catalog.npc(page.npc()).name(),QuestBookView.paginate(List.of("대화 "+(page.index()+1)+" / "+catalog.pages(page.npc()).size(),catalog.pages(page.npc()).get(page.index())))),actions);
     }
     public static List<Component> pageMessages(QuestCatalog catalog,QuestDialogue dialogue,QuestDialogue.Page page){
         if(!dialogue.current(page))throw new IllegalArgumentException("Stale dialogue page");var texts=catalog.pages(page.npc());var out=new ArrayList<Component>();
@@ -303,11 +325,15 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(command.startsWith("/hearthtalk ask ")){ask(p,command);return true;}
         if(command.equals("/hearthtalk")||command.startsWith("/hearthtalk ")){
             var session=players.current(p);if(session==null)return true;
-            try{String[] parts=command.split(" ",-1);if(parts.length!=4||!Set.of("next","back","close").contains(parts[1])||!parts[2].matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid page request");
+            try{String[] parts=command.split(" ",-1);if(parts.length!=4||!Set.of("next","back","close","menu","read","end").contains(parts[1])||!parts[2].matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid page request");
                 Entity npc=entity(p.getWorld(),parts[2]);if(npc==null||!talkAllowed(p,parts[2],npc.getUniqueId()))throw new IllegalArgumentException("NPC unavailable");
                 UUID nonce=UUID.fromString(parts[3]);if(!nonce.toString().equals(parts[3]))throw new IllegalArgumentException("Invalid nonce");
-                dialogues.turn(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),npc.getUniqueId(),parts[2],nonce,parts[1]).ifPresent(page->pageMessages(catalog,dialogues,page).forEach(p::sendMessage));
-            }catch(IllegalArgumentException error){p.sendMessage(Component.text("현재 유효한 NPC 대화가 아닙니다. 가까이에서 다시 대화해 주세요."));}return true;
+                if(Set.of("menu","read","end").contains(parts[1])){
+                    dialogues.authorizeMenu(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),npc.getUniqueId(),parts[2],nonce);
+                    if(parts[1].equals("end")){dialogues.clear(p.getUniqueId());p.closeInventory();}
+                    else if(parts[1].equals("menu"))conversation(p,parts[2],npc.getUniqueId(),false,"npc");else dialogues.beginPages(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),npc.getUniqueId(),parts[2]).ifPresent(page->pageBook(p,session,page));
+                }else{var page=dialogues.turn(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),npc.getUniqueId(),parts[2],nonce,parts[1]);if(page.isPresent())pageBook(p,session,page.get());else p.closeInventory();}
+            }catch(RuntimeException error){p.sendMessage(Component.text("현재 유효한 NPC 대화가 아닙니다. 가까이에서 다시 대화해 주세요."));}return true;
         }
         if(story!=null&&story.command(p,command))return true;
         if(phone!=null&&players.current(p)!=null&&phone.command(p,command))return true;
@@ -334,6 +360,11 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             request=QuestDialogue.Request.parse(command);
             Entity e=entity(p.getWorld(),request.npc());
             if(e==null || !near(p,request.npc(),e.getUniqueId()))throw new IllegalArgumentException("NPC unavailable");
+            if(request.action().equals("decline")){
+                if(!talkAllowed(p,request.npc(),e.getUniqueId()))throw new IllegalArgumentException("NPC unavailable");
+                dialogues.decline(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),e.getUniqueId(),request);
+                conversation(p,request.npc(),e.getUniqueId(),false,"npc");return true;
+            }
             ticket=dialogues.authorize(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),e.getUniqueId(),request);
         } catch(IllegalArgumentException error){plugin.getLogger().info("HEARTH_QUEST_REQUEST_REJECTED");return true;}
         QuestContent content=catalog.quest(ticket.quest());
@@ -350,7 +381,12 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
                     if(guiRevision!=null){
                         if(saved.revision()!=guiRevision||saved.phase()!=QuestStore.Phase.NOT_ACCEPTED&&saved.phase()!=QuestStore.Phase.REPORT_READY)throw new IllegalStateException("STALE_GUI_ACTION");
                         var action=dialogueRequest(content,saved,dialogues,ticket).orElseThrow(()->new IllegalStateException("QUEST_ACTION_UNAVAILABLE"));command(p,action.command());
-                    }else{var actions=dialogueAction(content,saved,dialogues,ticket).stream().toList();ui.showBook(p,session,QuestBookView.dialogue(content,saved),actions);}
+                    }else{
+                        var actions=new ArrayList<Component>();var action=dialogueRequest(content,saved,dialogues,ticket);
+                        action.ifPresent(a->{actions.add(a.component());if(a.decline()!=null)actions.add(Component.text("[거절]").clickEvent(ClickEvent.runCommand(a.decline())));});
+                        actions.add(Component.text("[NPC 선택창]").clickEvent(ClickEvent.runCommand(dialogues.menuCommand(dialogues.conversation(p.getUniqueId())))));
+                        ui.showBook(p,session,QuestBookView.dialogue(content,saved),actions);
+                    }
                 }
                 catch(RuntimeException invalid){unavailable(p);}
             },owner);
@@ -362,7 +398,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
                 p.sendMessage(Component.text(content.text().get(saved.phase()==QuestStore.Phase.ACTIVE?"active":"completed")));
                 p.sendMessage(Component.text("[퀘스트 목록]").clickEvent(ClickEvent.runCommand("/hearthquest list")).append(Component.text(" [스마트폰]").clickEvent(ClickEvent.runCommand("/hearthphone"))));
                 if(story!=null&&saved.phase()==QuestStore.Phase.COMPLETED)story.guide(p,ticket.npc());
-                conversation(p,ticket.npc(),ticket.entity());
+                conversation(p,ticket.npc(),ticket.entity(),false,"npc");
             },owner);
         return true;
     }
