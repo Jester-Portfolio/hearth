@@ -252,6 +252,16 @@ public final class PersonalQuest {
     public QuestStore.Saved requireDialogue(Session s){
         require(s);if(s.busy || s.hold || s.saved==null)throw new IllegalStateException("QUEST_BUSY_OR_HOLD");return s.saved;
     }
+    /** NPC 전경 조회는 같은 개인의 기존 읽기/쓰기가 정리된 뒤 한 번만 읽습니다. 실패는 재시도하지 않습니다. */
+    public CompletionStage<Map<String,QuestStore.Saved>> listAfterPending(ServerProgressAccess.Context context,Object token,BooleanSupplier valid) {
+        check.run();if(closed || token==null || !valid.getAsBoolean())return rejected("STALE_QUEST_LIST");
+        var waiting=new ArrayList<CompletableFuture<?>>();
+        Query query=queries.get(new Reader(context.storyRunId(),context.playerId()));
+        if(query!=null)waiting.add(query.drained);
+        for(var session:sessions.values())if(session.key.run().equals(context.storyRunId())&&session.key.player().equals(context.playerId()))waiting.add(session.io.toCompletableFuture());
+        return CompletableFuture.allOf(waiting.toArray(CompletableFuture[]::new))
+            .thenComposeAsync(v->list(context,token,valid),owner);
+    }
     /** DB를 읽기만 합니다. 조회로 Session/open/수락 행을 만들거나 상태를 덮어쓰지 않습니다. */
     public CompletionStage<Map<String,QuestStore.Saved>> list(ServerProgressAccess.Context context,Object token,BooleanSupplier valid) {
         check.run();Reader reader=new Reader(context.storyRunId(),context.playerId());

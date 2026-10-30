@@ -362,9 +362,10 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
         });
     }
     @Override public void close() {
-        main(); if (closed) return; closed=true; if(sessions!=null)sessions.close(); pump.cancel(); HandlerList.unregisterAll(this);
+        main(); if (closed) return; closed=true; try { if(sessions!=null)sessions.close(); } finally { pump.cancel(); HandlerList.unregisterAll(this);
         io.shutdown();
         log("HEARTH_LIFE_DISABLE_CLOSE "+(drained && io.isTerminated() ? "PASS" : "FAIL"));
         if (!drained) store.closeAsync();
+        }
     }
 }

@@ -100,10 +100,7 @@ public final class HearthPlugin extends JavaPlugin {
     }
 
     @Override public void onDisable() {
-        if (lifecycleVerification != null) lifecycleVerification.close();
-        if (inventoryVerification != null) inventoryVerification.close();
-        if (databaseVerification != null) databaseVerification.close();
-        if (verification != null) verification.close();
-        if (restartVerification != null) restartVerification.close();
+        try{io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(lifecycleVerification,inventoryVerification,databaseVerification,verification,restartVerification);}
+        catch(RuntimeException error){getLogger().log(java.util.logging.Level.SEVERE,"HEARTH_DISABLE_CLEANUP_FAILED",error);}
     }
 }

@@ -52,6 +52,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     private BiConsumer<Player,QuestJournal.View> projection=(p,v)->{};
     private Consumer<Player> clearProjection=p->{};
     private Predicate<Player> projectionTick=p->true;
+    private Predicate<Player> dialogueBusy=p->false;
+    public void dialogueBusy(Predicate<Player> busy){dialogueBusy=busy;}
     public void projection(BiConsumer<Player,QuestJournal.View> show,Consumer<Player> clear,Predicate<Player> tick){projection=show;clearProjection=clear;projectionTick=tick;}
     public void storyGuide(Consumer<Player> guide){storyGuide=guide;}
     private void dirtyRun(UUID run){for(Player player:Bukkit.getOnlinePlayers()){var session=players.prepared(player);if(session!=null&&session.context().storyRunId().equals(run))dirty.add(player.getUniqueId());}}
@@ -64,6 +66,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         Bukkit.getPluginManager().registerEvents(this,plugin);players.developerInventory(this::allowed);
         quests.changed(ctx->dirtyRun(ctx.storyRunId()));journal.changed(ctx->dirty.add(ctx.playerId()));journal.sharedChanged(this::dirtyRun);
         task=Bukkit.getScheduler().runTaskTimer(plugin,()->{for(Player p:Bukkit.getOnlinePlayers()){
+            if(dialogueBusy.test(p))continue;
             var s=players.current(p);if(s==null){
                 clearProjection.accept(p);var prepared=players.prepared(p);
                 if(prepared==null){clearBars(p);hudOnly.remove(p.getUniqueId());continue;}
@@ -102,7 +105,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         long id=++requestId;requests.put(p.getUniqueId(),id);
         work.whenCompleteAsync((view,failure)->{
             if(!Objects.equals(requests.get(p.getUniqueId()),id))return;
-            requests.remove(p.getUniqueId());if(closed)return;if(players.current(p)!=session){if(players.prepared(p)==session)dirty.add(p.getUniqueId());return;}if(failure!=null){Throwable cause=failure;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();if(cause instanceof IllegalStateException&&Set.of("JOURNAL_BUSY","QUEST_LIST_BUSY").contains(Objects.toString(cause.getMessage(),""))){dirty.add(p.getUniqueId());return;}error(p);return;}
+            requests.remove(p.getUniqueId());if(closed)return;if(dialogueBusy.test(p)){dirty.add(p.getUniqueId());return;}if(players.current(p)!=session){if(players.prepared(p)==session)dirty.add(p.getUniqueId());return;}if(failure!=null){Throwable cause=failure;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();if(cause instanceof IllegalStateException&&Set.of("JOURNAL_BUSY","QUEST_LIST_BUSY").contains(Objects.toString(cause.getMessage(),""))){dirty.add(p.getUniqueId());return;}error(p);return;}
             try{journal.requireView(session.context(),view);showHud(p,view);projection.accept(p,view);show.accept(view);}catch(RuntimeException e){error(p);}
         },owner);
     }
@@ -157,5 +160,5 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.MONITOR) public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Screen)e.setCancelled(true);}
     @EventHandler public void closed(InventoryCloseEvent e){if(e.getInventory().getHolder() instanceof Screen)requests.remove(e.getPlayer().getUniqueId());}
     @EventHandler public void quit(PlayerQuitEvent e){clearBars(e.getPlayer());clearProjection.accept(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());hudOnly.remove(e.getPlayer().getUniqueId());}
-    @Override public void close(){closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
+    @Override public void close(){if(closed)return;closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
 }

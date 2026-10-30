@@ -967,7 +967,11 @@ public final class SessionVerification implements AutoCloseable {
         }));
     }
     private CompletionStage<Void> npcViews(){
-        return quests.list(a1,s1,()->coordinator.playable(s1)).thenAccept(rows->{
+        var background=quests.list(a1,s1,()->coordinator.playable(s1));
+        var foreground=quests.listAfterPending(a1,s1,()->coordinator.playable(s1));
+        check(!foreground.toCompletableFuture().isDone(),"npc_foreground_waits_existing_query");
+        return background.thenCompose(rows->foreground).thenAccept(rows->{
+            check(rows.keySet().equals(catalog.questIds()),"npc_foreground_complete_personal_state");
             quests.requireListDisplay(a1,rows);World w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());
             var before=one.capture();
             for(var c:catalog.npcs()){
@@ -1662,5 +1666,7 @@ public final class SessionVerification implements AutoCloseable {
         mainResult(store.readInventory(context)).thenAccept(saved->log("MANUAL_DB count="+codec.decode(saved.payload())[0].getAmount()+" revision="+saved.revision()))
             .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
-    @Override public void close(){if(combatPlayers!=null)combatPlayers.close();if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(questAdapter!=null)questAdapter.close();autosave.close();adapter.close();}
+    @Override public void close(){
+        io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
+    }
 }

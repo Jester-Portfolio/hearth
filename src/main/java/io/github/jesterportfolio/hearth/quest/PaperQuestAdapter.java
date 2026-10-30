@@ -47,6 +47,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void completion(QuestRules definitions,QuestRewards rewardService,io.github.jesterportfolio.hearth.persistence.QuestCompletionStore storage){
         rules=definitions;rewards=rewardService;completionStore=storage;quests.completed((ctx,id)->{if(rules.rule(id).reward()==null)return;var p=Bukkit.getPlayer(ctx.playerId());if(p==null)return;var s=players.current(p);if(s!=null&&s.context().storyRunId().equals(ctx.storyRunId()))claim(p,s,id);});
     }
+    private final Set<UUID> loadingDialogues=new HashSet<>();
     private boolean closed;
     private boolean playthroughEnabled;
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){playthroughEnabled=true;ui.playthrough(content,shared);}
@@ -56,7 +57,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
-        ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
+        ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
         expiry=Bukkit.getScheduler().runTaskTimer(plugin,()->quests.expire(catalog).exceptionally(error->{plugin.getLogger().warning("HEARTH_QUEST_EXPIRY_HOLD");return null;}),20,20);
         Bukkit.getPluginManager().registerEvents(this,plugin);players.questCommand(this::command);
         for(World w:Bukkit.getWorlds())ensure(w);
@@ -86,7 +87,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private void removeMark(Mark mark){Entity e=Bukkit.getEntity(mark.entity());if(e!=null)e.remove();}
     private void clearVisual(Player p){
         projections.remove(p.getUniqueId());var old=marks.remove(p.getUniqueId());if(old!=null)old.values().forEach(this::removeMark);
-        for(var rows:npcs.values())for(UUID id:rows.values()){Entity e=Bukkit.getEntity(id);if(e!=null&&p.canSee(e))p.hideEntity(plugin,e);}
+        for(var rows:npcs.values())for(UUID id:rows.values()){Entity e=Bukkit.getEntity(id);if(plugin.isEnabled()&&e!=null&&p.canSee(e))p.hideEntity(plugin,e);}
     }
     /** 기존 표시 주기에서 호출하며 DB를 조회하지 않습니다. */
     private boolean render(Player p){
@@ -182,23 +183,25 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     }
     private void conversation(Player p,String npc,UUID entity){
         var session=players.current(p);
-        if(session==null || !talkAllowed(p,npc,entity))return;
+        if(closed || session==null || !talkAllowed(p,npc,entity) || loadingDialogues.contains(p.getUniqueId()))return;
         if(story!=null&&!story.access().content(session.context().storyRunId(),p.getX(),p.getY(),p.getZ()))return;
         var tickets=dialogues.options(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc);
         var context=dialogues.conversation(p.getUniqueId());
-        java.util.function.BooleanSupplier valid=()->players.current(p)==session&&dialogues.current(context)&&p.getWorld().getUID().equals(context.world())&&talkAllowed(p,npc,entity);
+        java.util.function.BooleanSupplier valid=()->!closed&&players.current(p)==session&&dialogues.current(context)&&p.getWorld().getUID().equals(context.world())&&talkAllowed(p,npc,entity);
+        loadingDialogues.add(p.getUniqueId());
         interactObjectives(p,"npc:"+npc,()->talkAllowed(p,npc,entity)).thenComposeAsync(v->journal.interactPlace(session.context(),session,valid,"npc:"+npc,p.getX(),p.getY(),p.getZ()),owner)
             .handleAsync((v,error)->{if(error!=null)plugin.getLogger().info("HEARTH_DISCOVERY_REJECTED");return null;},owner)
-            .thenComposeAsync(v->{if(!valid.getAsBoolean()||tickets.stream().anyMatch(t->!current(p,session,t)))throw new IllegalStateException("STALE_DIALOGUE");return quests.list(session.context(),session,()->players.current(p)==session);},owner).whenCompleteAsync((rows,error)->{
+            .thenComposeAsync(v->{if(!valid.getAsBoolean()||tickets.stream().anyMatch(t->!current(p,session,t)))throw new IllegalStateException("STALE_DIALOGUE");return quests.listAfterPending(session.context(),session,valid);},owner).whenCompleteAsync((rows,error)->{
+            loadingDialogues.remove(p.getUniqueId());
             if(!valid.getAsBoolean()||tickets.stream().anyMatch(t->!current(p,session,t)))return;
-            if(error!=null){unavailable(p);return;}
+            if(error!=null){unavailable(p,error);return;}
             try {quests.requireListDisplay(session.context(),rows);dialogues.beginPages(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc).ifPresent(page->pageMessages(catalog,dialogues,page).forEach(p::sendMessage));var messages=selectionMessages(catalog,dialogues,tickets.stream().filter(t->journal.questAllowed(session.context(),t.quest())).toList(),rows);
                 if(messages.isEmpty()&&!catalog.forNpc(npc).isEmpty())p.sendMessage(Component.text("현재 대화할 퀘스트가 없습니다."));else messages.forEach(p::sendMessage);
                 var topics=dialogues.topicOptions(p.getUniqueId(),session,session.context().storyRunId(),p.getWorld().getUID(),entity,npc,catalog.availableTopics(npc,rows,id->journal.questAllowed(session.context(),id)));
                 topicMessages(catalog,dialogues,topics).forEach(p::sendMessage);
                 if(story!=null)story.guide(p,npc);
                 if(playthroughEnabled)p.sendMessage(Component.text("[다음 플레이 안내]").clickEvent(ClickEvent.runCommand("/hearthjourney")));
-            }catch(RuntimeException failure){unavailable(p);}
+            }catch(RuntimeException failure){unavailable(p,failure);}
         },owner);
     }
     public static List<Component> selectionMessages(QuestCatalog catalog,QuestDialogue dialogues,List<QuestDialogue.Ticket> tickets,Map<String,QuestStore.Saved> rows){
@@ -383,9 +386,15 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             },owner);
         },owner);return work;
     }
+    private void unavailable(Player p,Throwable error){
+        Throwable cause=error;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();
+        String code=Objects.toString(cause.getMessage(),"");
+        plugin.getLogger().warning("HEARTH_NPC_DIALOGUE_REJECTED "+cause.getClass().getSimpleName()+" "+(code.matches("[A-Z][A-Z0-9_]{0,63}")?code:"DETAIL_REDACTED"));
+        unavailable(p);
+    }
     private void unavailable(Player p){p.sendMessage(Component.text("퀘스트 정보를 확인할 수 없습니다."));plugin.getLogger().info("HEARTH_QUEST_REQUEST_UNAVAILABLE");}
     private void failure(Player p,QuestContent content){p.sendMessage(Component.text(content.text().get("failure")));plugin.getLogger().warning("HEARTH_QUEST_ACTION_REJECTED");}
     public void stopUi(){ui.close();}
-    @Override public void close(){expiry.cancel();quests.completed((ctx,id)->{});ui.close();closed=true;HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
-        for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(e->npcId(e)!=null).forEach(Entity::remove);}npcs.clear();marks.values().forEach(rows->rows.values().forEach(this::removeMark));marks.clear();projections.clear();}
+    @Override public void close(){if(closed)return;closed=true;expiry.cancel();quests.completed((ctx,id)->{});try{ui.close();}finally{HandlerList.unregisterAll(this);players.questCommand((p,c)->false);dialogues.clear();
+        for(UUID id:worldIds){World w=Bukkit.getWorld(id);if(w!=null)w.getEntities().stream().filter(e->npcId(e)!=null).forEach(Entity::remove);}npcs.clear();marks.values().forEach(rows->rows.values().forEach(this::removeMark));marks.clear();projections.clear();loadingDialogues.clear();}}
 }
