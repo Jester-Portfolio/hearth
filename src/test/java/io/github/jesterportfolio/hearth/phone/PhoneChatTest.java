@@ -62,4 +62,18 @@ final class PhoneChatTest {
         chat.draft("정리 대상");chat.clear();assertEquals("",chat.draft());assertThrows(IllegalArgumentException.class,()->chat.draft("가".repeat(257)));
     }
 
+    @Test void answerWaitsForAsyncAuthorizationAndKeepsBusyAndDraft(){
+        var gate=new CompletableFuture<Boolean>();var chat=new PhoneChat(q->CompletableFuture.completedFuture("응답"),Runnable::run);var result=chat.submit("질문","선택 자료","diary",()->true,()->gate);assertTrue(chat.busy());assertTrue(chat.history().isEmpty());assertEquals("질문",chat.draft());assertTrue(chat.submit("중복").toCompletableFuture().isCompletedExceptionally());gate.complete(true);result.toCompletableFuture().join();assertFalse(chat.busy());assertEquals(1,chat.history().size());assertEquals("",chat.draft());
+    }
+    @Test void failedOrRejectedAsyncAuthorizationKeepsQuestionWithoutHistory(){
+        for(boolean rejected:java.util.List.of(false,true)){var chat=new PhoneChat(q->CompletableFuture.completedFuture("응답"),Runnable::run);var result=chat.submit("보존할 질문","자료","quests",()->true,()->rejected?CompletableFuture.completedFuture(false):CompletableFuture.failedFuture(new IllegalStateException("DB_FAILURE")));assertTrue(result.toCompletableFuture().isCompletedExceptionally());assertFalse(chat.busy());assertTrue(chat.history().isEmpty());assertEquals("보존할 질문",chat.draft());assertTrue(chat.canRetry());}
+    }
+    @Test void cancellingWhileAuthorizationRunsCannotAcceptOldAnswerOrClearNewDraft(){
+        var gate=new CompletableFuture<Boolean>();var chat=new PhoneChat(q->CompletableFuture.completedFuture("응답"),Runnable::run);var old=chat.submit("이전 질문","자료","diary",()->true,()->gate);chat.cancel();chat.draft("새 질문 초안");gate.complete(true);assertTrue(old.toCompletableFuture().isCompletedExceptionally());assertTrue(chat.history().isEmpty());assertEquals("새 질문 초안",chat.draft());assertFalse(chat.busy());
+    }
+    @Test void validationTimeoutAndLateSessionChangeDoNotPublishAnswer()throws Exception{
+        var timeout=new PhoneChat(q->CompletableFuture.completedFuture("응답"),Runnable::run,20);assertThrows(ExecutionException.class,()->timeout.submit("대기","자료","diary",()->true,CompletableFuture::new).toCompletableFuture().get(1,TimeUnit.SECONDS));assertFalse(timeout.busy());assertTrue(timeout.history().isEmpty());
+        var gate=new CompletableFuture<Boolean>();var valid=new java.util.concurrent.atomic.AtomicBoolean(true);var stale=new PhoneChat(q->CompletableFuture.completedFuture("응답"),Runnable::run);var work=stale.submit("질문","자료","diary",valid::get,()->gate);valid.set(false);gate.complete(true);assertTrue(work.toCompletableFuture().isCompletedExceptionally());assertTrue(stale.history().isEmpty());
+    }
+
 }

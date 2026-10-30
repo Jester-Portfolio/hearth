@@ -17,7 +17,8 @@ public final class PhoneChat {
     public List<Turn> history(){return history.stream().map(Exchange::turn).toList();}public boolean busy(){return pending!=null;}public String error(){return error;}
     public CompletionStage<Void> submit(String input){return submit(input,"",()->true);}
     public CompletionStage<Void> submit(String input,String context,java.util.function.BooleanSupplier current){return submit(input,context,context.isEmpty()?"none":"quests",current);}
-    public CompletionStage<Void> submit(String input,String context,String mode,java.util.function.BooleanSupplier current){
+    public CompletionStage<Void> submit(String input,String context,String mode,java.util.function.BooleanSupplier current){return submit(input,context,mode,current,()->CompletableFuture.completedFuture(true));}
+    public CompletionStage<Void> submit(String input,String context,String mode,java.util.function.BooleanSupplier current,java.util.function.Supplier<CompletionStage<Boolean>> validate){
         if(!PhoneContext.MODES.containsKey(mode))return CompletableFuture.failedFuture(new IllegalArgumentException("UNKNOWN_AI_CONTEXT"));
         if(closed||busy())return CompletableFuture.failedFuture(new IllegalStateException("CHAT_BUSY_OR_CLOSED"));
         if(input==null||input.isBlank()||input.codePointCount(0,input.length())>256){retryable=false;error="질문은 1~256자로 입력해 주세요.";return CompletableFuture.failedFuture(new IllegalArgumentException("CHAT_INPUT_LENGTH"));}
@@ -27,15 +28,21 @@ public final class PhoneChat {
         var work=pending;var result=new CompletableFuture<Void>();
         work.whenCompleteAsync((answer,failure)->{
             if(closed||pending!=work){result.completeExceptionally(new IllegalStateException("STALE_CHAT"));return;}
-            pending=null;
             boolean approved;try{approved=current.getAsBoolean();}catch(RuntimeException stale){approved=false;}
-            if(!approved){retryable=true;error="현재 게임 정보가 바뀌어 응답을 표시하지 않습니다. 최신 정보로 다시 요청해 주세요.";result.completeExceptionally(new IllegalStateException("STALE_AI_CONTEXT"));return;}
-            if(failure!=null||answer==null||answer.isBlank()){retryable=true;error="AI 응답 실패 또는 시간 초과입니다. 다시 시도해 주세요.";result.completeExceptionally(failure==null?new IllegalStateException("EMPTY_AI_RESPONSE"):failure);return;}
-            int count=answer.codePointCount(0,answer.length());if(count>1200)answer=answer.substring(0,answer.offsetByCodePoints(0,1200))+"\n[응답 길이 제한]";
-            if(draftVersion==expectedDraftVersion)draft("");
-            history.add(new Exchange(new Turn(question,answer),scope));while(history.size()>4)history.removeFirst();result.complete(null);
+            if(!approved){finishRejected(work,result,"STALE_AI_CONTEXT","현재 게임 정보가 바뀌어 응답을 표시하지 않습니다. 최신 정보로 다시 요청해 주세요.");return;}
+            if(failure!=null||answer==null||answer.isBlank()){pending=null;retryable=true;error="AI 응답 실패 또는 시간 초과입니다. 다시 시도해 주세요.";result.completeExceptionally(failure==null?new IllegalStateException("EMPTY_AI_RESPONSE"):failure);return;}
+            CompletionStage<Boolean> validation;try{validation=validate.get().toCompletableFuture().orTimeout(timeoutMillis,TimeUnit.MILLISECONDS);}catch(RuntimeException invalid){validation=CompletableFuture.failedFuture(invalid);}
+            validation.whenCompleteAsync((accepted,validationError)->{
+                if(closed||pending!=work){result.completeExceptionally(new IllegalStateException("STALE_CHAT"));return;}
+                boolean latest;try{latest=current.getAsBoolean();}catch(RuntimeException invalid){latest=false;}
+                if(validationError!=null||!Boolean.TRUE.equals(accepted)||!latest){finishRejected(work,result,"STALE_AI_CONTEXT","현재 게임 정보를 다시 확인하지 못해 응답을 표시하지 않습니다. 최신 정보로 다시 요청해 주세요.");return;}
+                pending=null;String response=answer;int count=response.codePointCount(0,response.length());if(count>1200)response=response.substring(0,response.offsetByCodePoints(0,1200))+"\n[응답 길이 제한]";
+                if(draftVersion==expectedDraftVersion)draft("");
+                history.add(new Exchange(new Turn(question,response),scope));while(history.size()>4)history.removeFirst();result.complete(null);
+            },owner);
         },owner);return result;
     }
+    private void finishRejected(CompletableFuture<String> work,CompletableFuture<Void> result,String code,String message){if(pending==work)pending=null;retryable=true;error=message;result.completeExceptionally(new IllegalStateException(code));}
     public boolean canRetry(){return !closed&&!busy()&&retryable&&question!=null;}
     public CompletionStage<Void> retry(){return canRetry()&&lastMode.equals("none")?submit(question):CompletableFuture.failedFuture(new IllegalStateException("CHAT_RETRY_UNAVAILABLE"));}
     public void clear(){if(closed||busy())throw new IllegalStateException("CHAT_BUSY_OR_CLOSED");history.clear();question=null;error=null;retryable=false;draft("");}

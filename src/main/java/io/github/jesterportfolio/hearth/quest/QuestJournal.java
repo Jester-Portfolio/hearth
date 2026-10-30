@@ -18,6 +18,8 @@ public final class QuestJournal {
     private final QuestJournalStore store;private final PersonalQuest quests;private final QuestCatalog catalog;private final Executor owner;private final Runnable check;
     private final Map<Key,CompletableFuture<Void>> pending=new HashMap<>();private final Set<Key> holds=new HashSet<>();private boolean closed;private Consumer<ServerProgressAccess.Context> changed=c->{};
     private Consumer<UUID> sharedChanged=r->{};
+    private final Map<Key,Long> informationEpoch=new HashMap<>();
+    public long informationStamp(ServerProgressAccess.Context ctx){check.run();var key=new Key(ctx.storyRunId(),ctx.playerId());if(closed||holds.contains(key)||pending.containsKey(key))throw new IllegalStateException("INFORMATION_BUSY_OR_HOLD");return informationEpoch.getOrDefault(key,0L);}
     public void sharedChanged(Consumer<UUID> listener){check.run();sharedChanged=listener;}
     private QuestCompletionStore completionStore;private QuestRules completionRules=QuestRules.empty();private final Map<Key,Long> completionEpoch=new HashMap<>();
     public void completion(QuestCompletionStore store,QuestRules rules){check.run();completionStore=store;completionRules=rules;}
@@ -85,7 +87,7 @@ public final class QuestJournal {
                 Throwable t=error;while(t instanceof CompletionException && t.getCause()!=null)t=t.getCause();
                 if(t instanceof StorageFailure failure && !Set.of("STALE_OR_UNACCEPTED","REVISION_CONFLICT","MISSING_NOTICE").contains(failure.code()))holds.add(key);
             }
-            if(committed.get())try{changed.accept(ctx);}catch(RuntimeException ignored){}
+            if(committed.get()){informationEpoch.put(key,Math.incrementExact(informationEpoch.getOrDefault(key,0L)));try{changed.accept(ctx);}catch(RuntimeException ignored){}}
             // 실제 저장 실패는 해당 UI 범위 HOLD로 남기고 종료 장벽에도 전달합니다.
             if(holds.contains(key))drained.completeExceptionally(error);else drained.complete(null);
             if(error==null)result.complete(view);else result.completeExceptionally(error);
