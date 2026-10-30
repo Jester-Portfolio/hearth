@@ -57,7 +57,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         phone=plugin.getConfig().getBoolean("phone-dialog-enabled",false)?new io.github.jesterportfolio.hearth.phone.PaperPhone(plugin,players,journal,catalog,owner):null;
-        if(phone!=null){phone.report(this::openNpcFromQuest);phone.completion(this::phoneCompletion);}
+        if(phone!=null){phone.contact(this::openNpcFromFact);phone.report(this::openNpcFromQuest);phone.completion(this::phoneCompletion);}
         ui.npcNavigation(this::npcNavigation);
         ui.npcSelection((p,npc,quest,revision)->{var s=players.current(p);if(s==null)return;try{var t=dialogues.selection(p.getUniqueId(),s,npc,quest);command(p,dialogues.command(t,"select"),revision);}catch(RuntimeException invalid){unavailable(p,invalid);}});
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);

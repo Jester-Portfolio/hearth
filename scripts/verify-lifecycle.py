@@ -137,8 +137,8 @@ def main():
         parser.error('--quest-locations는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.playthrough and (not args.story_batch or any([args.world_effects,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide])):
         parser.error('--playthrough는 --sessions --quests --story-batch와 함께 단독 실행합니다')
-    if args.phone_dialog and not (args.quest_navigation or args.quest_completion or args.gameplay_guide):
-        parser.error("--phone-dialog는 --quest-navigation, --quest-completion 또는 --gameplay-guide가 필요합니다")
+    if args.phone_dialog and not (args.quest_navigation or args.quest_completion or args.gameplay_guide or args.npc_topics):
+        parser.error("--phone-dialog는 --quest-navigation, --quest-completion, --gameplay-guide 또는 --npc-topics가 필요합니다")
     if args.quest_navigation and (not args.story_batch or args.world_effects or args.game_information or args.npc_views or args.player_interactions):
         parser.error('--quest-navigation은 --sessions --quests --story-batch와 함께 단독 실행합니다')
     if args.game_information and (not args.story_batch or args.world_effects or args.player_interactions or args.npc_views):

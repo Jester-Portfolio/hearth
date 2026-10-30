@@ -48,6 +48,14 @@ public final class QuestJournal {
         if(story!=null&&(!story.healthy(ctx.storyRunId())||story.cached(ctx.storyRunId()).story().revision()!=view.exploration().story().revision()||!blocked(ctx).equals(view.exploration().blockedQuests())))throw new IllegalStateException("STALE_STORY_VIEW");
         if(community!=null && (!community.members(ctx).equals(view.exploration().members()) || !community.status(ctx,view.exploration().story(),view.exploration().members()).equals(view.exploration().conditions())))throw new IllegalStateException("STALE_COMMUNITY");
     }
+    /** 공개된 발견 장소와 본인에게 이미 저장된 일지 사이의 연결만 반환합니다. 원본 좌표는 내보내지 않습니다. */
+    public Map<String,String> placeFacts(ServerProgressAccess.Context ctx,View view){
+        check.run();var key=new Key(ctx.storyRunId(),ctx.playerId());if(closed||holds.contains(key)||pending.containsKey(key))throw new IllegalStateException("INFORMATION_BUSY_OR_HOLD");
+        requireView(ctx,view);if(content==null)return Map.of();var result=new HashMap<String,String>();
+        for(var place:view.exploration().places())if(place.discovered()){
+            var definition=content.places().get(place.key());if(definition!=null&&definition.fact()!=null&&view.exploration().facts().stream().anyMatch(f->!f.shared()&&f.id().equals(definition.fact())))result.put(place.key(),"P:"+definition.fact());
+        }return Map.copyOf(result);
+    }
     public CompletionStage<GameInformation> information(ServerProgressAccess.Context ctx,Object token,BooleanSupplier current){return load(ctx,token,current).thenApplyAsync(view->projectInformation(ctx,view,current),owner);}
     public GameInformation projectInformation(ServerProgressAccess.Context ctx,View view,BooleanSupplier current){valid(current);var key=new Key(ctx.storyRunId(),ctx.playerId());if(holds.contains(key)||pending.containsKey(key))throw new IllegalStateException("INFORMATION_BUSY_OR_HOLD");requireView(ctx,view);return GameInformation.build(catalog,view);}
     public void changed(Consumer<ServerProgressAccess.Context> listener){check.run();changed=listener;}

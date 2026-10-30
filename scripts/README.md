@@ -58,7 +58,7 @@
 
 `--sessions --quests --story-batch --npc-topics`는 조건부 NPC 질문·중요 개인 일지·새 JVM 복원과 DB 충돌 보존을 한 묶음으로 검사한다. 실제 채팅/클릭은 실행하지 않는다. [범위·결과](../docs/npc-topics-verification.md)를 따른다.
 
-`--npc-topics --npc-pages`를 함께 지정하면 기존 질문·일지/DB 충돌 검사와 NPC 아이템창·책 수락/거절·대화 읽기 불변 검사를 한 JVM에서 묶는다. 저장 계약이 유지되는 UI 변경용이며 새 JVM 복원은 검사하지 않는다. [최신 범위·결과](../docs/npc-dialogue-book-verification.md).
+`--npc-topics --npc-pages`를 함께 지정하면 기존 질문·일지/DB 충돌 검사와 NPC 아이템창·책 수락/거절·대화 읽기 불변 검사를 한 JVM에서 묶는다. 저장 계약이 유지되는 UI 변경용이며 새 JVM 복원은 검사하지 않는다. [최신 범위·결과](../docs/npc-dialogue-book-verification.md). `--phone-dialog`를 함께 지정하면 같은 한 JVM에서 실제 발견 장소·일지/연대기·관련 NPC의 스마트폰 연결과 조회 불변을 추가 검사한다. [연결 결과](../docs/phone-reader-links-verification.md).
 
 `--sessions --quests --story-batch --general-npcs`는 일반 NPC·개인 일지 대화 링크·현장 조사/발견과 IDLE·두 JVM 복원을 함께 검사한다. [범위·실패 이력·결과](../docs/general-npc-verification.md)를 따른다. 실제 사용자 조작은 수행하지 않는다.
 
