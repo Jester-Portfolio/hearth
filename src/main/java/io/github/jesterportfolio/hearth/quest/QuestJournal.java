@@ -104,7 +104,7 @@ public final class QuestJournal {
     public CompletionStage<View> hud(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,boolean enabled){return perform(ctx,token,valid,v->store.hud(ctx,v.journal().preferences(),enabled));}
     public CompletionStage<View> readAll(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){return perform(ctx,token,valid,v->store.readAllNotices(ctx));}
     public CompletionStage<View> readNotice(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String quest,long revision){return perform(ctx,token,valid,v->{
-        if(v.journal().notices().stream().noneMatch(n->n.type().equals("QUEST")&&n.quest().equals(quest)&&n.revision()==revision) || QuestListView.detail(catalog,v.states(),quest).isEmpty())throw new IllegalArgumentException("Notice unavailable");
+        if(!questAllowed(ctx,quest)||v.exploration().blockedQuests().contains(quest)||v.journal().notices().stream().noneMatch(n->n.type().equals("QUEST")&&n.quest().equals(quest)&&n.revision()==revision) || QuestListView.detail(catalog,v.states(),quest).isEmpty())throw new IllegalArgumentException("Notice unavailable");
         return store.readNotice(ctx,quest,revision);
     });}
     public CompletionStage<View> setting(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String key,boolean enabled){return perform(ctx,token,valid,v->{v.journal().preferences().flag(key);return store.setting(ctx,v.journal().preferences(),key,enabled);});}

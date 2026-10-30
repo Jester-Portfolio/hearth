@@ -966,6 +966,9 @@ public final class SessionVerification implements AutoCloseable {
                     check(!page.entries().isEmpty(),"phone_apps_own_accepted_quest_list");
                     var detail=io.github.jesterportfolio.hearth.phone.PhonePages.detail(data,"quests",page.entries().getFirst().index());
                     check(!detail.pages().isEmpty(),"phone_apps_own_quest_detail");
+                    var linked=io.github.jesterportfolio.hearth.phone.PhoneQuestLinks.quests(catalog,view).stream().filter(q->q.id().equals(content.id())).findFirst().orElseThrow();
+                    check(linked.reporting()&&linked.tracked()&&linked.trackable(),"phone_quest_track_and_near_NPC_link");
+                    check(!io.github.jesterportfolio.hearth.phone.PhoneQuestLinks.notices(catalog,view).isEmpty(),"phone_visible_quest_notifications");
                 }
                 check(icon.getType()==Material.BOOK&&icon.getItemMeta().displayName().equals(Component.text(choice.label())),"quest_NPC_GUI_item_title_status_book_icon");
                 check(npcButtons.stream().anyMatch(button->content.id().equals(button.quest())&&button.action().equals("npc-action")&&button.revision()==1),"quest_NPC_GUI_report_action_current_revision");
@@ -979,7 +982,13 @@ public final class SessionVerification implements AutoCloseable {
                     var before=one.capture();return journal.setting(a1,s1,()->coordinator.playable(s1),"minimap",false)
                         .thenCompose(saved->{check(!saved.journal().preferences().minimapEnabled(),"phone_settings_DB_marker_toggle");return mainResult(store.readJournal(a2));})
                         .thenCompose(other->{check(other.preferences().minimapEnabled(),"phone_settings_other_player_unchanged");return mainResult(store.readJournal(ctx(b,1)));})
-                        .thenAccept(other->{check(other.preferences().minimapEnabled(),"phone_settings_other_run_unchanged");check(codec.equivalent(before,one.capture()),"phone_settings_inventory_unchanged");});
+                        .thenAccept(other->{check(other.preferences().minimapEnabled(),"phone_settings_other_run_unchanged");check(codec.equivalent(before,one.capture()),"phone_settings_inventory_unchanged");})
+                        .thenCompose(x->expect(journal.readNotice(a2,s2,()->coordinator.playable(s2),content.id(),0),"IllegalArgumentException"))
+                        .thenCompose(x->journal.readNotice(a1,s1,()->coordinator.playable(s1),content.id(),0))
+                        .thenCompose(saved->{var target=io.github.jesterportfolio.hearth.phone.PhoneQuestLinks.notices(catalog,saved).stream().filter(n->n.source().revision()==0&&n.source().quest().equals(content.id())).findFirst().orElseThrow();check(target.source().read()&&target.section().equals("quests"),"phone_notice_read_saved_and_target_resolved");return journal.readAll(a1,s1,()->coordinator.playable(s1));})
+                        .thenCompose(saved->{check(io.github.jesterportfolio.hearth.phone.PhoneQuestLinks.notices(catalog,saved).stream().allMatch(n->n.source().read()),"phone_all_notices_read_DB");return mainResult(store.readJournal(a2));})
+                        .thenCompose(other->{check(other.notices().isEmpty(),"phone_notice_other_player_unchanged");return mainResult(store.readJournal(ctx(b,1)));})
+                        .thenCompose(other->{check(other.notices().isEmpty(),"phone_notice_other_run_unchanged");check(codec.equivalent(before,one.capture()),"phone_notice_inventory_unchanged");return questRead(a1,QuestStore.Phase.COMPLETED,2);});
                 });
             });
     }

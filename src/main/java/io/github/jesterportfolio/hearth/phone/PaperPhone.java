@@ -27,9 +27,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class PaperPhone implements Listener,AutoCloseable {
     private record Screen(PlayerSessions.Session session,Object nonce,PhoneChat chat){}
     private final Map<UUID,Screen> screens=new HashMap<>();private final JavaPlugin plugin;private final PaperSessionAdapter players;
-    private final QuestJournal journal;private final Executor owner;private final AssistantService assistant;private final NamespacedKey device;private boolean closed;
-    public PaperPhone(JavaPlugin plugin,PaperSessionAdapter players,QuestJournal journal,Executor owner){
-        this.plugin=plugin;this.players=players;this.journal=journal;this.owner=owner;device=new NamespacedKey(plugin,"dev_phone");
+    private final QuestJournal journal;private final QuestCatalog catalog;
+    private java.util.function.BiConsumer<Player,String> report=(p,id)->{};
+    public void report(java.util.function.BiConsumer<Player,String> handler){report=handler;}private final Executor owner;private final AssistantService assistant;private final NamespacedKey device;private boolean closed;
+    public PaperPhone(JavaPlugin plugin,PaperSessionAdapter players,QuestJournal journal,QuestCatalog catalog,Executor owner){
+        this.plugin=plugin;this.players=players;this.journal=journal;this.catalog=catalog;this.owner=owner;device=new NamespacedKey(plugin,"dev_phone");
         assistant=plugin.getConfig().getString("phone-ai-mode","mock").equals("local")?new LocalAssistant(plugin.getConfig().getString("phone-ai-endpoint","http://127.0.0.1:11435/ask")):LocalAssistant.mock();
         Bukkit.getPluginManager().registerEvents(this,plugin);
     }
@@ -37,7 +39,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private boolean valid(Player p,Screen s){return !closed&&p.isOnline()&&players.current(p)==s.session()&&screens.get(p.getUniqueId())==s;}
     private Screen advance(Player p){var old=screen(p);var s=new Screen(old.session(),new Object(),old.chat());screens.put(p.getUniqueId(),s);return s;}
     private ClickCallback.Options options(){return ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(2)).build();}
-    private void dispatch(Player p,Screen s,Runnable action){Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(p,s))action.run();},1);}
+    private void dispatch(Player p,Screen s,Runnable action){Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(p,s))try{action.run();}catch(RuntimeException rejected){var current=screens.get(p.getUniqueId());if(current!=null&&valid(p,current)&&current.session()==s.session())info(p,current,"현재 처리 불가",List.of("정보가 변경됐거나 저장 중입니다. 앱에서 다시 조회해 주세요."));}},1);}
     private ActionButton button(Player p,Screen s,String label,Runnable action){return ActionButton.builder(Component.text(label)).width(110).action(DialogAction.customClick((response,audience)->{if(audience instanceof Player who&&who.getUniqueId().equals(p.getUniqueId()))dispatch(p,s,action);},options())).build();}
     private Component icon(Player p,Screen s,int index,String label,Runnable action){return Component.text(new String(Character.toChars(0xe001+index))).font(Key.key("hearth:phone")).append(Component.text(" "+label).font(Key.key("minecraft:default"))).clickEvent(ClickEvent.callback(audience->{if(audience instanceof Player who&&who.getUniqueId().equals(p.getUniqueId()))dispatch(p,s,action);},options()));}
     private void show(Player p,Screen s,String title,List<? extends DialogBody> body,List<? extends DialogInput> inputs,List<ActionButton> actions){
@@ -76,6 +78,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
             for(var entry:rows.entries())actions.add(button(p,s,entry.label(),()->detail(p,advance(p),view,section,entry.index(),1,page)));
             if(page>1)actions.add(button(p,s,"이전 페이지",()->browseSnapshot(p,advance(p),view,section,page-1)));
             if(page<rows.total())actions.add(button(p,s,"다음 페이지",()->browseSnapshot(p,advance(p),view,section,page+1)));
+            if(section.equals("quests"))actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
             actions.add(button(p,s,"새로고침",()->browse(p,advance(p),section,1)));actions.add(button(p,s,"홈",()->home(p)));
             String title=switch(section){case "quests"->"퀘스트";case "map"->"월드 지도 정보";default->"기록";};
             show(p,s,title,List.of(DialogBody.plainMessage(Component.text(rows.entries().isEmpty()?"조회 가능한 정보가 없습니다.":"항목을 눌러 상세 내용을 확인하세요. "+page+" / "+rows.total()))),List.of(),actions);
@@ -87,9 +90,51 @@ public final class PaperPhone implements Listener,AutoCloseable {
             var detail=PhonePages.detail(information(p,s,view),section,index);var actions=new ArrayList<ActionButton>();
             if(page>1)actions.add(button(p,s,"앞 내용",()->detail(p,advance(p),view,section,index,page-1,listPage)));
             if(page<detail.pages().size())actions.add(button(p,s,"다음 내용",()->detail(p,advance(p),view,section,index,page+1,listPage)));
+            if(section.equals("quests")){
+                var quest=PhoneQuestLinks.quests(catalog,view).get(index);
+                if(quest.trackable()||quest.tracked())actions.add(button(p,s,quest.tracked()?"추적 해제":"추적",()->{
+                    information(p,s,view);var next=advance(p);
+                    journal.track(next.session().context(),next.session(),()->valid(p,next),quest.id(),!quest.tracked()).whenCompleteAsync((saved,error)->{
+                        if(!valid(p,next))return;if(error!=null)info(p,next,"추적 저장 실패",List.of("변경 성공으로 표시하지 않습니다. 다시 조회해 주세요."));else try{detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,1);}catch(RuntimeException unavailable){info(p,next,"퀘스트 상태 변경",List.of("현재 목록으로 다시 조회해 주세요."));}
+                    },owner);
+                }));
+                if(quest.reporting())actions.add(button(p,s,"가까운 NPC와 보고 대화",()->{information(p,s,view);advance(p);p.closeDialog();report.accept(p,quest.id());}));
+                actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
+            }
             actions.add(button(p,s,"목록",()->browseSnapshot(p,advance(p),view,section,listPage)));actions.add(button(p,s,"홈",()->home(p)));
             show(p,s,detail.title(),List.of(DialogBody.plainMessage(Component.text(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1)))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("현재 정보로 다시 조회해 주세요."));}
+    }
+    private void notices(Player p,Screen s,int page){
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"알림 조회 실패",List.of("알림이 없는 상태로 처리하지 않습니다. 저장 상태를 확인해 주세요."));return;}
+            noticeSnapshot(p,s,view,page);
+        },owner);
+    }
+    private void noticeSnapshot(Player p,Screen s,QuestJournal.View view,int page){
+        if(!valid(p,s))return;
+        try{
+            information(p,s,view);var rows=PhoneQuestLinks.notices(catalog,view);int pages=Math.max(1,(rows.size()+5)/6);page=Math.min(Math.max(1,page),pages);final int currentPage=page;var actions=new ArrayList<ActionButton>();
+            for(int i=(page-1)*6;i<Math.min(rows.size(),page*6);i++){var n=rows.get(i);actions.add(button(p,s,n.label(),()->openNotice(p,s,view,n.source())));}
+            if(page>1)actions.add(button(p,s,"이전 알림",()->noticeSnapshot(p,advance(p),view,currentPage-1)));
+            if(page<pages)actions.add(button(p,s,"다음 알림",()->noticeSnapshot(p,advance(p),view,currentPage+1)));
+            if(rows.stream().anyMatch(n->!n.source().read()))actions.add(button(p,s,"모두 읽음",()->{
+                information(p,s,view);var next=advance(p);journal.readAll(next.session().context(),next.session(),()->valid(p,next)).whenCompleteAsync((saved,error)->{
+                    if(!valid(p,next))return;if(error!=null)info(p,next,"읽음 저장 실패",List.of("다시 조회해 주세요."));else noticeSnapshot(p,next,saved,1);
+                },owner);
+            }));
+            actions.add(button(p,s,"새로고침",()->notices(p,advance(p),1)));actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
+            long unread=rows.stream().filter(n->!n.source().read()).count();show(p,s,"개인 알림 · 미확인 "+unread,List.of(DialogBody.plainMessage(Component.text(rows.isEmpty()?"확인할 개인 알림이 없습니다.":page+" / "+pages+" · 알림을 누르면 읽음 저장 후 관련 정보를 엽니다."))),List.of(),actions);
+        }catch(RuntimeException stale){info(p,s,"알림 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
+    }
+    private void openNotice(Player p,Screen s,QuestJournal.View view,io.github.jesterportfolio.hearth.persistence.QuestJournalStore.Notice source){
+        information(p,s,view);PhoneQuestLinks.find(catalog,view,source);var next=advance(p);
+        var work=source.type().equals("PLACE")?journal.readPlaceNotice(next.session().context(),next.session(),()->valid(p,next),source.quest()):journal.readNotice(next.session().context(),next.session(),()->valid(p,next),source.quest(),source.revision());
+        work.whenCompleteAsync((saved,error)->{
+            if(!valid(p,next))return;if(error!=null){info(p,next,"알림 읽음 저장 실패",List.of("성공으로 표시하지 않습니다. 다시 조회해 주세요."));return;}
+            try{information(p,next,saved);var target=PhoneQuestLinks.find(catalog,saved,source);detail(p,next,saved,target.section(),target.target(),1,1);}
+            catch(RuntimeException stale){info(p,next,"관련 정보 변경",List.of("현재 정보로 다시 조회해 주세요."));}
+        },owner);
     }
     private void info(Player p,Screen s,String title,List<String> lines){show(p,s,title,lines.stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),List.of(button(p,s,"홈",()->home(p))));}
     private void settings(Player p,Screen s){
@@ -130,6 +175,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     }
     public boolean command(Player p,String command){
         if(command.equals("/hearthphone")){home(p);return true;}
+        if(command.equals("/hearthphone notices")){notices(p,advance(p),1);return true;}
         if(command.equals("/hearthphone device")){
             if(!p.hasPermission("hearth.verify"))return true;
             if(!p.getItemOnCursor().isEmpty()||p.getInventory().firstEmpty()<0){p.sendMessage(Component.text("빈 인벤토리 슬롯이 필요합니다."));return true;}
