@@ -55,4 +55,11 @@ final class PhoneChatTest {
         chat.submit("변경 뒤?","최신 기록","diary",()->true).toCompletableFuture().join();assertTrue(requests.get(3).history().isEmpty());
     }
 
+    @Test void draftSurvivesFailureAndCancelButConfirmedAnswerOnlyClearsMatchingDraft(){
+        var results=new java.util.ArrayList<CompletableFuture<String>>();var chat=new PhoneChat(q->{var f=new CompletableFuture<String>();results.add(f);return f;},Runnable::run);
+        chat.draft("미리보기 질문");assertEquals("미리보기 질문",chat.draft());chat.submit("오류 질문");results.getFirst().completeExceptionally(new IllegalStateException());assertEquals("오류 질문",chat.draft());
+        chat.submit("취소 질문");chat.cancel();assertEquals("취소 질문",chat.draft());chat.submit("완료 질문");chat.draft("새로 편집한 질문");results.getLast().complete("응답");assertEquals("새로 편집한 질문",chat.draft());chat.submit("마지막 질문");results.getLast().complete("응답");assertEquals("",chat.draft());
+        chat.draft("정리 대상");chat.clear();assertEquals("",chat.draft());assertThrows(IllegalArgumentException.class,()->chat.draft("가".repeat(257)));
+    }
+
 }

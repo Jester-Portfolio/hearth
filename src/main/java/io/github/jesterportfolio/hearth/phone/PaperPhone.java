@@ -27,6 +27,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class PaperPhone implements Listener,AutoCloseable {
     private record Screen(PlayerSessions.Session session,Object nonce,PhoneChat chat){}
     @FunctionalInterface public interface CompletionAction{java.util.concurrent.CompletionStage<Void> execute(Player player,PlayerSessions.Session session,PhoneCompletion.Choice choice);}
+    private record References(QuestJournal.View view,PhoneRetrieval.Result result){}
+    private final Map<PlayerSessions.Session,References> references=new IdentityHashMap<>();
     private final Map<PlayerSessions.Session,String> contextModes=new IdentityHashMap<>();
     private CompletionAction completion=(p,s,c)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("COMPLETION_DISABLED"));
     public void completion(CompletionAction handler){completion=handler;}
@@ -45,7 +47,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         assistant=plugin.getConfig().getString("phone-ai-mode","mock").equals("local")?new LocalAssistant(plugin.getConfig().getString("phone-ai-endpoint","http://127.0.0.1:11435/ask")):LocalAssistant.mock();
         Bukkit.getPluginManager().registerEvents(this,plugin);
     }
-    private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();contextModes.remove(old.session());actionResults.remove(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner));screens.put(p.getUniqueId(),next);return next;}
+    private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();contextModes.remove(old.session());actionResults.remove(old.session());references.remove(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner));screens.put(p.getUniqueId(),next);return next;}
     private boolean valid(Player p,Screen s){return !closed&&p.isOnline()&&players.current(p)==s.session()&&screens.get(p.getUniqueId())==s;}
     private Screen advance(Player p){var old=screen(p);var s=new Screen(old.session(),new Object(),old.chat());screens.put(p.getUniqueId(),s);return s;}
     private ClickCallback.Options options(){return ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(2)).build();}
@@ -303,36 +305,65 @@ public final class PaperPhone implements Listener,AutoCloseable {
         },options())).build());
         if(s.chat().canRetry())actions.add(button(p,s,"실패한 질문 재시도",()->{submitChat(p,s,s.chat().question());}));
         if(!s.chat().busy()&&(!s.chat().history().isEmpty()||s.chat().error()!=null))actions.add(button(p,s,"대화 정리",()->clearConfirm(p)));
-        if(s.chat().busy())actions.add(button(p,s,"요청 취소",()->{s.chat().cancel();chat(p);}));
+        if(s.chat().busy())actions.add(button(p,s,"요청 취소",()->{s.chat().cancel();references.remove(s.session());chat(p);}));
         if(!s.chat().busy())actions.add(button(p,s,"도움 범위 선택",()->contextMenu(p)));
+        if(references.containsKey(s.session()))actions.add(button(p,s,"최근 요청 참고자료",()->referenceList(p,advance(p))));
         actions.add(button(p,s,"응답 확인",()->chat(p)));actions.add(button(p,s,"홈",()->home(p)));
-        show(p,s,"AI 어시스턴트",body,s.chat().busy()?List.of():List.of(DialogInput.text("question",Component.text("질문")).maxLength(256).width(240).build()),actions);
+        show(p,s,"AI 어시스턴트",body,s.chat().busy()?List.of():List.of(DialogInput.text("question",Component.text("질문")).initial(s.chat().draft()).maxLength(256).width(240).build()),actions);
     }
     private void contextMenu(Player p){
         var s=advance(p);var actions=new ArrayList<ActionButton>();
-        PhoneContext.MODES.forEach((mode,label)->actions.add(button(p,s,label,()->{if(!s.chat().busy()){contextModes.put(s.session(),mode);chat(p);}})));
+        PhoneContext.MODES.forEach((mode,label)->actions.add(button(p,s,label,()->{if(!s.chat().busy()){contextModes.put(s.session(),mode);references.remove(s.session());chat(p);}})));
         actions.add(button(p,s,"취소",()->chat(p)));
         show(p,s,"AI 도움 범위",List.of(DialogBody.plainMessage(Component.text("선택한 범위의 본인 공개 정보만 요청 시 읽습니다. 다른 사람의 개인 정보·미발견 비밀·원본 콘텐츠는 전달하지 않습니다. 최근 대화 일부도 포함되며 실제 AI는 게임 상태를 변경할 수 없습니다."))),List.of(),actions);
     }
     private void submitChat(Player p,Screen s,String question){
         if(!valid(p,s)||s.chat().busy())return;
         if(question==null||question.isBlank()||question.codePointCount(0,question.length())>256){s.chat().submit(question).exceptionally(error->null);chat(p);return;}
+        s.chat().draft(question);
         String mode=contextModes.getOrDefault(s.session(),"none");
-        if(mode.equals("none")){s.chat().submit(question,"",()->!closed&&players.current(p)==s.session()).exceptionally(error->null);chat(p);return;}
+        if(mode.equals("none")){references.remove(s.session());s.chat().submit(question,"",()->!closed&&players.current(p)==s.session()).exceptionally(error->null);chat(p);return;}
         var next=advance(p);
         show(p,next,"공개 정보 확인 중",List.of(DialogBody.plainMessage(Component.text("최신 정보를 확인한 뒤 AI에 질문합니다. 아직 전송 완료 상태가 아닙니다."))),List.of(),List.of(button(p,next,"취소/홈",()->home(p))));
         journal.load(next.session().context(),next.session(),()->valid(p,next)).whenCompleteAsync((view,error)->{
             if(!valid(p,next))return;
             if(error!=null){info(p,next,"AI 정보 조회 실패",List.of("빈 정보로 대체해 전송하지 않습니다. 저장 상태를 확인한 뒤 다시 시도해 주세요."));return;}
             try{
-                String context=PhoneContext.from(information(p,next,view),mode);
-                java.util.function.BooleanSupplier approved=()->{if(closed||players.current(p)!=next.session())return false;try{journal.projectInformation(next.session().context(),view,()->players.current(p)==next.session());return true;}catch(RuntimeException stale){return false;}};
-                next.chat().submit(question,context,mode,approved).exceptionally(failure->null);chat(p);
+                var result=PhoneRetrieval.find(information(p,next,view),mode,question);
+                previewContext(p,next,view,mode,question,result,1);
             }catch(RuntimeException invalid){info(p,next,"AI 정보 상태 변경",List.of("현재 공개 정보로 다시 요청해 주세요."));}
         },owner);
     }
+    private void previewContext(Player p,Screen s,QuestJournal.View view,String mode,String question,PhoneRetrieval.Result result,int page){
+        if(!valid(p,s))return;
+        try{
+            information(p,s,view);var pages=PhonePages.text("전송할 공개 자료",List.of("질문: "+question,result.context()));var actions=new ArrayList<ActionButton>();
+            if(page>1)actions.add(button(p,s,"앞 자료",()->previewContext(p,advance(p),view,mode,question,result,page-1)));
+            if(page<pages.pages().size())actions.add(button(p,s,"다음 자료",()->previewContext(p,advance(p),view,mode,question,result,page+1)));
+            actions.add(button(p,s,"이 자료로 질문",()->{
+                information(p,s,view);var next=advance(p);references.put(next.session(),new References(view,result));
+                java.util.function.BooleanSupplier approved=()->{if(closed||players.current(p)!=next.session())return false;try{journal.projectInformation(next.session().context(),view,()->players.current(p)==next.session());return true;}catch(RuntimeException stale){return false;}};
+                next.chat().submit(question,result.context(),mode,approved).exceptionally(error->null);chat(p);
+            }));
+            actions.add(button(p,s,"전송 취소",()->chat(p)));
+            show(p,s,"공개 자료 확인 · "+result.sources().size()+"개",List.of(DialogBody.plainMessage(Component.text(page+" / "+pages.pages().size()+"\n\n"+pages.pages().get(page-1)))),List.of(),actions);
+        }catch(RuntimeException stale){info(p,s,"참고자료 상태 변경",List.of("현재 공개 정보로 다시 요청해 주세요."));}
+    }
+    private void referenceList(Player p,Screen s){
+        var refs=references.get(s.session());
+        if(refs==null){info(p,s,"참고자료 없음",List.of("이 세션에서 전송한 게임 도움 자료가 없습니다."));return;}
+        try{
+            information(p,s,refs.view());var actions=new ArrayList<ActionButton>();
+            for(var source:refs.result().sources())actions.add(button(p,s,source.title(),()->{
+                information(p,s,refs.view());var next=advance(p);
+                if(source.section().equals("story"))info(p,next,source.title(),List.of(source.text()));else detail(p,next,refs.view(),source.section(),source.index(),1,1);
+            }));
+            actions.add(button(p,s,"AI 대화",()->chat(p)));actions.add(button(p,s,"홈",()->home(p)));
+            show(p,s,"최근 게임 도움 참고자료",List.of(DialogBody.plainMessage(Component.text(refs.result().sources().isEmpty()?"현재 공개 정보에서 키워드 일치 자료가 없었습니다.":"이 목록은 AI 요청에 제공한 자료입니다. AI 답변의 정확성을 보증하지 않으며 자료에 없는 내용은 별도로 확인해야 합니다."))),List.of(),actions);
+        }catch(RuntimeException stale){references.remove(s.session());info(p,s,"참고자료 갱신 필요",List.of("이전 자료는 더 이상 현재 상태로 확인할 수 없습니다. 최신 정보로 다시 질문해 주세요."));}
+    }
     private void clearConfirm(Player p){
-        var s=advance(p);show(p,s,"대화 정리 확인",List.of(DialogBody.plainMessage(Component.text("현재 접속 세션의 AI 대화 기록만 지웁니다. 퀘스트·일지·인벤토리는 변경하지 않습니다."))),List.of(),List.of(button(p,s,"기록 지우기",()->{if(!s.chat().busy())s.chat().clear();chat(p);}),button(p,s,"취소",()->chat(p))));
+        var s=advance(p);show(p,s,"대화 정리 확인",List.of(DialogBody.plainMessage(Component.text("현재 접속 세션의 AI 대화 기록만 지웁니다. 퀘스트·일지·인벤토리는 변경하지 않습니다."))),List.of(),List.of(button(p,s,"기록 지우기",()->{if(!s.chat().busy()){s.chat().clear();references.remove(s.session());}chat(p);}),button(p,s,"취소",()->chat(p))));
     }
     public boolean command(Player p,String command){
         if(command.equals("/hearthphone")){home(p);return true;}
@@ -347,6 +378,6 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private boolean device(ItemStack item){return item!=null&&item.hasItemMeta()&&item.getItemMeta().getPersistentDataContainer().has(device,PersistentDataType.BYTE);}
     @EventHandler(priority=EventPriority.HIGHEST) public void use(PlayerInteractEvent e){if(device(e.getItem())&&e.getAction().isRightClick()){e.setCancelled(true);if(e.getHand()==EquipmentSlot.HAND&&players.current(e.getPlayer())!=null)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(e.getPlayer())!=null&&!closed)home(e.getPlayer());},1);}}
     @EventHandler public void drop(PlayerDropItemEvent e){if(device(e.getItemDrop().getItemStack()))e.setCancelled(true);}
-    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();actionResults.remove(s.session());contextModes.remove(s.session());}}
-    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->s.chat().close());screens.clear();pendingActions.clear();actionResults.clear();contextModes.clear();assistant.close();}
+    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();actionResults.remove(s.session());contextModes.remove(s.session());references.remove(s.session());}}
+    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->s.chat().close());screens.clear();pendingActions.clear();actionResults.clear();contextModes.clear();references.clear();assistant.close();}
 }

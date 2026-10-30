@@ -1011,6 +1011,9 @@ public final class SessionVerification implements AutoCloseable {
                 var approved=journal.projectInformation(a1,view,()->coordinator.playable(s1));
                 var context=io.github.jesterportfolio.hearth.phone.PhoneContext.from(approved,"diary");
                 check(context.contains("갱신된 공개 합성 정보")&&!context.contains(a1.playerId().toString())&&!context.contains(a.toString()),"phone_AI_own_public_context_no_scope_IDs");
+                var retrieval=io.github.jesterportfolio.hearth.phone.PhoneRetrieval.find(approved,"diary","갱신된 합성 정보");
+                check(retrieval.sources().stream().anyMatch(source->source.text().contains("갱신된 공개 합성 정보")),"phone_AI_retrieval_own_record_and_source");
+                check(!retrieval.context().contains(a1.playerId().toString()),"phone_AI_retrieval_no_player_ID");
                 check(io.github.jesterportfolio.hearth.phone.PhoneContext.from(approved,"none").isEmpty(),"phone_AI_general_question_no_game_context");
                 var mock=io.github.jesterportfolio.hearth.phone.LocalAssistant.mock().ask(new io.github.jesterportfolio.hearth.phone.AssistantRequest("도움",List.of(),context)).toCompletableFuture();
                 check(mock.isDone()&&mock.getNow("").contains("Mock AI"),"phone_AI_Mock_structured_request");
@@ -1019,6 +1022,7 @@ public final class SessionVerification implements AutoCloseable {
             }).thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->{
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"PERSON").isEmpty(),"phone_library_other_player_no_private_fact");
                 check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary").contains("갱신된 공개 합성 정보"),"phone_AI_other_player_no_private_context");
+                check(io.github.jesterportfolio.hearth.phone.PhoneRetrieval.find(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary","갱신된 정보").sources().isEmpty(),"phone_AI_retrieval_other_player_no_private_source");
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"STORY").size()==1,"phone_library_same_run_shared_fact");
             }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");});
     }
