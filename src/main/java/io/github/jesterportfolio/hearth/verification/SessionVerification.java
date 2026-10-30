@@ -768,7 +768,9 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->check(view.completion().chapters().isEmpty()&&view.completion().rewards().isEmpty()&&view.states().get("branch_one_review").phase()==QuestStore.Phase.NOT_ACCEPTED,"branch_other_run_chapters_rewards_and_progress_unchanged"));}
     private CompletionStage<Void> failAndRetry(String id,int expected){var c=catalog.quest(id);final PersonalQuest.Session[] current={null};return quests.open(a1,id,s1,()->true).thenCompose(q->{current[0]=q;return quests.accept(q,c);})
         .thenCompose(v->quests.reach(current[0],c,5,64,31)).thenCompose(v->quests.reach(current[0],c,9,64,31)).thenCompose(v->quests.fail(current[0],c,"OBJECTIVE"))
-        .thenCompose(row->{check(row.phase()==QuestStore.Phase.FAILED&&row.objectiveIndex()==expected,"completion_failure_policy_"+id);return expectQuestCode(quests.fail(current[0],c,"OBJECTIVE"),"QUEST_FAILURE_NOT_ALLOWED");})
+        .thenCompose(row->{check(row.phase()==QuestStore.Phase.FAILED&&row.objectiveIndex()==expected,"completion_failure_policy_"+id);return journal.load(a1,s1,()->true).thenCompose(view->{
+            if(plugin.getConfig().getBoolean("phone-dialog-enabled",false)){var choice=io.github.jesterportfolio.hearth.phone.PhoneCompletion.choose(catalog,view,io.github.jesterportfolio.hearth.phone.PhoneCompletion.Operation.RETRY,id);io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,choice);check(true,"phone_DB_failed_quest_retry_confirmation");}
+            return expectQuestCode(quests.fail(current[0],c,"OBJECTIVE"),"QUEST_FAILURE_NOT_ALLOWED");});})
         .thenCompose(v->quests.retry(current[0],c)).thenCompose(v->{CompletionStage<?> work=CompletableFuture.completedFuture(null);for(int index=expected;index<3;index++){int x=5+index*4;work=work.thenCompose(done->quests.reach(current[0],c,x,64,31));}return work;})
         .thenCompose(v->quests.advance(current[0],QuestStore.Phase.COMPLETED)).thenAccept(row->check(row.phase()==QuestStore.Phase.COMPLETED,"completion_retry_flow_"+id));}
     private CompletionStage<Void> completionStart(){return openAll()
@@ -791,6 +793,7 @@ public final class SessionVerification implements AutoCloseable {
                 .thenCompose(done->mainResult(store.readInventory(b3))).thenAccept(after->check(after.equals(before)&&probe.holdCode()!=null,"completion_real_DB_reward_rejection_preserves_inventory_and_clean_HOLD"));
         })
         .thenCompose(v->mainResult(store.rewardStatus(b3,"trial_checkpoint"))).thenAccept(status->check(status.equals("PENDING"),"completion_failed_reward_keeps_pending_ledger"))
+        .thenCompose(v->journal.load(b3,s3,()->true)).thenAccept(view->{if(plugin.getConfig().getBoolean("phone-dialog-enabled",false)){var choice=io.github.jesterportfolio.hearth.phone.PhoneCompletion.choose(catalog,view,io.github.jesterportfolio.hearth.phone.PhoneCompletion.Operation.CLAIM,"trial_checkpoint");io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,choice);check(true,"phone_DB_pending_reward_confirmation");}})
         .thenCompose(v->finishCourseQuest(a1,s1,"survey_marker")).thenRun(()->storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1)))
         .thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true))
         .thenCompose(v->quests.skip(a2,s2,()->true,store,questRules.chapters().get("public_review")))

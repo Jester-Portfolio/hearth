@@ -42,7 +42,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final PaperQuestUI ui;
     private final io.github.jesterportfolio.hearth.phone.PaperPhone phone;
     private io.github.jesterportfolio.hearth.story.PaperStoryAdapter story;
-    public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;ui.storyGuide(p->adapter.guide(p,null));}
+    public void story(io.github.jesterportfolio.hearth.story.PaperStoryAdapter adapter){story=adapter;ui.storyGuide(p->adapter.guide(p,null));if(phone!=null)phone.storyGuide(p->adapter.guide(p,null));}
     private QuestRules rules=QuestRules.empty();private QuestRewards rewards;private io.github.jesterportfolio.hearth.persistence.QuestCompletionStore completionStore;
     private final org.bukkit.scheduler.BukkitTask expiry;
     public void completion(QuestRules definitions,QuestRewards rewardService,io.github.jesterportfolio.hearth.persistence.QuestCompletionStore storage){
@@ -51,14 +51,14 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final Set<UUID> loadingDialogues=new HashSet<>();
     private boolean closed;
     private boolean playthroughEnabled;
-    public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){playthroughEnabled=true;ui.playthrough(content,shared);}
+    public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){playthroughEnabled=true;ui.playthrough(content,shared);if(phone!=null)phone.playthrough(content,shared);}
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
         for(var c:catalog.all())for(var goal:c.goals())if(goal.interaction()!=null&&goal.interaction().startsWith("block:")){var material=Material.matchMaterial(goal.interaction().split(":")[4]);if(material==null||!material.isBlock()||material.isAir())throw new IllegalArgumentException("Unknown objective block material");}
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         phone=plugin.getConfig().getBoolean("phone-dialog-enabled",false)?new io.github.jesterportfolio.hearth.phone.PaperPhone(plugin,players,journal,catalog,owner):null;
-        if(phone!=null)phone.report(this::openNpcFromQuest);
+        if(phone!=null){phone.report(this::openNpcFromQuest);phone.completion(this::phoneCompletion);}
         ui.npcSelection((p,npc,quest,revision)->{var s=players.current(p);if(s==null)return;try{var t=dialogues.selection(p.getUniqueId(),s,npc,quest);command(p,dialogues.command(t,"select"),revision);}catch(RuntimeException invalid){unavailable(p,invalid);}});
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
         ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
@@ -264,6 +264,19 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(page.index()>0)out.add(Component.text("[이전 대화]").clickEvent(ClickEvent.runCommand(dialogue.pageCommand(page,"back"))));
         if(page.index()+1<texts.size())out.add(Component.text("[다음 대화]").clickEvent(ClickEvent.runCommand(dialogue.pageCommand(page,"next"))));
         out.add(Component.text("[대화 닫기]").clickEvent(ClickEvent.runCommand(dialogue.pageCommand(page,"close"))));return List.copyOf(out);
+    }
+    private CompletionStage<Void> phoneCompletion(Player p,PlayerSessions.Session session,io.github.jesterportfolio.hearth.phone.PhoneCompletion.Choice choice){
+        java.util.function.BooleanSupplier valid=()->!closed&&players.current(p)==session;
+        if(!valid.getAsBoolean())return CompletableFuture.failedFuture(new IllegalStateException("STALE_PHONE_ACTION"));
+        return journal.load(session.context(),session,valid).thenComposeAsync(view->{
+            if(!valid.getAsBoolean())throw new IllegalStateException("STALE_PHONE_ACTION");journal.requireView(session.context(),view);
+            io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,choice);
+            return switch(choice.operation()){
+                case CLAIM->{if(rewards==null)yield CompletableFuture.failedFuture(new IllegalStateException("REWARDS_DISABLED"));yield players.reward(session,rewards,choice.id());}
+                case RETRY->quests.open(session.context(),choice.id(),session,valid).thenComposeAsync(q->{if(!valid.getAsBoolean()||!journal.questAllowed(session.context(),choice.id()))throw new IllegalStateException("STALE_PHONE_ACTION");return quests.retry(q,catalog.quest(choice.id()));},owner).thenApply(v->(Void)null);
+                case SKIP->{if(completionStore==null||!rules.chapters().containsKey(choice.id()))yield CompletableFuture.failedFuture(new IllegalStateException("CHAPTER_DISABLED"));yield quests.skip(session.context(),session,valid,completionStore,rules.chapters().get(choice.id())).thenApply(v->(Void)null);}
+            };
+        },owner);
     }
     private void claim(Player p,PlayerSessions.Session session,String quest){
         if(rewards==null||!catalog.questIds().contains(quest)||!journal.questAllowed(session.context(),quest)){unavailable(p);return;}

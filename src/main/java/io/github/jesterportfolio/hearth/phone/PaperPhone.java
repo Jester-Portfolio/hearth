@@ -26,6 +26,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 /** 기존 격리 세션 게이트 안에서만 생성합니다. Dialog는 플레이어 인벤토리를 사용하지 않습니다. */
 public final class PaperPhone implements Listener,AutoCloseable {
     private record Screen(PlayerSessions.Session session,Object nonce,PhoneChat chat){}
+    @FunctionalInterface public interface CompletionAction{java.util.concurrent.CompletionStage<Void> execute(Player player,PlayerSessions.Session session,PhoneCompletion.Choice choice);}
+    private CompletionAction completion=(p,s,c)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("COMPLETION_DISABLED"));
+    public void completion(CompletionAction handler){completion=handler;}
+    private final Map<PlayerSessions.Session,Boolean> actionResults=new IdentityHashMap<>();
+    private final Set<PlayerSessions.Session> pendingActions=Collections.newSetFromMap(new IdentityHashMap<>());
+    private Playthrough playthrough;private io.github.jesterportfolio.hearth.story.SharedStory sharedStory;
+    private Consumer<Player> storyGuide=p->{};
+    public void storyGuide(Consumer<Player> handler){storyGuide=handler;}
+    public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory story){playthrough=content;sharedStory=story;}
     private final Map<UUID,Screen> screens=new HashMap<>();private final JavaPlugin plugin;private final PaperSessionAdapter players;
     private final QuestJournal journal;private final QuestCatalog catalog;
     private java.util.function.BiConsumer<Player,String> report=(p,id)->{};
@@ -84,6 +93,11 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 actions.add(button(p,s,"보고 가능",()->loadLibrary(p,advance(p),"reporting",1)));
                 actions.add(button(p,s,"완료",()->loadLibrary(p,advance(p),"completed",1)));
                 actions.add(button(p,s,"확정된 공유 분기",()->loadLibrary(p,advance(p),"branches",1)));
+                actions.add(button(p,s,"실패·재시작",()->completionList(p,advance(p),"failed",1)));
+                actions.add(button(p,s,"지급 대기 보상",()->completionList(p,advance(p),"rewards",1)));
+                actions.add(button(p,s,"장별 따라잡기",()->completionList(p,advance(p),"chapters",1)));
+                actions.add(button(p,s,"다음 플레이 안내",()->journey(p,advance(p))));
+                if(pendingActions.contains(s.session())||actionResults.containsKey(s.session()))actions.add(button(p,s,"최근 처리 결과",()->completionResult(p,advance(p))));
                 actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
             }
             if(section.equals("map"))actions.add(button(p,s,"공개 지역·접근 상태",()->loadLibrary(p,advance(p),"regions",1)));
@@ -101,6 +115,10 @@ public final class PaperPhone implements Listener,AutoCloseable {
             if(page<detail.pages().size())actions.add(button(p,s,"다음 내용",()->detail(p,advance(p),view,section,index,page+1,listPage,returnSection)));
             if(section.equals("quests")){
                 var quest=PhoneQuestLinks.quests(catalog,view).get(index);
+                var reward=view.completion().rewards().get(quest.id());
+                if(reward!=null)actions.add(button(p,s,reward.label(),()->completionList(p,advance(p),"rewards",1)));
+                if(view.states().get(quest.id()).phase()==io.github.jesterportfolio.hearth.persistence.QuestStore.Phase.FAILED)actions.add(button(p,s,"재시작 확인",()->confirm(p,s,view,PhoneCompletion.Operation.RETRY,quest.id())));
+                if(reward!=null&&reward.claimable())actions.add(button(p,s,"지급 대기 보상 받기",()->confirm(p,s,view,PhoneCompletion.Operation.CLAIM,quest.id())));
                 if(quest.trackable()||quest.tracked())actions.add(button(p,s,quest.tracked()?"추적 해제":"추적",()->{
                     information(p,s,view);var next=advance(p);
                     journal.track(next.session().context(),next.session(),()->valid(p,next),quest.id(),!quest.tracked()).whenCompleteAsync((saved,error)->{
@@ -113,6 +131,76 @@ public final class PaperPhone implements Listener,AutoCloseable {
             actions.add(button(p,s,"목록",()->{var next=advance(p);if(returnSection.equals(section))browseSnapshot(p,next,view,section,listPage);else librarySnapshot(p,next,view,returnSection,listPage);}));actions.add(button(p,s,"홈",()->home(p)));
             show(p,s,detail.title(),List.of(DialogBody.plainMessage(Component.text(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1)))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("현재 정보로 다시 조회해 주세요."));}
+    }
+    private void completionList(Player p,Screen s,String section,int page){
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"상태 조회 실패",List.of("진행/지급 정보를 정상 또는 빈 상태로 표시하지 않습니다."));return;}completionSnapshot(p,s,view,section,page);
+        },owner);
+    }
+    private void completionSnapshot(Player p,Screen s,QuestJournal.View view,String section,int page){
+        if(!valid(p,s))return;
+        try{
+            information(p,s,view);var actions=new ArrayList<ActionButton>();var items=new ArrayList<Runnable>();var labels=new ArrayList<String>();
+            if(section.equals("chapters"))for(var chapter:view.completion().chapters()){labels.add(chapter.title()+(chapter.skipped()?" · 스킵 기록":""));items.add(()->chapter(p,advance(p),view,chapter.id(),1));}
+            else for(var q:PhoneQuestLinks.quests(catalog,view)){
+                var state=view.states().get(q.id());var reward=view.completion().rewards().get(q.id());
+                if(section.equals("failed")&&state.phase()==io.github.jesterportfolio.hearth.persistence.QuestStore.Phase.FAILED){labels.add(q.title());items.add(()->confirm(p,s,view,PhoneCompletion.Operation.RETRY,q.id()));}
+                if(section.equals("rewards")&&reward!=null&&reward.claimable()){labels.add(q.title());items.add(()->confirm(p,s,view,PhoneCompletion.Operation.CLAIM,q.id()));}
+            }
+            int total=Math.max(1,(labels.size()+5)/6),current=Math.min(Math.max(page,1),total);
+            for(int n=(current-1)*6;n<Math.min(labels.size(),current*6);n++)actions.add(button(p,s,labels.get(n),items.get(n)));
+            if(current>1)actions.add(button(p,s,"이전",()->completionSnapshot(p,advance(p),view,section,current-1)));
+            if(current<total)actions.add(button(p,s,"다음",()->completionSnapshot(p,advance(p),view,section,current+1)));
+            actions.add(button(p,s,"새로고침",()->completionList(p,advance(p),section,1)));actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
+            String title=section.equals("chapters")?"장별 따라잡기":section.equals("failed")?"실패 퀘스트 재시작":"지급 대기 보상";
+            show(p,s,title,List.of(DialogBody.plainMessage(Component.text(items.isEmpty()?"현재 실행 가능한 항목이 없습니다.":current+" / "+total))),List.of(),actions);
+        }catch(RuntimeException stale){info(p,s,"상태 변경",List.of("최신 상태로 다시 조회해 주세요."));}
+    }
+    private void chapter(Player p,Screen s,QuestJournal.View view,String id,int page){
+        if(!valid(p,s))return;
+        try{
+            information(p,s,view);var chapter=view.completion().chapter(id).orElseThrow();var text=PhonePages.text(chapter.title(),PhoneCompletion.chapterLines(chapter));var actions=new ArrayList<ActionButton>();
+            if(page>1)actions.add(button(p,s,"앞 내용",()->chapter(p,advance(p),view,id,page-1)));
+            if(page<text.pages().size())actions.add(button(p,s,"다음 내용",()->chapter(p,advance(p),view,id,page+1)));
+            actions.add(button(p,s,"전체 플레이 안내",()->journey(p,advance(p))));
+            for(var part:chapter.parts())actions.add(button(p,s,"["+part.status()+"] "+part.title(),()->{information(p,s,view);detail(p,advance(p),view,"quests",PhoneQuestLinks.questIndex(catalog,view,part.quest()),1,1);}));
+            if(!chapter.skipped())actions.add(button(p,s,"장 스킵 확인",()->confirm(p,s,view,PhoneCompletion.Operation.SKIP,id)));
+            actions.add(button(p,s,"장 목록",()->completionList(p,advance(p),"chapters",1)));actions.add(button(p,s,"홈",()->home(p)));
+            show(p,s,text.title(),List.of(DialogBody.plainMessage(Component.text(text.pages().get(page-1)))),List.of(),actions);
+        }catch(RuntimeException stale){info(p,s,"장 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
+    }
+    private void confirm(Player p,Screen s,QuestJournal.View view,PhoneCompletion.Operation operation,String id){
+        information(p,s,view);var choice=PhoneCompletion.choose(catalog,view,operation,id);var next=advance(p);
+        String warning=operation==PhoneCompletion.Operation.SKIP?"해당 장의 메인/필수 길목만 스킵합니다. 실제 완료·보상과 구분하며 공동체 결과는 유지합니다. 스킵 보상 정책은 미정입니다.":operation==PhoneCompletion.Operation.CLAIM?"지급 대기 기록에 대해서만 기존 인벤토리·DB 저장 경로로 요청합니다. 중복 지급하지 않습니다.":"콘텐츠에 지정된 기존 실패/재시작 정책으로 재시작합니다.";
+        show(p,next,choice.title(),List.of(DialogBody.plainMessage(Component.text(warning))),List.of(),List.of(button(p,next,"확인",()->runCompletion(p,next,view,choice)),button(p,next,"취소",()->completionList(p,advance(p),operation==PhoneCompletion.Operation.SKIP?"chapters":operation==PhoneCompletion.Operation.CLAIM?"rewards":"failed",1))));
+    }
+    private void runCompletion(Player p,Screen s,QuestJournal.View view,PhoneCompletion.Choice choice){
+        information(p,s,view);PhoneCompletion.require(catalog,view,choice);
+        if(!pendingActions.add(s.session()))throw new IllegalStateException("PHONE_ACTION_BUSY");actionResults.remove(s.session());var next=advance(p);
+        show(p,next,"처리 중",List.of(DialogBody.plainMessage(Component.text("기존 저장 작업의 완료를 기다립니다. 아직 성공으로 확정하지 않았습니다."))),List.of(),List.of(button(p,next,"결과 확인",()->completionResult(p,advance(p))),button(p,next,"홈",()->home(p))));
+        final java.util.concurrent.CompletionStage<Void> work;
+        try{work=completion.execute(p,next.session(),choice);}catch(RuntimeException error){pendingActions.remove(next.session());throw error;}
+        work.whenCompleteAsync((v,error)->{
+            pendingActions.remove(next.session());
+            if(!closed&&players.prepared(p)==next.session())actionResults.put(next.session(),error==null);
+        },owner);
+    }
+    private void completionResult(Player p,Screen s){
+        if(pendingActions.contains(s.session())){show(p,s,"처리 중",List.of(DialogBody.plainMessage(Component.text("기존 저장 작업의 완료를 기다립니다. 아직 성공으로 확정하지 않았습니다."))),List.of(),List.of(button(p,s,"결과 확인",()->completionResult(p,advance(p))),button(p,s,"홈",()->home(p))));return;}
+        Boolean success=actionResults.get(s.session());
+        info(p,s,success==null?"처리 기록 없음":success?"처리 완료":"처리 보류/실패",List.of(success==null?"이 접속 세션에서 실행한 스마트폰 처리 결과가 없습니다.":success?"기존 저장 경로의 완료를 확인했습니다. 목록에서 최신 상태를 조회해 주세요.":"성공으로 기록하지 않습니다. 저장/HOLD·인벤토리 공간·최신 진행 상태를 확인해 주세요."));
+    }
+    private void journey(Player p,Screen s){
+        if(playthrough==null||sharedStory==null){info(p,s,"플레이 안내",List.of("현재 개발 콘텐츠에 다음 플레이 안내가 등록되지 않았습니다."));return;}
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"안내 조회 실패",List.of("현재 상태로 다시 조회해 주세요."));return;}
+            try{information(p,s,view);var guide=playthrough.guide(catalog,view,sharedStory.cached(s.session().context().storyRunId()),sharedStory.phase(s.session().context().storyRunId()));var actions=new ArrayList<ActionButton>();
+                if(guide.talkQuest()!=null)actions.add(button(p,s,"가까운 담당 NPC와 대화",()->{information(p,s,view);advance(p);p.closeDialog();report.accept(p,guide.talkQuest());}));
+                if("/hearthstory guide".equals(guide.command()))actions.add(button(p,s,"공유 진행 안내",()->{information(p,s,view);advance(p);p.closeDialog();storyGuide.accept(p);}));
+                actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
+                show(p,s,guide.title(),guide.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
+            }catch(RuntimeException stale){info(p,s,"안내 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
+        },owner);
     }
     private void libraryMenu(Player p,Screen s,String menu){
         var actions=new ArrayList<ActionButton>();
@@ -233,6 +321,6 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private boolean device(ItemStack item){return item!=null&&item.hasItemMeta()&&item.getItemMeta().getPersistentDataContainer().has(device,PersistentDataType.BYTE);}
     @EventHandler(priority=EventPriority.HIGHEST) public void use(PlayerInteractEvent e){if(device(e.getItem())&&e.getAction().isRightClick()){e.setCancelled(true);if(e.getHand()==EquipmentSlot.HAND&&players.current(e.getPlayer())!=null)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(e.getPlayer())!=null&&!closed)home(e.getPlayer());},1);}}
     @EventHandler public void drop(PlayerDropItemEvent e){if(device(e.getItemDrop().getItemStack()))e.setCancelled(true);}
-    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null)s.chat().close();}
-    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->s.chat().close());screens.clear();assistant.close();}
+    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();actionResults.remove(s.session());}}
+    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->s.chat().close());screens.clear();pendingActions.clear();actionResults.clear();assistant.close();}
 }
