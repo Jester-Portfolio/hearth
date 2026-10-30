@@ -1008,12 +1008,19 @@ public final class SessionVerification implements AutoCloseable {
                     for(var row:rows)if(row.targetSection()==null){var text=io.github.jesterportfolio.hearth.phone.PhonePages.text(row.title(),row.lines());check(!text.pages().isEmpty(),"phone_library_detail_"+section);}
                 }
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"PERSON").stream().anyMatch(row->row.lines().contains("갱신된 공개 합성 정보")),"phone_library_updated_personal_fact_DB");
+                var approved=journal.projectInformation(a1,view,()->coordinator.playable(s1));
+                var context=io.github.jesterportfolio.hearth.phone.PhoneContext.from(approved,"diary");
+                check(context.contains("갱신된 공개 합성 정보")&&!context.contains(a1.playerId().toString())&&!context.contains(a.toString()),"phone_AI_own_public_context_no_scope_IDs");
+                check(io.github.jesterportfolio.hearth.phone.PhoneContext.from(approved,"none").isEmpty(),"phone_AI_general_question_no_game_context");
+                var mock=io.github.jesterportfolio.hearth.phone.LocalAssistant.mock().ask(new io.github.jesterportfolio.hearth.phone.AssistantRequest("도움",List.of(),context)).toCompletableFuture();
+                check(mock.isDone()&&mock.getNow("").contains("Mock AI"),"phone_AI_Mock_structured_request");
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"CHRONICLE").size()==3,"phone_library_old_and_new_events_DB");
                 check(codec.equivalent(before,one.capture()),"phone_library_inventory_preserved");
             }).thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->{
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"PERSON").isEmpty(),"phone_library_other_player_no_private_fact");
+                check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary").contains("갱신된 공개 합성 정보"),"phone_AI_other_player_no_private_context");
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"STORY").size()==1,"phone_library_same_run_shared_fact");
-            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records"));
+            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");});
     }
     private CompletionStage<Void> gameInformation(){
         return mainResult(store.readJournal(a1)).thenCompose(before->journal.information(a1,s1,()->coordinator.playable(s1)).thenCompose(info->{

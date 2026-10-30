@@ -18,7 +18,11 @@ public final class LocalAssistant implements AssistantService {
         if(!"http".equals(endpoint.getScheme())||!Set.of("127.0.0.1","[::1]","::1").contains(endpoint.getHost())||endpoint.getUserInfo()!=null||endpoint.getFragment()!=null)throw new IllegalArgumentException("LOCAL_AI_ENDPOINT_REQUIRED");
         client=HttpClient.newBuilder().executor(worker).connectTimeout(Duration.ofSeconds(2)).followRedirects(HttpClient.Redirect.NEVER).build();
     }
-    public static AssistantService mock(){return question->CompletableFuture.completedFuture("[Mock AI] 질문을 확인했습니다: "+question+"\n실제 로컬 AI 서비스는 아직 연결되지 않았습니다.");}
+    public static AssistantService mock(){return new AssistantService(){
+        public CompletionStage<String> ask(String question){return CompletableFuture.completedFuture("[Mock AI] 질문을 확인했습니다: "+question+"\n실제 로컬 AI 서비스는 아직 연결되지 않았습니다.");}
+        public CompletionStage<String> ask(AssistantRequest request){return ask(request.question()).thenApply(answer->answer+"\n전달된 최근 대화: "+request.history().size()+"개 · 공개 정보: "+(request.context().isEmpty()?"없음":"선택한 범위만 포함"));}
+    };}
+
     @Override public CompletionStage<String> ask(String question){
         if(!requests.tryAcquire())return CompletableFuture.failedFuture(new IllegalStateException("AI_QUEUE_FULL"));
         final CompletableFuture<HttpResponse<String>> response;
@@ -26,10 +30,13 @@ public final class LocalAssistant implements AssistantService {
             var request=HttpRequest.newBuilder(endpoint).timeout(Duration.ofSeconds(6)).header("Content-Type","text/plain; charset=utf-8").POST(HttpRequest.BodyPublishers.ofString(question)).build();
             response=client.sendAsync(request,info->new LimitedBody());
         }catch(RuntimeException failure){requests.release();return CompletableFuture.failedFuture(new IllegalStateException("LOCAL_AI_REQUEST_FAILED"));}
-        return response.copy().orTimeout(6,TimeUnit.SECONDS).handle((value,error)->{
-            requests.release();if(error!=null){response.cancel(true);throw new CompletionException(new IllegalStateException("LOCAL_AI_REQUEST_FAILED"));}
-            if(value.statusCode()!=200)throw new CompletionException(new IllegalStateException("AI_HTTP_STATUS"));return value.body();
+        var timed=response.copy().orTimeout(6,TimeUnit.SECONDS);var result=new CompletableFuture<String>();
+        timed.whenComplete((value,error)->{
+            requests.release();if(error!=null){response.cancel(true);result.completeExceptionally(new IllegalStateException("LOCAL_AI_REQUEST_FAILED"));}
+            else if(value.statusCode()!=200)result.completeExceptionally(new IllegalStateException("AI_HTTP_STATUS"));else result.complete(value.body());
         });
+        result.whenComplete((value,error)->{if(result.isCancelled()){timed.cancel(true);response.cancel(true);}});
+        return result;
     }
 
     static final class LimitedBody implements HttpResponse.BodySubscriber<String>{

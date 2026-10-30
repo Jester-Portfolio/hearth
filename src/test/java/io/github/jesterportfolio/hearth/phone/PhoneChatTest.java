@@ -40,4 +40,19 @@ final class PhoneChatTest {
         assertTrue(chat.submit("").toCompletableFuture().isCompletedExceptionally());assertFalse(chat.canRetry());assertTrue(chat.retry().toCompletableFuture().isCompletedExceptionally());assertEquals(1,chat.history().size());
     }
 
+    @Test void contextChangeRejectsLateAnswerWithoutSavingHistory(){
+        var result=new CompletableFuture<String>();var valid=new java.util.concurrent.atomic.AtomicBoolean(true);var chat=new PhoneChat(q->result,Runnable::run);
+        var request=chat.submit("현재 목표?","허용 정보","quests",valid::get);valid.set(false);result.complete("오래된 응답");assertTrue(request.toCompletableFuture().isCompletedExceptionally());assertTrue(chat.history().isEmpty());assertTrue(chat.canRetry());assertTrue(chat.retry().toCompletableFuture().isCompletedExceptionally());
+    }
+    @Test void cancellationDoesNotAllowOldResponseToOverwriteNextRequest(){
+        var outputs=new java.util.ArrayList<CompletableFuture<String>>();var chat=new PhoneChat(q->{var f=new CompletableFuture<String>();outputs.add(f);return f;},Runnable::run);
+        var old=chat.submit("이전");chat.cancel();assertFalse(chat.busy());var next=chat.submit("다음");outputs.getFirst().complete("늦음");assertTrue(chat.busy());outputs.getLast().complete("새 응답");assertTrue(old.toCompletableFuture().isCompletedExceptionally());assertTrue(next.toCompletableFuture().isDone());assertEquals("다음",chat.history().getFirst().question());
+    }
+    @Test void gameDerivedHistoryIsNotSentWhenSwitchingToGeneralQuestions(){
+        var requests=new java.util.ArrayList<AssistantRequest>();var service=new AssistantService(){public CompletionStage<String> ask(String q){throw new AssertionError();}public CompletionStage<String> ask(AssistantRequest r){requests.add(r);return CompletableFuture.completedFuture("허용된 인물 정보");}};
+        var chat=new PhoneChat(service,Runnable::run);chat.submit("인물?","개인 기록","diary",()->true).toCompletableFuture().join();chat.submit("일반 질문").toCompletableFuture().join();assertTrue(requests.get(1).context().isEmpty());assertTrue(requests.get(1).history().isEmpty());
+        chat.submit("다시 인물?","개인 기록","diary",()->true).toCompletableFuture().join();assertEquals(1,requests.get(2).history().size());assertEquals("인물?",requests.get(2).history().getFirst().question());
+        chat.submit("변경 뒤?","최신 기록","diary",()->true).toCompletableFuture().join();assertTrue(requests.get(3).history().isEmpty());
+    }
+
 }
