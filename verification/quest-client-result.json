@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-31",
+  "plugin_sha256": "c6b9987181c39bad9d23c62e2901837f40dc20d520bd382f41838c4d0d99c85f",
+  "attempts": [
+    {
+      "workspace": "/tmp/hearth-s4-11.u2gz7o0f",
+      "raw_outcome": "FAIL",
+      "duration_seconds": 551.534,
+      "paper_rss_kib": 1111480,
+      "paper_cpu_seconds": 126.49,
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "automatic_cleanup_confirmed": false
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.u6n0x0ay",
+      "raw_outcome": "FAIL",
+      "duration_seconds": 551.098,
+      "paper_rss_kib": 1147636,
+      "paper_cpu_seconds": 139.92,
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "automatic_cleanup_confirmed": false
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.2q0605bd",
+      "raw_outcome": "MANUAL_CLOSED_UNVERIFIED",
+      "duration_seconds": 215.867,
+      "paper_rss_kib": 1493768,
+      "paper_cpu_seconds": 111.27,
+      "cleanup_errors": [],
+      "automatic_cleanup_confirmed": true
+    }
+  ],
+  "observed": {
+    "quest": "NOT_ACCEPTED → ACTIVE/0 → REPORT_READY/1 → COMPLETED/2",
+    "idle_reentry": "COMPLETED/2 유지, world_epoch 1 → 3",
+    "inventory": "돌 32개, revision 0 유지",
+    "book_acceptance": "사용자 확인 및 ACTIVE/0 관측",
+    "phone_mock": "사용자 응답 확인, 실제 모델 미사용"
+  },
+  "not_executed": [
+    "이번 작업의 두 JVM 복원",
+    "전체 보호·코옵·GUI 행동",
+    "리소스팩 정렬·전체 클릭 영역",
+    "실제 AI 서비스"
+  ]
+}

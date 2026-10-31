@@ -21,10 +21,20 @@ s42=s45.s42; s44=s45.s44
 class Monitor(s45.Monitor):
     def manual_session(self,name):
         print(name+': 수동 시험 준비 완료. 접속/행동 후 클라이언트를 종료하고 stop을 입력하세요. 시간 한도는 연장하지 않습니다.',flush=True)
+        next_status=time.monotonic()
+        profile=getattr(self,'manual_profile',None); connected=False
+        self.children[name]['manual_position']=len(self.children[name]['lines'])
+        for line in self.children[name]['lines']:
+            if profile and profile+' joined the game' in line:connected=True
+            if profile and profile+' left the game' in line:connected=False
         while True:
             self.pump()
             if self.children[name]['proc'].poll() is not None:
                 raise RuntimeError('수동 시험 중 Paper 예기치 않은 종료')
+            profile=getattr(self,'manual_profile',None)
+            if profile and time.monotonic()>=next_status:
+                self.send(name,'hearthverify session-status '+profile)
+                next_status=time.monotonic()+10
             if select.select([sys.stdin],[],[],0)[0]:
                 command=sys.stdin.readline().strip()
                 if command=='stop':
@@ -38,6 +48,12 @@ class Monitor(s45.Monitor):
             for line in item['lines'][position:]:
                 if any(token in line for token in ['HEARTH_SESSION_', 'HEARTH_S4_3_', 'HEARTH_LIFE_STATE', 'joined the game', 'left the game']):
                     print(name+': '+line,flush=True)
+                if profile and profile+' joined the game' in line:connected=True
+                if profile and connected and profile+' left the game' in line:
+                    connected=False
+                    if getattr(self,'manual_finish_on_logout',False):
+                        print(name+': 인증 시험자의 연결 종료를 관측해 정상 정리를 시작합니다.',flush=True)
+                        return
             item['manual_position']=len(item['lines'])
 
     def action(self,name,phase):
@@ -107,10 +123,13 @@ def main():
     parser.add_argument('--quest-list', action='store_true', help='기존 세션/DB 도구로 읽기 전용 개인 목록만 검사합니다')
     parser.add_argument('--quests', action='store_true', help='격리 개인 방문 퀘스트/NPC와 기존 세션을 검증합니다')
     parser.add_argument('--sessions', action='store_true', help='새 격리 환경에서 최소 세션 어댑터/저장 장벽을 검증합니다')
+    parser.add_argument('--manual-finish-on-logout', action='store_true', help='준비된 수동 시험자의 실제 접속 후 연결 종료를 관측하면 정리합니다')
     parser.add_argument('--manual-player', action='store_true', help='인증 클라이언트가 준비된 뒤에만 사용하는 별도 수동 데이터/두 JVM 모드')
     parser.add_argument('--operator-ready', action='store_true', help='프로필·기존 SSH 전달 경로·클라이언트 준비를 운영자가 확인했습니다')
     parser.add_argument('--profile', help='인증 Java Edition 프로필 이름. 비밀번호/토큰은 받지 않습니다')
     args = parser.parse_args()
+    if args.manual_finish_on_logout and not args.manual_player:
+        parser.error('--manual-finish-on-logout는 준비된 수동 모드에서만 사용합니다')
     if args.manual_player and not (args.sessions and args.operator_ready and sys.stdin.isatty() and re.fullmatch(r'[A-Za-z0-9_]{3,16}',args.profile or '')):
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
@@ -137,8 +156,8 @@ def main():
         parser.error('--quest-locations는 --sessions --quests --story-batch와 함께 실행합니다')
     if args.playthrough and (not args.story_batch or any([args.world_effects,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide])):
         parser.error('--playthrough는 --sessions --quests --story-batch와 함께 단독 실행합니다')
-    if args.phone_dialog and not (args.quest_navigation or args.quest_completion or args.gameplay_guide or args.npc_topics):
-        parser.error("--phone-dialog는 --quest-navigation, --quest-completion, --gameplay-guide 또는 --npc-topics가 필요합니다")
+    if args.phone_dialog and not (args.quest_navigation or args.quest_completion or args.gameplay_guide or args.npc_topics or args.manual_player and args.quests):
+        parser.error("--phone-dialog는 기존 자동 시나리오 또는 준비된 --sessions --quests --manual-player가 필요합니다")
     if args.quest_navigation and (not args.story_batch or args.world_effects or args.game_information or args.npc_views or args.player_interactions):
         parser.error('--quest-navigation은 --sessions --quests --story-batch와 함께 단독 실행합니다')
     if args.game_information and (not args.story_batch or args.world_effects or args.player_interactions or args.npc_views):
@@ -260,6 +279,8 @@ pause-when-empty-seconds=-1
 motd=Hearth isolated S4-11 verification
 ''')
     monitor=Monitor(root,started,prefix='HEARTH_LIFE',work_seconds=550)
+    monitor.manual_profile=args.profile if args.manual_player else None
+    monitor.manual_finish_on_logout=args.manual_finish_on_logout
     outcome='FAIL'; failure=None; cleanup=[]
     try:
         helper=[str(args.java.resolve()),'-Xmx128m','-XX:ActiveProcessorCount=2','-Djava.io.tmpdir='+str(root),
