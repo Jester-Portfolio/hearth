@@ -34,4 +34,26 @@ final class FieldEncountersTest {
     static Map<String,Object> definition(){return new HashMap<>(Map.of("id","first","title","공개 조우","entity","ZOMBIE","trigger",Map.of("min-x",0,"max-x",2,"min-y",64,"max-y",68,"min-z",0,"max-z",2),"population",Map.of("min-x",-1,"max-x",4,"min-y",63,"max-y",70,"min-z",-1,"max-z",4),"spawn",Map.of("x",1,"y",64,"z",1),"scaling",List.of(Map.of("players",1,"count",1,"health",20,"attack",2))));}
     static FieldContent parse(Map<String,Object> zone){return FieldContent.parse(Map.of("format",1,"zones",List.of(zone)));}
     @Test void contentRejectsBadReferencesBoundsScalingAndDuplicates(){assertEquals(1,parse(definition()).zones().size());for(var change:List.of(Map.of("entity","UNKNOWN"),Map.of("spawn",Map.of("x",Double.NaN,"y",64,"z",0)),Map.of("population",definition().get("trigger")),Map.of("scaling",List.of(Map.of("players",2,"count",1,"health",20,"attack",2))),Map.of("scaling",List.of(Map.of("players",1,"count",1000,"health",20,"attack",2))))){var z=definition();z.putAll(change);assertThrows(IllegalArgumentException.class,()->parse(z));}assertThrows(IllegalArgumentException.class,()->new FieldContent(List.of(zone("same",0),zone("same",10))));assertThrows(IllegalArgumentException.class,()->new Zone("bad","공개",zone("a",0).trigger(),zone("a",0).population(),IN,List.of(new Tier(1,1,20,2),new Tier(1,2,30,3))));}
+    @Test void resetModesPreserveClearedCheckpointAndOtherRunThenRecountOnNewEntry(){
+        var f=new Fixture();f.enter();f.engine.enter(f.a,f.p,OUT,NEXT,f.players(f.a,NEXT));f.engine.enter(f.b,f.p,OUT,IN,f.players(f.b,IN));
+        var first=f.first();var other=f.engine.state(f.b.run(),"first");var request=UUID.randomUUID();var plan=new FieldReset(FieldReset.Mode.AFTER_CHECKPOINT,List.of("first","next"),"first");
+        f.engine.reset(f.a,request,plan);assertEquals(first,f.first());assertEquals(other,f.engine.state(f.b.run(),"first"));assertTrue(f.engine.state(f.a.run(),"next").isEmpty());
+        f.engine.enter(f.a,f.p,OUT,NEXT,List.of(new Presence(f.a,f.p,NEXT)));var next=f.engine.state(f.a.run(),"next");assertEquals(1,next.orElseThrow().players());f.engine.reset(f.a,request,plan);assertEquals(next,f.engine.state(f.a.run(),"next"));
+        f.engine.reset(f.a,UUID.randomUUID(),new FieldReset(FieldReset.Mode.PRESERVE,List.of("first","next"),null));assertEquals(first,f.first());
+        f.engine.reset(f.a,UUID.randomUUID(),new FieldReset(FieldReset.Mode.ALL,List.of("first","next"),null));assertTrue(f.engine.state(f.a.run(),"first").isEmpty());assertEquals(other,f.engine.state(f.b.run(),"first"));
+    }
+    @Test void resetFailureCannotEraseRefsResumeOrAffectOtherRun(){
+        var f=new Fixture();f.enter();f.engine.enter(f.b,f.p,OUT,IN,f.players(f.b,IN));var other=f.engine.state(f.b.run(),"first");var plan=new FieldReset(FieldReset.Mode.ALL,List.of("first"),null);var id=UUID.randomUUID();
+        f.removeFails=true;assertThrows(IllegalStateException.class,()->f.engine.reset(f.a,id,plan));assertEquals(Phase.ERROR_HOLD,f.first().phase());assertEquals(2,f.first().mobs().size());
+        f.removeFails=false;assertThrows(IllegalStateException.class,()->f.engine.reset(f.a,id,plan));assertThrows(IllegalStateException.class,f::enter);assertEquals(other,f.engine.state(f.b.run(),"first"));
+    }
+    @Test void invalidResetReferencesDuplicateRequestsAndStaleBindingAreRejected(){
+        var f=new Fixture();f.enter();var before=f.first();assertThrows(IllegalArgumentException.class,()->new FieldReset(FieldReset.Mode.AFTER_CHECKPOINT,List.of("first"),"missing"));
+        assertThrows(IllegalArgumentException.class,()->new FieldReset(FieldReset.Mode.ALL,List.of("first","first"),null));
+        assertThrows(IllegalArgumentException.class,()->f.engine.reset(f.a,UUID.randomUUID(),new FieldReset(FieldReset.Mode.ALL,List.of("missing"),null)));assertEquals(before,f.first());
+        var id=UUID.randomUUID();f.engine.reset(f.a,id,new FieldReset(FieldReset.Mode.PRESERVE,List.of("first"),null));
+        assertThrows(IllegalStateException.class,()->f.engine.reset(f.a,id,new FieldReset(FieldReset.Mode.ALL,List.of("first"),null)));
+        assertThrows(IllegalStateException.class,()->f.engine.reset(new Binding(f.a.run(),f.a.world(),2),UUID.randomUUID(),new FieldReset(FieldReset.Mode.ALL,List.of("first"),null)));
+    }
+
 }

@@ -70,6 +70,12 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
     @EventHandler public void died(EntityDeathEvent e){for(var t:trials.values())if(t.mob()==e.getEntity()){e.getDrops().clear();e.setDroppedExp(0);t.attempt().victory();}}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void blocks(EntityChangeBlockEvent e){if(trials.values().stream().anyMatch(t->t.mob()==e.getEntity()))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){for(var entry:List.copyOf(trials.entrySet()))if(entry.getValue().world().mapping().physicalId().equals(e.getWorld().getUID()))stop(entry.getKey());}
+    /** 같은 JVM의 정상 종료 도전만 정리합니다. 언로드로 퇴역한 진행은 다시 열지 않습니다. */
+    public void releaseEnded(UUID run,UUID attempt){main();var t=trials.get(run);
+        if(closed||retired.contains(run)||t==null||!t.attempt().snapshot().attempt().equals(attempt)||!CombatReturn.ended(t.attempt().snapshot())||t.world().generation()!=t.generation())throw new IllegalStateException("COMBAT_RELEASE_NOT_READY");
+        t.mob().remove();if(t.mob().isValid())throw new IllegalStateException("COMBAT_RELEASE_MOB_HOLD");
+        trials.remove(run,t);replacements.remove(run);
+    }
     public void stop(UUID run){main();var t=trials.remove(run);replacements.remove(run);retired.add(run);if(t!=null){if(t.attempt().snapshot().phase()!=CombatAttempt.Phase.CLOSED)t.attempt().finish(CombatAttempt.Outcome.RETIRED);t.mob().remove();}}
     @Override public void close(){main();if(closed)return;closed=true;timer.cancel();HandlerList.unregisterAll(this);for(UUID run:List.copyOf(trials.keySet()))stop(run);}
 }

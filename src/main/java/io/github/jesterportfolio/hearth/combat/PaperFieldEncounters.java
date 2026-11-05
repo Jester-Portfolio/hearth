@@ -5,6 +5,8 @@ import io.github.jesterportfolio.hearth.session.PaperSessionAdapter;
 import java.nio.file.*;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.*;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
@@ -21,10 +23,11 @@ import static io.github.jesterportfolio.hearth.combat.FieldEncounters.*;
 public final class PaperFieldEncounters implements Listener,AutoCloseable {
     private record MobRef(Binding binding,String zone,LivingEntity entity) {}
     private final JavaPlugin plugin;private final PaperSessionAdapter sessions;private final Map<UUID,WorldLifecycle> worlds;
+    private final FieldContent content;
     private final Map<UUID,MobRef> mobs=new HashMap<>();private final Set<UUID> reported=new HashSet<>();private final FieldEncounters engine;private boolean closed;
     public PaperFieldEncounters(JavaPlugin plugin,PaperSessionAdapter sessions,Map<UUID,WorldLifecycle> worlds,FieldContent content){
         main();if(!plugin.getConfig().getBoolean("field-encounter-verification-enabled")||!Boolean.getBoolean("hearth.verification.field"))throw new IllegalStateException("Field gate missing");
-        this.plugin=plugin;this.sessions=sessions;this.worlds=Map.copyOf(worlds);
+        this.content=content;this.plugin=plugin;this.sessions=sessions;this.worlds=Map.copyOf(worlds);
         // 조우의 프로세스 간 복원/리셋 정책을 발명하지 않습니다. 이전 실행의 표식은 보존하고 자동 재소환을 거부합니다.
         try{Files.createFile(plugin.getDataFolder().toPath().resolve("field-encounters.started"));}catch(IOException e){throw new IllegalStateException("FIELD_RESTART_REVIEW_REQUIRED",e);}
         engine=new FieldEncounters(content,new Port(){
@@ -38,7 +41,7 @@ public final class PaperFieldEncounters implements Listener,AutoCloseable {
                 // 다른 플러그인이 소환을 취소했으면 성공 기록을 만들지 않습니다.
                 if(!entity.isValid()){entity.remove();throw new IllegalStateException("FIELD_SPAWN_REJECTED");}
                 mobs.put(entity.getUniqueId(),new MobRef(b,zone.id(),entity));return entity.getUniqueId();}
-            public void remove(UUID id){main();var ref=mobs.get(id);if(ref!=null){ref.entity().remove();mobs.remove(id,ref);}}
+            public void remove(UUID id){main();var ref=mobs.get(id);if(ref!=null){ref.entity().remove();if(ref.entity().isValid())throw new IllegalStateException("FIELD_REMOVE_HOLD");mobs.remove(id,ref);}}
         },PaperFieldEncounters::main);
         Bukkit.getPluginManager().registerEvents(this,plugin);sessions.fieldAttack(this::canAttack);
     }
@@ -47,6 +50,13 @@ public final class PaperFieldEncounters implements Listener,AutoCloseable {
     private boolean live(Binding b){var lifecycle=worlds.get(b.run());return !closed&&lifecycle!=null&&lifecycle.generation()==b.generation()&&lifecycle.mapping().physicalId().equals(b.world())&&lifecycle.state()==WorldLifecycle.State.ACTIVE&&Bukkit.getWorld(b.world())!=null;}
     public Binding binding(UUID run){main();var w=Objects.requireNonNull(worlds.get(run));var b=new Binding(run,w.mapping().physicalId(),w.generation());if(!live(b))throw new IllegalStateException("FIELD_WORLD_NOT_READY");engine.bind(b);return b;}
     public List<String> enter(Binding b,UUID player,Point from,Point to,List<Presence> online){main();if(!live(b))throw new IllegalStateException("FIELD_STALE_GENERATION");return engine.enter(b,player,from,to,online);}
+    public FieldReset resetPolicy(){main();return content.reset();}
+    /** 명시적인 진행별 저장 장벽 뒤에만 관리 몹/조우 상태를 초기화합니다. 자동 재시도하지 않습니다. */
+    public CompletionStage<Void> reset(UUID run,UUID request,FieldReset plan,Supplier<CompletionStage<Void>> saved,BooleanSupplier current,Executor owner){
+        main();var b=binding(run);if(!current.getAsBoolean())return CompletableFuture.failedFuture(new IllegalStateException("FIELD_RESET_STALE"));
+        return CompletableFuture.completedFuture(null).thenComposeAsync(v->{main();if(!live(b)||!current.getAsBoolean())throw new IllegalStateException("FIELD_RESET_STALE");return Objects.requireNonNull(saved.get());},owner)
+            .thenRunAsync(()->{main();if(!live(b)||!current.getAsBoolean())throw new IllegalStateException("FIELD_RESET_STALE");engine.reset(b,request,plan);},owner);
+    }
     private static Point point(Location l){return new Point(l.getX(),l.getY(),l.getZ());}
     private boolean participant(Player p,Binding b){var s=sessions.current(p);return live(b)&&engine.current(b)&&s!=null&&s.context().storyRunId().equals(b.run())&&p.getWorld().getUID().equals(b.world());}
     public boolean canAttack(Player p,Entity target){main();var ref=mobs.get(target.getUniqueId());return ref!=null&&target==ref.entity()&&target.isValid()&&participant(p,ref.binding())&&engine.mayAttack(ref.binding(),target.getUniqueId());}

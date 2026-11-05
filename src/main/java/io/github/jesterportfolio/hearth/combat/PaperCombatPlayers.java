@@ -24,7 +24,7 @@ import io.github.jesterportfolio.hearth.combat.CombatContent.Effect;
 /** 인증된 격리 fixture 세션에만 연결하는 실제 Player 적용기. 자동 게임 시작/일반 서버 활성화는 없습니다. */
 public final class PaperCombatPlayers implements PaperSessionAdapter.CombatControls,PaperCombatTrials.Access,Listener,AutoCloseable {
     private static final class Run {
-        private final CombatPlayers players;private final WorldLifecycle world;private final Map<UUID,GameMode> modes;private CombatRetryVote retry;private CombatRestart restart;private final long generation;
+        private final CombatPlayers players;private final WorldLifecycle world;private final Map<UUID,GameMode> modes;private CombatRetryVote retry;private CombatRestart restart;private final Map<UUID,CombatReturn> exits=new HashMap<>();private final long generation;
         Run(CombatPlayers players,WorldLifecycle world,Map<UUID,GameMode> modes){this.players=players;this.world=world;this.modes=modes;this.generation=world.generation();}
         CombatPlayers players(){return players;}WorldLifecycle world(){return world;}Map<UUID,GameMode> modes(){return modes;}
     }
@@ -49,8 +49,9 @@ public final class PaperCombatPlayers implements PaperSessionAdapter.CombatContr
     private Body body(Player p){var b=bodies.get(p.getUniqueId());return b!=null&&b.player==p&&b.session==sessions.linked(p)?b:null;}
     private Run known(Player p){var s=sessions.prepared(p);return s==null?null:runs.get(s.context().storyRunId());}
     private boolean formerParticipant(Run run,Player p){return run!=null&&run.players().attempt().snapshot().members().stream().anyMatch(m->m.player().equals(p.getUniqueId()));}
-    public boolean actions(Player p){main();var known=known(p);if(known!=null&&(cleanupHolds.contains(known.world().mapping().storyRunId())||known.restart!=null&&known.restart.phase()!=CombatRestart.Phase.STARTED))return false;var b=body(p);if(b!=null)return b.run.players().actions(b);var r=known(p);return !formerParticipant(r,p)||r.players().attempt().snapshot().phase()==CombatAttempt.Phase.CLOSED;}
-    public boolean movement(Player p){main();var known=known(p);if(known!=null&&(cleanupHolds.contains(known.world().mapping().storyRunId())||known.restart!=null&&known.restart.phase()!=CombatRestart.Phase.STARTED))return false;var b=body(p);return b==null?actions(p):b.run.players().movement(b);}
+    private boolean returning(Run run,Player p){var job=run==null?null:run.exits.get(p.getUniqueId());return job!=null&&job.phase()!=CombatReturn.Phase.DONE;}
+    public boolean actions(Player p){main();var known=known(p);if(known!=null&&(returning(known,p)||cleanupHolds.contains(known.world().mapping().storyRunId())||known.restart!=null&&known.restart.phase()!=CombatRestart.Phase.STARTED))return false;var b=body(p);if(b!=null)return b.run.players().actions(b);var r=known(p);return !formerParticipant(r,p)||r.players().attempt().snapshot().phase()==CombatAttempt.Phase.CLOSED;}
+    public boolean movement(Player p){main();var known=known(p);if(known!=null&&(returning(known,p)||cleanupHolds.contains(known.world().mapping().storyRunId())||known.restart!=null&&known.restart.phase()!=CombatRestart.Phase.STARTED))return false;var b=body(p);return b==null?actions(p):b.run.players().movement(b);}
     public boolean attack(Player p,Entity target){main();var b=body(p);return b!=null&&b.run.players().actions(b)&&b.run.players().attempt().snapshot().phase()==CombatAttempt.Phase.ACTIVE&&target==trials.mob(b.context().storyRunId());}
     public boolean target(UUID run,Entity target){main();if(!(target instanceof Player p))return false;var b=body(p);return b!=null&&b.context().storyRunId().equals(run)&&b.run.players().actions(b)&&b.run.players().attempt().snapshot().phase()==CombatAttempt.Phase.ACTIVE;}
     public boolean hit(UUID run,Entity source,Entity target){main();return source instanceof Player p&&attack(p,target)&&body(p).context().storyRunId().equals(run)||target instanceof Player q&&target(run,q)&&source==trials.mob(run);}
@@ -58,7 +59,7 @@ public final class PaperCombatPlayers implements PaperSessionAdapter.CombatContr
     @EventHandler(priority=EventPriority.HIGHEST) public void unexpectedDeath(PlayerDeathEvent event){var b=body(event.getPlayer());if(b==null)return;event.setKeepInventory(true);event.getDrops().clear();event.setDroppedExp(0);event.setKeepLevel(true);b.run.players().attempt().invalidate();plugin.getLogger().warning("HEARTH_COMBAT_UNEXPECTED_DEATH_HOLD");}
     public Location destination(Player p,Context ctx,Location original){main();var r=runs.get(ctx.storyRunId());return r==null?original:r.players().returnPosition(ctx).map(PaperCombatPlayers::location).orElse(original);}
     public void ready(Player p,PlayerSessions.Session session){main();var r=runs.get(session.context().storyRunId());if(r==null||r.players().attempt().snapshot().phase()==CombatAttempt.Phase.CLOSED||!formerParticipant(r,p))return;var b=new Body(p,session,r);bodies.put(p.getUniqueId(),b);r.players().rejoin(b);if(r.retry!=null)r.retry.poll();}
-    public void leaving(Player p,PlayerSessions.Session session){main();var b=body(p);if(b==null||b.session!=session)return;if(b.run.restart!=null)b.run.restart.close();try{b.run.players().leave(b);if(b.run.retry!=null)b.run.retry.poll();}finally{bodies.remove(p.getUniqueId(),b);}}
+    public void leaving(Player p,PlayerSessions.Session session){main();var b=body(p);if(b==null||b.session!=session)return;if(b.run.restart!=null)b.run.restart.close();var exiting=b.run.exits.get(p.getUniqueId());if(exiting!=null&&exiting.phase()!=CombatReturn.Phase.DONE){exiting.close();cleanupHolds.add(session.context().storyRunId());}try{b.run.players().leave(b);if(b.run.retry!=null)b.run.retry.poll();}finally{bodies.remove(p.getUniqueId(),b);}}
     private void project(){main();if(closed||Bukkit.isTickingWorlds())return;hudTick++;for(var r:List.copyOf(runs.values()))try{r.players().project();if(r.retry!=null){r.retry.poll();var receipt=r.retry.view().receipt();if(receipt!=null&&r.restart==null&&trials.content().retry()!=null&&!cleanupHolds.contains(receipt.run()))try{prepareRestart(r,receipt);}catch(RuntimeException error){cleanupHolds.add(receipt.run());plugin.getLogger().warning("HEARTH_COMBAT_RESTART_PREPARE_HOLD");}}}catch(RuntimeException e){r.players().attempt().invalidate();}
         for(var b:List.copyOf(bodies.values())){
             if(b.hudFailed)continue;
@@ -84,7 +85,8 @@ public final class PaperCombatPlayers implements PaperSessionAdapter.CombatContr
         if(line.equals("/hearthcombat")||line.endsWith(" help")){CombatHud.help().forEach(text->p.sendMessage(Component.text(text)));return true;}
         var b=body(p);if(b==null||!b.run.players().current(b)){p.sendMessage(Component.text("현재 참가 중인 전투가 없거나 세션을 확인할 수 없습니다."));return true;}
         try{
-            if(line.endsWith("watch"))b.run.players().attempt().watchNext(b.context(),b.session);
+            if(line.equals("/hearthcombat leave")){returnEnded(b);}
+            else if(line.endsWith("watch"))b.run.players().attempt().watchNext(b.context(),b.session);
             else if(line.equals("/hearthcombat retry"))b.run.retry.request(b.context(),b.session);
             else if(line.equals("/hearthcombat vote")){b.run.retry.poll();b.run.retry.lines().forEach(text->p.sendMessage(Component.text(text)));if(b.run.restart!=null)b.run.restart.lines().forEach(text->p.sendMessage(Component.text(text)));}
             else if(CombatRetryVote.input(line).isPresent()){
@@ -125,7 +127,23 @@ public final class PaperCombatPlayers implements PaperSessionAdapter.CombatContr
     }
     /** 실제 게임 조건 대신 명시적으로 실행하는 콘솔 시험 입력입니다. 클라이언트 명령으로 열지 않습니다. */
     public CompletionStage<Void> condition(String profile,String condition){main();var b=Objects.requireNonNull(body(Objects.requireNonNull(Bukkit.getPlayerExact(profile))),"Combat fixture required");if(!b.run.players().current(b))return CompletableFuture.failedFuture(new IllegalStateException("COMBAT_SESSION_NOT_READY"));return b.run.players().attempt().revive(b.context(),b.session,UUID.randomUUID(),condition);}
-    public void release(String profile){main();var b=Objects.requireNonNull(body(Objects.requireNonNull(Bukkit.getPlayerExact(profile))));if(b.run.players().attempt().snapshot().phase()!=CombatAttempt.Phase.CLOSED||b.run.players().attempt().snapshot().error()!=null)throw new IllegalStateException("COMBAT_STILL_OPEN_OR_HELD");try{b.run.players().leave(b);}finally{bodies.remove(b.player.getUniqueId(),b);}}
-    public CompletionStage<Void> barrier(UUID run){main();if(cleanupHolds.contains(run))return CompletableFuture.failedFuture(new IllegalStateException("COMBAT_CLEANUP_HOLD"));var r=runs.get(run);return r==null?CompletableFuture.completedFuture(null):r.players().barrier().thenComposeAsync(v->r.retry==null?CompletableFuture.completedFuture(null):r.retry.barrier(),owner).thenComposeAsync(v->r.restart==null?CompletableFuture.completedFuture(null):r.restart.barrier(),owner);}
-    @Override public void close(){main();if(closed)return;for(var entry:runs.entrySet())try{if(entry.getValue().restart!=null)entry.getValue().restart.close();if(entry.getValue().retry!=null)entry.getValue().retry.close();entry.getValue().players().close();}catch(RuntimeException e){cleanupHolds.add(entry.getKey());plugin.getLogger().warning("HEARTH_COMBAT_CLEANUP_HOLD");}closed=true;timer.cancel();try{hud.close();}catch(RuntimeException error){plugin.getLogger().warning("HEARTH_COMBAT_HUD_CLEANUP_FAILED");}HandlerList.unregisterAll(this);sessions.combat(new PaperSessionAdapter.CombatControls(){});trials.access(new PaperCombatTrials.Access(){});bodies.clear();}
+    public void release(String profile){main();returnEnded(Objects.requireNonNull(body(Objects.requireNonNull(Bukkit.getPlayerExact(profile)))));}
+    private void returnEnded(Body b){
+        main();var r=b.run;var id=b.context().storyRunId();var attempt=r.players().attempt();
+        if(trials.content().exit()==null||!CombatReturn.ended(attempt.snapshot())||cleanupHolds.contains(id))throw new IllegalStateException("COMBAT_RETURN_NOT_CONFIGURED_OR_HELD");
+        var existing=r.exits.get(b.player.getUniqueId());if(existing!=null){b.player.sendMessage(Component.text("전투 복귀 처리 상태: "+existing.phase()));return;}
+        var job=new CombatReturn(attempt,trials.content().exit(),b,()->sessions.saveRunBoundary(id).thenComposeAsync(v->dataBarrier.apply(id),owner),()->{
+            r.players().leave(b);bodies.remove(b.player.getUniqueId(),b);
+            if(bodies.values().stream().noneMatch(actor->actor.run==r)){
+                if(r.retry!=null)r.retry.close();r.players().close();trials.releaseEnded(id,attempt.snapshot().attempt());runs.remove(id,r);
+            }
+        },owner,PaperCombatPlayers::main,()->!closed&&runs.get(id)==r&&r.world().generation()==r.generation&&bodies.get(b.player.getUniqueId())==b);
+        r.exits.put(b.player.getUniqueId(),job);b.player.sendMessage(Component.text("전투 종료 복귀 · 저장 확인 중"));
+        job.begin().whenCompleteAsync((v,error)->{
+            if(error!=null){cleanupHolds.add(id);plugin.getLogger().warning("HEARTH_COMBAT_RETURN_HOLD");}
+            if(sessions.prepared(b.player)==b.session)b.player.sendMessage(Component.text(error==null?"전투 종료 복귀 완료":"전투 복귀 보류 · 관리자 확인이 필요합니다."));
+        },owner);
+    }
+    public CompletionStage<Void> barrier(UUID run){main();if(cleanupHolds.contains(run))return CompletableFuture.failedFuture(new IllegalStateException("COMBAT_CLEANUP_HOLD"));var r=runs.get(run);return r==null?CompletableFuture.completedFuture(null):r.players().barrier().thenComposeAsync(v->r.retry==null?CompletableFuture.completedFuture(null):r.retry.barrier(),owner).thenComposeAsync(v->r.restart==null?CompletableFuture.completedFuture(null):r.restart.barrier(),owner).thenComposeAsync(v->CompletableFuture.allOf(r.exits.values().stream().map(job->job.barrier().toCompletableFuture()).toArray(CompletableFuture[]::new)),owner);}
+    @Override public void close(){main();if(closed)return;for(var entry:runs.entrySet())try{entry.getValue().exits.values().forEach(CombatReturn::close);if(entry.getValue().restart!=null)entry.getValue().restart.close();if(entry.getValue().retry!=null)entry.getValue().retry.close();entry.getValue().players().close();}catch(RuntimeException e){cleanupHolds.add(entry.getKey());plugin.getLogger().warning("HEARTH_COMBAT_CLEANUP_HOLD");}closed=true;timer.cancel();try{hud.close();}catch(RuntimeException error){plugin.getLogger().warning("HEARTH_COMBAT_HUD_CLEANUP_FAILED");}HandlerList.unregisterAll(this);sessions.combat(new PaperSessionAdapter.CombatControls(){});trials.access(new PaperCombatTrials.Access(){});bodies.clear();}
 }

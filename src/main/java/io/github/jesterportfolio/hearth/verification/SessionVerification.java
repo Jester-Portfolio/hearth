@@ -14,6 +14,7 @@ import java.util.concurrent.*;
 import java.util.function.*;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
+import org.bukkit.entity.Entity;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -109,11 +110,13 @@ public final class SessionVerification implements AutoCloseable {
         if(plugin.getConfig().getBoolean("combat-state-verification-enabled")){
             var file=new java.io.File(plugin.getDataFolder(),"combat-demo.yml");if(!file.exists())plugin.saveResource("combat-demo.yml",false);
             var yaml=YamlConfiguration.loadConfiguration(file);var definition=new HashMap<String,Object>(yaml.getValues(false));var section=Objects.requireNonNull(yaml.getConfigurationSection("revival"),"Missing combat revival");var revival=new HashMap<String,Object>(section.getValues(false));if(section.isConfigurationSection("fixed"))revival.put("fixed",Objects.requireNonNull(section.getConfigurationSection("fixed")).getValues(false));definition.put("revival",revival);if(yaml.isConfigurationSection("retry")){var retry=new HashMap<String,Object>(Objects.requireNonNull(yaml.getConfigurationSection("retry")).getValues(false));retry.put("entry",Objects.requireNonNull(yaml.getConfigurationSection("retry.entry")).getValues(false));definition.put("retry",retry);}
+            if(yaml.isConfigurationSection("exit")){var exit=new HashMap<String,Object>(Objects.requireNonNull(yaml.getConfigurationSection("exit")).getValues(false));exit.put("entry",Objects.requireNonNull(yaml.getConfigurationSection("exit.entry")).getValues(false));definition.put("exit",exit);}
             combatContent=CombatContent.parse(definition);combatTrials=new PaperCombatTrials(plugin,combatContent,owner,plugin.getConfig().getBoolean("combat-player-verification-enabled")?()->System.nanoTime()/1_000_000:combatClock::get);
         }
         if(plugin.getConfig().getBoolean("field-encounter-verification-enabled")){
             var file=new java.io.File(plugin.getDataFolder(),"field-demo.yml");if(!file.exists())plugin.saveResource("field-demo.yml",false);
-            fieldEncounters=new PaperFieldEncounters(plugin,adapter,worlds,FieldContent.parse(YamlConfiguration.loadConfiguration(file).getValues(false)));
+            var yaml=YamlConfiguration.loadConfiguration(file);var definition=new HashMap<String,Object>(yaml.getValues(false));if(yaml.isConfigurationSection("reset"))definition.put("reset",Objects.requireNonNull(yaml.getConfigurationSection("reset")).getValues(false));
+            fieldEncounters=new PaperFieldEncounters(plugin,adapter,worlds,FieldContent.parse(definition));
         }
         if(catalog!=null) {
             content=catalog.all().stream().filter(c->c.id().equals("survey_marker")).findFirst().orElse(catalog.all().iterator().next());
@@ -678,9 +681,9 @@ public final class SessionVerification implements AutoCloseable {
         }).thenCompose(v->until(()->pending[0].toCompletableFuture().isDone())).thenRun(()->{
             check(pending[0].toCompletableFuture().isCompletedExceptionally()&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD&&attempts[1].snapshot().sharedUsed()==0&&bridges[0].actions(actors[0]),"combat_player_failed_move_HOLD_and_A_independence");
             check(attempts[1].hud(b3,s3,20,20).action().startsWith("전투 처리 보류")&&!attempts[0].hud(a1,s1,30,40).action().contains("보류"),"combat_HUD_HOLD_and_other_run_feedback_isolated");
-        }).thenRun(()->{bridges[0].died(actors[0]);bridges[0].project();check(actors[0].spectator,"combat_restart_source_can_include_dead_spectator");}).thenCompose(v->combatRetryCheck(attempts[0],bridges[0],actors)).thenCompose(receipt->combatRestartCheck(receipt,attempts,bridges,actors)).thenRun(()->{
+        }).thenRun(()->{bridges[0].died(actors[0]);bridges[0].project();check(actors[0].spectator,"combat_restart_source_can_include_dead_spectator");}).thenCompose(v->combatRetryCheck(attempts[0],bridges[0],actors)).thenCompose(receipt->combatRestartCheck(receipt,attempts,bridges,actors)).thenCompose(v->combatExitCheck(attempts,bridges,actors)).thenCompose(v->fieldResetCheck()).thenRun(()->{
             bridges[0].close();bridges[1].close();check(!attempts[0].hud(a1,s1,30,40).visible()&&attempts[0].view(a1,s1).state().contains("격리 시험 종료"),"combat_HUD_closed_hides_bar_and_explains_outcome");combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
-        }).thenCompose(v->combatQuestDatabaseFailure()).thenCompose(v->verify(a1,29,3)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
+        }).thenCompose(v->combatQuestDatabaseFailure()).thenCompose(v->verify(a1,28,4)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
     private static final class CombatActors implements CombatAttempt.Port {
         final Map<UUID,UUID> cameras=new HashMap<>();final CompletableFuture<Boolean> applying=new CompletableFuture<>();java.util.function.BooleanSupplier current;CombatContent.Pose appliedPosition;double appliedHealth;List<CombatContent.Effect> appliedEffects;
@@ -715,6 +718,43 @@ public final class SessionVerification implements AutoCloseable {
             combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
         }).thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
+    private static FieldContent fieldDefinition(java.io.File file){var yaml=YamlConfiguration.loadConfiguration(file);var map=new HashMap<String,Object>(yaml.getValues(false));if(yaml.isConfigurationSection("reset"))map.put("reset",Objects.requireNonNull(yaml.getConfigurationSection("reset")).getValues(false));return FieldContent.parse(map);}
+    private CompletionStage<Void> combatExitCheck(CombatAttempt[] attempts,CombatPlayers[] bridges,CombatBody[] actors){
+        var previous=attempts[0];previous.victory();var oldMob=combatTrials.mob(a).getUniqueId();var applications=actors[0].applications;
+        return mainResult(store.readInventory(a1)).thenCompose(before->{
+            var failed=new InventorySaveSession(store,a1,before.revision()+1,before::payload,owner,SessionVerification::main,()->true,code->{});failed.markDirty();
+            var probe=new CombatReturn(previous,combatContent.exit(),actors[0],failed::flush,()->{throw new AssertionError("Failed exit cleaned world");},owner,SessionVerification::main,()->true);
+            return rejectQuest(probe.begin()).thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(after->{check(after.equals(before)&&probe.phase()==CombatReturn.Phase.HOLD&&failed.dirty()&&actors[0].applications==applications&&combatTrials.mob(a).getUniqueId().equals(oldMob),"combat_exit_real_CAS_failure_blocks_move_cleanup_preserves_original");probe.close();});
+        }).thenCompose(v->{
+            one.count(28);coordinator.refresh(s1);var job=new CombatReturn(previous,combatContent.exit(),actors[0],()->coordinator.saveRunBoundary(a).thenComposeAsync(x->quests.barrier(a),owner),()->{bridges[0].leave(actors[0]);bridges[0].close();combatTrials.releaseEnded(a,previous.snapshot().attempt());},owner,SessionVerification::main,()->coordinator.playable(s1)&&worlds.get(a).generation()==previous.snapshot().generation());
+            var work=job.begin();check(work==job.begin()&&!job.barrier().toCompletableFuture().isDone(),"combat_exit_duplicate_and_save_barrier");
+            return work.thenRun(()->{
+                check(job.phase()==CombatReturn.Phase.DONE&&previous.snapshot().outcome()==CombatAttempt.Outcome.VICTORY&&Bukkit.getEntity(oldMob)==null&&!actors[0].spectator&&CombatPlayers.samePosition(actors[0].position,combatContent.exit().pose(worlds.get(a).mapping().physicalId())),"combat_exit_controlled_return_camera_cleanup_actual_mob_removed");
+                bridges[0]=new CombatPlayers(a,worlds.get(a).mapping().physicalId(),worlds.get(a).generation(),worlds.get(a)::generation,owner,SessionVerification::main);
+                attempts[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,actors[0].position)),bridges[0]);bridges[0].attach(attempts[0],List.of(actors[0]));
+                check(!attempts[0].snapshot().attempt().equals(previous.snapshot().attempt())&&attempts[0].snapshot().difficultyPlayers()==1&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD,"combat_exit_next_explicit_start_and_other_run_preserved");
+            });
+        }).thenCompose(v->verify(a1,28,4));
+    }
+    private CompletionStage<Void> fieldResetCheck(){
+        CompletionStage<Void> ready=CompletableFuture.completedFuture(null);
+        for(UUID run:List.of(a,b))for(int x:List.of(1,2)){int chunkX=x;ready=ready.thenCompose(v->mainResult(Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).getChunkAtAsync(chunkX,1)).thenAccept(chunk->chunk.addPluginChunkTicket(plugin)));}
+        return ready.thenRun(()->{
+            var from=new FieldContent.Point(24,64,29);var first=new FieldContent.Point(29,64,29);var next=new FieldContent.Point(37,64,29);var alpha=fieldEncounters.binding(a);var beta=fieldEncounters.binding(b);
+            fieldEncounters.enter(alpha,a1.playerId(),from,first,List.of(new FieldEncounters.Presence(alpha,a1.playerId(),first)));
+            fieldEncounters.enter(alpha,a1.playerId(),from,next,List.of(new FieldEncounters.Presence(alpha,a1.playerId(),next)));
+            fieldEncounters.enter(beta,b3.playerId(),from,first,List.of(new FieldEncounters.Presence(beta,b3.playerId(),first)));
+        }).thenCompose(v->{var before=fieldEncounters.entities(a).stream().map(Entity::getUniqueId).collect(java.util.stream.Collectors.toSet());return mainResult(store.readInventory(a1)).thenCompose(row->{
+            var failed=new InventorySaveSession(store,a1,row.revision()+1,row::payload,owner,SessionVerification::main,()->true,code->{});failed.markDirty();
+            return rejectQuest(fieldEncounters.reset(a,UUID.randomUUID(),fieldEncounters.resetPolicy(),failed::flush,()->true,owner)).thenRun(()->check(before.equals(fieldEncounters.entities(a).stream().map(Entity::getUniqueId).collect(java.util.stream.Collectors.toSet()))&&failed.dirty(),"field_reset_DB_failure_does_not_remove_managed_entities"));
+        });}).thenCompose(v->{var request=UUID.randomUUID();var binding=fieldEncounters.binding(a);var before=fieldEncounters.engine().state(a,"public_field_one");var other=fieldEncounters.entities(b).stream().map(Entity::getUniqueId).toList();
+            return fieldEncounters.reset(a,request,fieldEncounters.resetPolicy(),()->coordinator.saveRunBoundary(a),()->coordinator.playable(s1),owner).thenCompose(x->{
+                check(fieldEncounters.engine().state(a,"public_field_one").equals(before)&&fieldEncounters.engine().state(a,"public_field_two").isEmpty()&&fieldEncounters.count(a)==1,"field_checkpoint_reset_preserves_prior_zone_and_removes_only_later_mobs");
+                var next=new FieldContent.Point(37,64,29);fieldEncounters.enter(binding,a1.playerId(),new FieldContent.Point(24,64,29),next,List.of(new FieldEncounters.Presence(binding,a1.playerId(),next)));var fresh=fieldEncounters.entities(a).stream().map(Entity::getUniqueId).toList();
+                return fieldEncounters.reset(a,request,fieldEncounters.resetPolicy(),()->coordinator.saveRunBoundary(a),()->true,owner).thenRun(()->check(fieldEncounters.entities(a).stream().map(Entity::getUniqueId).toList().equals(fresh)&&fieldEncounters.entities(b).stream().map(Entity::getUniqueId).toList().equals(other),"field_duplicate_reset_preserves_new_encounter_and_other_run"));
+            });
+        }).thenRun(()->{for(UUID run:List.of(a,b))for(int x:List.of(1,2))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(x,1,plugin);});
+    }
     private CompletionStage<Void> fieldEncounters(){return openAll().thenCompose(v->{
         CompletionStage<Void> ready=CompletableFuture.completedFuture(null);
         for(UUID run:List.of(a,b))for(int x:List.of(1,2)){int chunkX=x;ready=ready.thenCompose(done->{var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));return mainResult(world.getChunkAtAsync(chunkX,1)).thenAccept(chunk->{world.addPluginChunkTicket(chunkX,1,plugin);check(world.isChunkLoaded(chunkX,1),"field_controlled_spawn_chunk_prepared");});});}return ready;
@@ -733,7 +773,7 @@ public final class SessionVerification implements AutoCloseable {
         fieldEncounters.enter(one,a1.playerId(),from,first,List.of(p1,p2));check(fieldEncounters.count(a)==1,"field_cleared_encounter_not_implicitly_reset");
         var stale=new FieldEncounters.Binding(a,one.world(),one.generation()+1);try{fieldEncounters.enter(stale,a1.playerId(),from,first,List.of(p1));throw new AssertionError("Stale field binding accepted");}catch(IllegalStateException expected){check(expected.getMessage().equals("FIELD_STALE_GENERATION"),"field_stale_binding_rejected");}
         fieldEncounters.retire(a);check(fieldEncounters.count(a)==0&&fieldEncounters.count(b)==1,"field_A_cleanup_preserves_B_entities");try{fieldEncounters.binding(a);throw new AssertionError("Retired field auto reset");}catch(IllegalStateException expected){check(expected.getMessage().equals("FIELD_RETIRED"),"field_retired_encounter_never_auto_respawns");}
-        try{new PaperFieldEncounters(plugin,adapter,worlds,FieldContent.parse(YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"field-demo.yml")).getValues(false)));throw new AssertionError("Existing field scope recreated");}catch(IllegalStateException expected){check(expected.getMessage().equals("FIELD_RESTART_REVIEW_REQUIRED"),"field_existing_scope_marker_prevents_automatic_recreation");}
+        try{new PaperFieldEncounters(plugin,adapter,worlds,fieldDefinition(new java.io.File(plugin.getDataFolder(),"field-demo.yml")));throw new AssertionError("Existing field scope recreated");}catch(IllegalStateException expected){check(expected.getMessage().equals("FIELD_RESTART_REVIEW_REQUIRED"),"field_existing_scope_marker_prevents_automatic_recreation");}
         for(UUID run:List.of(a,b))for(int x:List.of(1,2))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(x,1,plugin);
     }).thenCompose(v->mainResult(coordinator.disconnect(s1))).thenCompose(v->mainResult(coordinator.disconnect(s2)))
         .thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))

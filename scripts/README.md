@@ -77,3 +77,5 @@
 준비된 수동 `--sessions --quests --manual-player`에 `--phone-dialog`를 조합할 수 있다. 프로필 상태는 10초마다 읽기 전용으로 조회한다. 선택 옵션 `--manual-finish-on-logout`은 시험자가 접속 후 종료하면 정리하므로 재접속을 계속 시험할 때는 사용하지 않는다. 기존 TTY·준비 확인·시간 한도는 유지한다. 수동 원시 결과는 실제 행동 자동 PASS가 아니다. [실제 관측 기록](../docs/quest-client-verification.md)을 참조한다.
 
 `--sessions --player-interactions`는 보관 슬롯 커서 사본·메타데이터·퇴장 정리·DB 저장/복원과 SQL 쓰기 실패 보존도 검사한다. 인증 플레이어 이벤트 시험은 아니다. [최신 결과](../docs/inventory-cursor-verification.md).
+
+`--sessions --quests --story-batch --combat-players`는 종료 복귀 제어·실제 보스 정리/다음 시작과 관리 구역 체크포인트 초기화·DB 실패 보존을 같은 한 JVM에서 검사한다. 인증 플레이어 복귀나 전체 길목 재도전 시험은 아니다. [최신 범위](../docs/combat-return-verification.md).

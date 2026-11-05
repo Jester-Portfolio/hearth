@@ -19,3 +19,9 @@ zones:
     scaling:
       - {players: 1, count: 1, health: 20, attack: 2}
       - {players: 2, count: 2, health: 30, attack: 3}
+
+# 다음 구역의 관리 몹만 재도전 대상으로 되돌리는 공개 합성 설정입니다.
+reset:
+  mode: AFTER_CHECKPOINT
+  zones: [public_field_one, public_field_two]
+  checkpoint: public_field_one
