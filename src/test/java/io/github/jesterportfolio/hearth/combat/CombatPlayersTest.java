@@ -15,6 +15,7 @@ final class CombatPlayersTest {
         Body(ServerProgressAccess.Context ctx,Pose pose){this.ctx=ctx;position=pose;}
         public ServerProgressAccess.Context context(){return ctx;}public Object session(){return token;}public Pose position(){return position;}public boolean current(){return live;}
         public void spectator(UUID target){if(failCamera)throw new IllegalStateException("CAMERA_FAILED");spectator=true;this.target=target;}public void clearCamera(){target=null;}public void cleanup(){cleanup=true;if(failCleanup)throw new IllegalStateException("MODE_CLEANUP_FAILED");spectator=false;target=null;}
+        public double healthFraction(){return health;}
         public boolean safe(Pose p){return safe;}public CompletionStage<Boolean> restore(Pose p,double health,List<Effect> effects,BooleanSupplier current){restores++;applyGuard=current;if(nullRestore)return null;return applying.thenApply(ok->{if(Boolean.TRUE.equals(ok)&&current.getAsBoolean()){position=p;this.health=health;spectator=false;target=null;}return ok;});}
     }
     static final class Fixture {

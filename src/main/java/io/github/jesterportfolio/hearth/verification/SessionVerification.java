@@ -111,6 +111,7 @@ public final class SessionVerification implements AutoCloseable {
             var file=new java.io.File(plugin.getDataFolder(),"combat-demo.yml");if(!file.exists())plugin.saveResource("combat-demo.yml",false);
             var yaml=YamlConfiguration.loadConfiguration(file);var definition=new HashMap<String,Object>(yaml.getValues(false));var section=Objects.requireNonNull(yaml.getConfigurationSection("revival"),"Missing combat revival");var revival=new HashMap<String,Object>(section.getValues(false));if(section.isConfigurationSection("fixed"))revival.put("fixed",Objects.requireNonNull(section.getConfigurationSection("fixed")).getValues(false));definition.put("revival",revival);if(yaml.isConfigurationSection("retry")){var retry=new HashMap<String,Object>(Objects.requireNonNull(yaml.getConfigurationSection("retry")).getValues(false));retry.put("entry",Objects.requireNonNull(yaml.getConfigurationSection("retry.entry")).getValues(false));definition.put("retry",retry);}
             if(yaml.isConfigurationSection("exit")){var exit=new HashMap<String,Object>(Objects.requireNonNull(yaml.getConfigurationSection("exit")).getValues(false));exit.put("entry",Objects.requireNonNull(yaml.getConfigurationSection("exit.entry")).getValues(false));definition.put("exit",exit);}
+            if(yaml.isConfigurationSection("path"))definition.put("path",combatMap(Objects.requireNonNull(yaml.getConfigurationSection("path"))));
             combatContent=CombatContent.parse(definition);combatTrials=new PaperCombatTrials(plugin,combatContent,owner,plugin.getConfig().getBoolean("combat-player-verification-enabled")?()->System.nanoTime()/1_000_000:combatClock::get);
         }
         if(plugin.getConfig().getBoolean("field-encounter-verification-enabled")){
@@ -188,6 +189,7 @@ public final class SessionVerification implements AutoCloseable {
     }
 
     private ServerProgressAccess.Context ctx(UUID run,int player){return access.forVerifiedServerLink(run,new UUID(49,player));}
+    private static Map<String,Object> combatMap(org.bukkit.configuration.ConfigurationSection section){var data=new HashMap<String,Object>();for(String key:section.getKeys(false)){Object value=section.get(key);data.put(key,value instanceof org.bukkit.configuration.ConfigurationSection child?combatMap(child):value);}return data;}
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("Not main thread");}
     private void log(String s){plugin.getLogger().info("HEARTH_SESSION_"+s);}
     private void check(boolean condition,String label){if(!condition)throw new IllegalStateException(label);log("CHECK PASS "+label);}
@@ -595,6 +597,7 @@ public final class SessionVerification implements AutoCloseable {
         CombatBody(PlayerSessions.Session session,CombatContent.Pose position){this.session=session;this.position=position;}
         public ServerProgressAccess.Context context(){return session.context();}public Object session(){return session;}public CombatContent.Pose position(){return position;}public boolean current(){return coordinator.playable(session);}
         public void spectator(UUID target){spectator=true;camera=target;}public void clearCamera(){camera=null;}public void cleanup(){spectator=false;camera=null;}
+        public double healthFraction(){return health;}
         public boolean safe(CombatContent.Pose p){return p.world().equals(position.world());}
         public CompletionStage<Boolean> restore(CombatContent.Pose p,double health,List<CombatContent.Effect> effects,BooleanSupplier valid){applications++;var result=new CompletableFuture<Boolean>();Bukkit.getScheduler().runTaskLater(plugin,()->{if(failRestore||!valid.getAsBoolean()){result.complete(false);return;}this.position=p;this.health=health;spectator=false;result.complete(true);},1);return result;}
     }
@@ -681,7 +684,7 @@ public final class SessionVerification implements AutoCloseable {
         }).thenCompose(v->until(()->pending[0].toCompletableFuture().isDone())).thenRun(()->{
             check(pending[0].toCompletableFuture().isCompletedExceptionally()&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD&&attempts[1].snapshot().sharedUsed()==0&&bridges[0].actions(actors[0]),"combat_player_failed_move_HOLD_and_A_independence");
             check(attempts[1].hud(b3,s3,20,20).action().startsWith("전투 처리 보류")&&!attempts[0].hud(a1,s1,30,40).action().contains("보류"),"combat_HUD_HOLD_and_other_run_feedback_isolated");
-        }).thenRun(()->{bridges[0].died(actors[0]);bridges[0].project();check(actors[0].spectator,"combat_restart_source_can_include_dead_spectator");}).thenCompose(v->combatRetryCheck(attempts[0],bridges[0],actors)).thenCompose(receipt->combatRestartCheck(receipt,attempts,bridges,actors)).thenCompose(v->combatExitCheck(attempts,bridges,actors)).thenCompose(v->fieldResetCheck()).thenRun(()->{
+        }).thenRun(()->{bridges[0].died(actors[0]);bridges[0].project();check(actors[0].spectator,"combat_restart_source_can_include_dead_spectator");}).thenCompose(v->combatRetryCheck(attempts[0],bridges[0],actors)).thenCompose(receipt->combatRestartCheck(receipt,attempts,bridges,actors)).thenCompose(v->combatExitCheck(attempts,bridges,actors)).thenCompose(v->combatGatheringCheck(attempts,bridges,actors)).thenCompose(v->fieldResetCheck()).thenRun(()->{
             bridges[0].close();bridges[1].close();check(!attempts[0].hud(a1,s1,30,40).visible()&&attempts[0].view(a1,s1).state().contains("격리 시험 종료"),"combat_HUD_closed_hides_bar_and_explains_outcome");combatTrials.stop(a);combatTrials.stop(b);for(UUID run:List.of(a,b))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);
         }).thenCompose(v->combatQuestDatabaseFailure()).thenCompose(v->verify(a1,28,4)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
@@ -735,6 +738,29 @@ public final class SessionVerification implements AutoCloseable {
                 check(!attempts[0].snapshot().attempt().equals(previous.snapshot().attempt())&&attempts[0].snapshot().difficultyPlayers()==1&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD,"combat_exit_next_explicit_start_and_other_run_preserved");
             });
         }).thenCompose(v->verify(a1,28,4));
+    }
+    private CompletionStage<Void> combatGatheringCheck(CombatAttempt[] attempts,CombatPlayers[] bridges,CombatBody[] actors){
+        var world=worlds.get(a);attempts[0].victory();bridges[0].close();combatTrials.releaseEnded(a,attempts[0].snapshot().attempt());
+        var pathBridge=new CombatPlayers(a,world.mapping().physicalId(),world.generation(),world::generation,owner,SessionVerification::main);
+        actors[0].position=new CombatContent.Pose(world.mapping().physicalId(),3.5,64,3.5,0,0);actors[0].health=0.75;actors[1].position=new CombatContent.Pose(world.mapping().physicalId(),15,64,15,0,0);
+        var path=combatTrials.startPath(world,List.of(new CombatAttempt.Entrant(a1,s1,actors[0].position),new CombatAttempt.Entrant(a2,s2,actors[1].position)),pathBridge);pathBridge.attach(path,List.of(actors[0],actors[1]));
+        check(combatTrials.mob(a).getHealth()==20&&combatContent.path().combat().revival().limit()==1&&combatContent.revival().limit()==2,"gathering_path_and_boss_content_and_revive_limits_independent");
+        path.died(a2,s2,actors[1].position);
+        return path.revive(a2,s2,UUID.randomUUID(),"public_path_rescue").thenRun(()->{path.died(a2,s2,actors[1].position);pathBridge.project();check(path.snapshot().sharedUsed()==1&&actors[1].spectator,"gathering_source_path_budget_consumed_before_auto_return");})
+        .thenCompose(v->mainResult(store.readInventory(a1))).thenCompose(before->{
+            var failed=new InventorySaveSession(store,a1,before.revision()+1,before::payload,owner,SessionVerification::main,()->true,code->{});failed.markDirty();var count=actors[0].applications;
+            var probe=new CombatGathering(path,combatContent.path(),List.of(actors[0],actors[1]),failed::flush,roster->{throw new AssertionError("Save failed but boss created");},owner,SessionVerification::main,()->true);
+            return rejectQuest(probe.begin(UUID.randomUUID())).thenCompose(x->mainResult(store.readInventory(a1))).thenAccept(after->{check(after.equals(before)&&failed.dirty()&&probe.phase()==CombatGathering.Phase.HOLD&&actors[0].applications==count&&path.snapshot().sharedUsed()==1,"gathering_real_CAS_failure_preserves_items_path_budget_and_blocks_boss");probe.close();});
+        }).thenCompose(v->{
+            var nextBridge=new CombatPlayers(a,world.mapping().physicalId(),world.generation(),world::generation,owner,SessionVerification::main);UUID request=UUID.randomUUID();var oldMob=combatTrials.mob(a).getUniqueId();
+            var job=new CombatGathering(path,combatContent.path(),List.of(actors[0],actors[1]),()->{combatTrials.freezePath(a,path.snapshot().attempt());check(!combatTrials.mob(a).hasAI(),"gathering_actual_path_AI_paused_during_save");return coordinator.saveRunBoundary(a).thenComposeAsync(x->quests.barrier(a),owner);},roster->{var next=combatTrials.enterBoss(world,path.snapshot().attempt(),request,roster,nextBridge);pathBridge.close();nextBridge.attach(next,List.of(actors[0],actors[1]));return next;},owner,SessionVerification::main,()->world.generation()==path.snapshot().generation()&&coordinator.playable(s1)&&coordinator.playable(s2));
+            var work=job.begin(request);check(work==job.begin(request)&&!job.barrier().toCompletableFuture().isDone(),"gathering_inflight_duplicate_and_save_barrier");
+            return work.thenAccept(next->{attempts[0]=next;bridges[0]=nextBridge;
+                check(next.snapshot().difficultyPlayers()==2&&next.snapshot().sharedUsed()==0&&next.snapshot().members().stream().allMatch(m->!m.dead()&&m.used()==0)&&path.snapshot().sharedUsed()==1,"gathering_online_dead_auto_return_no_path_charge_new_boss_budget_zero");
+                check(Bukkit.getEntity(oldMob)==null&&combatTrials.mob(a).getHealth()==40&&actors[0].health==0.75&&actors[1].health==0.5&&!actors[1].spectator&&job.phase()==CombatGathering.Phase.STARTED,"gathering_actual_boss_spawned_after_controlled_entry_health_and_mode_checks");
+                var roster=List.of(new CombatAttempt.Entrant(a1,s1,actors[0].position),new CombatAttempt.Entrant(a2,s2,actors[1].position));check(combatTrials.enterBoss(world,path.snapshot().attempt(),request,roster,nextBridge)==next&&attempts[1].snapshot().phase()==CombatAttempt.Phase.HOLD,"gathering_backend_duplicate_no_second_boss_and_other_run_unchanged");job.close();
+            });
+        }).thenCompose(v->verify(a1,28,4)).thenCompose(v->verify(a2,5,0));
     }
     private CompletionStage<Void> fieldResetCheck(){
         CompletionStage<Void> ready=CompletableFuture.completedFuture(null);

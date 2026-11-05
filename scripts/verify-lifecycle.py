@@ -81,7 +81,7 @@ def permitted_session_command(command):
     # 기존 S4-3의 좁은 콘솔 허용 목록과 좌표 제한을 재사용합니다.
     if s42.permitted_manual_command(command):
         return True
-    if re.fullmatch(r'hearthverify combat-player-(?:start|release) [A-Za-z0-9_]{3,16}',command) or re.fullmatch(r'hearthverify combat-player-revive [A-Za-z0-9_]{3,16} public_rescue',command):
+    if re.fullmatch(r'hearthverify combat-player-(?:start|release) [A-Za-z0-9_]{3,16}',command) or re.fullmatch(r'hearthverify combat-player-revive [A-Za-z0-9_]{3,16} (?:public_rescue|public_path_rescue)',command):
         return True
     return bool(re.fullmatch(r'hearthverify session-(?:fixture|link-existing|status) [A-Za-z0-9_]{3,16}',command))
 

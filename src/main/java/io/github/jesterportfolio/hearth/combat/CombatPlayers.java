@@ -10,6 +10,7 @@ import static io.github.jesterportfolio.hearth.combat.CombatContent.*;
 public final class CombatPlayers implements CombatAttempt.Port,AutoCloseable {
     public interface PlayerPort {
         Context context();Object session();Pose position();boolean current();
+        default double healthFraction(){throw new IllegalStateException("Health snapshot unavailable");}
         void spectator(UUID target);void clearCamera();void cleanup();
         boolean safe(Pose position);
         CompletionStage<Boolean> restore(Pose position,double health,List<Effect> effects,BooleanSupplier current);
