@@ -63,11 +63,19 @@ path:
       mode: AFTER_CHECKPOINT
       zones: [public_field_one, public_field_two]
       checkpoint: public_field_one
-  checkpoint:
-    id: public_field_one
-    quest: survey_marker
-    area: {min-x: 2, max-x: 5, min-y: 64, max-y: 68, min-z: 2, max-z: 5}
-    entry:
-      entry: {x: 7.5, y: 64.0, z: 7.5, yaw: 90, pitch: 0}
-      health-fraction: 1
-      effects: []
+  restart-checkpoint: public_rest_two
+  checkpoints:
+    - id: public_field_one
+      quest: survey_marker
+      area: {min-x: 2, max-x: 5, min-y: 64, max-y: 68, min-z: 2, max-z: 5}
+      entry:
+        entry: {x: 7.5, y: 64.0, z: 7.5, yaw: 90, pitch: 0}
+        health-fraction: 1
+        effects: []
+    - id: public_rest_two
+      quest: survey_marker
+      area: {min-x: 9, max-x: 12, min-y: 64, max-y: 68, min-z: 9, max-z: 12}
+      entry:
+        entry: {x: 11.5, y: 64.0, z: 11.5, yaw: 0, pitch: 0}
+        health-fraction: 1
+        effects: []

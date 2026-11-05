@@ -275,7 +275,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
         case "combat-player-state" -> combatPlayerState();
-        case "checkpoint-restored" -> openAll().thenCompose(v->mainResult(store.checkpoint(a1,"public_boss_control","survey_marker","public_field_one"))).thenCompose(row->{check(row.isPresent()&&row.get().complete(),"checkpoint_new_JVM_existing_activation_restored");return verify(a1,30,2);});
+        case "checkpoint-restored" -> openAll().thenCompose(v->mainResult(store.checkpoint(a1,"public_boss_control","survey_marker","public_field_one"))).thenCompose(row->{check(row.isPresent()&&row.get().complete(),"checkpoint_new_JVM_existing_activation_restored");return mainResult(store.checkpoint(a1,"public_boss_control","survey_marker","public_rest_two")).thenCompose(second->{check(second.isPresent()&&second.get().complete(),"checkpoint_new_JVM_second_activation_restored");return verify(a1,30,2);});});
         case "combat-path-state" -> combatPathState();
         case "combat-state" -> combatState();
         case "field-encounters" -> fieldEncounters();
@@ -693,8 +693,13 @@ public final class SessionVerification implements AutoCloseable {
         return job.begin(request).thenAccept(next->{attempts[0]=next;bridges[0]=nextBridge;check(next.snapshot().difficultyPlayers()==2&&next.snapshot().sharedUsed()==0&&combatTrials.mob(a).getHealth()==40&&next.snapshot().members().stream().noneMatch(m->m.dead()),"path_retry_regather_confirms_new_boss_and_separate_budget");job.close();});
     }
     private CompletionStage<Void> checkpointCheck(CombatAttempt source,CombatBody[] actors){
-        var point=combatContent.path().checkpoint();if(point==null)return CompletableFuture.completedFuture(null);
-        return seedList(a1,point.quest(),QuestStore.Phase.ACTIVE).thenCompose(v->seedList(a2,point.quest(),QuestStore.Phase.ACTIVE)).thenCompose(v->{
+        CompletionStage<Void> work=CompletableFuture.completedFuture(null);for(var point:combatContent.path().checkpoints())work=work.thenCompose(v->{
+            for(var actor:List.of(actors[0],actors[1]))actor.position=new CombatContent.Pose(source.snapshot().run().equals(a)?worlds.get(a).mapping().physicalId():worlds.get(b).mapping().physicalId(),(point.area().minX()+point.area().maxX())/2,64,(point.area().minZ()+point.area().maxZ())/2,0,0);
+            return checkpointCheckPoint(source,actors,point);
+        });return work;
+    }
+    private CompletionStage<Void> checkpointCheckPoint(CombatAttempt source,CombatBody[] actors,CombatContent.Checkpoint point){
+        return mainResult(store.readQuest(a1,point.quest())).thenCompose(row->row.phase()==QuestStore.Phase.NOT_ACCEPTED?seedList(a1,point.quest(),QuestStore.Phase.ACTIVE):CompletableFuture.completedFuture(null)).thenCompose(v->mainResult(store.readQuest(a2,point.quest()))).thenCompose(row->row.phase()==QuestStore.Phase.NOT_ACCEPTED?seedList(a2,point.quest(),QuestStore.Phase.ACTIVE):CompletableFuture.completedFuture(null)).thenCompose(v->{
             source.died(a2,s2,actors[1].position);actors[0].health=0.25;actors[1].health=0.2;
             var job=new CombatCheckpoint(source,combatContent.id(),point,List.of(actors[0],actors[1]),store,store,()->coordinator.saveRunBoundary(a),owner,SessionVerification::main,()->coordinator.playable(s1)&&coordinator.playable(s2));
             var work=job.arrive();check(work==job.arrive(),"checkpoint_duplicate_inflight_coalesced");return work.thenCompose(ok->{check(ok&&actors[0].health==1&&actors[1].health==1&&source.snapshot().members().stream().noneMatch(CombatAttempt.Member::dead)&&source.snapshot().sharedUsed()==0,"checkpoint_real_DB_activation_full_health_free_revival_no_budget_charge");return mainResult(store.checkpoint(a1,combatContent.id(),point.quest(),point.id()));}).thenCompose(saved->{
