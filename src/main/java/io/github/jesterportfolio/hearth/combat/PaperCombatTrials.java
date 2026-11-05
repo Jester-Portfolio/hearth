@@ -51,14 +51,18 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
     }
     public CombatContent content(){main();return content;}
     /** 기존 RETRY 도전만 교체합니다. 초기화/운영 월드 복제나 다른 도전의 재생성은 하지 않습니다. */
-    public CombatAttempt replace(WorldLifecycle lifecycle,CombatRetryVote.Receipt receipt,List<CombatAttempt.Entrant> roster,CombatAttempt.Port actors){
+    public CombatAttempt replace(WorldLifecycle lifecycle,CombatRetryVote.Receipt receipt,List<CombatAttempt.Entrant> roster,CombatAttempt.Port actors){return replace(lifecycle,receipt,roster,actors,content.retry(),false);}
+    public CombatAttempt restartPath(WorldLifecycle lifecycle,CombatRetryVote.Receipt receipt,List<CombatAttempt.Entrant> roster,CombatAttempt.Port actors){return replace(lifecycle,receipt,roster,actors,content.path()==null?null:content.path().retry(),true);}
+    private CombatAttempt replace(WorldLifecycle lifecycle,CombatRetryVote.Receipt receipt,List<CombatAttempt.Entrant> roster,CombatAttempt.Port actors,CombatContent.Retry policy,boolean pathFailure){
         main();UUID run=lifecycle.mapping().storyRunId();var old=trials.get(run);var duplicate=replacements.get(run);
+        if(closed||policy==null||receipt==null||receipt.request()==null||retired.contains(run)||old==null||old.world()!=lifecycle||old.generation()!=lifecycle.generation())throw new IllegalStateException("COMBAT_REPLACEMENT_NOT_READY");
+        boolean toPath=policy.scope().equals("FROM_PATH");
         if(duplicate!=null&&duplicate.receipt().equals(receipt)){
-            if(old==null||old.attempt()!=duplicate.attempt()||!old.attempt().onlineSessions().equals(roster.stream().collect(java.util.stream.Collectors.toMap(e->e.context().playerId(),CombatAttempt.Entrant::session))))throw new IllegalStateException("COMBAT_REPLACEMENT_CONFLICT");
+            if(old.attempt()!=duplicate.attempt()||old.path()!=toPath||!old.attempt().onlineSessions().equals(roster.stream().collect(java.util.stream.Collectors.toMap(e->e.context().playerId(),CombatAttempt.Entrant::session))))throw new IllegalStateException("COMBAT_REPLACEMENT_CONFLICT");
             return duplicate.attempt();
         }
-        if(closed||content.retry()==null||retired.contains(run)||old==null||old.path()||receipt==null||!run.equals(receipt.run())||!old.attempt().snapshot().attempt().equals(receipt.attempt())||old.attempt().snapshot().outcome()!=CombatAttempt.Outcome.RETRY||old.attempt().snapshot().error()!=null||old.generation()!=lifecycle.generation())throw new IllegalStateException("COMBAT_REPLACEMENT_NOT_READY");
-        var next=create(lifecycle,roster,actors);
+        if(old.path()!=pathFailure||!run.equals(receipt.run())||!old.attempt().snapshot().attempt().equals(receipt.attempt())||old.attempt().snapshot().phase()!=CombatAttempt.Phase.CLOSED||old.attempt().snapshot().outcome()!=(pathFailure?CombatAttempt.Outcome.REQUIRED_FAILURE:CombatAttempt.Outcome.RETRY)||old.attempt().snapshot().error()!=null||toPath&&content.path()==null||pathFailure&&!toPath)throw new IllegalStateException("COMBAT_REPLACEMENT_NOT_READY");
+        var next=create(lifecycle,roster,actors,toPath?content.path().combat():content,toPath);
         try{old.mob().remove();if(old.mob().isValid())throw new IllegalStateException("COMBAT_OLD_MOB_NOT_REMOVED");trials.put(run,next);replacements.put(run,new Replacement(receipt,next.attempt()));return next.attempt();}
         catch(RuntimeException error){next.attempt().invalidate();next.mob().remove();throw error;}
     }

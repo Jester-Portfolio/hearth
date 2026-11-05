@@ -94,6 +94,7 @@ def main():
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
     parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
+    parser.add_argument('--combat-paths', action='store_true', help='기존 전투/DB 도구로 길목 재도전·체크포인트 복귀·구역 초기화·보스 재진입을 묶어 검사합니다')
     parser.add_argument('--combat-players', action='store_true', help='전투 Player 적용기 로딩·세션 저장/재접속·제어 포트 회복을 검사합니다')
     parser.add_argument('--combat-state', action='store_true', help='보스 참가/일시정지/관전/부활 제어와 실제 몹 AI를 한 JVM에서 검사합니다')
     parser.add_argument('--field-encounters', action='store_true', help='필드 조우·고정 난이도·진행 격리·정리를 한 JVM에서 검사합니다')
@@ -134,6 +135,8 @@ def main():
         parser.error('수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다')
     if not args.manual_player and (args.operator_ready or args.profile):
         parser.error('실제 프로필은 별도 --manual-player 모드에서만 사용합니다')
+    if args.combat_paths and (not args.combat_players or args.manual_player):
+        parser.error('--combat-paths는 자동 --combat-players 모드와 함께 실행합니다')
     if args.combat_players and (not args.story_batch or any([args.combat_state,args.field_encounters,args.branch_progression,args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.world_effects])):
         parser.error('--combat-players는 --sessions --quests --story-batch와 단독 실행합니다')
     if args.combat_state and (not args.story_batch or any([args.manual_player,args.field_encounters,args.branch_progression,args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.world_effects])):
@@ -238,6 +241,7 @@ def main():
     if args.combat_players:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('combat-player-verification-enabled: true\n')
+            if args.combat_paths:config.write('combat-content-file: combat-path-demo.yml\n')
     if args.field_encounters or args.combat_players:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('field-encounter-verification-enabled: true\n')
@@ -343,7 +347,7 @@ motd=Hearth isolated S4-11 verification
                         monitor.manual_session(name)
                     else:
                         if args.combat_players:
-                            monitor.action(name,'combat-player-state')
+                            monitor.action(name,'combat-path-state' if args.combat_paths else 'combat-player-state')
                         elif args.combat_state:
                             monitor.action(name,'combat-state')
                         elif args.field_encounters:
@@ -539,7 +543,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    combat_players_mode=args.combat_players, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

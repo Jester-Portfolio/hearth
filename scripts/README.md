@@ -81,3 +81,5 @@
 `--sessions --quests --story-batch --combat-players`는 종료 복귀 제어·실제 보스 정리/다음 시작과 관리 구역 체크포인트 초기화·DB 실패 보존을 같은 한 JVM에서 검사한다. 인증 플레이어 복귀나 전체 길목 재도전 시험은 아니다. [최신 범위](../docs/combat-return-verification.md).
 
 전투 Player 모드의 같은 한 JVM 검사는 선택 `path` 콘텐츠의 집결→길목 사망자 복귀→보스 명단/난이도 확정도 포함한다. 개발 시작 후 `/hearthcombat gather`를 사용하며 실제 클라이언트 실행은 별도 요청 전 보류한다. [집결 범위와 검사](../docs/combat-gathering-verification.md).
+
+`--sessions --quests --story-batch --combat-players --combat-paths`는 별도 공개 합성 콘텐츠로 길목 실패 재도전·보스 투표 후 길목 복귀·고정 체크포인트 이동·구역 초기화·재집결을 한 JVM에서 검사한다. 전체 기존 전투 시나리오를 중복 실행하지 않는다. [범위·실패 이력](../docs/combat-path-retry-verification.md).

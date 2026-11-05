@@ -28,10 +28,12 @@ public final class PaperCombatPlayers implements PaperSessionAdapter.CombatContr
         Run(CombatPlayers players,WorldLifecycle world,Map<UUID,GameMode> modes){this.players=players;this.world=world;this.modes=modes;this.generation=world.generation();}
         CombatPlayers players(){return players;}WorldLifecycle world(){return world;}Map<UUID,GameMode> modes(){return modes;}
     }
-    private final JavaPlugin plugin;private final PaperSessionAdapter sessions;private final PaperCombatTrials trials;private final Map<UUID,WorldLifecycle> worlds;private final Executor owner;private final BiFunction<Player,PlayerSessions.Session,CompletionStage<Void>> death;private final Function<UUID,CompletionStage<Void>> dataBarrier;
+    private final JavaPlugin plugin;private final PaperSessionAdapter sessions;private final PaperCombatTrials trials;private final PaperFieldEncounters fields;private final Map<UUID,WorldLifecycle> worlds;private final Executor owner;private final BiFunction<Player,PlayerSessions.Session,CompletionStage<Void>> death;private final Function<UUID,CompletionStage<Void>> dataBarrier;
     private final PaperCombatHud hud=new PaperCombatHud();private long hudTick;
     private final Set<UUID> cleanupHolds=new HashSet<>();private final Map<UUID,Run> runs=new HashMap<>();private final Map<UUID,Body> bodies=new HashMap<>();private final BukkitTask timer;private boolean closed;
-    public PaperCombatPlayers(JavaPlugin plugin,PaperSessionAdapter sessions,PaperCombatTrials trials,Map<UUID,WorldLifecycle> worlds,Executor owner,BiFunction<Player,PlayerSessions.Session,CompletionStage<Void>> death,Function<UUID,CompletionStage<Void>> dataBarrier){main();if(!plugin.getConfig().getBoolean("combat-player-verification-enabled")||!Boolean.getBoolean("hearth.verification.combatPlayers"))throw new IllegalStateException("Combat player gate missing");this.plugin=plugin;this.sessions=sessions;this.trials=trials;this.worlds=Map.copyOf(worlds);this.owner=owner;this.death=death;this.dataBarrier=dataBarrier;sessions.combat(this);trials.access(this);Bukkit.getPluginManager().registerEvents(this,plugin);timer=Bukkit.getScheduler().runTaskTimer(plugin,this::project,1,1);}
+    public PaperCombatPlayers(JavaPlugin plugin,PaperSessionAdapter sessions,PaperCombatTrials trials,PaperFieldEncounters fields,Map<UUID,WorldLifecycle> worlds,Executor owner,BiFunction<Player,PlayerSessions.Session,CompletionStage<Void>> death,Function<UUID,CompletionStage<Void>> dataBarrier){main();if(!plugin.getConfig().getBoolean("combat-player-verification-enabled")||!Boolean.getBoolean("hearth.verification.combatPlayers"))throw new IllegalStateException("Combat player gate missing");this.plugin=plugin;this.sessions=sessions;this.trials=trials;this.fields=fields;
+        for(var policy:java.util.stream.Stream.of(trials.content().retry(),trials.content().path()==null?null:trials.content().path().retry()).filter(Objects::nonNull).toList())if(policy.reset()!=null){if(fields==null)throw new IllegalStateException("PATH_RESET_BACKEND_REQUIRED");fields.validateReset(policy.reset());}
+        this.worlds=Map.copyOf(worlds);this.owner=owner;this.death=death;this.dataBarrier=dataBarrier;sessions.combat(this);trials.access(this);Bukkit.getPluginManager().registerEvents(this,plugin);timer=Bukkit.getScheduler().runTaskTimer(plugin,this::project,1,1);}
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("Not main thread");}
     private static Pose pose(Location l){return new Pose(Objects.requireNonNull(l.getWorld()).getUID(),l.getX(),l.getY(),l.getZ(),l.getYaw(),l.getPitch());}
     private static Location location(Pose p){var w=Objects.requireNonNull(Bukkit.getWorld(p.world()),"Combat world missing");return new Location(w,p.x(),p.y(),p.z(),p.yaw(),p.pitch());}
@@ -89,7 +91,7 @@ public final class PaperCombatPlayers implements PaperSessionAdapter.CombatContr
             if(line.equals("/hearthcombat gather")){gather(b);}
             else if(line.equals("/hearthcombat leave")){returnEnded(b);}
             else if(line.endsWith("watch"))b.run.players().attempt().watchNext(b.context(),b.session);
-            else if(line.equals("/hearthcombat retry")){if(b.run.path)p.sendMessage(Component.text("길목 재도전 투표는 아직 연결되지 않았습니다."));else b.run.retry.request(b.context(),b.session);}
+            else if(line.equals("/hearthcombat retry")){if(b.run.path)retryPath(b);else b.run.retry.request(b.context(),b.session);}
             else if(line.equals("/hearthcombat vote")&&b.run.retry!=null){b.run.retry.poll();b.run.retry.lines().forEach(text->p.sendMessage(Component.text(text)));if(b.run.restart!=null)b.run.restart.lines().forEach(text->p.sendMessage(Component.text(text)));}
             else if(CombatRetryVote.input(line).isPresent()&&b.run.retry!=null){
                 var input=CombatRetryVote.input(line).orElseThrow();b.run.retry.cast(b.context(),b.session,input.vote(),input.choice()).whenCompleteAsync((v,error)->{
@@ -127,26 +129,34 @@ public final class PaperCombatPlayers implements PaperSessionAdapter.CombatContr
             for(var p:targets)if(sessions.prepared(p)==roster.get(p.getUniqueId()))p.sendMessage(Component.text(error==null?"보스 입장 완료 · 온라인 참가 명단과 난이도, 보스 전용 부활 횟수를 확정했습니다.":operation.phase()==CombatGathering.Phase.IDLE?"온라인 생존자 전원이 지정 집결 구역에 모여야 합니다.":"보스 입장 보류 · 관리자 확인이 필요합니다."));
         },owner);
     }
-    private void prepareRestart(Run previous,CombatRetryVote.Receipt receipt){
-        main();UUID id=receipt.run();var roster=onlinePrepared(id);var nextBridge=new CombatPlayers(id,previous.world().mapping().physicalId(),previous.generation,previous.world()::generation,owner,PaperCombatPlayers::main);
+    private void retryPath(Body actor){
+        var r=actor.run;var s=r.players().attempt().snapshot();
+        if(!r.path||trials.content().path()==null||trials.content().path().retry()==null||s.phase()!=CombatAttempt.Phase.CLOSED||s.outcome()!=CombatAttempt.Outcome.REQUIRED_FAILURE||s.error()!=null||cleanupHolds.contains(s.run()))throw new IllegalStateException("PATH_RETRY_NOT_READY");
+        if(r.restart!=null){r.restart.lines().forEach(line->actor.player.sendMessage(Component.text(line)));return;}
+        prepareRestart(r,new CombatRetryVote.Receipt(s.run(),s.attempt(),UUID.randomUUID()),true);
+    }
+    private void prepareRestart(Run previous,CombatRetryVote.Receipt receipt){prepareRestart(previous,receipt,false);}
+    private void prepareRestart(Run previous,CombatRetryVote.Receipt receipt,boolean pathFailure){
+        main();var policy=pathFailure?trials.content().path().retry():trials.content().retry();UUID id=receipt.run();var roster=onlinePrepared(id);var nextBridge=new CombatPlayers(id,previous.world().mapping().physicalId(),previous.generation,previous.world()::generation,owner,PaperCombatPlayers::main);
         var modes=new HashMap<UUID,GameMode>();var selected=new ArrayList<Player>();
         for(var entry:roster.entrySet()){
             var p=Objects.requireNonNull(Bukkit.getPlayer(entry.getKey()));var mode=previous.modes().getOrDefault(p.getUniqueId(),p.getGameMode());
             if(!p.isWhitelisted()||p.isDead()||(mode!=GameMode.SURVIVAL&&mode!=GameMode.ADVENTURE)||!p.getItemOnCursor().isEmpty()||(p.getOpenInventory().getType()!=org.bukkit.event.inventory.InventoryType.CRAFTING&&p.getOpenInventory().getType()!=org.bukkit.event.inventory.InventoryType.PLAYER))throw new IllegalStateException("COMBAT_RESTART_PLAYER_NOT_READY");modes.put(p.getUniqueId(),mode);selected.add(p);
         }
-        var next=new Run(nextBridge,previous.world(),Map.copyOf(modes));var ports=selected.stream().map(p->new Body(p,Objects.requireNonNull(roster.get(p.getUniqueId())),next)).toList();
+        var next=new Run(nextBridge,previous.world(),Map.copyOf(modes));next.path=policy.scope().equals("FROM_PATH");var ports=selected.stream().map(p->new Body(p,Objects.requireNonNull(roster.get(p.getUniqueId())),next)).toList();
         BooleanSupplier current=()->!closed&&runs.get(id)==previous&&previous.world().generation()==previous.generation&&Bukkit.getWorld(previous.world().mapping().physicalId())!=null&&roster.equals(onlinePrepared(id));
-        previous.restart=new CombatRestart(previous.players().attempt(),trials.content().retry(),new ArrayList<>(ports),
-            ()->sessions.saveRunBoundary(id).thenComposeAsync(v->dataBarrier.apply(id),owner),entrants->{
-                previous.retry.close();previous.players().close();
-                CombatAttempt attempt=trials.replace(previous.world(),receipt,entrants,nextBridge);
+        previous.restart=new CombatRestart(previous.players().attempt(),policy,new ArrayList<>(ports),
+            ()->sessions.saveRunBoundary(id).thenComposeAsync(v->dataBarrier.apply(id),owner),
+            ()->policy.reset()==null?CompletableFuture.completedFuture(null):fields.reset(id,receipt.request(),policy.reset(),()->CompletableFuture.completedFuture(null),current,owner),entrants->{
+                if(previous.retry!=null)previous.retry.close();previous.players().close();
+                CombatAttempt attempt=pathFailure?trials.restartPath(previous.world(),receipt,entrants,nextBridge):trials.replace(previous.world(),receipt,entrants,nextBridge);
                 try{bodies.values().removeIf(b->b.run==previous);ports.forEach(p->bodies.put(p.player.getUniqueId(),p));runs.put(id,next);nextBridge.attach(attempt,new ArrayList<>(ports));attachVote(next);return attempt;}
                 catch(RuntimeException error){attempt.invalidate();cleanupHolds.add(id);throw error;}
             },owner,PaperCombatPlayers::main,current);
-        selected.forEach(p->p.sendMessage(Component.text("보스만 재도전 준비 · 저장과 복귀 확인 중에는 조작할 수 없습니다.")));
-        previous.restart.begin(receipt).whenCompleteAsync((attempt,error)->{
+        selected.forEach(p->p.sendMessage(Component.text("등록된 범위로 재도전 준비 · 저장·복귀·구역 정리 중에는 조작할 수 없습니다.")));
+        (pathFailure?previous.restart.beginPathFailure(receipt.request()):previous.restart.begin(receipt)).whenCompleteAsync((attempt,error)->{
             if(error!=null){cleanupHolds.add(id);plugin.getLogger().warning("HEARTH_COMBAT_RESTART_HOLD");}
-            for(var p:selected)if(sessions.prepared(p)==roster.get(p.getUniqueId()))p.sendMessage(Component.text(error==null?"새 보스 도전 시작을 확인했습니다. 시작 명단·난이도·보스 부활 횟수를 새로 확정했습니다.":"재도전 준비 보류 · 자동 재실행하지 않습니다. 관리자 확인이 필요합니다."));
+            for(var p:selected)if(sessions.prepared(p)==roster.get(p.getUniqueId()))p.sendMessage(Component.text(error==null?(next.path?"길목 재도전 시작 · 지정 복귀 지점과 구역 초기화 확인 완료":"새 보스 도전 시작 · 시작 명단·난이도·보스 부활 횟수 확정 완료"):"재도전 준비 보류 · 자동 재실행하지 않습니다. 관리자 확인이 필요합니다."));
         },owner);
     }
     /** 실제 게임 조건 대신 명시적으로 실행하는 콘솔 시험 입력입니다. 클라이언트 명령으로 열지 않습니다. */

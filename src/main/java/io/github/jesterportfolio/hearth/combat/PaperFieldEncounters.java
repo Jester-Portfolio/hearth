@@ -50,6 +50,7 @@ public final class PaperFieldEncounters implements Listener,AutoCloseable {
     private boolean live(Binding b){var lifecycle=worlds.get(b.run());return !closed&&lifecycle!=null&&lifecycle.generation()==b.generation()&&lifecycle.mapping().physicalId().equals(b.world())&&lifecycle.state()==WorldLifecycle.State.ACTIVE&&Bukkit.getWorld(b.world())!=null;}
     public Binding binding(UUID run){main();var w=Objects.requireNonNull(worlds.get(run));var b=new Binding(run,w.mapping().physicalId(),w.generation());if(!live(b))throw new IllegalStateException("FIELD_WORLD_NOT_READY");engine.bind(b);return b;}
     public List<String> enter(Binding b,UUID player,Point from,Point to,List<Presence> online){main();if(!live(b))throw new IllegalStateException("FIELD_STALE_GENERATION");return engine.enter(b,player,from,to,online);}
+    public void validateReset(FieldReset plan){main();plan.selected(content);}
     public FieldReset resetPolicy(){main();return content.reset();}
     /** 명시적인 진행별 저장 장벽 뒤에만 관리 몹/조우 상태를 초기화합니다. 자동 재시도하지 않습니다. */
     public CompletionStage<Void> reset(UUID run,UUID request,FieldReset plan,Supplier<CompletionStage<Void>> saved,BooleanSupplier current,Executor owner){

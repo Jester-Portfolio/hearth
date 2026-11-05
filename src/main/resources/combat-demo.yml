@@ -49,3 +49,13 @@ path:
     entry: {x: 3.5, y: 64.0, z: 3.5, yaw: 0, pitch: 0}
     health-fraction: 0.5
     effects: []
+  # 제작자가 고정 지정한 길목 재도전 지점. 도달/해금 규칙은 추가하지 않습니다.
+  retry:
+    scope: FROM_PATH
+    entry: {x: 7.5, y: 64.0, z: 7.5, yaw: 90, pitch: 0}
+    health-fraction: 0.5
+    effects: []
+    reset:
+      mode: AFTER_CHECKPOINT
+      zones: [public_field_one, public_field_two]
+      checkpoint: public_field_one

@@ -55,7 +55,7 @@ public final class CombatRetryVote {
                 var state=attempt.snapshot();
                 if(state.outcome()!=CombatAttempt.Outcome.RETRY||state.error()!=null){phase=Phase.HOLD;decision.completeExceptionally(new IllegalStateException("COMBAT_RETRY_CLOSE_HOLD"));return;}
                 receipt=new Receipt(state.run(),state.attempt(),id);phase=Phase.RETRY_REQUESTED;
-                announce(preparationAvailable?"재도전 결정으로 기존 도전을 종료했습니다. 등록된 보스만 재도전 설정으로 저장·복귀·새 도전 준비를 확인합니다.":"재도전 결정으로 기존 도전을 종료했습니다. 다음 도전의 이동·초기화·생성은 아직 연결되지 않아 대기합니다.");decision.complete(view());
+                announce(preparationAvailable?"재도전 결정으로 기존 도전을 종료했습니다. 등록된 재도전 범위 설정으로 저장·복귀·새 도전 준비를 확인합니다.":"재도전 결정으로 기존 도전을 종료했습니다. 다음 도전의 이동·초기화·생성은 아직 연결되지 않아 대기합니다.");decision.complete(view());
             },owner).exceptionally(error->{deliveryFailed=true;decision.completeExceptionally(error);return null;});return decision;
         }catch(RuntimeException error){return CompletableFuture.failedFuture(error);}
     }
