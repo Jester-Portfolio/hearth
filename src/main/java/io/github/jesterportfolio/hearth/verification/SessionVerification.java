@@ -247,10 +247,11 @@ public final class SessionVerification implements AutoCloseable {
     }
     private final class Controlled implements PlayerSessions.Port {
         final Inventory inventory=Bukkit.createInventory(null,45,Component.text("제어 세션 41슬롯"));
-        boolean connected=true;int applies,moves;CompletableFuture<Boolean> movement=CompletableFuture.completedFuture(true);
+        ItemStack cursor;boolean connected=true;int applies,moves;CompletableFuture<Boolean> movement=CompletableFuture.completedFuture(true);
         public boolean connected(){main();return connected;}
-        public InventoryPayload capture(){main();return codec.encode(Arrays.copyOf(inventory.getContents(),41));}
+        public InventoryPayload capture(){main();return codec.encode(codec.withCursor(Arrays.copyOf(inventory.getContents(),41),cursor));}
         public void apply(InventoryPayload value){main();ItemStack[] slots=codec.decode(value);for(int i=0;i<41;i++)inventory.setItem(i,slots[i]);applies++;}
+        public void settle(){if(cursor!=null&&!cursor.isEmpty()){var value=capture();apply(value);cursor=null;}}
         public CompletionStage<Boolean> move(){main();moves++;return movement;}
         void count(int value){inventory.setItem(0,new ItemStack(Material.STONE,value));}
     }
@@ -292,6 +293,7 @@ public final class SessionVerification implements AutoCloseable {
         case "game-information" -> gameInformation();
         case "npc-views" -> npcViews();
         case "interaction-play" -> interactionPlay();
+        case "interaction-write-failure" -> interactionWriteFailure();
         case "gameplay-guide" -> gameplayGuide();
         case "guide-safety" -> openAll().thenCompose(v->storyFailure());
         case "story-prepare" -> storyPrepare();
@@ -1110,19 +1112,40 @@ public final class SessionVerification implements AutoCloseable {
     }
     private CompletionStage<Void> interactionPlay(){
         var beforeB=new InventoryStore.Stored[1];
-        return openAll().thenCompose(v->mainResult(store.readInventory(ctx(b,1)))).thenCompose(v->{beforeB[0]=v;
+        return openAll().thenCompose(v->mainResult(store.readInventory(ctx(b,1)))).thenCompose(v->{beforeB[0]=v;cursorProjectionChecks();
             check(PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(true,true,true,true,9,"NUMBER_KEY","HOTBAR_SWAP",0)),"interaction_hotbar_policy_allowed");
             check(!PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(false,true,true,true,9,"NUMBER_KEY","HOTBAR_SWAP",0)),"interaction_unprepared_denied");
             check(!PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(true,false,true,true,9,"NUMBER_KEY","HOTBAR_SWAP",0)),"interaction_GUI_and_containers_denied");
             check(PlayerInteractionRules.facility("OAK_DOOR")&&!PlayerInteractionRules.facility("CHEST"),"interaction_facility_policy");
             var initial=one.inventory.getItem(0);one.inventory.setItem(0,one.inventory.getItem(9));one.inventory.setItem(9,initial);
             var offhand=one.inventory.getItem(40);one.inventory.setItem(40,one.inventory.getItem(9));one.inventory.setItem(9,offhand);
-            var expected=one.capture();coordinator.refresh(s1);check(s1.save().dirty(),"interaction_existing_dirty_path");
+            var carried=one.inventory.getItem(9);one.cursor=carried.clone();one.inventory.setItem(9,null);
+            var expected=one.capture();check(one.cursor.equals(carried),"cursor_projection_does_not_modify_live_items");
+            coordinator.refresh(s1);check(s1.save().dirty(),"interaction_existing_dirty_path");
             return s1.save().flush().thenCompose(x->mainResult(store.readInventory(a1))).thenCompose(saved->{
                 check(codec.equivalent(saved.payload(),expected)&&saved.revision()==1,"interaction_hotbar_offhand_slots_and_metadata_saved");
                 return verify(a2,5,0).thenCompose(x->mainResult(store.readInventory(ctx(b,1)))).thenCompose(afterB->{check(afterB.equals(beforeB[0]),"interaction_other_run_inventory_unchanged");return coordinator.disconnect(s1);}).thenCompose(x->{
-                    one=new Controlled();s1=connect(a1,one);return s1.ready();
+                    check(one.cursor==null,"cursor_logout_settled_before_final_capture");one=new Controlled();s1=connect(a1,one);return s1.ready();
                 }).thenRun(()->check(codec.equivalent(one.capture(),expected)&&s1.save().revision()==1,"interaction_reconnect_restores_slot_changes"));
+            });
+        });
+    }
+    private void cursorProjectionChecks(){
+        var cursor=new ItemStack(Material.STONE,12);var slots=new ItemStack[41];slots[0]=new ItemStack(Material.STONE,60);
+        var projected=codec.withCursor(slots,cursor);check(slots[0].getAmount()==60&&cursor.getAmount()==12&&projected[0].getAmount()==64&&projected[1].getAmount()==8,"cursor_merge_split_and_input_preservation");
+        var named=cursor.clone();var meta=named.getItemMeta();meta.displayName(Component.text("공개 시험 표본"));meta.lore(List.of(Component.text("개인 보관 시험")));named.setItemMeta(meta);
+        projected=codec.withCursor(slots,named);check(projected[0].getAmount()==60&&projected[1].equals(named)&&codec.decode(codec.encode(projected))[1].equals(named),"cursor_metadata_no_wrong_merge_roundtrip");
+        for(int i=0;i<36;i++)slots[i]=new ItemStack(Material.STONE,64);
+        var original=codec.encode(slots);boolean rejected=false;try{codec.withCursor(slots,named);}catch(IllegalStateException failure){rejected=failure.getMessage().equals("CURSOR_STORAGE_FULL");}
+        check(rejected&&codec.encode(slots).equals(original)&&named.getAmount()==12,"cursor_full_storage_rejected_without_mutation_or_armor_spill");
+        check(PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(true,true,true,false,9,"RIGHT","PLACE_ONE",0))&&PlayerInteractionRules.drag(true,true,Set.of(9,10)),"cursor_click_drag_policy_connected");
+    }
+    private CompletionStage<Void> interactionWriteFailure(){
+        return mainResult(store.readInventory(a1)).thenCompose(before->{
+            var slots=codec.decode(before.payload());slots[10]=new ItemStack(Material.STONE,2);var snapshot=codec.encode(slots);
+            var probe=new InventorySaveSession(store,a1,before.revision(),()->snapshot,owner,SessionVerification::main,()->true,code->{});probe.markDirty();
+            return expect(probe.flush(),"23514").thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(after->{
+                check(after.equals(before)&&probe.dirty()&&probe.revision()==before.revision()&&"23514".equals(probe.holdCode()),"cursor_DB_write_failure_original_dirty_revision_HOLD_preserved");
             });
         });
     }

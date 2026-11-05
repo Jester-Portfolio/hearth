@@ -13,6 +13,7 @@ public final class PlayerSessions {
     public interface Port {
         boolean connected();
         InventoryPayload capture();
+        default void settle() {}
         void apply(InventoryPayload value);
         CompletionStage<Boolean> move();
     }
@@ -127,12 +128,14 @@ public final class PlayerSessions {
         if (!equivalent.test(value,s.snapshot)) { s.snapshot=value;s.save.markDirty(); }
     }
     public CompletionStage<Void> inventoryTransaction(Session s,Function<InventoryStore.Stored,CompletionStage<InventoryStore.Stored>> writer){
-        check.run();if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_NOT_ACTIVE"));refresh(s);if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_HOLD"));
+        check.run();if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_NOT_ACTIVE"));
+        try{s.port.settle();}catch(RuntimeException error){hold(s,LifecycleFailure.code(error));return CompletableFuture.failedFuture(error);}refresh(s);if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_HOLD"));
         return s.save.transaction(writer,saved->{validate.accept(saved.payload());s.snapshot=saved.payload();if(s.connected&&!s.closing){requireAdmission(s);s.port.apply(saved.payload());}});
     }
     /** 조작이 제한된 게임 경계에서 기존 in-flight와 최신 dirty를 순서대로 정리합니다. */
     public CompletionStage<Void> saveBoundary(Session s){
-        check.run();if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_NOT_ACTIVE"));refresh(s);
+        check.run();if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_NOT_ACTIVE"));
+        try{s.port.settle();}catch(RuntimeException error){hold(s,LifecycleFailure.code(error));return CompletableFuture.failedFuture(error);}refresh(s);if(!playable(s))return CompletableFuture.failedFuture(new LifecycleFailure("SESSION_HOLD"));
         return s.save.flush().thenComposeAsync(v->{if(!playable(s))throw new LifecycleFailure("STALE_SESSION");refresh(s);return s.save.flush();},owner)
             .thenRunAsync(()->{if(!playable(s)||s.save.dirty()||s.save.saving()||s.save.holdCode()!=null)throw new LifecycleFailure("SESSION_SAVE_NOT_SETTLED");},owner);
     }
@@ -147,7 +150,7 @@ public final class PlayerSessions {
         if (s.closing || s.closed.isDone()) return s.closed;
         s.closing=true;boolean active=s.state==State.ACTIVE,moving=s.state==State.MOVING;
         if (active) {
-            try { update(s,s.port.capture()); } catch (Exception e) { hold(s,LifecycleFailure.code(e));return s.closed; }
+            try { s.port.settle();update(s,s.port.capture()); } catch (Exception e) { hold(s,LifecycleFailure.code(e));return s.closed; }
         }
         s.connected=false;connections.remove(s.key.player(),s);
         if (s.save!=null) unregister.accept(s.save);

@@ -19,8 +19,20 @@ final class PlayerInteractionRulesTest {
         for(int key:new int[]{-1,9,40})assertFalse(PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(true,true,true,true,9,"NUMBER_KEY","HOTBAR_SWAP",key)));
     }
     @Test void craftingCursorCollectCreativeAndMismatchedActionsRemainDenied(){
-        for(String click:new String[]{"LEFT","RIGHT","MIDDLE","DOUBLE_CLICK","CREATIVE","UNKNOWN","WINDOW_BORDER_LEFT"})assertFalse(PlayerInteractionRules.inventory(request(click,"PICKUP_ALL")));
+        for(String click:new String[]{"MIDDLE","DOUBLE_CLICK","CREATIVE","UNKNOWN","WINDOW_BORDER_LEFT"})assertFalse(PlayerInteractionRules.inventory(request(click,"PICKUP_ALL")));
         for(String click:new String[]{"SHIFT_LEFT","NUMBER_KEY","SWAP_OFFHAND","DROP","CONTROL_DROP"})assertFalse(PlayerInteractionRules.inventory(request(click,"COLLECT_TO_CURSOR")));
+    }
+    @Test void storageCursorClicksAndDragAreScopedToOwnActiveView(){
+        for(String click:new String[]{"LEFT","RIGHT"})for(String action:new String[]{"PICKUP_ALL","PICKUP_HALF","PLACE_ALL","PLACE_ONE","SWAP_WITH_CURSOR"}){
+            assertTrue(PlayerInteractionRules.inventory(request(click,action)));
+            assertTrue(PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(true,true,true,false,35,click,action,0)));
+        }
+        assertFalse(PlayerInteractionRules.inventory(new PlayerInteractionRules.InventoryRequest(true,true,true,false,36,"LEFT","PLACE_ALL",0)));
+        assertFalse(PlayerInteractionRules.inventory(request("LEFT","COLLECT_TO_CURSOR")));
+        assertTrue(PlayerInteractionRules.drag(true,true,java.util.Set.of(0,9,35)));
+        for(var slots:java.util.List.of(java.util.Set.<Integer>of(),java.util.Set.of(-1),java.util.Set.of(36),java.util.Set.of(0,40)))assertFalse(PlayerInteractionRules.drag(true,true,slots));
+        assertFalse(PlayerInteractionRules.drag(false,true,java.util.Set.of(0)));
+        assertFalse(PlayerInteractionRules.drag(true,false,java.util.Set.of(0)));
     }
     @Test void onlyNonContainerFacilitiesAreAllowedAndHelpStatesLimits(){
         for(String block:new String[]{"OAK_DOOR","IRON_DOOR","OAK_TRAPDOOR","OAK_FENCE_GATE","STONE_BUTTON","LEVER"})assertTrue(PlayerInteractionRules.facility(block));

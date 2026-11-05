@@ -368,6 +368,7 @@ motd=Hearth isolated S4-11 verification
                             monitor.action(name,'navigation-play')
                         elif args.player_interactions:
                             monitor.action(name,'interaction-play')
+                            monitor.db('write-fail-on'); monitor.action(name,'interaction-write-failure'); monitor.db('write-fail-off')
                         elif args.world_effects:
                             monitor.action(name,'effect-prepare')
                             monitor.db('story-fail-on'); monitor.action(name,'effect-db-failure'); monitor.db('story-fail-off')

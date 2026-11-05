@@ -75,3 +75,5 @@
 `--sessions --quests --story-batch --gameplay-guide --phone-dialog`는 공동 조사 NPC/책/Dialog 표시 데이터와 기존 공유 단계·채팅 투표·저장 후 재입장을 한 JVM에서 검사한다. `--guide-safety-only`를 추가하면 정상 흐름을 반복하지 않고 실제 SQL 거부/HOLD와 commit 불명 응답·같은 요청 ID 확인 경로만 검사한다. 실제 클라이언트 조작은 실행하지 않는다. [결과](../docs/shared-progress-ui-verification.md).
 
 준비된 수동 `--sessions --quests --manual-player`에 `--phone-dialog`를 조합할 수 있다. 프로필 상태는 10초마다 읽기 전용으로 조회한다. 선택 옵션 `--manual-finish-on-logout`은 시험자가 접속 후 종료하면 정리하므로 재접속을 계속 시험할 때는 사용하지 않는다. 기존 TTY·준비 확인·시간 한도는 유지한다. 수동 원시 결과는 실제 행동 자동 PASS가 아니다. [실제 관측 기록](../docs/quest-client-verification.md)을 참조한다.
+
+`--sessions --player-interactions`는 보관 슬롯 커서 사본·메타데이터·퇴장 정리·DB 저장/복원과 SQL 쓰기 실패 보존도 검사한다. 인증 플레이어 이벤트 시험은 아니다. [최신 결과](../docs/inventory-cursor-verification.md).

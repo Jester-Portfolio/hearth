@@ -90,7 +90,8 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         if (closed || link==null || !Bukkit.getOnlineMode() || !player.isWhitelisted()) { player.kick(Component.text("준비된 격리 시험 프로필이 필요합니다."));return; }
         var session=sessions.connect(link.context(),link.world(),new PlayerSessions.Port(){
             public boolean connected(){main();return !closed && player.isOnline() && Bukkit.getPlayer(player.getUniqueId())==player;}
-            public InventoryPayload capture(){main();requireNoCursor(player);return codec.capture(player.getInventory());}
+            public InventoryPayload capture(){main();return codec.capture(player.getInventory(),player.getItemOnCursor());}
+            public void settle(){settleCursor(player);}
             public void apply(InventoryPayload value){main();requireNoCursor(player);codec.apply(player.getInventory(),value);}
             public CompletionStage<Boolean> move(){
                 long generation=link.world().generation();
@@ -116,6 +117,11 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
             if (error!=null) player.kick(Component.text("격리 세션 준비 실패: "+session.error()));
             else {try{combat.ready(player,session);}catch(RuntimeException failure){player.kick(Component.text("전투 복귀 준비 보류"));plugin.getLogger().warning("HEARTH_COMBAT_READY_HOLD");return;}player.sendMessage(Component.text("격리 스토리 진행 복원 완료"));player.sendMessage(Component.text("조작 안내: /hearthplay help"));}
         }));
+    }
+    private void settleCursor(Player player){
+        main();if(player.getItemOnCursor().isEmpty())return;
+        var snapshot=codec.capture(player.getInventory(),player.getItemOnCursor());
+        codec.apply(player.getInventory(),snapshot);player.setItemOnCursor(null);
     }
     private static void requireNoCursor(Player p){if(!p.getItemOnCursor().isEmpty())throw new IllegalStateException("Unsupported cursor state");}
     @EventHandler public void quit(PlayerQuitEvent e){
@@ -152,7 +158,19 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         Bukkit.getScheduler().runTaskLater(plugin,new Runnable(){public void run(){if(result.isDone())return;if(closed||!permit.valid().getAsBoolean()){result.complete(false);return;}if(Bukkit.isTickingWorlds()){Bukkit.getScheduler().runTaskLater(plugin,this,1);return;}if(moving.putIfAbsent(p.getUniqueId(),permit)!=null){result.completeExceptionally(new IllegalStateException("COMBAT_MOVE_BUSY"));return;}try{p.teleportAsync(target.clone()).whenComplete((ok,error)->owner.execute(()->{if(result.isDone())return;if(error!=null)result.completeExceptionally(error);else result.complete(Boolean.TRUE.equals(ok)&&permit.valid().getAsBoolean());}));}catch(RuntimeException e){result.completeExceptionally(e);}}},1);return result;
     }
     public void combatCamera(Player p,PlayerSessions.Session session,BooleanSupplier valid,Runnable action){main();var permit=new Move(p,()->prepared(p)==session&&valid.getAsBoolean());if(!permit.valid().getAsBoolean()||moving.putIfAbsent(p.getUniqueId(),permit)!=null)throw new IllegalStateException("COMBAT_CAMERA_STALE_OR_BUSY");try{action.run();}finally{moving.remove(p.getUniqueId(),permit);}}
-    @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){if(e.getPlayer() instanceof Player p && e.getInventory().getType()!=InventoryType.CRAFTING && e.getInventory().getType()!=InventoryType.PLAYER && (!allowed(p) || !developerInventory.test(p,e.getInventory())))e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){
+        if(!(e.getPlayer() instanceof Player p))return;
+        if(e.getInventory().getType()!=InventoryType.CRAFTING&&e.getInventory().getType()!=InventoryType.PLAYER){
+            if(!allowed(p)||!developerInventory.test(p,e.getInventory()))e.setCancelled(true);
+            else try{settleCursor(p);}catch(RuntimeException failure){e.setCancelled(true);sessions.refresh(entry(p).session());}
+        }
+    }
+    @EventHandler(priority=EventPriority.MONITOR) public void inventoryClosed(InventoryCloseEvent e){
+        if(e.getPlayer() instanceof Player p){
+            if(allowed(p))try{settleCursor(p);}catch(RuntimeException failure){sessions.refresh(entry(p).session());}
+            sample(p);
+        }
+    }
     @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){
         if(!(e.getWhoClicked() instanceof Player p))return;
         boolean ownView=e.getView().getType()==InventoryType.CRAFTING && p.getGameMode()!=GameMode.CREATIVE;
@@ -161,8 +179,13 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
             e.setCancelled(true);if(allowed(p)&&ownView)hint(p);
         }else if(!e.isCancelled())sample(p);
     }
-    private void hint(Player p){long now=System.nanoTime();Long previous=interactionHints.get(p.getUniqueId());if(previous!=null&&now-previous<5_000_000_000L)return;interactionHints.put(p.getUniqueId(),now);p.sendMessage(Component.text("격리 모드에서는 커서 없는 슬롯 조작만 지원합니다. /hearthplay help"));}
-    @EventHandler(priority=EventPriority.HIGHEST) public void drag(InventoryDragEvent e){if(e.getWhoClicked() instanceof Player)e.setCancelled(true);}
+    private void hint(Player p){long now=System.nanoTime();Long previous=interactionHints.get(p.getUniqueId());if(previous!=null&&now-previous<5_000_000_000L)return;interactionHints.put(p.getUniqueId(),now);p.sendMessage(Component.text("현재 슬롯이나 화면에서는 이 조작을 지원하지 않습니다. /hearthplay help"));}
+    @EventHandler(priority=EventPriority.HIGHEST) public void drag(InventoryDragEvent e){
+        if(!(e.getWhoClicked() instanceof Player p))return;
+        var slots=new HashSet<Integer>();boolean own=e.getView().getType()==InventoryType.CRAFTING&&p.getGameMode()!=GameMode.CREATIVE;
+        for(int raw:e.getRawSlots()){if(raw<0||raw>=e.getView().countSlots()||e.getView().getInventory(raw)!=p.getInventory()){own=false;break;}slots.add(e.getView().convertSlot(raw));}
+        if(!PlayerInteractionRules.drag(allowed(p),own,slots))e.setCancelled(true);else if(!e.isCancelled())sample(p);
+    }
     @EventHandler(priority=EventPriority.HIGHEST) public void interact(PlayerInteractEvent e){
         if(!allowed(e.getPlayer()) || e.getClickedBlock()!=null && e.getClickedBlock().getType().isInteractable() && !PlayerInteractionRules.facility(e.getClickedBlock().getType().name()))e.setCancelled(true);
         sample(e.getPlayer());
@@ -170,11 +193,11 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void place(BlockPlaceEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void breakBlock(BlockBreakEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void drop(PlayerDropItemEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
-    @EventHandler(priority=EventPriority.HIGHEST) public void pickup(EntityPickupItemEvent e){if(e.getEntity() instanceof Player p){if(!allowed(p))e.setCancelled(true);sample(p);}}
+    @EventHandler(priority=EventPriority.HIGHEST) public void pickup(EntityPickupItemEvent e){if(e.getEntity() instanceof Player p){if(!allowed(p)||!p.getItemOnCursor().isEmpty())e.setCancelled(true);sample(p);}}
     @EventHandler(priority=EventPriority.HIGHEST) public void consume(PlayerItemConsumeEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void swap(PlayerSwapHandItemsEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void damageItem(PlayerItemDamageEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
-    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied&&prepared(e.getPlayer())!=null&&combat.command(e.getPlayer(),e.getMessage()))return;if(!denied && allowed(e.getPlayer())){if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else questCommand.test(e.getPlayer(),e.getMessage());}}
+    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied&&prepared(e.getPlayer())!=null&&combat.command(e.getPlayer(),e.getMessage()))return;if(!denied && allowed(e.getPlayer())){try{settleCursor(e.getPlayer());}catch(RuntimeException failure){sessions.refresh(entry(e.getPlayer()).session());return;}if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else questCommand.test(e.getPlayer(),e.getMessage());}}
     @EventHandler(priority=EventPriority.HIGHEST) public void damage(EntityDamageEvent e){if(e.getEntity() instanceof Player p&&!combat.damage(p,e))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void attack(EntityDamageByEntityEvent e){if(e.getDamager() instanceof Player p&&(!allowed(p)||!fieldAttack.test(p,e.getEntity())&&!combat.attack(p,e.getEntity())))e.setCancelled(true);}
     @Override public void close(){main();closed=true;for(var move:List.copyOf(combatMoves))move.completeExceptionally(new IllegalStateException("COMBAT_MOVE_CLOSED"));moving.clear();interactionHints.clear();HandlerList.unregisterAll(this);}

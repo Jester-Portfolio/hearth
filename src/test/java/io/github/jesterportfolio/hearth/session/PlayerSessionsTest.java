@@ -134,4 +134,24 @@ final class PlayerSessionsTest {
     @Test void activeBoundaryIncludesOtherActiveAndDepartingSaves(){var f=new Fixture();var p=new Port();var one=f.active(UUID.randomUUID(),p);var q=new Port();var two=f.active(UUID.randomUUID(),q);p.memory=payload(2);q.memory=payload(3);var leaving=f.sessions.disconnect(two);var boundary=f.sessions.saveRunBoundary(f.run);f.pump();assertFalse(boundary.toCompletableFuture().isDone());int departed=f.store.snapshots.indexOf(payload(3));int active=f.store.snapshots.indexOf(payload(2));f.saved(departed,1);assertTrue(leaving.toCompletableFuture().isDone());assertFalse(boundary.toCompletableFuture().isDone());f.saved(active,1);assertTrue(boundary.toCompletableFuture().isDone());assertTrue(f.sessions.playable(one));}
     @Test void failedBoundaryRetainsDirtyAndRevisionWhileSessionReplacementCannotSucceed(){var f=new Fixture();var p=new Port();var one=f.active(UUID.randomUUID(),p);p.memory=payload(2);var save=f.sessions.saveRunBoundary(f.run);f.pump();f.store.writes.getFirst().completeExceptionally(new StorageFailure("unit","08006"));f.pump();assertTrue(save.toCompletableFuture().isCompletedExceptionally());assertTrue(one.save().dirty());assertEquals(0,one.save().revision());assertEquals(payload(2),p.memory);
         var g=new Fixture();var q=new Port();var two=g.active(UUID.randomUUID(),q);q.memory=payload(2);var pending=g.sessions.saveBoundary(two);g.pump();g.sessions.disconnect(two);q.online=false;g.saved(0,1);assertTrue(pending.toCompletableFuture().isCompletedExceptionally());}
+    @Test void boundarySettlesTransientItemsBeforeCaptureAndSave(){
+        var f=new Fixture();var p=new Port(){public void settle(){memory=payload(4);}};
+        var s=f.active(UUID.randomUUID(),p);var work=f.sessions.saveBoundary(s);f.pump();
+        assertEquals(payload(4),f.store.snapshots.get(0));f.saved(0,1);
+        assertTrue(work.toCompletableFuture().isDone());assertFalse(s.save().dirty());
+    }
+    @Test void failedSettlementHoldsAndNeverWritesOldSnapshotOrCallsTransactionWriter(){
+        for(boolean transaction:new boolean[]{false,true}){
+            var f=new Fixture();var p=new Port(){public void settle(){throw new IllegalStateException("CURSOR_STORAGE_FULL");}};
+            var s=f.active(UUID.randomUUID(),p);
+            var work=transaction?f.sessions.inventoryTransaction(s,row->{throw new AssertionError("writer must not run");}):f.sessions.saveBoundary(s);
+            f.pump();assertTrue(work.toCompletableFuture().isCompletedExceptionally());assertEquals(PlayerSessions.State.HOLD,s.state());assertTrue(f.store.writes.isEmpty());assertFalse(f.sessions.canUnload(f.run));
+        }
+    }
+    @Test void logoutSettlesBeforeFinalSnapshotAndReconnect(){
+        var f=new Fixture();var id=UUID.randomUUID();var p=new Port(){public void settle(){memory=payload(6);}};
+        var s=f.active(id,p);f.sessions.disconnect(s);f.pump();assertEquals(payload(6),f.store.snapshots.get(0));
+        var next=f.open(id,new Port());assertEquals(1,f.store.reads.size());f.saved(0,1);f.read(1,6,1);assertEquals(PlayerSessions.State.ACTIVE,next.state());
+    }
+
 }
