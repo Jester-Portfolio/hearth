@@ -68,6 +68,14 @@ public final class CombatAttempt {
         CompletionStage<Boolean> work;try{var rule=content.revival();work=Objects.requireNonNull(port.revive(p.id,position,rule.healthFraction(),rule.effects(),valid));}catch(RuntimeException e){work=CompletableFuture.failedFuture(e);}
         work.whenCompleteAsync((ok,failure)->{if(request.result.isDone())return;time();if(!valid.getAsBoolean()||failure!=null||!Boolean.TRUE.equals(ok)){hold("COMBAT_REVIVAL_APPLY_HOLD");request.result.completeExceptionally(new IllegalStateException("COMBAT_REVIVAL_APPLY_HOLD",failure));return;}p.reviving=false;reserved--;p.used++;if(content.revival().pool()==Pool.SHARED)sharedUsed++;p.dead=false;p.protection=0;p.cameraKnown=false;update();request.result.complete(null);},owner).exceptionally(failure->{deliveryFailed=true;request.result.completeExceptionally(failure);return null;});return request.result;
     }
+    /** 체크포인트 조정자가 전원 이동/전량 회복을 확인한 뒤에만 호출하는 상태 확정 경계입니다. */
+    void checkpointRecovered(Map<UUID,Object> expected){
+        open();time();
+        if(expected.isEmpty()||!expected.entrySet().stream().allMatch(e->onlineSessions().get(e.getKey())==e.getValue())||members.values().stream().anyMatch(p->p.online&&(p.reviving||p.returning)))throw new IllegalStateException("CHECKPOINT_STALE_ROSTER");
+        for(var entry:expected.entrySet())if(members.get(entry.getKey()).token!=entry.getValue())throw new IllegalStateException("CHECKPOINT_STALE_SESSION");
+        for(var p:members.values())if(expected.containsKey(p.id)){p.dead=false;p.protection=0;p.cameraKnown=false;}
+        revision++;update();
+    }
     /** 서버가 검증한 게임 이벤트만 호출합니다. 개인/무관 퀘스트 실패는 required=false입니다. */
     public void failedCondition(boolean required){check.run();if(required&&phase!=Phase.CLOSED){time();finish(Outcome.REQUIRED_FAILURE);}}
     public void victory(){check.run();if(phase!=Phase.CLOSED&&phase!=Phase.HOLD){time();finish(Outcome.VICTORY);}}

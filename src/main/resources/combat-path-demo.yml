@@ -63,3 +63,11 @@ path:
       mode: AFTER_CHECKPOINT
       zones: [public_field_one, public_field_two]
       checkpoint: public_field_one
+  checkpoint:
+    id: public_field_one
+    quest: survey_marker
+    area: {min-x: 2, max-x: 5, min-y: 64, max-y: 68, min-z: 2, max-z: 5}
+    entry:
+      entry: {x: 7.5, y: 64.0, z: 7.5, yaw: 90, pitch: 0}
+      health-fraction: 1
+      effects: []

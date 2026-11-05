@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import javax.sql.DataSource;
 
 /** Bukkit API/메인 스레드 대기가 없는 최소 JDBC 저장 모듈. 플러그인 부팅에는 아직 연결하지 않습니다. */
-public final class PostgresProgressStore implements ProgressStore, InventoryStore, QuestStore, QuestJournalStore, ExplorationStore, StoryStore, QuestCompletionStore {
+public final class PostgresProgressStore implements CheckpointStore, ProgressStore, InventoryStore, QuestStore, QuestJournalStore, ExplorationStore, StoryStore, QuestCompletionStore {
     private volatile Map<String,ExplorationContent.Fact> questDiary=Map.of();
     public void configureQuestDiary(Map<String,ExplorationContent.Fact> bindings){questDiary=Map.copyOf(bindings);}
     private volatile Set<String> requiredQuestRules=Set.of();
@@ -50,6 +50,18 @@ public final class PostgresProgressStore implements ProgressStore, InventoryStor
                 task -> new Thread(task, "hearth-progress-db-" + number.incrementAndGet()), new ThreadPoolExecutor.AbortPolicy());
     }
 
+    private static void checkpointKeys(String... values){for(String v:values)if(v==null||!v.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid checkpoint key");}
+    @Override public CompletionStage<Optional<CheckpointStore.Saved>> checkpoint(ServerProgressAccess.Context ctx,String dungeon,String quest,String point){return submit("checkpoint_read",ctx,()->{
+        access.requireIssued(ctx);requireReady();checkpointKeys(dungeon,quest,point);
+        try(var c=pool.getConnection();var st=c.prepareStatement("SELECT request_id,complete FROM hearth_progress.dungeon_checkpoint WHERE story_run_id=? AND dungeon_id=? AND quest_id=? AND checkpoint_id=?")){
+            st.setObject(1,ctx.storyRunId());st.setString(2,dungeon);st.setString(3,quest);st.setString(4,point);try(var r=st.executeQuery()){return r.next()?Optional.of(new CheckpointStore.Saved(r.getObject(1,UUID.class),r.getBoolean(2))):Optional.empty();}
+        }
+    });}
+    @Override public CompletionStage<Void> checkpointWrite(ServerProgressAccess.Context ctx,String dungeon,String quest,String point,UUID request,boolean complete){return submit("checkpoint_write",ctx,()->{
+        access.requireIssued(ctx);requireReady();checkpointKeys(dungeon,quest,point);Objects.requireNonNull(request);
+        String sql=complete?"UPDATE hearth_progress.dungeon_checkpoint SET complete=true WHERE story_run_id=? AND dungeon_id=? AND quest_id=? AND checkpoint_id=? AND request_id=? AND NOT complete":"INSERT INTO hearth_progress.dungeon_checkpoint(story_run_id,dungeon_id,quest_id,checkpoint_id,request_id) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING";
+        try(var c=pool.getConnection();var st=c.prepareStatement(sql)){st.setObject(1,ctx.storyRunId());st.setString(2,dungeon);st.setString(3,quest);st.setString(4,point);st.setObject(5,request);if(st.executeUpdate()!=1)throw new StorageFailure("checkpoint","CHECKPOINT_CONFLICT");}return null;
+    });}
     @Override public CompletionStage<Void> migrate() {
         schemaReady.set(false);
         return submit("migrate", null, () -> {

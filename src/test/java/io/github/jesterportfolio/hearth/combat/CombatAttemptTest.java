@@ -40,4 +40,14 @@ final class CombatAttemptTest {
     @Test void invalidationHoldsOnlyThisAttemptAndStablePollingDoesNotChurnRevision(){var f=new Fixture();var other=new Fixture();f.fight.poll();long revision=f.fight.snapshot().revision();f.fight.poll();assertEquals(revision,f.fight.snapshot().revision());f.fight.invalidate();long held=f.fight.snapshot().revision();f.fight.invalidate();assertEquals(held,f.fight.snapshot().revision());assertEquals(Phase.HOLD,f.fight.snapshot().phase());assertTrue(other.fight.playable(other.p,other.one));}
     @Test void rejectedOwnerDeliveryNeverRunsWorldPortOnCompletionThread() throws Exception {var f=new Fixture();Thread owner=Thread.currentThread();var actors=new Actors();var fight=new CombatAttempt(f.run,f.world,1,content(Pool.SHARED,2,LocationMode.START),List.of(new Entrant(f.p,f.one,f.pose),new Entrant(f.q,f.two,f.pose)),actors,r->{throw new RejectedExecutionException();},()->{if(Thread.currentThread()!=owner)throw new AssertionError("Owner violation");},f.clock::get);fight.died(f.p,f.one,f.pose);var pending=fight.revive(f.p,f.one,UUID.randomUUID(),"rescue");int before=actors.freezes;var worker=new Thread(()->actors.applies.getFirst().result().complete(true));worker.start();worker.join();assertTrue(pending.toCompletableFuture().isCompletedExceptionally());assertEquals(before,actors.freezes);fight.poll();assertEquals(Phase.HOLD,fight.snapshot().phase());assertEquals("COMBAT_OWNER_DELIVERY_FAILED",fight.snapshot().error());}
     @Test void malformedContentAndEffectsAreRejectedBeforeStart(){assertThrows(IllegalArgumentException.class,()->new Effect("UNKNOWN",0,1));assertThrows(IllegalArgumentException.class,()->new Pose(UUID.randomUUID(),Double.NaN,1,1,0,0));assertThrows(IllegalArgumentException.class,()->new Revival(true,"rescue",Pool.SHARED,-1,0.5,LocationMode.START,null,List.of()));assertThrows(IllegalArgumentException.class,()->new Revival(true,"rescue",Pool.SHARED,1,0.5,LocationMode.FIXED,null,List.of()));assertThrows(IllegalArgumentException.class,()->CombatContent.parse(Map.of("format",9)));}
+    @Test void checkpointRecoveryPreservesRevivalCountersAndRejectsForeignRoster(){
+        var f=new Fixture();f.deadP();var used=f.fight.snapshot().sharedUsed();
+        assertThrows(IllegalStateException.class,()->f.fight.checkpointRecovered(Map.of(UUID.randomUUID(),new Object())));
+        assertTrue(f.fight.snapshot().members().stream().anyMatch(CombatAttempt.Member::dead));
+        f.fight.checkpointRecovered(f.fight.onlineSessions());
+        assertFalse(f.fight.snapshot().members().stream().anyMatch(CombatAttempt.Member::dead));
+        assertEquals(used,f.fight.snapshot().sharedUsed());
+        assertTrue(f.fight.snapshot().members().stream().allMatch(m->m.used()==0));
+    }
+
 }

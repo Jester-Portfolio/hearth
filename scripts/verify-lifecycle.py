@@ -324,8 +324,13 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.combatState=true')
         if args.combat_players:
             paper.insert(-3,'-Dhearth.verification.combatPlayers=true')
-        for phase in (['prepare'] if args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
+        for phase in (['prepare','resume'] if args.combat_paths else ['prepare'] if args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
+            if phase=='resume' and args.combat_paths:
+                config=plugins/'Hearth/config.yml'
+                text=config.read_text()
+                for key in ['combat-state-verification-enabled','combat-player-verification-enabled','field-encounter-verification-enabled']:text=text.replace(key+': true',key+': false')
+                config.write_text(text)
             name='paper-'+phase
             monitor.launch(name,paper,runtime)
             monitor.wait(name,'Done (',seconds=120)
@@ -468,6 +473,8 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.combat_paths:
+                        monitor.action(name,'session-resume'); monitor.action(name,'checkpoint-restored')
                     elif args.branch_progression:
                         monitor.action(name,'session-resume'); monitor.action(name,'branch-progression-restored')
                     elif args.quest_completion:

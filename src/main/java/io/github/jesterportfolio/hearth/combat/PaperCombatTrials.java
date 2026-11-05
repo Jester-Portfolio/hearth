@@ -49,6 +49,7 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
         try{old.attempt().finish(CombatAttempt.Outcome.RETIRED);old.mob().remove();if(old.mob().isValid())throw new IllegalStateException("COMBAT_PATH_MOB_NOT_REMOVED");trials.put(run,next);replacements.put(run,new Replacement(receipt,next.attempt()));return next.attempt();}
         catch(RuntimeException error){next.attempt().invalidate();next.mob().remove();throw error;}
     }
+    public void resumePath(UUID run,UUID attempt){main();var t=trials.get(run);if(t!=null&&t.path()&&t.attempt().snapshot().attempt().equals(attempt)&&t.mob().isValid())t.mob().setAI(t.attempt().snapshot().phase()==CombatAttempt.Phase.ACTIVE);}
     public CombatContent content(){main();return content;}
     /** 기존 RETRY 도전만 교체합니다. 초기화/운영 월드 복제나 다른 도전의 재생성은 하지 않습니다. */
     public CombatAttempt replace(WorldLifecycle lifecycle,CombatRetryVote.Receipt receipt,List<CombatAttempt.Entrant> roster,CombatAttempt.Port actors){return replace(lifecycle,receipt,roster,actors,content.retry(),false);}
