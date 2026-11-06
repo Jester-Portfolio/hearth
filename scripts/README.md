@@ -85,3 +85,5 @@
 `--sessions --quests --story-batch --combat-players --combat-paths`는 별도 공개 합성 콘텐츠로 길목 실패 재도전·보스 투표 후 길목 복귀·고정 체크포인트 이동·구역 초기화·재집결을 한 JVM에서 검사한다. 전체 기존 전투 시나리오를 중복 실행하지 않는다. [범위·실패 이력](../docs/combat-path-retry-verification.md).
 
 `--combat-paths`는 체크포인트 참가 범위·전원 회복·V008 저장을 포함한다. 두 번째 JVM에서는 전투 모듈을 비활성화하고 기존 활성화 기록/월드/인벤토리 복원만 검사한다. 전체 전투 재시작 복구와 구분한다. [기존 결과](../docs/checkpoint-recovery-verification.md), [복수 지점·지정 재시작 결과](../docs/multiple-checkpoints-verification.md).
+
+`--sessions --quests --story-batch --combat-players --combat-departures`는 종료 중 오프라인 참가자의 저장·복귀, 도전별 복귀 기록 공존, 같은 JVM의 월드 언로드/재로드를 한 JVM에서 검사한다. 실제 인증 접속이나 프로세스 재시작 복원 시험은 아니다. [검증 범위](../docs/combat-offline-return-verification.md).

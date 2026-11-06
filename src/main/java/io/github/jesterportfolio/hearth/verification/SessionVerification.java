@@ -275,6 +275,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
         case "combat-player-state" -> combatPlayerState();
+        case "combat-departure-state" -> combatDepartureState();
         case "checkpoint-restored" -> openAll().thenCompose(v->mainResult(store.checkpoint(a1,"public_boss_control","survey_marker","public_field_one"))).thenCompose(row->{check(row.isPresent()&&row.get().complete(),"checkpoint_new_JVM_existing_activation_restored");return mainResult(store.checkpoint(a1,"public_boss_control","survey_marker","public_rest_two")).thenCompose(second->{check(second.isPresent()&&second.get().complete(),"checkpoint_new_JVM_second_activation_restored");return verify(a1,30,2);});});
         case "combat-path-state" -> combatPathState();
         case "combat-state" -> combatState();
@@ -796,6 +797,40 @@ public final class SessionVerification implements AutoCloseable {
         }).thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
     private static FieldContent fieldDefinition(java.io.File file){var yaml=YamlConfiguration.loadConfiguration(file);var map=new HashMap<String,Object>(yaml.getValues(false));if(yaml.isConfigurationSection("reset"))map.put("reset",Objects.requireNonNull(yaml.getConfigurationSection("reset")).getValues(false));return FieldContent.parse(map);}
+    private CompletionStage<Void> departureApply(CombatDepartures ledger,CombatBody port){
+        var claim=ledger.claim(port.context(),port.session());long generation=worlds.get(port.context().storyRunId()).generation();
+        var job=new CombatReturn(ledger,claim,port,()->coordinator.saveRunBoundary(port.context().storyRunId()).thenComposeAsync(v->quests.barrier(port.context().storyRunId()),owner),()->{port.cleanup();ledger.complete(claim);},owner,SessionVerification::main,()->coordinator.playable(port.session)&&worlds.get(port.context().storyRunId()).generation()==generation);
+        var work=job.begin();check(work==job.begin()&&!job.barrier().toCompletableFuture().isDone(),"departure_duplicate_reuses_save_move_barrier");
+        return work.thenRun(()->check(job.phase()==CombatReturn.Phase.DONE&&!ledger.pending(port.context())&&port.health==combatContent.exit().healthFraction()&&!port.spectator&&CombatPlayers.samePosition(port.position,combatContent.exit().pose(worlds.get(port.context().storyRunId()).mapping().physicalId())),"departure_confirmed_save_move_health_cleanup_before_ticket_consumption"));
+    }
+    private CompletionStage<Void> combatDepartureState(){
+        var fights=new CombatAttempt[2];var bridges=new CombatPlayers[2];var actors=new CombatBody[3];var ledgers=new CombatDepartures[2];var snapshots=new CombatAttempt.Snapshot[2];UUID physical=worlds.get(a).mapping().physicalId();long[] generation={0};
+        return openAll().thenCompose(v->prepareCombatChunks()).thenRun(()->{
+            for(int i=0;i<2;i++){UUID run=i==0?a:b;var world=worlds.get(run);bridges[i]=new CombatPlayers(run,world.mapping().physicalId(),world.generation(),world::generation,owner,SessionVerification::main);}
+            var pose=new CombatContent.Pose(physical,3,64,3,31,12);actors[0]=new CombatBody(s1,pose);actors[1]=new CombatBody(s2,pose);actors[2]=new CombatBody(s3,new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0));
+            fights[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,pose),new CombatAttempt.Entrant(a2,s2,pose)),bridges[0]);bridges[0].attach(fights[0],List.of(actors[0],actors[1]));
+            fights[1]=combatTrials.start(worlds.get(b),List.of(new CombatAttempt.Entrant(b3,s3,actors[2].position)),bridges[1]);bridges[1].attach(fights[1],List.of(actors[2]));
+            bridges[0].died(actors[1]);bridges[0].leave(actors[1]);
+        }).thenCompose(v->mainResult(coordinator.disconnect(s2))).thenRun(()->{
+            fights[0].victory();snapshots[0]=fights[0].snapshot();ledgers[0]=new CombatDepartures(snapshots[0],physical,combatContent.exit(),Map.of(a1.playerId(),"SURVIVAL",a2.playerId(),"SURVIVAL"));bridges[0].close();combatTrials.releaseEnded(a,snapshots[0].attempt());
+            check(ledgers[0].pending(a2)&&fights[1].snapshot().phase()==CombatAttempt.Phase.ACTIVE,"departure_offline_dead_member_retained_after_actual_mob_release_B_active");
+        }).thenCompose(v->{two=new Controlled();s2=connect(a2,two);return mainResult(s2.ready());}).thenCompose(v->verify(a2,5,0)).thenCompose(v->mainResult(store.readInventory(a2))).thenCompose(before->{
+            actors[1]=new CombatBody(s2,new CombatContent.Pose(physical,3,64,3,0,0));var probeLedger=new CombatDepartures(snapshots[0],physical,combatContent.exit(),Map.of(a1.playerId(),"SURVIVAL",a2.playerId(),"SURVIVAL"));var claim=probeLedger.claim(a2,s2);var failed=new InventorySaveSession(store,a2,before.revision()+1,before::payload,owner,SessionVerification::main,()->true,code->{});failed.markDirty();
+            var probe=new CombatReturn(probeLedger,claim,actors[1],failed::flush,()->{throw new AssertionError("Failed departure cleaned ticket");},owner,SessionVerification::main,()->true);
+            return rejectQuest(probe.begin()).thenCompose(x->mainResult(store.readInventory(a2))).thenAccept(after->{probeLedger.hold(claim);check(after.equals(before)&&failed.dirty()&&probe.phase()==CombatReturn.Phase.HOLD&&actors[1].applications==0&&probeLedger.pending(a2),"departure_real_CAS_failure_keeps_original_dirty_pending_and_blocks_move");probe.close();});
+        }).thenCompose(v->{two.count(4);coordinator.refresh(s2);return departureApply(ledgers[0],actors[1]);}).thenCompose(v->verify(a2,4,1)).thenCompose(v->{
+            var world=worlds.get(a);var nextBridge=new CombatPlayers(a,physical,world.generation(),world::generation,owner,SessionVerification::main);var next=combatTrials.start(world,List.of(new CombatAttempt.Entrant(a2,s2,actors[1].position)),nextBridge);nextBridge.attach(next,List.of(actors[1]));next.victory();var newer=new CombatDepartures(next.snapshot(),physical,combatContent.exit(),Map.of(a2.playerId(),"SURVIVAL"));nextBridge.close();combatTrials.releaseEnded(a,next.snapshot().attempt());
+            return departureApply(newer,actors[1]).thenRun(()->check(newer.empty()&&ledgers[0].pending(a1)&&!ledgers[0].pending(a2)&&!next.snapshot().attempt().equals(snapshots[0].attempt()),"departure_new_attempt_for_ready_player_preserves_older_offline_player_receipt"));
+        }).thenRun(()->{
+            check(ledgers[0].pending(a1)&&snapshots[0].equals(fights[0].snapshot())&&fights[1].snapshot().phase()==CombatAttempt.Phase.ACTIVE,"departure_return_does_not_reopen_battle_change_counters_or_other_run");
+            bridges[1].leave(actors[2]);check(fights[1].snapshot().outcome()==CombatAttempt.Outcome.ALL_OFFLINE,"departure_all_offline_ends_original_battle");snapshots[1]=fights[1].snapshot();ledgers[1]=new CombatDepartures(snapshots[1],worlds.get(b).mapping().physicalId(),combatContent.exit(),Map.of(b3.playerId(),"ADVENTURE"));bridges[1].close();combatTrials.releaseEnded(b,snapshots[1].attempt());
+        }).thenCompose(v->mainResult(coordinator.disconnect(s3))).thenCompose(v->{three=new Controlled();s3=connect(b3,three);return mainResult(s3.ready());}).thenCompose(v->{actors[2]=new CombatBody(s3,new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0));return departureApply(ledgers[1],actors[2]);}).thenRun(()->{
+            check(ledgers[1].empty()&&fights[1].snapshot().equals(snapshots[1]),"departure_all_offline_reconnect_exits_instead_of_rejoining_closed_battle");generation[0]=worlds.get(a).generation();Objects.requireNonNull(Bukkit.getWorld(physical)).removePluginChunkTicket(0,0,plugin);
+        }).thenCompose(v->mainResult(coordinator.disconnect(s1))).thenCompose(v->mainResult(coordinator.disconnect(s2))).thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE)).thenRun(()->check(ledgers[0].pending(a1)&&Bukkit.getWorld(physical)==null&&worlds.get(b).state()==WorldLifecycle.State.ACTIVE,"departure_pending_receipt_survives_world_unload_without_live_world_reference"))
+        .thenCompose(v->{one=new Controlled();s1=connect(a1,one);return mainResult(s1.ready());}).thenCompose(v->{check(worlds.get(a).mapping().physicalId().equals(physical)&&worlds.get(a).generation()>generation[0],"departure_existing_world_reloaded_with_new_generation");actors[0]=new CombatBody(s1,new CombatContent.Pose(physical,3,64,3,0,0));return departureApply(ledgers[0],actors[0]);})
+        .thenRun(()->{check(ledgers[0].empty()&&snapshots[0].equals(fights[0].snapshot()),"departure_all_tickets_consumed_only_after_confirmed_returns");Objects.requireNonNull(Bukkit.getWorld(worlds.get(b).mapping().physicalId())).removePluginChunkTicket(0,0,plugin);})
+        .thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,4,1)).thenCompose(v->verify(b3,7,0));
+    }
     private CompletionStage<Void> combatExitCheck(CombatAttempt[] attempts,CombatPlayers[] bridges,CombatBody[] actors){
         var previous=attempts[0];previous.victory();var oldMob=combatTrials.mob(a).getUniqueId();var applications=actors[0].applications;
         return mainResult(store.readInventory(a1)).thenCompose(before->{
