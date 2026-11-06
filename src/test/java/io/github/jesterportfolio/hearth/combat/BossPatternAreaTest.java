@@ -1,0 +1,18 @@
+package io.github.jesterportfolio.hearth.combat;
+
+import java.util.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static io.github.jesterportfolio.hearth.combat.CombatContent.*;
+
+final class BossPatternAreaTest {
+    final UUID world=UUID.randomUUID();
+    Pose pose(double x,double y,double z,float yaw){return new Pose(world,x,y,z,yaw,0);}
+    static Pattern pattern(Shape shape,Origin origin){return new Pattern("area","공개 공격",1,1000,500,5,2,shape,shape==Shape.LINE?2:0,shape==Shape.CONE?90:0,shape==Shape.SPHERE?5:4,origin);}
+    @Test void originalSphereKeepsThreeDimensionalRadius(){var p=new Pattern("old","기존 공격",1,1000,200,5,2);assertEquals(Shape.SPHERE,p.shape());assertEquals(Origin.LIVE,p.origin());assertTrue(BossPatternArea.contains(p,pose(0,64,0,0),pose(3,68,0,0)));assertFalse(BossPatternArea.contains(p,pose(0,64,0,0),pose(3,68.01,0,0)));}
+    @Test void coneUsesFacingAngleRangeAndExplicitVerticalHeight(){var p=pattern(Shape.CONE,Origin.LOCKED);var origin=pose(0,64,0,0);assertTrue(BossPatternArea.contains(p,origin,pose(0,64,4,0)));assertTrue(BossPatternArea.contains(p,origin,pose(-2,66,2,0)));assertFalse(BossPatternArea.contains(p,origin,pose(4,64,0,0)));assertFalse(BossPatternArea.contains(p,origin,pose(0,66.01,4,0)));assertFalse(BossPatternArea.contains(p,origin,pose(0,64,5.1,0)));assertTrue(BossPatternArea.contains(p,pose(0,64,0,90),pose(-4,64,0,0)));assertFalse(BossPatternArea.contains(p,pose(0,64,0,90),pose(4,64,0,0)));}
+    @Test void lineRejectsSideBackAndVerticalEscapeAndSupportsYawWrap(){var p=pattern(Shape.LINE,Origin.LOCKED);assertTrue(BossPatternArea.contains(p,pose(0,64,0,0),pose(1,66,5,0)));assertFalse(BossPatternArea.contains(p,pose(0,64,0,0),pose(1.01,64,4,0)));assertFalse(BossPatternArea.contains(p,pose(0,64,0,0),pose(0,64,-0.01,0)));assertFalse(BossPatternArea.contains(p,pose(0,64,0,0),pose(0,66.01,4,0)));assertTrue(BossPatternArea.contains(p,pose(0,64,0,270),pose(5,64,0,0)));assertTrue(BossPatternArea.contains(p,pose(0,64,0,360),pose(0,64,5,0)));}
+    @Test void lockedOriginPreservesPositionAndFacingWhileLiveUsesCurrentBoss(){var anchor=new BossPatternArea.Anchor();var old=pose(0,64,0,0);var moved=pose(10,64,0,90);anchor.begin(old);assertEquals(old,anchor.origin(pattern(Shape.CONE,Origin.LOCKED),moved));assertEquals(moved,anchor.origin(pattern(Shape.CONE,Origin.LIVE),moved));assertTrue(BossPatternArea.contains(pattern(Shape.CONE,Origin.LOCKED),anchor.origin(pattern(Shape.CONE,Origin.LOCKED),moved),pose(0,64,4,0)));anchor.clear();assertThrows(IllegalStateException.class,()->anchor.origin(pattern(Shape.LINE,Origin.LOCKED),moved));}
+    @Test void latestTargetPositionAndWorldAreAlwaysReevaluated(){var p=pattern(Shape.LINE,Origin.LOCKED);var origin=pose(0,64,0,0);assertTrue(BossPatternArea.contains(p,origin,pose(0,64,3,0)));assertFalse(BossPatternArea.contains(p,origin,pose(3,64,3,0)));var foreign=new Pose(UUID.randomUUID(),0,64,3,0,0);assertFalse(BossPatternArea.contains(p,origin,foreign));var anchor=new BossPatternArea.Anchor();anchor.begin(origin);assertThrows(IllegalStateException.class,()->anchor.origin(p,foreign));}
+    @Test void previewIsBoundedImmutableAndUsesTheSameGeometry(){for(var shape:Shape.values()){var p=pattern(shape,Origin.LOCKED);var origin=pose(-13,64,-8,73);var points=BossPatternArea.boundary(p,origin);assertFalse(points.isEmpty());assertTrue(points.size()<=24);assertTrue(points.stream().allMatch(point->BossPatternArea.contains(p,origin,point)));assertThrows(UnsupportedOperationException.class,()->points.clear());assertTrue(BossPatternArea.extent(p)>=p.range());}}
+}

@@ -89,3 +89,5 @@
 `--sessions --quests --story-batch --combat-players --combat-departures`는 종료 중 오프라인 참가자의 저장·복귀, 도전별 복귀 기록 공존, 같은 JVM의 월드 언로드/재로드를 한 JVM에서 검사한다. 실제 인증 접속이나 프로세스 재시작 복원 시험은 아니다. [검증 범위](../docs/combat-offline-return-verification.md).
 
 `--sessions --quests --story-batch --combat-players --boss-patterns`는 별도 공개 합성 콘텐츠에서 보스 패턴·일시정지/복귀 보호 타이머와 실제 엔티티 피해 이벤트를 한 JVM에서 검사한다. 별도 시험 몹을 쓰며 실제 인증 플레이어 피격·회피 시험은 아니다. [결과](../docs/boss-patterns-verification.md).
+
+`--sessions --quests --story-batch --combat-players --boss-areas`는 방향 공격·고정/현재 좌표 기준·예고 후 위치/권한 변경을 한 JVM에서 검사한다. 실제 시험 몹의 이동/피해와 참가자별 표시 데이터를 검사하며 클라이언트 입자 렌더링 성공을 뜻하지 않는다. [결과](../docs/boss-areas-verification.md).

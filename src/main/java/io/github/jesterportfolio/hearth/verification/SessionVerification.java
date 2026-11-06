@@ -108,7 +108,7 @@ public final class SessionVerification implements AutoCloseable {
         for (int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)waiting.getBlockAt(x,63,z).setType(Material.STONE,false);
         adapter=new PaperSessionAdapter(plugin,coordinator,owner,codec,new Location(waiting,0.5,64,0.5));
         if(plugin.getConfig().getBoolean("combat-state-verification-enabled")){
-            var filename=plugin.getConfig().getString("combat-content-file","combat-demo.yml");if(!Set.of("combat-demo.yml","combat-path-demo.yml","combat-pattern-demo.yml").contains(filename))throw new IllegalArgumentException("Unsupported combat fixture file");var file=new java.io.File(plugin.getDataFolder(),filename);if(!file.exists())plugin.saveResource(filename,false);
+            var filename=plugin.getConfig().getString("combat-content-file","combat-demo.yml");if(!Set.of("combat-demo.yml","combat-path-demo.yml","combat-pattern-demo.yml","combat-area-demo.yml").contains(filename))throw new IllegalArgumentException("Unsupported combat fixture file");var file=new java.io.File(plugin.getDataFolder(),filename);if(!file.exists())plugin.saveResource(filename,false);
             var yaml=YamlConfiguration.loadConfiguration(file);var definition=combatMap(yaml);
             combatContent=CombatContent.parse(definition);combatTrials=new PaperCombatTrials(plugin,combatContent,owner,plugin.getConfig().getBoolean("combat-player-verification-enabled")?()->System.nanoTime()/1_000_000:combatClock::get);
         }
@@ -276,6 +276,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-conflict" -> effectConflict();
         case "combat-player-state" -> combatPlayerState();
         case "boss-pattern-state" -> bossPatternState();
+        case "boss-area-state" -> bossAreaState();
         case "combat-departure-state" -> combatDepartureState();
         case "checkpoint-restored" -> openAll().thenCompose(v->mainResult(store.checkpoint(a1,"public_boss_control","survey_marker","public_field_one"))).thenCompose(row->{check(row.isPresent()&&row.get().complete(),"checkpoint_new_JVM_existing_activation_restored");return mainResult(store.checkpoint(a1,"public_boss_control","survey_marker","public_rest_two")).thenCompose(second->{check(second.isPresent()&&second.get().complete(),"checkpoint_new_JVM_second_activation_restored");return verify(a1,30,2);});});
         case "combat-path-state" -> combatPathState();
@@ -805,6 +806,43 @@ public final class SessionVerification implements AutoCloseable {
         @org.bukkit.event.EventHandler(priority=org.bukkit.event.EventPriority.MONITOR,ignoreCancelled=true)
         public void observed(org.bukkit.event.entity.EntityDamageByEntityEvent event){if(event.getDamager()==source&&event.getEntity()==target)delivered++;}
     }
+    private org.bukkit.entity.Zombie patternTarget(org.bukkit.World world,double x,double y,double z){
+        return world.spawn(new org.bukkit.Location(world,x,y,z),org.bukkit.entity.Zombie.class,org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM,false,mob->{mob.setAI(false);mob.setGravity(false);mob.setPersistent(false);mob.setRemoveWhenFarAway(false);mob.setCanPickupItems(false);Objects.requireNonNull(mob.getEquipment()).setHelmet(new ItemStack(Material.IRON_HELMET));Objects.requireNonNull(mob.getAttribute(org.bukkit.attribute.Attribute.KNOCKBACK_RESISTANCE)).setBaseValue(1);Objects.requireNonNull(mob.getAttribute(org.bukkit.attribute.Attribute.SPAWN_REINFORCEMENTS)).setBaseValue(0);});
+    }
+    private CompletionStage<Void> bossAreaState(){
+        var fights=new CombatAttempt[2];var targets=new org.bukkit.entity.Zombie[6];var allowed=new HashSet<UUID>();var previews=new HashMap<UUID,List<CombatContent.Pose>>();var events=new PatternDamageProbe();var marks=new int[1];var baseline=new double[6];var count=new long[1];var wa=worlds.get(a).mapping().physicalId();var wb=worlds.get(b).mapping().physicalId();
+        return openAll().thenCompose(v->prepareCombatChunks()).thenRun(()->{
+            var poseA=new CombatContent.Pose(wa,3,64,3,0,0);var poseB=new CombatContent.Pose(wb,3,64,3,0,0);fights[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,poseA),new CombatAttempt.Entrant(a2,s2,poseA)),new CombatActors());fights[1]=combatTrials.start(worlds.get(b),List.of(new CombatAttempt.Entrant(b3,s3,poseB)),new CombatActors());
+            for(UUID run:List.of(a,b)){combatTrials.mob(run).setGravity(false);((org.bukkit.entity.Mob)combatTrials.mob(run)).setAI(false);}
+            var world=Objects.requireNonNull(Bukkit.getWorld(wa));targets[0]=patternTarget(world,3,64,6);targets[1]=patternTarget(world,6,64,3);targets[2]=patternTarget(world,3,68,6);targets[3]=patternTarget(Objects.requireNonNull(Bukkit.getWorld(wb)),3,64,6);targets[4]=patternTarget(world,3,64,7);targets[5]=patternTarget(world,8,64,8);
+            for(int i=0;i<targets.length;i++)if(i!=3)allowed.add(targets[i].getUniqueId());
+            combatTrials.access(new PaperCombatTrials.Access(){
+                public boolean target(UUID run,org.bukkit.entity.Entity target){return run.equals(a)&&allowed.contains(target.getUniqueId());}
+                public boolean hit(UUID run,org.bukkit.entity.Entity source,org.bukkit.entity.Entity target){return target(run,target)&&source==combatTrials.mob(a);}
+                public void notice(UUID run,org.bukkit.entity.LivingEntity target,String text){}
+                public void preview(UUID run,org.bukkit.entity.LivingEntity target,List<CombatContent.Pose> points){check(target(run,target)&&points.size()<=24&&points.stream().allMatch(p->p.world().equals(wa)),"boss_area_preview_has_only_current_authorized_world_data");previews.put(target.getUniqueId(),points);marks[0]++;}
+            });events.source=combatTrials.mob(a);events.target=targets[0];Bukkit.getPluginManager().registerEvents(events,plugin);
+        }).thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().winding())).thenRun(()->{
+            check(events.delivered==0&&previews.containsKey(targets[0].getUniqueId())&&!previews.containsKey(targets[3].getUniqueId()),"boss_area_preview_precedes_damage_without_cross_run_recipient");
+            check(BossPatternArea.contains(combatContent.patterns().getFirst(),new CombatContent.Pose(wa,3,64,3,0,0),new CombatContent.Pose(wa,3,64,6,0,0)),"boss_area_external_cone_definition_matches_preview");
+        }).thenCompose(v->mainResult(targets[4].teleportAsync(new org.bukkit.Location(Objects.requireNonNull(Bukkit.getWorld(wa)),7,64,3)))).thenCompose(ok->{check(Boolean.TRUE.equals(ok),"boss_area_controlled_target_leaves_after_warning");return mainResult(targets[5].teleportAsync(new org.bukkit.Location(Objects.requireNonNull(Bukkit.getWorld(wa)),3.5,64,5.5)));}).thenCompose(ok->{check(Boolean.TRUE.equals(ok),"boss_area_controlled_target_enters_after_warning");return mainResult(combatTrials.mob(a).teleportAsync(new org.bukkit.Location(Objects.requireNonNull(Bukkit.getWorld(wa)),12,64,3,90,0)));})
+        .thenCompose(ok->{check(Boolean.TRUE.equals(ok),"boss_area_boss_moves_and_rotates_after_locked_warning");return until(()->combatTrials.patterns(a).orElseThrow().strikes()>0);}).thenRun(()->{
+            check(targets[0].getHealth()<20&&targets[5].getHealth()<20&&targets[1].getHealth()==20&&targets[2].getHealth()==20&&targets[3].getHealth()==20&&targets[4].getHealth()==20&&events.delivered>0,"boss_area_locked_cone_uses_original_facing_and_latest_target_positions");
+        }).thenCompose(v->mainResult(combatTrials.mob(a).teleportAsync(new org.bukkit.Location(Objects.requireNonNull(Bukkit.getWorld(wa)),3,64,3,0,0)))).thenRun(()->{
+            combatTrials.mob(a).setHealth(Objects.requireNonNull(combatTrials.mob(a).getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH)).getValue()*0.4);
+        }).thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().phase().equals("pressure")&&combatTrials.patterns(a).orElseThrow().winding())).thenRun(()->{for(int i=0;i<targets.length;i++)baseline[i]=targets[i].getHealth();count[0]=combatTrials.patterns(a).orElseThrow().strikes();})
+        .thenCompose(v->mainResult(targets[0].teleportAsync(new org.bukkit.Location(Objects.requireNonNull(Bukkit.getWorld(wa)),11.1,64,6))))
+        .thenCompose(v->mainResult(targets[1].teleportAsync(new org.bukkit.Location(Objects.requireNonNull(Bukkit.getWorld(wa)),10,64,6))))
+        .thenCompose(v->mainResult(targets[4].teleportAsync(new org.bukkit.Location(Objects.requireNonNull(Bukkit.getWorld(wa)),3,64,6))))
+        .thenCompose(v->mainResult(targets[5].teleportAsync(new org.bukkit.Location(Objects.requireNonNull(Bukkit.getWorld(wa)),10.5,64,7))))
+        .thenCompose(v->mainResult(combatTrials.mob(a).teleportAsync(new org.bukkit.Location(Objects.requireNonNull(Bukkit.getWorld(wa)),10,64,3,0,0))))
+        .thenRun(()->allowed.remove(targets[5].getUniqueId())).thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().strikes()>count[0])).thenRun(()->{
+            check(targets[1].getHealth()<baseline[1]&&targets[0].getHealth()==baseline[0]&&targets[2].getHealth()==baseline[2]&&targets[3].getHealth()==baseline[3]&&targets[4].getHealth()==baseline[4]&&targets[5].getHealth()==baseline[5],"boss_area_live_line_checks_current_origin_width_height_and_revoked_permission");
+            check(marks[0]>0&&marks[0]<=12,"boss_area_preview_is_bounded_not_redrawn_each_tick");fights[0].victory();
+        }).thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().state()==BossPatterns.State.CLOSED))
+        .thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0))
+        .whenCompleteAsync((v,error)->{org.bukkit.event.HandlerList.unregisterAll(events);combatTrials.access(combatPlayers);for(var target:targets)if(target!=null)target.remove();for(UUID run:List.of(a,b)){combatTrials.stop(run);var world=Bukkit.getWorld(worlds.get(run).mapping().physicalId());if(world!=null)world.removePluginChunkTicket(0,0,plugin);}},owner);
+    }
     private CompletionStage<Void> bossPatternState(){
         var fights=new CombatAttempt[2];var targets=new org.bukkit.entity.Zombie[4];var events=new PatternDamageProbe();var permitted=new java.util.concurrent.atomic.AtomicBoolean(false);var notices=new ArrayList<String>();var saved=new long[5];var health=new double[2];
         return openAll().thenCompose(v->prepareCombatChunks()).thenRun(()->{
@@ -812,7 +850,7 @@ public final class SessionVerification implements AutoCloseable {
             var poseA=new CombatContent.Pose(worlds.get(a).mapping().physicalId(),3,64,3,0,0);var poseB=new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0);
             fights[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,poseA),new CombatAttempt.Entrant(a2,s2,poseA)),new CombatActors());
             fights[1]=combatTrials.start(worlds.get(b),List.of(new CombatAttempt.Entrant(b3,s3,poseB)),new CombatActors());combatTrials.mob(a).setGravity(false);combatTrials.mob(b).setGravity(false);
-            for(int i=0;i<targets.length;i++){var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(i==3?b:a).mapping().physicalId()));int x=i==2?12:5;int z=i==1?5:3;targets[i]=world.spawn(new org.bukkit.Location(world,x,64,z),org.bukkit.entity.Zombie.class,org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM,false,mob->{mob.setAI(false);mob.setGravity(false);mob.setPersistent(false);mob.setRemoveWhenFarAway(false);mob.setCanPickupItems(false);Objects.requireNonNull(mob.getEquipment()).setHelmet(new ItemStack(Material.IRON_HELMET));Objects.requireNonNull(mob.getAttribute(org.bukkit.attribute.Attribute.KNOCKBACK_RESISTANCE)).setBaseValue(1);Objects.requireNonNull(mob.getAttribute(org.bukkit.attribute.Attribute.SPAWN_REINFORCEMENTS)).setBaseValue(0);});}
+            for(int i=0;i<targets.length;i++){var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(i==3?b:a).mapping().physicalId()));int x=i==2?12:5;int z=i==1?5:3;targets[i]=patternTarget(world,x,64,z);}
             combatTrials.access(new PaperCombatTrials.Access(){
                 public boolean target(UUID run,org.bukkit.entity.Entity target){return permitted.get()&&run.equals(a)&&(target==targets[0]||target==targets[2]);}
                 public boolean hit(UUID run,org.bukkit.entity.Entity source,org.bukkit.entity.Entity target){return target(run,target)&&source==combatTrials.mob(a);}

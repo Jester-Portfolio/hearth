@@ -19,7 +19,8 @@ import io.github.jesterportfolio.hearth.combat.CombatContent.Effect;
 
 /** 실제 몹 AI/타이머를 확인하는 격리 제어 어댑터. 인증 플레이어 상태 적용기는 별도 포트입니다. */
 public final class PaperCombatTrials implements Listener,AutoCloseable {
-    public interface Access {default boolean target(UUID run,Entity target){return false;}default boolean hit(UUID run,Entity source,Entity target){return false;}default void notice(UUID run,LivingEntity target,String text){if(target instanceof Player p)p.sendMessage(net.kyori.adventure.text.Component.text(text));}}
+    public interface Access {default boolean target(UUID run,Entity target){return false;}default boolean hit(UUID run,Entity source,Entity target){return false;}default void notice(UUID run,LivingEntity target,String text){if(target instanceof Player p)p.sendMessage(net.kyori.adventure.text.Component.text(text));}
+        default void preview(UUID run,LivingEntity target,List<Pose> points){if(target instanceof Player p)for(var point:points){if(!point.world().equals(p.getWorld().getUID()))throw new IllegalStateException("BOSS_PREVIEW_WORLD_CHANGED");p.spawnParticle(Particle.FLAME,point.x(),point.y()+0.15,point.z(),1,0,0,0,0);}}}
     private Access access=new Access(){};
     public void access(Access access){main();this.access=Objects.requireNonNull(access);}
     private record Trial(WorldLifecycle world,long generation,Zombie mob,CombatAttempt attempt,boolean path,BossPatterns patterns) {}
@@ -79,10 +80,10 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
             public boolean safe(Pose pose){main();return pose.world().equals(world.getUID())&&actors.safe(pose);}
             public CompletionStage<Boolean> revive(UUID p,Pose pose,double health,List<Effect> effects,BooleanSupplier current){main();return actors.revive(p,pose,health,effects,()->{main();var trial=trials.get(run);return !closed&&trial!=null&&trial.mob()==mob&&lifecycle.generation()==trial.generation()&&Bukkit.getWorld(world.getUID())==world&&current.getAsBoolean();});}
         },owner,PaperCombatTrials::main,clock);
-            BossPatterns patterns=definition.patterns().isEmpty()?null:new BossPatterns(attempt.snapshot(),definition.patterns(),new BossPatterns.Port(){
-                public void phase(Pattern phase){patternNotice(lifecycle,attempt,mob,phase,"보스 패턴: "+phase.title());}
-                public void telegraph(Pattern phase){patternNotice(lifecycle,attempt,mob,phase,"공격 예고: "+phase.title()+" · 범위 밖으로 이동하세요.");}
-                public void strike(Pattern phase){main();for(var target:patternTargets(run,mob,phase)){if(!patternCurrent(lifecycle,attempt,mob))return;if(access.target(run,target)&&access.hit(run,mob,target))target.damage(phase.damage(),mob);}}
+            var anchor=new BossPatternArea.Anchor();BossPatterns patterns=definition.patterns().isEmpty()?null:new BossPatterns(attempt.snapshot(),definition.patterns(),new BossPatterns.Port(){
+                public void phase(Pattern phase){anchor.clear();patternNotice(lifecycle,attempt,mob,phase,patternPose(mob),"보스 패턴: "+phase.title(),false);}
+                public void telegraph(Pattern phase){anchor.begin(patternPose(mob));patternNotice(lifecycle,attempt,mob,phase,anchor.origin(phase,patternPose(mob)),"공격 예고: "+phase.title()+" · 표시 범위 밖으로 이동하세요.",true);}
+                public void strike(Pattern phase){main();var origin=anchor.origin(phase,patternPose(mob));for(var target:patternTargets(run,mob,phase,origin,true)){if(!patternCurrent(lifecycle,attempt,mob))return;if(access.target(run,target)&&access.hit(run,mob,target)&&BossPatternArea.contains(phase,origin,patternPose(target)))target.damage(phase.damage(),mob);}}
             },()->patternCurrent(lifecycle,attempt,mob),PaperCombatTrials::main);
             return new Trial(lifecycle,lifecycle.generation(),mob,attempt,path,patterns);}
         catch(RuntimeException e){mob.remove();throw e;}
@@ -90,11 +91,13 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
     private boolean patternCurrent(WorldLifecycle world,CombatAttempt attempt,LivingEntity mob){
         main();var trial=trials.get(world.mapping().storyRunId());return !closed&&trial!=null&&trial.attempt()==attempt&&trial.mob()==mob&&world.generation()==trial.generation()&&Bukkit.getWorld(world.mapping().physicalId())==mob.getWorld()&&mob.isValid()&&!mob.isDead()&&attempt.snapshot().phase()==CombatAttempt.Phase.ACTIVE;
     }
-    private List<LivingEntity> patternTargets(UUID run,LivingEntity mob,Pattern phase){
-        main();return mob.getNearbyEntities(phase.range(),phase.range(),phase.range()).stream().filter(LivingEntity.class::isInstance).map(LivingEntity.class::cast).filter(e->e!=mob&&e.isValid()&&!e.isDead()&&e.getWorld()==mob.getWorld()&&e.getLocation().distanceSquared(mob.getLocation())<=phase.range()*phase.range()&&access.target(run,e)&&access.hit(run,mob,e)).limit(32).toList();
+    private static Pose patternPose(Entity entity){var p=entity.getLocation();return new Pose(entity.getWorld().getUID(),p.getX(),p.getY(),p.getZ(),p.getYaw(),p.getPitch());}
+    private List<LivingEntity> patternTargets(UUID run,LivingEntity mob,Pattern phase,Pose origin,boolean attack){
+        main();var world=mob.getWorld();if(!world.getUID().equals(origin.world()))throw new IllegalStateException("BOSS_AREA_WRONG_WORLD");double extent=BossPatternArea.extent(phase);var center=new Location(world,origin.x(),origin.y(),origin.z());
+        return world.getNearbyEntities(center,extent,extent,extent).stream().filter(LivingEntity.class::isInstance).map(LivingEntity.class::cast).filter(e->e!=mob&&e.isValid()&&!e.isDead()&&e.getWorld()==world&&(attack||phase.shape()==Shape.SPHERE?BossPatternArea.contains(phase,origin,patternPose(e)):true)&&access.target(run,e)&&access.hit(run,mob,e)).limit(32).toList();
     }
-    private void patternNotice(WorldLifecycle world,CombatAttempt attempt,LivingEntity mob,Pattern phase,String text){
-        main();for(var target:patternTargets(world.mapping().storyRunId(),mob,phase)){if(!patternCurrent(world,attempt,mob))return;access.notice(world.mapping().storyRunId(),target,text);}
+    private void patternNotice(WorldLifecycle world,CombatAttempt attempt,LivingEntity mob,Pattern phase,Pose origin,String text,boolean preview){
+        main();var points=preview?BossPatternArea.boundary(phase,origin):List.<Pose>of();for(var target:patternTargets(world.mapping().storyRunId(),mob,phase,origin,false)){if(!patternCurrent(world,attempt,mob))return;access.notice(world.mapping().storyRunId(),target,text);if(preview&&patternCurrent(world,attempt,mob)&&access.target(world.mapping().storyRunId(),target)&&access.hit(world.mapping().storyRunId(),mob,target))access.preview(world.mapping().storyRunId(),target,points);}
     }
     public Optional<BossPatterns.View> patterns(UUID run){main();var trial=trials.get(run);return trial==null||trial.patterns()==null?Optional.empty():Optional.of(trial.patterns().view());}
     public LivingEntity mob(UUID run){main();return Objects.requireNonNull(trials.get(run)).mob();}

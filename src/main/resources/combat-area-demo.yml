@@ -1,0 +1,38 @@
+# 새 격리 시험 전용. 형태·수치는 운영 콘텐츠나 밸런스 결정이 아닙니다.
+format: 1
+id: public_boss_areas
+title: 공개 방향 공격 시험
+health-per-player: 20
+attack: 2
+return-protection-ms: 3000
+revival:
+  enabled: true
+  condition: public_rescue
+  pool: SHARED
+  limit: 2
+  health-fraction: 0.5
+  location: START
+  effects: []
+patterns:
+  - id: opening
+    title: 공개 부채꼴 공격
+    health-below: 1.0
+    interval-ms: 1600
+    windup-ms: 1500
+    range: 6
+    damage: 2
+    shape: CONE
+    angle: 90
+    height: 4
+    origin: LOCKED
+  - id: pressure
+    title: 공개 직선 공격
+    health-below: 0.5
+    interval-ms: 1600
+    windup-ms: 1500
+    range: 6
+    damage: 3
+    shape: LINE
+    width: 2
+    height: 4
+    origin: LIVE
