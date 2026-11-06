@@ -108,7 +108,7 @@ public final class SessionVerification implements AutoCloseable {
         for (int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)waiting.getBlockAt(x,63,z).setType(Material.STONE,false);
         adapter=new PaperSessionAdapter(plugin,coordinator,owner,codec,new Location(waiting,0.5,64,0.5));
         if(plugin.getConfig().getBoolean("combat-state-verification-enabled")){
-            var filename=plugin.getConfig().getString("combat-content-file","combat-demo.yml");if(!Set.of("combat-demo.yml","combat-path-demo.yml").contains(filename))throw new IllegalArgumentException("Unsupported combat fixture file");var file=new java.io.File(plugin.getDataFolder(),filename);if(!file.exists())plugin.saveResource(filename,false);
+            var filename=plugin.getConfig().getString("combat-content-file","combat-demo.yml");if(!Set.of("combat-demo.yml","combat-path-demo.yml","combat-pattern-demo.yml").contains(filename))throw new IllegalArgumentException("Unsupported combat fixture file");var file=new java.io.File(plugin.getDataFolder(),filename);if(!file.exists())plugin.saveResource(filename,false);
             var yaml=YamlConfiguration.loadConfiguration(file);var definition=combatMap(yaml);
             combatContent=CombatContent.parse(definition);combatTrials=new PaperCombatTrials(plugin,combatContent,owner,plugin.getConfig().getBoolean("combat-player-verification-enabled")?()->System.nanoTime()/1_000_000:combatClock::get);
         }
@@ -275,6 +275,7 @@ public final class SessionVerification implements AutoCloseable {
         case "effect-resume" -> openAll().thenRun(()->{storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);}).thenCompose(v->effectRestored()).thenRun(()->check(blockEffect.inspections()>0&&blockEffect.writes()==0,"effect_new_JVM_inspected_actual_saved_target_no_memory_shortcut"));
         case "effect-conflict" -> effectConflict();
         case "combat-player-state" -> combatPlayerState();
+        case "boss-pattern-state" -> bossPatternState();
         case "combat-departure-state" -> combatDepartureState();
         case "checkpoint-restored" -> openAll().thenCompose(v->mainResult(store.checkpoint(a1,"public_boss_control","survey_marker","public_field_one"))).thenCompose(row->{check(row.isPresent()&&row.get().complete(),"checkpoint_new_JVM_existing_activation_restored");return mainResult(store.checkpoint(a1,"public_boss_control","survey_marker","public_rest_two")).thenCompose(second->{check(second.isPresent()&&second.get().complete(),"checkpoint_new_JVM_second_activation_restored");return verify(a1,30,2);});});
         case "combat-path-state" -> combatPathState();
@@ -797,6 +798,52 @@ public final class SessionVerification implements AutoCloseable {
         }).thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0));
     }
     private static FieldContent fieldDefinition(java.io.File file){var yaml=YamlConfiguration.loadConfiguration(file);var map=new HashMap<String,Object>(yaml.getValues(false));if(yaml.isConfigurationSection("reset"))map.put("reset",Objects.requireNonNull(yaml.getConfigurationSection("reset")).getValues(false));return FieldContent.parse(map);}
+    private static final class PatternDamageProbe implements org.bukkit.event.Listener {
+        org.bukkit.entity.Entity source,target;boolean cancel;int delivered,cancelled;
+        @org.bukkit.event.EventHandler(priority=org.bukkit.event.EventPriority.HIGHEST,ignoreCancelled=true)
+        public void cancel(org.bukkit.event.entity.EntityDamageByEntityEvent event){if(event.getDamager()==source&&event.getEntity()==target&&cancel){cancelled++;event.setCancelled(true);}}
+        @org.bukkit.event.EventHandler(priority=org.bukkit.event.EventPriority.MONITOR,ignoreCancelled=true)
+        public void observed(org.bukkit.event.entity.EntityDamageByEntityEvent event){if(event.getDamager()==source&&event.getEntity()==target)delivered++;}
+    }
+    private CompletionStage<Void> bossPatternState(){
+        var fights=new CombatAttempt[2];var targets=new org.bukkit.entity.Zombie[4];var events=new PatternDamageProbe();var permitted=new java.util.concurrent.atomic.AtomicBoolean(false);var notices=new ArrayList<String>();var saved=new long[5];var health=new double[2];
+        return openAll().thenCompose(v->prepareCombatChunks()).thenRun(()->{
+            check(combatContent.patterns().size()==2,"boss_patterns_external_content_loaded_without_balance_defaults");
+            var poseA=new CombatContent.Pose(worlds.get(a).mapping().physicalId(),3,64,3,0,0);var poseB=new CombatContent.Pose(worlds.get(b).mapping().physicalId(),3,64,3,0,0);
+            fights[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,poseA),new CombatAttempt.Entrant(a2,s2,poseA)),new CombatActors());
+            fights[1]=combatTrials.start(worlds.get(b),List.of(new CombatAttempt.Entrant(b3,s3,poseB)),new CombatActors());combatTrials.mob(a).setGravity(false);combatTrials.mob(b).setGravity(false);
+            for(int i=0;i<targets.length;i++){var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(i==3?b:a).mapping().physicalId()));int x=i==2?12:5;int z=i==1?5:3;targets[i]=world.spawn(new org.bukkit.Location(world,x,64,z),org.bukkit.entity.Zombie.class,org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM,false,mob->{mob.setAI(false);mob.setGravity(false);mob.setPersistent(false);mob.setRemoveWhenFarAway(false);mob.setCanPickupItems(false);Objects.requireNonNull(mob.getEquipment()).setHelmet(new ItemStack(Material.IRON_HELMET));Objects.requireNonNull(mob.getAttribute(org.bukkit.attribute.Attribute.KNOCKBACK_RESISTANCE)).setBaseValue(1);Objects.requireNonNull(mob.getAttribute(org.bukkit.attribute.Attribute.SPAWN_REINFORCEMENTS)).setBaseValue(0);});}
+            combatTrials.access(new PaperCombatTrials.Access(){
+                public boolean target(UUID run,org.bukkit.entity.Entity target){return permitted.get()&&run.equals(a)&&(target==targets[0]||target==targets[2]);}
+                public boolean hit(UUID run,org.bukkit.entity.Entity source,org.bukkit.entity.Entity target){return target(run,target)&&source==combatTrials.mob(a);}
+                public void notice(UUID run,org.bukkit.entity.LivingEntity target,String text){notices.add(run+":"+target.getUniqueId()+":"+text);}
+            });events.source=combatTrials.mob(a);events.target=targets[0];Bukkit.getPluginManager().registerEvents(events,plugin);
+        }).thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().winding())).thenRun(()->{
+            check(events.delivered==0&&targets[0].getHealth()==20,"boss_pattern_windup_precedes_actual_damage");
+        }).thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().strikes()>0)).thenRun(()->{
+            check(events.delivered==0&&targets[0].getHealth()==20,"boss_pattern_current_permission_denial_blocks_damage");permitted.set(true);
+        }).thenCompose(v->until(()->events.delivered>0)).thenRun(()->{
+            check(targets[0].getHealth()<20&&targets[1].getHealth()==20&&targets[2].getHealth()==20&&targets[3].getHealth()==20&&notices.stream().anyMatch(n->n.contains("공격 예고")),"boss_pattern_real_damage_event_respects_radius_permission_and_other_world");
+            health[0]=targets[0].getHealth();events.cancel=true;saved[0]=combatTrials.patterns(a).orElseThrow().strikes();
+        }).thenCompose(v->until(()->events.cancelled>0)).thenRun(()->{
+            check(targets[0].getHealth()==health[0],"boss_pattern_cancelled_real_event_does_not_bypass_protection");events.cancel=false;
+        }).thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().winding())).thenRun(()->{
+            var pose=new CombatContent.Pose(worlds.get(a).mapping().physicalId(),3,64,3,0,0);fights[0].died(a1,s1,pose);fights[0].disconnect(a2,s2,pose);saved[0]=fights[0].snapshot().combatMillis();saved[1]=combatTrials.patterns(a).orElseThrow().strikes();saved[2]=System.nanoTime()+700_000_000L;saved[3]=fights[1].snapshot().combatMillis();health[0]=targets[0].getHealth();
+        }).thenCompose(v->until(()->System.nanoTime()>=saved[2])).thenRun(()->{
+            check(fights[0].snapshot().phase()==CombatAttempt.Phase.PAUSED&&fights[0].snapshot().combatMillis()==saved[0]&&combatTrials.patterns(a).orElseThrow().strikes()==saved[1]&&targets[0].getHealth()==health[0]&&fights[1].snapshot().combatMillis()>saved[3],"boss_pattern_pause_freezes_only_own_windup_and_combat_clock");
+            var fresh=new Object();fights[0].reconnect(a2,fresh);fights[0].returned(a2,fresh);
+        }).thenCompose(v->until(()->fights[0].snapshot().phase()==CombatAttempt.Phase.ACTIVE)).thenRun(()->check(targets[0].getHealth()==health[0]&&combatTrials.patterns(a).orElseThrow().strikes()==saved[1],"boss_pattern_return_protection_elapsed_without_attacking"))
+        .thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().strikes()>saved[1])).thenRun(()->{
+            check(targets[0].getHealth()<health[0],"boss_pattern_resumes_remaining_windup_after_protection");var boss=combatTrials.mob(a);boss.setHealth(Objects.requireNonNull(boss.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH)).getValue()*0.4);
+        }).thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().phase().equals("pressure"))).thenCompose(v->until(()->combatTrials.patterns(a).orElseThrow().winding())).thenRun(()->{
+            health[1]=targets[0].getHealth();saved[4]=events.delivered;fights[0].victory();saved[2]=System.nanoTime()+700_000_000L;
+        }).thenCompose(v->until(()->System.nanoTime()>=saved[2])).thenRun(()->{
+            check(combatTrials.patterns(a).orElseThrow().state()==BossPatterns.State.CLOSED&&events.delivered==saved[4]&&targets[0].getHealth()==health[1],"boss_pattern_terminal_result_cancels_old_attack");
+            var old=combatTrials.mob(a).getUniqueId();combatTrials.releaseEnded(a,fights[0].snapshot().attempt());check(Bukkit.getEntity(old)==null&&combatTrials.patterns(a).isEmpty(),"boss_pattern_release_removes_old_mob_and_pattern_reference");permitted.set(false);
+            var pose=new CombatContent.Pose(worlds.get(a).mapping().physicalId(),3,64,3,0,0);fights[0]=combatTrials.start(worlds.get(a),List.of(new CombatAttempt.Entrant(a1,s1,pose)),new CombatActors());check(combatTrials.patterns(a).orElseThrow().strikes()==0&&combatTrials.mob(a).getHealth()==20,"boss_pattern_new_attempt_has_independent_timer_phase_and_difficulty");
+        }).thenCompose(v->verify(a1,32,0)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(b3,7,0))
+        .whenCompleteAsync((v,error)->{org.bukkit.event.HandlerList.unregisterAll(events);combatTrials.access(combatPlayers);for(var target:targets)if(target!=null)target.remove();for(UUID run:List.of(a,b)){combatTrials.stop(run);var world=Bukkit.getWorld(worlds.get(run).mapping().physicalId());if(world!=null)world.removePluginChunkTicket(0,0,plugin);}},owner);
+    }
     private CompletionStage<Void> departureApply(CombatDepartures ledger,CombatBody port){
         var claim=ledger.claim(port.context(),port.session());long generation=worlds.get(port.context().storyRunId()).generation();
         var job=new CombatReturn(ledger,claim,port,()->coordinator.saveRunBoundary(port.context().storyRunId()).thenComposeAsync(v->quests.barrier(port.context().storyRunId()),owner),()->{port.cleanup();ledger.complete(claim);},owner,SessionVerification::main,()->coordinator.playable(port.session)&&worlds.get(port.context().storyRunId()).generation()==generation);

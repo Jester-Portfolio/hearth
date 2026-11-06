@@ -19,10 +19,10 @@ import io.github.jesterportfolio.hearth.combat.CombatContent.Effect;
 
 /** 실제 몹 AI/타이머를 확인하는 격리 제어 어댑터. 인증 플레이어 상태 적용기는 별도 포트입니다. */
 public final class PaperCombatTrials implements Listener,AutoCloseable {
-    public interface Access {default boolean target(UUID run,Entity target){return false;}default boolean hit(UUID run,Entity source,Entity target){return false;}}
+    public interface Access {default boolean target(UUID run,Entity target){return false;}default boolean hit(UUID run,Entity source,Entity target){return false;}default void notice(UUID run,LivingEntity target,String text){if(target instanceof Player p)p.sendMessage(net.kyori.adventure.text.Component.text(text));}}
     private Access access=new Access(){};
     public void access(Access access){main();this.access=Objects.requireNonNull(access);}
-    private record Trial(WorldLifecycle world,long generation,Zombie mob,CombatAttempt attempt,boolean path) {}
+    private record Trial(WorldLifecycle world,long generation,Zombie mob,CombatAttempt attempt,boolean path,BossPatterns patterns) {}
     private record Replacement(CombatRetryVote.Receipt receipt,CombatAttempt attempt){}
     private final Map<UUID,Replacement> replacements=new HashMap<>();
     private final Map<UUID,Trial> trials=new HashMap<>();private final Set<UUID> retired=new HashSet<>();private final JavaPlugin plugin;private final Executor owner;private final LongSupplier clock;private final CombatContent content;private final BukkitTask timer;private boolean closed;
@@ -46,8 +46,8 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
         if(duplicate!=null&&duplicate.receipt().equals(receipt)){if(old==null||old.attempt()!=duplicate.attempt()||old.generation()!=lifecycle.generation()||!old.attempt().onlineSessions().equals(roster.stream().collect(java.util.stream.Collectors.toMap(e->e.context().playerId(),CombatAttempt.Entrant::session))))throw new IllegalStateException("COMBAT_GATHERING_REPLACEMENT_CONFLICT");return old.attempt();}
         if(closed||retired.contains(run)||old==null||old.world()!=lifecycle||!old.path()||!old.attempt().snapshot().attempt().equals(pathAttempt)||old.generation()!=lifecycle.generation()||!CombatGathering.sourceReady(old.attempt().snapshot())||!old.attempt().onlineSessions().equals(roster.stream().collect(java.util.stream.Collectors.toMap(e->e.context().playerId(),CombatAttempt.Entrant::session))))throw new IllegalStateException("COMBAT_GATHERING_REPLACEMENT_REJECTED");
         var next=create(lifecycle,roster,actors);
-        try{old.attempt().finish(CombatAttempt.Outcome.RETIRED);old.mob().remove();if(old.mob().isValid())throw new IllegalStateException("COMBAT_PATH_MOB_NOT_REMOVED");trials.put(run,next);replacements.put(run,new Replacement(receipt,next.attempt()));return next.attempt();}
-        catch(RuntimeException error){next.attempt().invalidate();next.mob().remove();throw error;}
+        try{old.attempt().finish(CombatAttempt.Outcome.RETIRED);if(old.patterns()!=null)old.patterns().close();old.mob().remove();if(old.mob().isValid())throw new IllegalStateException("COMBAT_PATH_MOB_NOT_REMOVED");trials.put(run,next);replacements.put(run,new Replacement(receipt,next.attempt()));return next.attempt();}
+        catch(RuntimeException error){next.attempt().invalidate();if(next.patterns()!=null)next.patterns().close();next.mob().remove();throw error;}
     }
     public void resumePath(UUID run,UUID attempt){main();var t=trials.get(run);if(t!=null&&t.path()&&t.attempt().snapshot().attempt().equals(attempt)&&t.mob().isValid())t.mob().setAI(t.attempt().snapshot().phase()==CombatAttempt.Phase.ACTIVE);}
     public CombatContent content(){main();return content;}
@@ -64,8 +64,8 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
         }
         if(old.path()!=pathFailure||!run.equals(receipt.run())||!old.attempt().snapshot().attempt().equals(receipt.attempt())||old.attempt().snapshot().phase()!=CombatAttempt.Phase.CLOSED||old.attempt().snapshot().outcome()!=(pathFailure?CombatAttempt.Outcome.REQUIRED_FAILURE:CombatAttempt.Outcome.RETRY)||old.attempt().snapshot().error()!=null||toPath&&content.path()==null||pathFailure&&!toPath)throw new IllegalStateException("COMBAT_REPLACEMENT_NOT_READY");
         var next=create(lifecycle,roster,actors,toPath?content.path().combat():content,toPath);
-        try{old.mob().remove();if(old.mob().isValid())throw new IllegalStateException("COMBAT_OLD_MOB_NOT_REMOVED");trials.put(run,next);replacements.put(run,new Replacement(receipt,next.attempt()));return next.attempt();}
-        catch(RuntimeException error){next.attempt().invalidate();next.mob().remove();throw error;}
+        try{if(old.patterns()!=null)old.patterns().close();old.mob().remove();if(old.mob().isValid())throw new IllegalStateException("COMBAT_OLD_MOB_NOT_REMOVED");trials.put(run,next);replacements.put(run,new Replacement(receipt,next.attempt()));return next.attempt();}
+        catch(RuntimeException error){next.attempt().invalidate();if(next.patterns()!=null)next.patterns().close();next.mob().remove();throw error;}
     }
     private Trial create(WorldLifecycle lifecycle,List<CombatAttempt.Entrant> roster,CombatAttempt.Port actors){return create(lifecycle,roster,actors,content,false);}
     private Trial create(WorldLifecycle lifecycle,List<CombatAttempt.Entrant> roster,CombatAttempt.Port actors,CombatContent definition,boolean path){
@@ -78,11 +78,27 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
             public void camera(UUID p,UUID target){main();actors.camera(p,target);}
             public boolean safe(Pose pose){main();return pose.world().equals(world.getUID())&&actors.safe(pose);}
             public CompletionStage<Boolean> revive(UUID p,Pose pose,double health,List<Effect> effects,BooleanSupplier current){main();return actors.revive(p,pose,health,effects,()->{main();var trial=trials.get(run);return !closed&&trial!=null&&trial.mob()==mob&&lifecycle.generation()==trial.generation()&&Bukkit.getWorld(world.getUID())==world&&current.getAsBoolean();});}
-        },owner,PaperCombatTrials::main,clock);return new Trial(lifecycle,lifecycle.generation(),mob,attempt,path);}
+        },owner,PaperCombatTrials::main,clock);
+            BossPatterns patterns=definition.patterns().isEmpty()?null:new BossPatterns(attempt.snapshot(),definition.patterns(),new BossPatterns.Port(){
+                public void phase(Pattern phase){patternNotice(lifecycle,attempt,mob,phase,"보스 패턴: "+phase.title());}
+                public void telegraph(Pattern phase){patternNotice(lifecycle,attempt,mob,phase,"공격 예고: "+phase.title()+" · 범위 밖으로 이동하세요.");}
+                public void strike(Pattern phase){main();for(var target:patternTargets(run,mob,phase)){if(!patternCurrent(lifecycle,attempt,mob))return;if(access.target(run,target)&&access.hit(run,mob,target))target.damage(phase.damage(),mob);}}
+            },()->patternCurrent(lifecycle,attempt,mob),PaperCombatTrials::main);
+            return new Trial(lifecycle,lifecycle.generation(),mob,attempt,path,patterns);}
         catch(RuntimeException e){mob.remove();throw e;}
     }
+    private boolean patternCurrent(WorldLifecycle world,CombatAttempt attempt,LivingEntity mob){
+        main();var trial=trials.get(world.mapping().storyRunId());return !closed&&trial!=null&&trial.attempt()==attempt&&trial.mob()==mob&&world.generation()==trial.generation()&&Bukkit.getWorld(world.mapping().physicalId())==mob.getWorld()&&mob.isValid()&&!mob.isDead()&&attempt.snapshot().phase()==CombatAttempt.Phase.ACTIVE;
+    }
+    private List<LivingEntity> patternTargets(UUID run,LivingEntity mob,Pattern phase){
+        main();return mob.getNearbyEntities(phase.range(),phase.range(),phase.range()).stream().filter(LivingEntity.class::isInstance).map(LivingEntity.class::cast).filter(e->e!=mob&&e.isValid()&&!e.isDead()&&e.getWorld()==mob.getWorld()&&e.getLocation().distanceSquared(mob.getLocation())<=phase.range()*phase.range()&&access.target(run,e)&&access.hit(run,mob,e)).limit(32).toList();
+    }
+    private void patternNotice(WorldLifecycle world,CombatAttempt attempt,LivingEntity mob,Pattern phase,String text){
+        main();for(var target:patternTargets(world.mapping().storyRunId(),mob,phase)){if(!patternCurrent(world,attempt,mob))return;access.notice(world.mapping().storyRunId(),target,text);}
+    }
+    public Optional<BossPatterns.View> patterns(UUID run){main();var trial=trials.get(run);return trial==null||trial.patterns()==null?Optional.empty():Optional.of(trial.patterns().view());}
     public LivingEntity mob(UUID run){main();return Objects.requireNonNull(trials.get(run)).mob();}
-    private void poll(){main();if(closed)return;for(var t:List.copyOf(trials.values()))try{if(t.world().generation()!=t.generation()||Bukkit.getWorld(t.world().mapping().physicalId())==null)t.attempt().invalidate();else t.attempt().poll();}catch(RuntimeException e){t.attempt().invalidate();plugin.getLogger().warning("HEARTH_COMBAT_HOLD "+e.getClass().getSimpleName());}}
+    private void poll(){main();if(closed)return;for(var t:List.copyOf(trials.values()))try{if(t.world().generation()!=t.generation()||Bukkit.getWorld(t.world().mapping().physicalId())==null)t.attempt().invalidate();else t.attempt().poll();if(t.patterns()!=null)t.patterns().poll(t.attempt().snapshot(),t.mob().isDead()?0:t.mob().getHealth()/Objects.requireNonNull(t.mob().getAttribute(Attribute.MAX_HEALTH)).getValue());}catch(RuntimeException e){t.attempt().invalidate();if(t.patterns()!=null)t.patterns().close();plugin.getLogger().warning("HEARTH_COMBAT_HOLD "+e.getClass().getSimpleName());}}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void target(EntityTargetLivingEntityEvent e){for(var entry:trials.entrySet())if(entry.getValue().mob()==e.getEntity()&&e.getTarget()!=null&&!access.target(entry.getKey(),e.getTarget()))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void damage(EntityDamageEvent e){for(var entry:trials.entrySet())if(entry.getValue().mob()==e.getEntity()&&(!(e instanceof EntityDamageByEntityEvent hit)||!access.hit(entry.getKey(),hit.getDamager(),e.getEntity())))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void attack(EntityDamageByEntityEvent e){for(var entry:trials.entrySet())if(entry.getValue().mob()==e.getDamager()&&!access.hit(entry.getKey(),e.getDamager(),e.getEntity()))e.setCancelled(true);}
@@ -92,9 +108,9 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
     /** 같은 JVM의 정상 종료 도전만 정리합니다. 언로드로 퇴역한 진행은 다시 열지 않습니다. */
     public void releaseEnded(UUID run,UUID attempt){main();var t=trials.get(run);
         if(closed||retired.contains(run)||t==null||!t.attempt().snapshot().attempt().equals(attempt)||!CombatReturn.ended(t.attempt().snapshot())||t.world().generation()!=t.generation())throw new IllegalStateException("COMBAT_RELEASE_NOT_READY");
-        t.mob().remove();if(t.mob().isValid())throw new IllegalStateException("COMBAT_RELEASE_MOB_HOLD");
+        if(t.patterns()!=null)t.patterns().close();t.mob().remove();if(t.mob().isValid())throw new IllegalStateException("COMBAT_RELEASE_MOB_HOLD");
         trials.remove(run,t);replacements.remove(run);
     }
-    public void stop(UUID run){main();var t=trials.remove(run);replacements.remove(run);retired.add(run);if(t!=null){if(t.attempt().snapshot().phase()!=CombatAttempt.Phase.CLOSED)t.attempt().finish(CombatAttempt.Outcome.RETIRED);t.mob().remove();}}
+    public void stop(UUID run){main();var t=trials.remove(run);replacements.remove(run);retired.add(run);if(t!=null){if(t.patterns()!=null)t.patterns().close();if(t.attempt().snapshot().phase()!=CombatAttempt.Phase.CLOSED)t.attempt().finish(CombatAttempt.Outcome.RETIRED);t.mob().remove();}}
     @Override public void close(){main();if(closed)return;closed=true;timer.cancel();HandlerList.unregisterAll(this);for(UUID run:List.copyOf(trials.keySet()))stop(run);}
 }

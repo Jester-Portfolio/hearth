@@ -1,0 +1,30 @@
+# 새 격리 개발 실행 전용. 수치·구간은 운영 밸런스로 확정하지 않습니다.
+format: 1
+id: public_boss_patterns
+title: 공개 보스 패턴 시험
+health-per-player: 20
+attack: 2
+return-protection-ms: 3000
+revival:
+  enabled: true
+  condition: public_rescue
+  pool: SHARED
+  limit: 2
+  health-fraction: 0.5
+  location: START
+  effects: []
+patterns:
+  - id: opening
+    title: 공개 근접 범위 공격
+    health-below: 1.0
+    interval-ms: 1200
+    windup-ms: 300
+    range: 4
+    damage: 2
+  - id: pressure
+    title: 공개 집중 범위 공격
+    health-below: 0.5
+    interval-ms: 900
+    windup-ms: 300
+    range: 5
+    damage: 3
