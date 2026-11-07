@@ -32,6 +32,10 @@ public final class EconomyTrade {
         },owner);
     }
     public EconomyTrade(EconomyStore store,PaperInventoryCodec codec,Executor owner){this.store=store;this.codec=codec;this.owner=owner;var materials=new HashSet<Material>();for(var good:store.content().goods().values())if(Material.matchMaterial(good.material())==null||!materials.add(Material.matchMaterial(good.material())))throw new IllegalArgumentException("ECON_MATERIAL_OR_ALIAS");}
+    public EconomyQuote.Capacity capacity(InventoryPayload payload,String good){
+        main();var definition=Objects.requireNonNull(store.content().goods().get(good));var plain=new ItemStack(Objects.requireNonNull(Material.matchMaterial(definition.material())));int space=0,items=0;var slots=codec.decode(payload);
+        for(int i=0;i<36;i++){var item=slots[i];if(item==null||item.isEmpty())space+=plain.getMaxStackSize();else if(item.isSimilar(plain)){items+=item.getAmount();space+=Math.max(0,item.getMaxStackSize()-item.getAmount());}}return new EconomyQuote.Capacity(space,items);
+    }
     public InventoryPayload change(InventoryPayload before,String good,int quantity,boolean buy){
         if(!Bukkit.isPrimaryThread())throw new IllegalStateException("ECON_ITEMS_MAIN_THREAD");if(quantity<1||quantity>4096)throw new IllegalArgumentException("ECON_QUANTITY");var definition=Objects.requireNonNull(store.content().goods().get(good));var item=new ItemStack(Objects.requireNonNull(Material.matchMaterial(definition.material())));var slots=codec.decode(before);int remaining=quantity;
         if(buy){for(int i=0;i<36&&remaining>0;i++)if(slots[i]!=null&&slots[i].isSimilar(item)){int add=Math.min(remaining,Math.max(0,slots[i].getMaxStackSize()-slots[i].getAmount()));slots[i].setAmount(slots[i].getAmount()+add);remaining-=add;}for(int i=0;i<36&&remaining>0;i++)if(slots[i]==null||slots[i].isEmpty()){int add=Math.min(remaining,item.getMaxStackSize());slots[i]=item.clone();slots[i].setAmount(add);remaining-=add;}}

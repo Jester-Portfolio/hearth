@@ -126,6 +126,7 @@ def main():
     parser.add_argument('--quest-info', action='store_true', help='한 JVM에서 퀘스트 상세/목록 클릭 데이터와 기존 읽기 경계를 검사합니다')
     parser.add_argument('--quest-list', action='store_true', help='기존 세션/DB 도구로 읽기 전용 개인 목록만 검사합니다')
     parser.add_argument('--quests', action='store_true', help='격리 개인 방문 퀘스트/NPC와 기존 세션을 검증합니다')
+    parser.add_argument('--economy-quote', action='store_true', help='한 JVM에서 거래 수량·확인·결과와 저장 거부 경계 검사')
     parser.add_argument('--economy-merchants', action='store_true', help='한 JVM에서 복수 상인·지역 거래·NPC 재로드 검사')
     parser.add_argument('--economy-report', action='store_true', help='한 JVM에서 공개 시장·운송·사건·생산 정보와 읽기 경계 검사')
     parser.add_argument('--economy-desk', action='store_true', help='한 JVM에서 다품목 상점·거래 기록·명시적 보류 정리 검사')
@@ -208,6 +209,8 @@ def main():
         parser.error("--quest-list는 자동 --sessions --quests 모드에서만 사용합니다")
     if args.quests and not args.sessions:
         parser.error("--quests는 --sessions가 필요합니다")
+    if args.economy_quote and (not args.economy or args.economy_merchants or args.economy_report or args.economy_desk):
+        parser.error('--economy-quote는 --sessions --economy와 단독 검사합니다')
     if args.economy_merchants and (not args.economy or args.economy_report or args.economy_desk):
         parser.error('--economy-merchants는 --sessions --economy와 단독 검사합니다')
     if args.economy_report and (not args.economy or args.economy_desk):
@@ -350,7 +353,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.combatState=true')
         if args.combat_players:
             paper.insert(-3,'-Dhearth.verification.combatPlayers=true')
-        for phase in (['prepare','resume'] if args.combat_paths else ['prepare'] if args.economy_merchants or args.economy_report or args.economy_desk or args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
+        for phase in (['prepare','resume'] if args.combat_paths else ['prepare'] if args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
             if phase=='resume' and args.combat_paths:
                 config=plugins/'Hearth/config.yml'
@@ -378,7 +381,7 @@ motd=Hearth isolated S4-11 verification
                         monitor.manual_session(name)
                     else:
                         if args.economy:
-                            monitor.action(name,'economy-merchants' if args.economy_merchants else 'economy-report' if args.economy_report else 'economy-desk' if args.economy_desk else 'economy-start')
+                            monitor.action(name,'economy-quote' if args.economy_quote else 'economy-merchants' if args.economy_merchants else 'economy-report' if args.economy_report else 'economy-desk' if args.economy_desk else 'economy-start')
                         elif args.combat_players:
                             monitor.action(name,'boss-area-state' if args.boss_areas else 'boss-pattern-state' if args.boss_patterns else 'combat-departure-state' if args.combat_departures else 'combat-path-state' if args.combat_paths else 'combat-player-state')
                         elif args.combat_state:
@@ -576,11 +579,11 @@ motd=Hearth isolated S4-11 verification
             outcome='FAIL'
         result=dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, workspace=str(root),
                     duration_seconds=round(time.monotonic()-monitor.started,3), limits=dict(total_seconds=600,work_seconds=550,
-                    paper_starts_max=1 if args.economy_merchants or args.economy_report or args.economy_desk or args.npc_pages or args.phone_dialog or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
+                    paper_starts_max=1 if args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.npc_pages or args.phone_dialog or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

@@ -187,6 +187,53 @@ public final class EconomyVerification implements AutoCloseable {
             .thenCompose(v->on(economy.store.account(a.context))).thenAccept(account->check(account.balance()==100000&&account.inventory().revision()==0&&account.inventory().payload().equals(items(8)),"report_owner_account_inventory_unchanged"));
     }
     private int quantity(InventoryPayload payload,Material material){return Arrays.stream(codec.decode(payload)).filter(Objects::nonNull).filter(item->item.getType()==material).mapToInt(ItemStack::getAmount).sum();}
+    public CompletionStage<Void> runQuote(){
+        return on(economy.store.migrate()).thenCompose(v->on(economy.store.createRealm(PaperEconomy.REALM,System.currentTimeMillis())))
+            .thenCompose(v->on(economy.store.createRealm(PaperEconomy.OTHER,System.currentTimeMillis()))).thenCompose(v->{
+                var jobs=new ArrayList<CompletionStage<?>>();for(int i=1;i<=2;i++){var a=new Actor(i);actors.add(a);jobs.add(economy.store.createAccount(a.context,100000,items(8)));}
+                jobs.add(economy.store.createAccount(economy.store.context(PaperEconomy.OTHER,actors.getFirst().context.playerId()),1234,items(3)));return all(jobs);
+            }).thenCompose(v->openMerchantActors()).thenCompose(v->quoteViews()).thenCompose(v->quoteTransactions())
+            .thenCompose(v->deskRecovery(actors.get(1),EconomyStore.Probe.ROLLBACK))
+            .thenCompose(v->on(economy.store.account(economy.store.context(PaperEconomy.OTHER,actors.getFirst().context.playerId())))).thenAccept(row->check(row.balance()==1234&&count(row.inventory().payload())==3,"quote_other_realm_preserved"))
+            .thenCompose(v->cycle());
+    }
+    private CompletionStage<Void> quoteViews(){
+        var a=actors.getFirst();var before=a.value;
+        var ordinary=economy.trades.capacity(before,"iron_ingot");check(ordinary.sell()==8&&ordinary.buy()==36*64-8,"quote_storage_capacity_ignores_equipment");
+        var slots=codec.decode(before);slots[1]=new ItemStack(Material.IRON_INGOT,3);slots[1].editMeta(meta->meta.displayName(net.kyori.adventure.text.Component.text("시험 이름")));
+        check(economy.trades.capacity(codec.encode(slots),"iron_ingot").sell()==8,"quote_named_items_not_sellable");
+        var full=new ItemStack[41];for(int i=0;i<36;i++)full[i]=new ItemStack(Material.DIRT,64);
+        check(economy.trades.capacity(codec.encode(full),"iron_ingot").buy()==0,"quote_full_inventory_has_no_capacity");
+        return on(economy.store.offer(a.context,KEY)).thenCompose(offer->{
+            var product=economy.previewQuantity("capital_trader",a.session,offer,13,a.value);check(product.getItem(4).getType()==Material.IRON_INGOT&&product.getItem(10).getType()==Material.LIME_DYE&&product.getItem(28).getType()==Material.GRAY_DYE,"quote_quantity_native_screen_buy_and_insufficient_sell");
+            var confirm=economy.previewConfirmation("capital_trader",a.session,offer,13,true,a.value);check(confirm.getItem(13)!=null&&confirm.getItem(31).getType()==Material.LIME_DYE,"quote_confirmation_native_inventory");
+            var impossible=economy.previewConfirmation("capital_trader",a.session,offer,13,true,codec.encode(full));check(impossible.getItem(31).getType()==Material.BARRIER,"quote_confirmation_full_inventory_disabled");
+            var poor=new EconomyStore.Offer(KEY,offer.market(),0);check(economy.previewConfirmation("capital_trader",a.session,poor,1,true,a.value).getItem(31).getType()==Material.BARRIER,"quote_confirmation_poor_disabled");
+            check(a.value.equals(before)&&!a.session.save().dirty()&&a.session.save().revision()==0,"quote_render_no_inventory_mutation");
+            return on(economy.store.account(a.context)).thenAccept(row->check(row.inventory().revision()==0&&row.balance()==100000&&row.inventory().payload().equals(before),"quote_views_no_DB_write"));
+        }).thenCompose(v->{int tick=Bukkit.getCurrentTick();int[] applied={0};boolean[] valid={true};
+            economy.deferReportView(()->valid[0],()->applied[0]++);valid[0]=false;
+            economy.deferReportView(()->true,()->{check(Bukkit.getCurrentTick()>tick,"quote_local_screen_change_next_tick");applied[0]+=2;});
+            return waitUntil(()->Bukkit.getCurrentTick()>=tick+2).thenRun(()->check(applied[0]==2,"quote_stale_local_screen_change_rejected"));
+        });
+    }
+    private CompletionStage<Void> quoteTransactions(){
+        var a=actors.getFirst();long[] cost={0};EconomyStore.Offer[] stale=new EconomyStore.Offer[1];
+        return on(economy.store.offer(a.context,KEY)).thenCompose(offer->{
+            stale[0]=offer;cost[0]=EconomyQuote.view(economy.store.content(),offer,economy.trades.capacity(a.value,"iron_ingot"),13,true).total();var id=UUID.randomUUID();
+            var first=economy.trades.execute(economy.sessions,a.session,offer,13,true,id,economy.fence(a.session)::get,EconomyStore.Probe.NONE);
+            var second=rejected(economy.trades.execute(economy.sessions,a.session,offer,13,true,id,economy.fence(a.session)::get,EconomyStore.Probe.NONE),null);
+            return on(first).thenCompose(receipt->{check(receipt.total()==cost[0]&&receipt.account().balance()==100000-cost[0]&&count(a.value)==21&&a.session.save().revision()==1,"quote_confirm_exact_total_quantity_revision");
+                var result=economy.previewResult("capital_trader",a.session,"iron_ingot",13,true,receipt);check(result.getItem(13).getType()==Material.EMERALD&&result.getItem(13).getItemMeta().lore().contains(net.kyori.adventure.text.Component.text("실제 총액: "+receipt.total())),"quote_result_uses_committed_receipt");return second;
+            });
+        }).thenCompose(v->rejected(economy.trades.execute(economy.sessions,a.session,stale[0],1,true,UUID.randomUUID(),economy.fence(a.session)::get,EconomyStore.Probe.NONE),"ECON_QUOTE_CHANGED"))
+            .thenRun(()->check(a.session.state()==PlayerSessions.State.ACTIVE&&a.session.save().revision()==1&&count(a.value)==21,"quote_changed_rejected_without_HOLD_or_items"))
+            .thenCompose(v->on(economy.store.offer(a.context,KEY))).thenCompose(offer->{long expected=EconomyQuote.view(economy.store.content(),offer,economy.trades.capacity(a.value,"iron_ingot"),5,false).total();
+                return economy.trades.execute(economy.sessions,a.session,offer,5,false,UUID.randomUUID(),economy.fence(a.session)::get,EconomyStore.Probe.NONE).thenAccept(receipt->{check(receipt.total()==expected&&receipt.account().balance()==100000-cost[0]+expected&&count(a.value)==16&&a.session.save().revision()==2,"quote_sell_confirm_exact_balance_quantity");var after=codec.decode(a.value);var original=codec.decode(items(8));check(after[36].equals(original[36])&&after[40].equals(original[40]),"quote_equipment_offhand_preserved");});
+            }).thenCompose(v->on(economy.store.history(a.context,Long.MAX_VALUE,20))).thenAccept(rows->check(rows.size()==2&&rows.get(0).quantity()==5&&rows.get(1).quantity()==13,"quote_duplicate_and_stale_no_receipt"))
+            .thenCompose(v->on(economy.store.snapshot(PaperEconomy.REALM))).thenAccept(state->check(state.markets().get(KEY).stock()==92,"quote_stock_conserved"))
+            .thenRun(()->{check(PaperEconomy.tradeFailure(new StorageFailure("economy","ECON_QUOTE_CHANGED")).contains("시세"),"quote_known_refusal_clear_guidance");check(PaperEconomy.tradeFailure(new StorageFailure("economy","COMMIT_UNKNOWN")).contains("보류"),"quote_unknown_is_not_success");});
+    }
     public CompletionStage<Void> runMerchants(){
         return on(economy.store.migrate()).thenCompose(v->on(economy.store.createRealm(PaperEconomy.REALM,System.currentTimeMillis())))
             .thenCompose(v->on(economy.store.createRealm(PaperEconomy.OTHER,System.currentTimeMillis()))).thenCompose(v->{

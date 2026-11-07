@@ -99,3 +99,5 @@
 시장 정보 연결은 `--sessions --economy --economy-report` 단독 한 JVM 경로로 검사한다. 기존 두 JVM 전체 검사를 반복하지 않고 공개 범위·조회 불변·경제 Tick 동시 조회·실제 운송/사건·화면 객체·다음 틱 전환을 함께 확인한다. [범위와 결과](../docs/economy-report-verification.md)를 따른다.
 
 복수 지역 상인 변경은 `--sessions --economy --economy-merchants` 단독 한 JVM 경로다. 두 NPC·지역별 화면/거래/제련·이전 NPC 선택 거부·월드 재로드 후 중복/원본 보존을 함께 검사한다. 기존 두 JVM/90일 전체 검사는 반복하지 않는다. [실제 범위](../docs/economy-merchants-verification.md)를 따른다.
+
+수량/확인/결과 변경은 `--sessions --economy --economy-quote` 단독 한 JVM 경로로 검사한다. 임의 수량과 네이티브 화면 객체·조회 불변·거래 재검증/중복 거부·DB 롤백/HOLD 보존을 함께 확인한다. [실제 범위](../docs/economy-quote-verification.md)를 따른다.

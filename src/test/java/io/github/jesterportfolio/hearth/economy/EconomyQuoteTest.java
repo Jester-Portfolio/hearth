@@ -1,0 +1,22 @@
+package io.github.jesterportfolio.hearth.economy;
+
+import java.util.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class EconomyQuoteTest {
+    private final EconomyContent content=content();
+    private static EconomyContent content(){try(var r=new java.io.InputStreamReader(Objects.requireNonNull(EconomyQuoteTest.class.getResourceAsStream("/economy-demo.properties")),java.nio.charset.StandardCharsets.UTF_8)){var p=new Properties();p.load(r);return EconomyContent.parse(p);}catch(Exception e){throw new AssertionError(e);}}
+    private EconomyStore.Offer offer(long stock,long balance){return new EconomyStore.Offer(new EconomyContent.Key("capital","iron_ingot"),new EconomyEngine.Market(stock,100,7),balance);}
+    private final EconomyQuote.Capacity capacity=new EconomyQuote.Capacity(2304,80);
+    @Test void arbitraryQuantityUsesExistingPriceAlgorithm(){for(int q:new int[]{1,7,13,65,100})for(boolean buy:List.of(true,false)){var offer=offer(200,100000);var view=EconomyQuote.view(content,offer,capacity,q,buy);assertEquals(EconomyEngine.quote(content,"iron_ingot",offer.market(),q,buy),view.total());assertEquals(q,view.quantity());assertEquals(buy,view.buy());}}
+    @Test void quoteProjectsOnlyValidBalance(){var offer=offer(200,100000);for(boolean buy:List.of(true,false)){var view=EconomyQuote.view(content,offer,capacity,13,buy);assertTrue(view.available());assertEquals(Long.toString(100000+(buy?-view.total():view.total())),view.projectedBalance());}}
+    @Test void stockIsNotReplacedByZeroCost(){var view=EconomyQuote.view(content,offer(0,100000),capacity,1,true);assertNull(view.total());assertEquals(EconomyQuote.Reason.STOCK,view.reason());assertEquals("거래 불가",view.projectedBalance());}
+    @Test void insufficientFundsSpaceAndItemsAreDistinct(){assertEquals(EconomyQuote.Reason.FUNDS,EconomyQuote.view(content,offer(200,0),capacity,1,true).reason());assertEquals(EconomyQuote.Reason.SPACE,EconomyQuote.view(content,offer(200,100000),new EconomyQuote.Capacity(0,8),1,true).reason());assertEquals(EconomyQuote.Reason.ITEMS,EconomyQuote.view(content,offer(200,100000),capacity,81,false).reason());}
+    @Test void maxQuantityHonorsWalletAndMarketWithoutLinearScan(){var offer=offer(100,375);int max=EconomyQuote.maximum(content,offer,capacity,true);assertTrue(max>0&&max<100);assertTrue(EconomyQuote.view(content,offer,capacity,max,true).available());assertFalse(EconomyQuote.view(content,offer,capacity,max+1,true).available());}
+    @Test void maxQuantityRespectsStorageAndPlainSaleCount(){assertEquals(3,EconomyQuote.maximum(content,offer(100,100000),new EconomyQuote.Capacity(3,7),true));assertEquals(7,EconomyQuote.maximum(content,offer(100,100000),new EconomyQuote.Capacity(3,7),false));assertEquals(0,EconomyQuote.maximum(content,offer(100,0),capacity,true));assertEquals(0,EconomyQuote.maximum(content,offer(0,100000),capacity,true));}
+    @Test void maximumAgreesWithExhaustiveSmallReference(){for(long balance:new long[]{0,100,999,10000})for(int stock:new int[]{0,2,30}){var offer=offer(stock,balance);int expected=0;for(int q=1;q<=30;q++)if(EconomyQuote.view(content,offer,new EconomyQuote.Capacity(30,30),q,true).available())expected=q;assertEquals(expected,EconomyQuote.maximum(content,offer,new EconomyQuote.Capacity(30,30),true));}}
+    @Test void quantityBoundsAreTechnicalExistingLimits(){assertEquals(1,EconomyQuote.adjust(1,-64));assertEquals(4096,EconomyQuote.adjust(4090,64));assertEquals(14,EconomyQuote.adjust(13,1));assertEquals(4096,EconomyQuote.adjust(1,Integer.MAX_VALUE));for(int q:new int[]{0,-1,4097}){assertThrows(IllegalArgumentException.class,()->EconomyQuote.view(content,offer(100,100000),capacity,q,true));assertThrows(IllegalArgumentException.class,()->EconomyQuote.adjust(q,1));}assertThrows(IllegalArgumentException.class,()->new EconomyQuote.Capacity(-1,0));}
+    @Test void sellCannotOverflowMarketOrWallet(){assertEquals(EconomyQuote.Reason.STOCK,EconomyQuote.view(content,offer(EconomyEngine.MAX_STOCK,100000),capacity,1,false).reason());assertFalse(EconomyQuote.view(content,offer(100,Long.MAX_VALUE),capacity,1,false).available());}
+    @Test void quotesDoNotMutateSharedOfferAndCapacity(){var offer=offer(200,100000);var before=offer.toString();for(int i=0;i<20;i++){EconomyQuote.view(content,offer,capacity,i+1,true);EconomyQuote.maximum(content,offer,capacity,true);}assertEquals(before,offer.toString());assertEquals(7,offer.market().revision());assertEquals(2304,capacity.buy());}
+}

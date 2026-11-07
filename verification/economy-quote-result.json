@@ -1,0 +1,125 @@
+{
+  "outcome": "PASS",
+  "base_commit": "75cb7d416ef5d92fa0dbfb32c2c6c2ff818c99f0",
+  "scope": "격리 경제 수량 선택·견적 확인·영수증 결과 안내",
+  "unit_tests": [
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyDeskTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "time": "0.058"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyMerchantsTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "time": "0.033"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyQuoteTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "time": "0.036"
+    }
+  ],
+  "unit_test_count": 26,
+  "runtime_workspace": "/tmp/hearth-s4-11.HOQqLex9",
+  "runtime_checks": [
+    "economy_quote_storage_capacity_ignores_equipment",
+    "economy_quote_named_items_not_sellable",
+    "economy_quote_full_inventory_has_no_capacity",
+    "economy_quote_quantity_native_screen_buy_and_insufficient_sell",
+    "economy_quote_confirmation_native_inventory",
+    "economy_quote_confirmation_full_inventory_disabled",
+    "economy_quote_confirmation_poor_disabled",
+    "economy_quote_render_no_inventory_mutation",
+    "economy_quote_views_no_DB_write",
+    "economy_quote_local_screen_change_next_tick",
+    "economy_quote_stale_local_screen_change_rejected",
+    "economy_reject_SQL_rollback",
+    "economy_quote_confirm_exact_total_quantity_revision",
+    "economy_quote_result_uses_committed_receipt",
+    "economy_reject_ECON_QUOTE_CHANGED",
+    "economy_quote_changed_rejected_without_HOLD_or_items",
+    "economy_quote_sell_confirm_exact_balance_quantity",
+    "economy_quote_equipment_offhand_preserved",
+    "economy_quote_duplicate_and_stale_no_receipt",
+    "economy_quote_stock_conserved",
+    "economy_quote_known_refusal_clear_guidance",
+    "economy_quote_unknown_is_not_success",
+    "economy_reject_23514",
+    "economy_request_retained_HOLD_23514",
+    "economy_reject_ECON_NO_SETTLED_REQUEST",
+    "economy_inspection_NOT_COMMITTED_RELOAD",
+    "economy_reject_ECON_RECOVERY_REVIEW_REQUIRED",
+    "economy_reject_RECOVERY_NOT_SETTLED",
+    "economy_reject_ECON_RECOVERY_REVIEW_REQUIRED",
+    "economy_explicit_retirement_preserves_failure_evidence_23514",
+    "economy_reject_ECON_NO_SETTLED_REQUEST",
+    "economy_fresh_session_DB_reload_no_duplicate_23514",
+    "economy_recovery_never_reexecutes_trade_23514",
+    "economy_quote_other_realm_preserved",
+    "economy_world_saved_regions_unloaded"
+  ],
+  "runtime_check_count": 35,
+  "duration_seconds": 33.46,
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 1,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "processes": {
+    "database": {
+      "pid": 4027720,
+      "exit_code": 0,
+      "ready_seconds": null,
+      "duration_seconds": 32.857,
+      "shutdown_seconds": 0.408,
+      "max_sampled_rss_kib": 224524,
+      "observed_cpu_seconds": 2.34,
+      "min_sampled_host_available_kib": 12521648,
+      "sample_count": 540,
+      "checks": [],
+      "timings": [],
+      "states": []
+    },
+    "paper-prepare": {
+      "pid": 4027777,
+      "exit_code": 0,
+      "ready_seconds": 13.136,
+      "duration_seconds": 29.858,
+      "shutdown_seconds": 3.725,
+      "max_sampled_rss_kib": 1011080,
+      "observed_cpu_seconds": 62.71,
+      "min_sampled_host_available_kib": 12521648,
+      "sample_count": 486,
+      "checks": [
+        "world_IO_pool_closed"
+      ],
+      "timings": [],
+      "states": []
+    }
+  },
+  "all_owned_processes_and_ports_closed": true,
+  "source_sha256": "79b49ed9234961164c2086dc15c75000f281e01b87330d8e1eea65a6a9e68d5d",
+  "jar_sha256": "94ccad297f64cf0f485e92881a4353c51a7d5df442d2818248ce367ef2af67a5",
+  "installed_plugin_sha256": "94ccad297f64cf0f485e92881a4353c51a7d5df442d2818248ce367ef2af67a5",
+  "source_matches_runtime": true,
+  "schema_changes": false,
+  "actual_client": "NOT_RUN",
+  "not_executed": [
+    "실제 NPC/GUI 클릭·인벤토리 조작",
+    "새 JVM/DB 프로세스 재시작: 저장 계약 변경 없음",
+    "이번 묶음의 실제 commit 결과 불명 주입: 기존 증거 보존, 안내 분기만 확인",
+    "TPS/MSPT·장기 부하·메모리 누수",
+    "운영 활성화·운영 경제 정책"
+  ]
+}
