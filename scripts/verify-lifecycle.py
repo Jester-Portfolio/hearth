@@ -126,6 +126,7 @@ def main():
     parser.add_argument('--quest-info', action='store_true', help='한 JVM에서 퀘스트 상세/목록 클릭 데이터와 기존 읽기 경계를 검사합니다')
     parser.add_argument('--quest-list', action='store_true', help='기존 세션/DB 도구로 읽기 전용 개인 목록만 검사합니다')
     parser.add_argument('--quests', action='store_true', help='격리 개인 방문 퀘스트/NPC와 기존 세션을 검증합니다')
+    parser.add_argument('--economy', action='store_true', help='경제 전용 월드·거래·두 JVM 복원 검증')
     parser.add_argument('--sessions', action='store_true', help='새 격리 환경에서 최소 세션 어댑터/저장 장벽을 검증합니다')
     parser.add_argument('--manual-finish-on-logout', action='store_true', help='준비된 수동 시험자의 실제 접속 후 연결 종료를 관측하면 정리합니다')
     parser.add_argument('--manual-player', action='store_true', help='인증 클라이언트가 준비된 뒤에만 사용하는 별도 수동 데이터/두 JVM 모드')
@@ -204,6 +205,8 @@ def main():
         parser.error("--quest-list는 자동 --sessions --quests 모드에서만 사용합니다")
     if args.quests and not args.sessions:
         parser.error("--quests는 --sessions가 필요합니다")
+    if args.economy and (not args.sessions or args.quests or args.manual_player or args.player_interactions or args.phone_dialog):
+        parser.error('--economy는 자동 --sessions 단독 경제 모드입니다')
     root = args.workspace.resolve(strict=True)
     assert args.accept_eula and os.getuid()!=0, 'EULA 동의·일반 사용자 실행 필요'
     assert not args.workspace.is_symlink() and root.parent==Path('/tmp') and root.name.startswith('hearth-s4-11.')
@@ -274,6 +277,7 @@ def main():
     if args.sessions:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('session-verification-enabled: true\ninventory-autosave-seconds: 30\n')
+            if args.economy: config.write('economy-verification-enabled: true\n')
     (plugins/'bStats').mkdir(); (plugins/'bStats/config.yml').write_text('enabled: false\n')
     (runtime/'eula.txt').write_text('eula=true\n')
     (runtime/'server.properties').write_text('''server-ip=127.0.0.1
@@ -315,6 +319,8 @@ motd=Hearth isolated S4-11 verification
         if args.sessions:
             paper.insert(-3,'-Dhearth.verification.sessions=true')
             paper.insert(-3,'-Dhearth.verification.players=true')
+        if args.economy:
+            paper.insert(-3,'-Dhearth.verification.economy=true')
         if args.world_effects:
             paper.insert(-3,'-Dhearth.verification.worldEffect=true')
         if args.story_batch:
@@ -362,7 +368,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.combat_players:
+                        if args.economy:
+                            monitor.action(name,'economy-start')
+                        elif args.combat_players:
                             monitor.action(name,'boss-area-state' if args.boss_areas else 'boss-pattern-state' if args.boss_patterns else 'combat-departure-state' if args.combat_departures else 'combat-path-state' if args.combat_paths else 'combat-player-state')
                         elif args.combat_state:
                             monitor.action(name,'combat-state')
@@ -484,6 +492,8 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.economy:
+                        monitor.action(name,'session-resume'); monitor.action(name,'economy-resume')
                     elif args.combat_paths:
                         monitor.action(name,'session-resume'); monitor.action(name,'checkpoint-restored')
                     elif args.branch_progression:
@@ -561,12 +571,12 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],
                     player_actions_verdict='NOT_AUTOMATICALLY_ASSESSED' if args.manual_player else 'NOT_RUN',
-                    not_executed=([] if args.manual_player else ['실제 인증 플레이어/로그인·텔레포트'])+['PostgreSQL 프로세스 재시작','실제 파일시스템 저장 장애·강제 종료 복구','TPS/MSPT·장기 부하·메모리 누수','운영 배포·경제 realm'])
+                    not_executed=([] if args.manual_player else ['실제 인증 플레이어/로그인·텔레포트'])+['PostgreSQL 프로세스 재시작','실제 파일시스템 저장 장애·강제 종료 복구','TPS/MSPT·장기 부하·메모리 누수','운영 배포·운영 경제 정책'])
         (root/'run-result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
         print('S4-11 '+outcome+'; 증거: '+str(root/'run-result.json'),flush=True)
     return 0 if outcome in ['PASS','MANUAL_CLOSED_UNVERIFIED'] else 1

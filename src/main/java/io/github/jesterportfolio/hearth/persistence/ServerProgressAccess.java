@@ -23,7 +23,7 @@ public final class ServerProgressAccess {
         return new Context(this, storyRunId, playerId);
     }
 
-    void requireIssued(Context context) {
+    public void requireIssued(Context context) {
         if (context == null || context.issuer != this) throw new SecurityException("Untrusted progress context");
     }
 }

@@ -39,6 +39,7 @@ public final class SessionVerification implements AutoCloseable {
     private PlayerSessions.Session s1,s2,s3,oldSession,newSession;
     private CompletionStage<Void> oldClosing,barrier;
     private boolean cycle,expectedHold;
+    private EconomyVerification economy;
     private PersonalQuest quests;
     private QuestJournal journal;
     private ExplorationContent explorationContent;
@@ -266,6 +267,7 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "economy-start", "economy-resume" -> {if(economy!=null)throw new IllegalStateException("Economy already initialized");adapter.close();autosave.close();try{economy=new EconomyVerification(plugin,store,owner,codec,phase.equals("economy-resume"));}catch(Exception e){throw new CompletionException(e);}yield economy.run();}
         case "effect-prepare" -> effectPrepare();
         case "effect-db-failure" -> effectDbFailure();
         case "effect-db-recover" -> sharedStory.refresh(a1).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.openVote(a1,s1,()->true)).thenAccept(vote->storyVote=vote);
@@ -2050,7 +2052,7 @@ public final class SessionVerification implements AutoCloseable {
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
         if(combatPlayers!=null)combatPlayers.close();if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
         CompletionStage<Void> other=s3==null ? CompletableFuture.completedFuture(null) : coordinator.disconnect(s3);
-        return mainResult(other).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
+        return (economy==null?CompletableFuture.<Void>completedFuture(null):economy.shutdown()).thenCompose(v->mainResult(other)).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
             if(error!=null && !(expectedHold && "23514".equals(s1.error()) && "MOVE_FAILED".equals(s2.error())
                     && generationProbes.size()==2 && generationProbes.values().stream().allMatch(s->s.state()==PlayerSessions.State.HOLD && "STALE_WORLD".equals(s.error()))
                     && Set.of("23514","MOVE_FAILED","STALE_WORLD").contains(LifecycleFailure.code(error))))throw new CompletionException(error);
@@ -2063,6 +2065,7 @@ public final class SessionVerification implements AutoCloseable {
             adapter.fixture(new PaperSessionAdapter.Link(context,worlds.get(context.storyRunId()),()->destination(context.storyRunId())));
         });
     }
+    public void economyFixture(String name,boolean existing){if(economy==null)throw new IllegalStateException("Economy not ready");economy.economy.fixture(name,existing);}
     public void fixturePlayer(String name,boolean existing){
         main();if(!manual)throw new IllegalStateException("실제 프로필은 별도 수동 시험 환경에서만 준비합니다");
         var player=Bukkit.getWhitelistedPlayers().stream().filter(p->name.equals(p.getName())).findFirst().orElseThrow(()->new IllegalArgumentException("Whitelist profile required"));
@@ -2083,6 +2086,6 @@ public final class SessionVerification implements AutoCloseable {
             .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
     @Override public void close(){
-        io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
+        io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(economy,combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
     }
 }

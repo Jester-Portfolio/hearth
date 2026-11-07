@@ -1,0 +1,10 @@
+CREATE SCHEMA hearth_economy;
+CREATE TABLE hearth_economy.version(version integer PRIMARY KEY CHECK(version=1), checksum text NOT NULL);
+CREATE TABLE hearth_economy.realm(realm_id uuid PRIMARY KEY,content_hash text NOT NULL,tick bigint NOT NULL CHECK(tick>=0),revision bigint NOT NULL CHECK(revision>=0),wall_millis bigint NOT NULL CHECK(wall_millis>=0));
+CREATE TABLE hearth_economy.market(realm_id uuid REFERENCES hearth_economy.realm,region_id text NOT NULL,good_id text NOT NULL,stock bigint NOT NULL CHECK(stock BETWEEN 0 AND 1000000000000),price bigint NOT NULL CHECK(price>0),revision bigint NOT NULL CHECK(revision>=0),PRIMARY KEY(realm_id,region_id,good_id));
+CREATE TABLE hearth_economy.account(realm_id uuid REFERENCES hearth_economy.realm,player_uuid uuid NOT NULL,balance bigint NOT NULL CHECK(balance>=0),payload bytea NOT NULL,inventory_revision bigint NOT NULL CHECK(inventory_revision>=0),PRIMARY KEY(realm_id,player_uuid));
+CREATE TABLE hearth_economy.shipment(realm_id uuid REFERENCES hearth_economy.realm,request_id uuid NOT NULL,route_id text NOT NULL,from_region text NOT NULL,to_region text NOT NULL,good_id text NOT NULL,quantity bigint NOT NULL CHECK(quantity>0),due_tick bigint NOT NULL,arrived boolean NOT NULL DEFAULT false,PRIMARY KEY(realm_id,request_id));
+CREATE INDEX economy_shipment_due ON hearth_economy.shipment(realm_id,due_tick) WHERE NOT arrived;
+CREATE TABLE hearth_economy.event(realm_id uuid REFERENCES hearth_economy.realm,request_id uuid NOT NULL,event_id text NOT NULL,start_tick bigint NOT NULL,end_tick bigint NOT NULL,expired boolean NOT NULL DEFAULT false,PRIMARY KEY(realm_id,request_id));
+CREATE INDEX economy_event_active ON hearth_economy.event(realm_id) WHERE NOT expired;
+CREATE TABLE hearth_economy.trade(realm_id uuid NOT NULL,player_uuid uuid NOT NULL,request_id uuid NOT NULL,fingerprint text NOT NULL,region_id text NOT NULL,good_id text NOT NULL,quantity integer NOT NULL CHECK(quantity>0),buy boolean NOT NULL,total bigint NOT NULL CHECK(total>=0),inventory_revision bigint NOT NULL,PRIMARY KEY(realm_id,request_id),FOREIGN KEY(realm_id,player_uuid) REFERENCES hearth_economy.account);

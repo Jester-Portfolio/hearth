@@ -1,13 +1,13 @@
 # Hearth 프로젝트 현황
 
-마지막 확인: **2026-11-06**. 구현 확인 기준은 현재 main의 코드와 아래 기능별 검증 기록이다. 문서 정리와 게임 시험은 각 기록의 실행 범위로 구분한다. [과거 현황](PROJECT_STATUS-archive-2026-10-27.md)은 이력으로 보존하며 현재 상태는 이 문서를 우선한다.
+마지막 확인: **2026-11-07**. 구현 확인 기준은 현재 main의 코드와 아래 기능별 검증 기록이다. 문서 정리와 게임 시험은 각 기록의 실행 범위로 구분한다. [과거 현황](PROJECT_STATUS-archive-2026-10-27.md)은 이력으로 보존하며 현재 상태는 이 문서를 우선한다.
 
 ## 프로젝트 목표·현재 단계
 
 Hearth는 현대 과학·기술 지식을 마법 없는 중세 세계에서 활용하는 Minecraft RPG 게임 서버다. 싱글·소규모 코옵 스토리 월드와 생산·수급·가격·거래·무역 중심의 별도 경제 월드를 개발한다. **스토리 월드의 로컬 AI 스마트폰 어시스턴트는 필수**이며 경제 월드 AI는 제거 가능한 선택 기능이다. 시험 도구와 기술 검증은 게임 구현을 지원하는 수단이다.
 
 - **S0~S2 완료, S3 설계 완료, S4 핵심 시스템 구현·통합 진행 중.** S5 필수 로컬 AI·S6 플레이 범위/성능·S7 운영 준비 및 경제 E1~E3는 미완료다.
-- 확정 기반: Paper 26.2·Java 25·Gradle·PostgreSQL·단일 모듈형 JAR, 한 Paper의 진행별 독립 월드(B안), WorldGuard 보호. 논리 소유권은 `story_run_id` 및 `story_run_id + player_uuid`이며 스토리/경제 데이터는 분리한다. AI 기술과 경제 프로세스 배치는 미정이다.
+- 확정 기반: Paper 26.2·Java 25·Gradle·PostgreSQL·단일 모듈형 JAR, 한 Paper의 진행별 독립 월드(B안), WorldGuard 보호. 논리 소유권은 `story_run_id` 및 `story_run_id + player_uuid`이며 스토리/경제 데이터는 분리한다. AI 기술과 경제 운영 프로세스 배치는 미정이다. 경제 격리 개발 구조는 [ADR-0015](decisions/0015-economy-engine-and-transaction-boundaries.md)를 따른다.
 - 현재 기능은 격리 개발 모드의 프로토타입이다. 전체 게임 완성·일반 서버 자동 활성화·운영 배포를 뜻하지 않는다. 정책 정본은 [ADR](decisions/README.md), 단계별 완료 조건은 [ROADMAP](ROADMAP.md)이다.
 
 ## 구현·검증 현황
@@ -25,6 +25,7 @@ Hearth는 현대 과학·기술 지식을 마법 없는 중세 세계에서 활�
 | 필드 조우 기반 | 콘텐츠 진입 구역·인원 구간별 소환/고정 속성, 중복·세대/진행 격리, 관리 몹 근접 공격 경계·사망/정리 | [조우 검사](field-encounters-verification.md): 관련 단위/세션/수명주기 회귀 및 격리 Paper 시험 범위 참조 | 실제 이동/공격 미검증. 플레이어 피해는 계속 제한. 실제 보스전/플레이어 사망·관전·부활 연동·영속 조우/재소환은 미구현 |
 | 보스 전투 제어 기반 | 고정 시작 명단·혼합 일시정지/전멸 대기·관전 대상·조건부 부활 예약/횟수·한국어 상태 DTO, 실제 몹 AI 제어 | [전투 제어 검사](combat-state-verification.md): 관련 단위/회귀와 한 JVM 제어 경계 범위 | [Player 적용기·세션 연결](combat-player-verification.md)은 구현했으나 실제 인증 행동은 미검증. 전투 사망의 개인 퀘스트 실패/저장 장벽도 [연결](quest-death-verification.md)했다. 실제 인증 행동·전투 외 피해 제한 유지. [재도전 채팅 투표·기존 도전 종료](combat-retry-verification.md)는 연결했으나 콘텐츠에 명시된 [보스만 재도전의 저장·복귀·생성](combat-restart-verification.md)도 연결했다. [종료 복귀·구역 초기화 경계](combat-return-verification.md)는 제한 범위 구현·자동 검사 완료. [길목 집결/보스 입장](combat-gathering-verification.md)은 제한 범위 구현·자동 검사 완료. [길목 재도전/고정 체크포인트/구역 초기화](combat-path-retry-verification.md)는 제한 범위 구현·자동 검사 완료. [체크포인트 도달/무료 부활/전원 회복](checkpoint-recovery-verification.md)은 개발 모드 구현·두 JVM 자동 검사 완료. [복수 체크포인트·지정 지점 재시작](multiple-checkpoints-verification.md)은 구현·두 JVM 자동 검사 완료. [종료 중 오프라인 참가자 복귀](combat-offline-return-verification.md)는 같은 JVM의 재접속·월드 재로드·도전별 기록 분리까지 구현·자동 검사 완료. [콘텐츠 보스 패턴](boss-patterns-verification.md)은 체력 구간·예고·범위 피해·전용 타이머/종료 정리를 구현·자동 검사 완료. [공격 형태·범위 표시](boss-areas-verification.md)의 부채꼴/직선·예고 좌표 고정·참가자 전용 표시 데이터·공격 직전 회피 판정도 연결했다. 복수 길목 진행·추가 보스 스킬/실전 패턴 콘텐츠·전투/복귀 대기의 프로세스 재시작 복구·전체 인던은 미완료 |
 | 격리 단일 블록 효과 | Issue #1: DB 확정 후 지정 1블록 적용·로드 수렴·충돌 보존. Issue #2: 대상 run 판정과 비대상 B 접근 유지 수정 | [효과 검증](s4-world-effect-verification.md): #1 두 JVM/PG 및 관련31개 PASS; #2 관련21개 단위/회귀 PASS, 저장 계약 불변으로 통합 재실행 생략 | 실제 플레이어 관측·일반 RPG 세계 변화 시스템 전체·운영 적용은 미검증/미구현. A/B 효과 추가를 다음 최우선 목표로 삼지 않음 |
+| 경제 개발 기반 | 지역 생산/실제 소비·제련·지연 운송·사건·EMA/수량별 가격, 경제 전용 계정/41슬롯/CAS 거래, NPC 상점·기존 세션/월드 연결 | [경제 검증](economy-verification.md)의 단위/격리 Paper·PG 실행 결과 참조 | 실제 NPC 클릭·구매/판매·다인 행동·운영 규모는 미검증. 화폐·밸런스·프로세스 배치·정식 계정 생성 및 운영 E1~E3는 미완료 |
 
 실제 인증 한 명의 부분 검증은 [수동 세션 기록](player-session-manual-test.md)의 관측 범위에 한정한다. 나머지 실제 클라이언트 시험은 사용자 별도 요청 전 보류하며 클라이언트·TTY 조작을 요청하지 않는다.
 

@@ -59,7 +59,7 @@ public final class InventorySaveSession {
             apply.accept(saved);revision=saved.revision();savedVersion=memoryVersion;
         },owner).whenCompleteAsync((v,error)->{
             transaction=null;if(error==null){if(!closing)frozen=false;result.complete(null);}
-            else{String code=code(error);if(Set.of("INVENTORY_FULL","REWARD_NOT_ELIGIBLE","REWARD_UNREGISTERED").contains(code)){if(!closing)frozen=false;}else fail(code);result.completeExceptionally(new StorageFailure("inventory",code));}
+            else{String code=code(error);if(Set.of("INVENTORY_FULL","REWARD_NOT_ELIGIBLE","REWARD_UNREGISTERED","ECON_QUOTE_CHANGED","ECON_STOCK","ECON_FUNDS","ECON_ITEMS","ECON_INVENTORY_FULL").contains(code)){if(!closing)frozen=false;}else fail(code);result.completeExceptionally(new StorageFailure("inventory",code));}
         },owner).exceptionally(error->{result.completeExceptionally(new StorageFailure("inventory","RESULT_DELIVERY_FAILED"));return null;});return result;
     }
     private CompletionStage<Void> flushInternal() {

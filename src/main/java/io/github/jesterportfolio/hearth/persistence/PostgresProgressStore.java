@@ -50,6 +50,9 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
                 task -> new Thread(task, "hearth-progress-db-" + number.incrementAndGet()), new ThreadPoolExecutor.AbortPolicy());
     }
 
+    /** 신뢰하는 내부 모듈도 기존 제한 큐·풀·종료 경계를 재사용합니다. 연결은 worker에서만 제공합니다. */
+    @FunctionalInterface public interface SqlWork<T>{T run(java.sql.Connection connection) throws Exception;}
+    public <T> CompletionStage<T> module(String operation,SqlWork<T> work){return submit(operation,null,()->{requireReady();try(var c=pool.getConnection()){return work.run(c);}});}
     private static void checkpointKeys(String... values){for(String v:values)if(v==null||!v.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid checkpoint key");}
     @Override public CompletionStage<Optional<CheckpointStore.Saved>> checkpoint(ServerProgressAccess.Context ctx,String dungeon,String quest,String point){return submit("checkpoint_read",ctx,()->{
         access.requireIssued(ctx);requireReady();checkpointKeys(dungeon,quest,point);
