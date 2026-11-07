@@ -33,6 +33,7 @@ public final class QuestJournal {
         if(storyAccess!=null&&!storyAccess.quest(ctx.storyRunId(),catalog.quest(id)))return false;
         var gate=completionRules.rule(id).branch();if(gate==null)return true;var snapshot=story==null?null:story.cached(ctx.storyRunId());var branch=snapshot==null?null:snapshot.branches().get(gate.stage());return story!=null&&story.healthy(ctx.storyRunId())&&branch!=null&&branch.choice().equals(gate.choice());
     }
+    public boolean travelAllowed(ServerProgressAccess.Context ctx,String place){check.run();if(closed||content==null)return false;var p=content.places().get(place);return p!=null&&(storyAccess==null||storyAccess.region(ctx.storyRunId(),p.region())&&storyAccess.area(ctx.storyRunId(),p.bounds()));}
     public Set<String> blocked(ServerProgressAccess.Context ctx){var result=new HashSet<String>();for(String id:catalog.questIds())if(!questAllowed(ctx,id))result.add(id);return Set.copyOf(result);}
     private ExplorationView explorationView(ServerProgressAccess.Context ctx,ExplorationStore.Data raw,List<CommunityBoundary.Member> members){
         if(story==null)return ExplorationView.build(content,raw,members,community.status(ctx,raw.story(),members));

@@ -1,0 +1,23 @@
+# 공개 합성 시설. 운영 요금/소요 시간/교통 수단의 승인이 아닙니다.
+format: 1
+isolated-unpriced-prototype: true
+extra-places:
+  - id: public_outpost
+    marker-key: marker_outpost
+    name: 공개 시험 초소
+    region: public_fields
+    category: 거점
+    visibility: PUBLIC
+    discovery: ENTRY
+    hub: true
+    bounds: {min-x: 10, max-x: 12, min-y: 64, max-y: 67, min-z: 10, max-z: 12}
+    location: {kind: EXACT, x: 11, y: 64, z: 11}
+stations:
+  - id: village_station
+    place: public_village
+    facility: {x: 2, y: 64, z: 2, material: CHISELED_STONE_BRICKS}
+    arrival: {x: 2.5, y: 64, z: 1.5, yaw: 0, pitch: 0}
+  - id: outpost_station
+    place: public_outpost
+    facility: {x: 11, y: 64, z: 11, material: CHISELED_STONE_BRICKS}
+    arrival: {x: 11.5, y: 64, z: 10.5, yaw: 180, pitch: 0}

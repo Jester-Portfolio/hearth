@@ -43,6 +43,7 @@ public final class SessionVerification implements AutoCloseable {
     private PersonalQuest quests;
     private QuestJournal journal;
     private ExplorationContent explorationContent;
+    private io.github.jesterportfolio.hearth.travel.PaperTravel paperTravel;
     private final Map<UUID,CommunityBoundary.Condition> explorationConditions=new HashMap<>();
     private SharedStory sharedStory;private PaperStoryAdapter paperStory;private PaperOneBlockEffect blockEffect;private OneBlockEffect.Definition effectDefinition;
     private Map<UUID,Object> storyTestRoster;private final java.util.concurrent.atomic.AtomicLong storyClock=new java.util.concurrent.atomic.AtomicLong();
@@ -125,7 +126,9 @@ public final class SessionVerification implements AutoCloseable {
             if(plugin.getConfig().getBoolean("exploration-verification-enabled")){
                 if(!Boolean.getBoolean("hearth.verification.exploration"))throw new IllegalStateException("Exploration gate missing");
                 var file=new java.io.File(plugin.getDataFolder(),"exploration-demo.yml");if(!file.exists())plugin.saveResource("exploration-demo.yml",false);
-                explorationContent=ExplorationContent.parse(YamlConfiguration.loadConfiguration(file).getValues(false),catalog);
+                var explorationRoot=new HashMap<String,Object>(YamlConfiguration.loadConfiguration(file).getValues(false));
+                if(plugin.getConfig().getBoolean("fast-travel-verification-enabled")){var tf=new java.io.File(plugin.getDataFolder(),"fast-travel-demo.yml");if(!tf.exists())plugin.saveResource("fast-travel-demo.yml",false);var extra=YamlConfiguration.loadConfiguration(tf).getList("extra-places");var places=new ArrayList<Object>((List<?>)explorationRoot.get("places"));if(extra!=null)places.addAll(extra);explorationRoot.put("places",places);}
+                explorationContent=ExplorationContent.parse(explorationRoot,catalog);
                 var bindings=new HashMap<String,ExplorationContent.Fact>();explorationContent.questFacts().forEach((quest,fact)->bindings.put(quest,explorationContent.facts().get(fact)));store.configureQuestDiary(bindings);
                 if(plugin.getConfig().getBoolean("story-verification-enabled")){
                     if(!Boolean.getBoolean("hearth.verification.sharedStory"))throw new IllegalStateException("Shared story gate missing");
@@ -162,6 +165,7 @@ public final class SessionVerification implements AutoCloseable {
                 sharedStory.effects(blockEffect);
             }
         }
+        if(plugin.getConfig().getBoolean("fast-travel-verification-enabled")){if(journal==null||explorationContent==null)throw new IllegalStateException("Travel exploration required");var tf=new java.io.File(plugin.getDataFolder(),"fast-travel-demo.yml");paperTravel=new io.github.jesterportfolio.hearth.travel.PaperTravel(plugin,adapter,journal,worlds,io.github.jesterportfolio.hearth.travel.TravelContent.parse(YamlConfiguration.loadConfiguration(tf).getValues(false),explorationContent),owner);}
         if(plugin.getConfig().getBoolean("combat-player-verification-enabled")){if(combatTrials==null)throw new IllegalStateException("Combat trial required");combatPlayers=new PaperCombatPlayers(plugin,adapter,combatTrials,fieldEncounters,store,store,worlds,owner,(p,session)->{log("COMBAT_PLAYER_DEATH");return questAdapter.combatDeath(p,session);},run->quests==null?CompletableFuture.completedFuture(null):quests.barrier(run).thenComposeAsync(v->journal.barrier(run),owner).thenComposeAsync(v->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run),owner));}
     }
     public void combatPlayer(String operation,String profile,String condition){if(combatPlayers==null)throw new IllegalStateException("Combat player mode disabled");switch(operation){case "combat-player-start"->combatPlayers.startOnline(profile);case "combat-player-release"->combatPlayers.release(profile);case "combat-player-revive"->combatPlayers.condition(profile,condition).whenCompleteAsync((v,error)->log("COMBAT_REVIVE "+(error==null?"APPLIED":"HOLD_OR_REJECTED")),owner);default->throw new IllegalArgumentException("Unknown combat fixture operation");}}
@@ -297,6 +301,7 @@ public final class SessionVerification implements AutoCloseable {
         case "npc-pages" -> npcPages();
         case "npc-dialogue-book" -> npcTopicsStart().thenCompose(v->npcTopicsIsolation()).thenCompose(v->npcPagesPrepared()).thenCompose(v->plugin.getConfig().getBoolean("phone-dialog-enabled",false)?readerIntegration():CompletableFuture.completedFuture(null));
         case "location-play" -> locationPlay();
+        case "travel-play" -> travelPlay();
         case "playthrough-run" -> playthroughRun();
         case "playthrough-restored" -> playthroughRestored();
         case "navigation-play" -> navigationPlay();
@@ -388,6 +393,27 @@ public final class SessionVerification implements AutoCloseable {
         case "session-prepare-quit" -> preparingQuit();case "session-prepare-done" -> preparingDone();case "session-move-quit" -> movingQuit();
         case "session-restored" -> restored();case "session-move-failure" -> moveFailure();case "session-write-failure" -> writeFailure();
         default -> throw new IllegalArgumentException("Unknown session phase");};}
+    private CompletionStage<Void> travelPlay(){return openAll().thenCompose(v->{
+        var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(a).mapping().physicalId()));for(var station:paperTravel.content.stations().values()){var p=station.facility();world.getBlockAt((int)p.x(),(int)p.y(),(int)p.z()).setType(Material.CHISELED_STONE_BRICKS,false);}
+        return journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,2,64,1.5);
+    }).thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->check(view.exploration().place("public_village").filter(p->p.visited()&&p.hubUnlocked()).isPresent()&&view.exploration().place("public_outpost").filter(ExplorationView.Place::hubUnlocked).isEmpty(),"travel_direct_source_visit_only_unlocks_source"))
+        .thenCompose(v->journal.enterPlaces(a1,s1,()->coordinator.playable(s1),2,64,1.5,11.5,64,10.5))
+        .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenCompose(view->{var port=new TravelPort(s1,one);var t=paperTravel.travel;var choices=t.destinations(view.exploration(),port,"village_station");check(!journal.travelAllowed(a1,"survey_place"),"travel_shared_region_remains_restricted");check(!io.github.jesterportfolio.hearth.travel.FastTravel.pageAvailable(1,1),"travel_empty_arrow_page_not_allowed");check(choices.size()==1&&choices.getFirst().id().equals("outpost_station"),"travel_personal_destination_after_direct_visit");var screen=io.github.jesterportfolio.hearth.travel.PaperTravel.previewDestinations(choices,0);check(screen.getItem(0).getType()==Material.COMPASS,"travel_native_destination_items");
+            one.inventory.setItem(0,new ItemStack(Material.STONE,29));coordinator.refresh(s1);check(s1.save().dirty(),"travel_source_dirty_before_save");UUID request=UUID.randomUUID();var first=t.start(port,"village_station","outpost_station",request);check(first==t.start(port,"village_station","outpost_station",request)&&port.moves==0,"travel_duplicate_and_before_save_no_move");return mainResult(first).thenRun(()->check(port.moves==1&&port.position.equals(paperTravel.content.get("outpost_station").arrival())&&!port.frozen&&!s1.save().dirty(),"travel_source_saved_before_controlled_move"));})
+        .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(saved->check(codec.decode(saved.payload())[0].getAmount()==29&&saved.revision()==1,"travel_real_DB_source_inventory_revision"))
+        .thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->check(view.exploration().place("public_outpost").filter(ExplorationView.Place::hubUnlocked).isEmpty(),"travel_P2_not_auto_unlocked"))
+        .thenCompose(v->journal.load(b3,s3,()->coordinator.playable(s3))).thenAccept(view->check(view.exploration().place("public_village").filter(ExplorationView.Place::hubUnlocked).isEmpty(),"travel_B_not_auto_unlocked"))
+        .thenCompose(v->travelWriteFailure()).thenCompose(v->travelStale()).thenCompose(v->mainResult(coordinator.disconnect(s1))).thenCompose(v->mainResult(coordinator.disconnect(s2)))
+        .thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE)).thenCompose(v->{one=new Controlled();s1=connect(a1,one);return mainResult(s1.ready());})
+        .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->check(view.exploration().place("public_outpost").filter(p->p.visited()&&p.hubUnlocked()).isPresent()&&one.inventory.getItem(0).getAmount()==29&&Bukkit.getWorld(worlds.get(a).mapping().physicalId()).getBlockAt(11,64,11).getType()==Material.CHISELED_STONE_BRICKS,"travel_existing_world_and_personal_hubs_restored"));}
+    private final class TravelPort implements io.github.jesterportfolio.hearth.travel.FastTravel.Port {
+        final PlayerSessions.Session session;final Controlled actor;boolean frozen;int moves;long extraGeneration;io.github.jesterportfolio.hearth.travel.TravelContent.Point position=paperTravel.content.get("village_station").arrival();CompletableFuture<Void> saving;
+        TravelPort(PlayerSessions.Session session,Controlled actor){this.session=session;this.actor=actor;}
+        public ServerProgressAccess.Context context(){return session.context();}public Object session(){return session;}private WorldLifecycle lifecycle(){return worlds.get(context().storyRunId());}public UUID world(){return lifecycle().mapping().physicalId();}public long generation(){return lifecycle().generation()+extraGeneration;}public io.github.jesterportfolio.hearth.travel.TravelContent.Point position(){return position;}public boolean current(){return coordinator.playable(session);}public boolean eligible(){return true;}public boolean access(io.github.jesterportfolio.hearth.travel.TravelContent.Station s){return journal.travelAllowed(context(),s.place());}public boolean facility(io.github.jesterportfolio.hearth.travel.TravelContent.Station s){var p=s.facility();return Bukkit.getWorld(world()).getBlockAt((int)p.x(),(int)p.y(),(int)p.z()).getType()==Material.CHISELED_STONE_BRICKS;}public void freeze(boolean value){frozen=value;}
+        public CompletionStage<ExplorationView> read(){return journal.load(context(),session,this::current).thenApply(QuestJournal.View::exploration);}public CompletionStage<Void> save(){return saving==null?coordinator.saveBoundary(session):saving;}public CompletionStage<Void> prepare(io.github.jesterportfolio.hearth.travel.TravelContent.Station s,BooleanSupplier valid){return mainResult(Bukkit.getWorld(world()).getChunkAtAsync(0,0)).thenAccept(c->{if(!valid.getAsBoolean())throw new IllegalStateException("TRAVEL_STALE");});}public CompletionStage<Boolean> move(io.github.jesterportfolio.hearth.travel.TravelContent.Station s,BooleanSupplier valid){if(!valid.getAsBoolean())return CompletableFuture.completedFuture(false);moves++;position=s.arrival();return CompletableFuture.completedFuture(true);}public void release(){}
+    }
+    private CompletionStage<Void> travelWriteFailure(){return mainResult(store.readInventory(a1)).thenCompose(before->{var p=new TravelPort(s1,one);p.saving=store.saveInventory(a1,0,fixture.apply(1)).thenApply(v->(Void)null).toCompletableFuture();var t=new io.github.jesterportfolio.hearth.travel.FastTravel(paperTravel.content,owner,SessionVerification::main);return rejectQuest(t.start(p,"village_station","outpost_station",UUID.randomUUID())).thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(after->{check(before.equals(after)&&p.moves==0&&!p.frozen&&t.phase(p)==io.github.jesterportfolio.hearth.travel.FastTravel.Phase.HOLD,"travel_real_DB_revision_failure_preserves_original_and_no_move");t.close();});});}
+    private CompletionStage<Void> travelStale(){var p=new TravelPort(s1,one);p.saving=new CompletableFuture<>();var t=new io.github.jesterportfolio.hearth.travel.FastTravel(paperTravel.content,owner,SessionVerification::main);var result=t.start(p,"village_station","outpost_station",UUID.randomUUID());return until(()->t.phase(p)==io.github.jesterportfolio.hearth.travel.FastTravel.Phase.SAVING).thenCompose(v->{p.extraGeneration++;p.saving.complete(null);return rejectQuest(result);}).thenRun(()->{check(p.moves==0&&t.phase(p)==io.github.jesterportfolio.hearth.travel.FastTravel.Phase.HOLD&&!p.frozen,"travel_stale_generation_after_real_read_rejects_apply");t.close();});}
     private CompletionStage<Void> openAll(){
         one=new Controlled();two=new Controlled();three=new Controlled();s1=connect(a1,one);s2=connect(a2,two);s3=connect(b3,three);
         check(one.applies==0 && two.applies==0 && worlds.get(a).participantCount()==0,"no_apply_or_admission_before_prepare");
@@ -2044,20 +2070,20 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->rejectQuest(probe.barrier(a))))
             .thenCompose(v->matrix());
     }
-    public CompletionStage<Void> barrier(UUID run){return coordinator.barrier(run).thenComposeAsync(v->combatPlayers==null?CompletableFuture.completedFuture(null):combatPlayers.barrier(run),owner).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)).thenCompose(v2->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run)),owner);}
-    public boolean canUnload(UUID run){return coordinator.canUnload(run) && (quests==null || quests.settled(run) && journal.settled(run) && (sharedStory==null||sharedStory.settled(run)));}
-    public CompletionStage<Void> restoreStoryWorld(UUID run){if(blockEffect==null)return CompletableFuture.completedFuture(null);blockEffect.prepared(run);var context=ctx(run,1);return sharedStory.load(context).thenComposeAsync(s->sharedStory.reconcile(context),owner).thenAccept(ok->{});}
+    public CompletionStage<Void> barrier(UUID run){return (paperTravel==null?CompletableFuture.<Void>completedFuture(null):paperTravel.barrier(run)).thenComposeAsync(v->coordinator.barrier(run),owner).thenComposeAsync(v->combatPlayers==null?CompletableFuture.completedFuture(null):combatPlayers.barrier(run),owner).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)).thenCompose(v2->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run)),owner);}
+    public boolean canUnload(UUID run){return (paperTravel==null||paperTravel.settled(run))&&coordinator.canUnload(run) && (quests==null || quests.settled(run) && journal.settled(run) && (sharedStory==null||sharedStory.settled(run)));}
+    public CompletionStage<Void> restoreStoryWorld(UUID run){if(paperTravel!=null)paperTravel.ensureRegions(run);if(blockEffect==null)return CompletableFuture.completedFuture(null);blockEffect.prepared(run);var context=ctx(run,1);return sharedStory.load(context).thenComposeAsync(s->sharedStory.reconcile(context),owner).thenAccept(ok->{});}
     public void releaseQuests(UUID run){if(quests!=null)quests.release(run);if(blockEffect!=null){blockEffect.unloaded(run);sharedStory.worldUnloaded(run);}}
     public CompletionStage<Void> shutdown(){
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
-        if(combatPlayers!=null)combatPlayers.close();if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
+        if(paperTravel!=null)paperTravel.close();if(combatPlayers!=null)combatPlayers.close();if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
         CompletionStage<Void> other=s3==null ? CompletableFuture.completedFuture(null) : coordinator.disconnect(s3);
         return (economy==null?CompletableFuture.<Void>completedFuture(null):economy.shutdown()).thenCompose(v->mainResult(other)).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
             if(error!=null && !(expectedHold && "23514".equals(s1.error()) && "MOVE_FAILED".equals(s2.error())
                     && generationProbes.size()==2 && generationProbes.values().stream().allMatch(s->s.state()==PlayerSessions.State.HOLD && "STALE_WORLD".equals(s.error()))
                     && Set.of("23514","MOVE_FAILED","STALE_WORLD").contains(LifecycleFailure.code(error))))throw new CompletionException(error);
             log("DRAIN "+(error==null ? "PASS" : "EXPECTED_HOLD_PRESERVED"));return null;
-        },owner)).thenCompose(v->journal==null?CompletableFuture.completedFuture(null):journal.shutdown()).thenCompose(v->quests==null?CompletableFuture.completedFuture(null):quests.shutdown()).thenCompose(v->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.shutdown());
+        },owner)).thenCompose(v->paperTravel==null?CompletableFuture.completedFuture(null):CompletableFuture.allOf(worlds.keySet().stream().map(paperTravel::barrier).map(CompletionStage::toCompletableFuture).toArray(CompletableFuture[]::new))).thenCompose(v->journal==null?CompletableFuture.completedFuture(null):journal.shutdown()).thenCompose(v->quests==null?CompletableFuture.completedFuture(null):quests.shutdown()).thenCompose(v->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.shutdown());
     }
     private CompletionStage<Void> linkExisting(ServerProgressAccess.Context context) {
         return mainResult(store.readPersonal(context)).thenCompose(v -> mainResult(store.readInventory(context))).thenCompose(saved->(sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.load(context)).thenApply(v->saved)).thenAccept(saved -> {
@@ -2086,7 +2112,7 @@ public final class SessionVerification implements AutoCloseable {
         mainResult(store.readInventory(context)).thenAccept(saved->log("MANUAL_DB count="+codec.decode(saved.payload())[0].getAmount()+" revision="+saved.revision()))
             .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
-    @Override public void close(){
+    @Override public void close(){if(paperTravel!=null)paperTravel.close();
         io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(economy,combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
     }
 }

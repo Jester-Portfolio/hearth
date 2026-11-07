@@ -116,7 +116,7 @@ public final class QuestScreens {
             case "region"->{back="map";var region=view.regions().stream().filter(r->r.id().equals(id)).findFirst();
                 if(region.isEmpty())rows.add(line(0,"조회할 수 있는 지역이 없습니다."));else{rows.add(line(0,region.get().name()));for(var p:view.places())if(p.region().equals(region.get().name()))rows.add(new Button(0,p.name()+" · "+p.status(),"place",p.key(),0));}}
             case "place"->{back="map";var p=view.place(id);if(p.isEmpty())rows.add(line(0,"조회할 수 있는 장소가 없습니다."));else{
-                var x=p.get();for(String text:List.of(x.name(),"지역: "+x.region(),"분류: "+x.category(),"발견: "+x.status(),x.location(),x.visited()?"직접 방문 기록 있음":"직접 방문 기록 없음",x.hubUnlocked()?"개인 거점 해금됨":"거점 이동 해금 없음","빠른 이동 실행은 미구현"))rows.add(line(0,text));}}
+                var x=p.get();for(String text:List.of(x.name(),"지역: "+x.region(),"분류: "+x.category(),"발견: "+x.status(),x.location(),x.visited()?"직접 방문 기록 있음":"직접 방문 기록 없음",x.hubUnlocked()?"개인 거점 해금됨":"거점 이동 해금 없음","거점 이동은 본인이 해금한 출발 시설에서 선택합니다"))rows.add(line(0,text));}}
             case "diary"->{String[] kinds={"STORY","PERSON","EXPLORATION","CHRONICLE"};String[] titles={"스토리","인물","탐험","연대기"};for(int i=0;i<kinds.length;i++)rows.add(new Button(0,titles[i],kinds[i],null,0));}
             case "STORY","PERSON","EXPLORATION"->{back="diary";for(var f:view.facts())if(f.category().equals(page))rows.add(new Button(0,(f.shared()?"[공동체] ":"[개인] ")+f.title()+" · "+f.summary(),"fact",scope(f.shared())+f.id(),0));}
             case "CHRONICLE"->{back="diary";for(var e:view.events())rows.add(new Button(0,e.time()+" · "+(e.shared()?"[공동체] ":"[개인] ")+e.title(),"event",scope(e.shared())+e.id()+":"+e.version(),0));}

@@ -22,7 +22,7 @@ public final class PhonePages {
         String title;List<String> lines;
         switch(section){
             case "quests"->{var q=data.quests().get(index);title=q.title();lines=List.of("NPC: "+q.npc(),"상태: "+q.status(),q.guidance());}
-            case "map"->{var p=data.places().get(index);title=p.name();lines=List.of("지역: "+p.region(),"공개 상태: "+p.status(),p.location(),p.hubUnlocked()?"본인 방문 거점 해금":"빠른 이동 거점 미해금");}
+            case "map"->{var p=data.places().get(index);title=p.name();lines=List.of("지역: "+p.region(),"공개 상태: "+p.status(),p.location(),p.hubUnlocked()?"본인 방문 거점 해금":"빠른 이동 거점 미해금","이동은 해금된 출발 시설에서 선택합니다. 지도 즉시 이동은 없습니다.");}
             case "diary"->{var d=data.diary().get(index);title=d.title();lines=List.of(d.shared()?"공동체 공유 기록 · 개인 완료/보상과 별개":"개인 기록",d.category(),d.summary(),d.detail());}
             default->throw new IllegalArgumentException("UNKNOWN_PHONE_SECTION");
         }

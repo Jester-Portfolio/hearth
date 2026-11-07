@@ -24,7 +24,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     public interface CombatControls {
         default boolean actions(Player p){return true;}default boolean movement(Player p){return true;}
         default boolean damage(Player p,EntityDamageEvent e){return false;}default boolean attack(Player p,Entity target){return false;}
-        default boolean command(Player p,String line){return false;}
+        default boolean command(Player p,String line){return false;}default boolean travel(Player p){return actions(p);}
         default Location destination(Player p,ServerProgressAccess.Context ctx,Location original){return original;}
         default void ready(Player p,PlayerSessions.Session s){}default void leaving(Player p,PlayerSessions.Session s){}
     }
@@ -39,6 +39,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private final Map<UUID,Link> links=new HashMap<>();
     private final Map<UUID,Entry> entries=new HashMap<>();
     private final Map<UUID,Move> moving=new HashMap<>();
+    private final Set<PlayerSessions.Session> travelFrozen=Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<CompletableFuture<Boolean>> combatMoves=new HashSet<>();
     private CombatControls combat=new CombatControls(){};
     public void combat(CombatControls controls){main();combat=Objects.requireNonNull(controls);}
@@ -53,12 +54,16 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private boolean closed;
     private BiPredicate<Player,String> questCommand=(p,c)->false;
     private BiPredicate<Player,Inventory> developerInventory=(p,i)->false;
+    private BiPredicate<Player,Inventory> travelInventory=(p,i)->false;
+    public void travelInventory(BiPredicate<Player,Inventory> handler){main();travelInventory=handler;}
     private BiPredicate<Player,Entity> fieldAttack=(p,e)->false;
     public void fieldAttack(BiPredicate<Player,Entity> allowed){main();fieldAttack=Objects.requireNonNull(allowed);}
     public void developerInventory(BiPredicate<Player,Inventory> handler){main();developerInventory=handler;}
     public void questCommand(BiPredicate<Player,String> handler){main();questCommand=handler;}
     public PlayerSessions.Session current(Player p){main();Entry e=entry(p);return allowed(p)?e.session():null;}
     public PlayerSessions.Session linked(Player p){main();var e=entry(p);return e==null?null:e.session();}
+    public boolean travelEligible(Player p,PlayerSessions.Session session){main();return prepared(p)==session&&combat.travel(p);}
+    public void freezeTravel(Player p,PlayerSessions.Session session,boolean frozen){main();if(!frozen){travelFrozen.remove(session);return;}if(!travelEligible(p,session)||moving.containsKey(p.getUniqueId())||!travelFrozen.add(session))throw new IllegalStateException("TRAVEL_LOCK_BUSY");}
     public CompletionStage<Void> saveBoundary(Player player,PlayerSessions.Session session){main();if(prepared(player)!=session)return CompletableFuture.failedFuture(new IllegalStateException("STALE_SESSION"));return sessions.saveBoundary(session);}
     public CompletionStage<Void> saveRunBoundary(UUID run){main();return sessions.saveRunBoundary(run);}
     public PlayerSessions.Session prepared(Player p){main();var e=entry(p);return baseReady(p)?e.session():null;}
@@ -124,7 +129,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         codec.apply(player.getInventory(),snapshot);player.setItemOnCursor(null);
     }
     private static void requireNoCursor(Player p){if(!p.getItemOnCursor().isEmpty())throw new IllegalStateException("Unsupported cursor state");}
-    @EventHandler public void quit(PlayerQuitEvent e){
+    @EventHandler public void quit(PlayerQuitEvent e){travelFrozen.remove(linked(e.getPlayer()));
         interactionHints.remove(e.getPlayer().getUniqueId());
         Entry entry=entries.get(e.getPlayer().getUniqueId());
         if(entry==null || entry.player()!=e.getPlayer())return;
@@ -141,12 +146,12 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     }
     private Entry entry(Player p){Entry e=entries.get(p.getUniqueId());return e!=null && e.player()==p ? e : null;}
     private boolean baseReady(Player p){Entry e=entry(p);return e!=null && sessions.playable(e.session()) && p.getWorld().getKey().toString().equals(e.link().world().mapping().worldKey());}
-    private boolean allowed(Player p){return baseReady(p)&&combat.actions(p);}
+    private boolean allowed(Player p){var e=entry(p);return baseReady(p)&&!travelFrozen.contains(e.session())&&combat.actions(p);}
     private void sample(Player p){Entry e=entry(p);if(e==null || !samples.add(e))return;Bukkit.getScheduler().runTaskLater(plugin,() -> {
         samples.remove(e);if(entries.get(p.getUniqueId())==e)sessions.refresh(e.session());
     },1);}
     @EventHandler(priority=EventPriority.HIGHEST) public void move(PlayerMoveEvent e){
-        if(!(e instanceof PlayerTeleportEvent)&&(!baseReady(e.getPlayer())||!combat.movement(e.getPlayer())||e.getTo()!=null&&!canEnter(e.getPlayer(),e.getTo())))e.setTo(e.getFrom());
+        if(!(e instanceof PlayerTeleportEvent)&&(!baseReady(e.getPlayer())||travelFrozen.contains(linked(e.getPlayer()))||!combat.movement(e.getPlayer())||e.getTo()!=null&&!canEnter(e.getPlayer(),e.getTo())))e.setTo(e.getFrom());
     }
     private boolean canEnter(Player p,Location target){var e=entry(p);return e!=null&&target.getWorld()!=null&&target.getWorld().getUID().equals(e.link().world().mapping().physicalId())&&entryAccess.test(e.link().context(),target);}
     @EventHandler(priority=EventPriority.HIGHEST) public void teleport(PlayerTeleportEvent e){var permit=moving.get(e.getPlayer().getUniqueId());if(permit==null||permit.player()!=e.getPlayer()||!permit.valid().getAsBoolean()||e.getTo()==null||!canEnter(e.getPlayer(),e.getTo()))e.setCancelled(true);}
@@ -161,7 +166,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){
         if(!(e.getPlayer() instanceof Player p))return;
         if(e.getInventory().getType()!=InventoryType.CRAFTING&&e.getInventory().getType()!=InventoryType.PLAYER){
-            if(!allowed(p)||!developerInventory.test(p,e.getInventory()))e.setCancelled(true);
+            if(!allowed(p)||!(developerInventory.test(p,e.getInventory())||travelInventory.test(p,e.getInventory())))e.setCancelled(true);
             else try{settleCursor(p);}catch(RuntimeException failure){e.setCancelled(true);sessions.refresh(entry(p).session());}
         }
     }
@@ -200,5 +205,5 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied&&prepared(e.getPlayer())!=null&&combat.command(e.getPlayer(),e.getMessage()))return;if(!denied && allowed(e.getPlayer())){try{settleCursor(e.getPlayer());}catch(RuntimeException failure){sessions.refresh(entry(e.getPlayer()).session());return;}if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else questCommand.test(e.getPlayer(),e.getMessage());}}
     @EventHandler(priority=EventPriority.HIGHEST) public void damage(EntityDamageEvent e){if(e.getEntity() instanceof Player p&&!combat.damage(p,e))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void attack(EntityDamageByEntityEvent e){if(e.getDamager() instanceof Player p&&(!allowed(p)||!fieldAttack.test(p,e.getEntity())&&!combat.attack(p,e.getEntity())))e.setCancelled(true);}
-    @Override public void close(){main();closed=true;for(var move:List.copyOf(combatMoves))move.completeExceptionally(new IllegalStateException("COMBAT_MOVE_CLOSED"));moving.clear();interactionHints.clear();HandlerList.unregisterAll(this);}
+    @Override public void close(){main();closed=true;for(var move:List.copyOf(combatMoves))move.completeExceptionally(new IllegalStateException("COMBAT_MOVE_CLOSED"));moving.clear();travelFrozen.clear();interactionHints.clear();HandlerList.unregisterAll(this);}
 }
