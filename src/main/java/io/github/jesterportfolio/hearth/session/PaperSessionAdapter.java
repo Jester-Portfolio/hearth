@@ -51,6 +51,8 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     public void onlineChanged(Consumer<ServerProgressAccess.Context> listener){main();onlineChanged=listener;}
     public void entryAccess(BiPredicate<ServerProgressAccess.Context,Location> access){main();entryAccess=access;}
     public Map<UUID,Object> onlineContexts(ServerProgressAccess.Context ctx){main();var found=new HashMap<UUID,Object>();for(var e:entries.values())if(e.player().isOnline()&&e.link().context().storyRunId().equals(ctx.storyRunId()))found.put(e.player().getUniqueId(),e.session());return Map.copyOf(found);}
+    private BiPredicate<Player,Location> gatheringEntry=(p,l)->true;private BiPredicate<Player,org.bukkit.block.Block> gatheringChange=(p,b)->true;private BiPredicate<Player,String> gatheringCommand=(p,c)->false;
+    public void gathering(BiPredicate<Player,Location> entry,BiPredicate<Player,org.bukkit.block.Block> change,BiPredicate<Player,String> command){main();gatheringEntry=entry;gatheringChange=change;gatheringCommand=command;}
     private boolean closed;
     private BiPredicate<Player,String> questCommand=(p,c)->false;
     private BiPredicate<Player,Inventory> developerInventory=(p,i)->false;
@@ -153,7 +155,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void move(PlayerMoveEvent e){
         if(!(e instanceof PlayerTeleportEvent)&&(!baseReady(e.getPlayer())||travelFrozen.contains(linked(e.getPlayer()))||!combat.movement(e.getPlayer())||e.getTo()!=null&&!canEnter(e.getPlayer(),e.getTo())))e.setTo(e.getFrom());
     }
-    private boolean canEnter(Player p,Location target){var e=entry(p);return e!=null&&target.getWorld()!=null&&target.getWorld().getUID().equals(e.link().world().mapping().physicalId())&&entryAccess.test(e.link().context(),target);}
+    private boolean canEnter(Player p,Location target){var e=entry(p);return e!=null&&target.getWorld()!=null&&target.getWorld().getUID().equals(e.link().world().mapping().physicalId())&&entryAccess.test(e.link().context(),target)&&gatheringEntry.test(p,target);}
     @EventHandler(priority=EventPriority.HIGHEST) public void teleport(PlayerTeleportEvent e){var permit=moving.get(e.getPlayer().getUniqueId());if(permit==null||permit.player()!=e.getPlayer()||!permit.valid().getAsBoolean()||e.getTo()==null||!canEnter(e.getPlayer(),e.getTo()))e.setCancelled(true);}
     /** 동기 DB 대기 없이 기존 허가 경로로 이동합니다. 실제 이벤트 시점에도 세션/작업을 다시 검사합니다. */
     public CompletionStage<Boolean> combatMove(Player p,PlayerSessions.Session session,Location target,BooleanSupplier valid){
@@ -195,14 +197,14 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         if(!allowed(e.getPlayer()) || e.getClickedBlock()!=null && e.getClickedBlock().getType().isInteractable() && !PlayerInteractionRules.facility(e.getClickedBlock().getType().name()))e.setCancelled(true);
         sample(e.getPlayer());
     }
-    @EventHandler(priority=EventPriority.HIGHEST) public void place(BlockPlaceEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
-    @EventHandler(priority=EventPriority.HIGHEST) public void breakBlock(BlockBreakEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
+    @EventHandler(priority=EventPriority.HIGHEST) public void place(BlockPlaceEvent e){if(!allowed(e.getPlayer())||!gatheringChange.test(e.getPlayer(),e.getBlock()))e.setCancelled(true);sample(e.getPlayer());}
+    @EventHandler(priority=EventPriority.HIGHEST) public void breakBlock(BlockBreakEvent e){if(!allowed(e.getPlayer())||!gatheringChange.test(e.getPlayer(),e.getBlock()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void drop(PlayerDropItemEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void pickup(EntityPickupItemEvent e){if(e.getEntity() instanceof Player p){if(!allowed(p)||!p.getItemOnCursor().isEmpty())e.setCancelled(true);sample(p);}}
     @EventHandler(priority=EventPriority.HIGHEST) public void consume(PlayerItemConsumeEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void swap(PlayerSwapHandItemsEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void damageItem(PlayerItemDamageEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
-    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied&&prepared(e.getPlayer())!=null&&combat.command(e.getPlayer(),e.getMessage()))return;if(!denied && allowed(e.getPlayer())){try{settleCursor(e.getPlayer());}catch(RuntimeException failure){sessions.refresh(entry(e.getPlayer()).session());return;}if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else questCommand.test(e.getPlayer(),e.getMessage());}}
+    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied&&prepared(e.getPlayer())!=null&&combat.command(e.getPlayer(),e.getMessage()))return;if(!denied && allowed(e.getPlayer())){try{settleCursor(e.getPlayer());}catch(RuntimeException failure){sessions.refresh(entry(e.getPlayer()).session());return;}if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else if(!gatheringCommand.test(e.getPlayer(),e.getMessage()))questCommand.test(e.getPlayer(),e.getMessage());}}
     @EventHandler(priority=EventPriority.HIGHEST) public void damage(EntityDamageEvent e){if(e.getEntity() instanceof Player p&&!combat.damage(p,e))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void attack(EntityDamageByEntityEvent e){if(e.getDamager() instanceof Player p&&(!allowed(p)||!fieldAttack.test(p,e.getEntity())&&!combat.attack(p,e.getEntity())))e.setCancelled(true);}
     @Override public void close(){main();closed=true;for(var move:List.copyOf(combatMoves))move.completeExceptionally(new IllegalStateException("COMBAT_MOVE_CLOSED"));moving.clear();travelFrozen.clear();interactionHints.clear();HandlerList.unregisterAll(this);}

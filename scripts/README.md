@@ -107,3 +107,5 @@
 상품 공급망/공개 플레이 안내는 `--sessions --economy --economy-supply` 단독 한 JVM 경로다. 콘텐츠/공개 필터·실제 시장/제조/운송 DTO·화면 객체·조회 불변·상인/진행 격리와 기존 최신 견적 거래 연결을 검사한다. 저장 규약을 변경하지 않아 두 JVM/90일 전체 검사는 반복하지 않는다. [범위·결과](../docs/economy-supply-verification.md)를 따른다.
 
 거점 이동 경로는 `--sessions --quests --story-batch --fast-travel` 단독 한 JVM 모드다. 시설 선택·개인 방문 해금·공유 접근 제한·최신 인벤토리 저장·DB 오류/세대 차단·기존 월드 재입장을 같은 묶음으로 검사한다. 실제 Player 이동·클릭은 실행하지 않는다. [구현/한계](../docs/fast-travel-verification.md)를 따른다. 비용/운영 소요 시간 미정인 기술 시험이며 일반 서버에서는 비활성이다.
+
+채집 인던 자동 통합은 `verify-lifecycle.py --sessions --quests --story-batch --gathering`으로 제한 구역·V009·저장/세대/실패·두 JVM 복원을 확인한다. 기존 준비/자원 감시를 재사용하며 [범위와 결과](../docs/gathering-dungeon-verification.md)를 따른다. 이동은 제어 포트이며 실제 채집/Player 이동 성공을 뜻하지 않는다.

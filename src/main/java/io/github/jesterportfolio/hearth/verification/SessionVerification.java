@@ -1,6 +1,7 @@
 package io.github.jesterportfolio.hearth.verification;
 
 import io.github.jesterportfolio.hearth.inventory.*;
+import io.github.jesterportfolio.hearth.gathering.*;
 import io.github.jesterportfolio.hearth.lifecycle.*;
 import io.github.jesterportfolio.hearth.persistence.*;
 import io.github.jesterportfolio.hearth.session.*;
@@ -89,6 +90,9 @@ public final class SessionVerification implements AutoCloseable {
     private QuestRules questRules=QuestRules.empty();private QuestRewards questRewards;
     private PaperFieldEncounters fieldEncounters;
     private PaperCombatTrials combatTrials;private CombatContent combatContent;private final java.util.concurrent.atomic.AtomicLong combatClock=new java.util.concurrent.atomic.AtomicLong();
+    private PaperGathering gathering;
+    private CompletableFuture<Boolean> gatheringEntryGate;private boolean gatheringEntryBlocked;private CompletionStage<Void> gatheringPendingEntry;
+    private final java.util.concurrent.atomic.AtomicLong gatheringClock=new java.util.concurrent.atomic.AtomicLong(1000);
     private PaperCombatPlayers combatPlayers;
     private Object listToken=new Object();
     private CompletionStage<Map<String,QuestStore.Saved>> pendingList;
@@ -166,8 +170,13 @@ public final class SessionVerification implements AutoCloseable {
             }
         }
         if(plugin.getConfig().getBoolean("fast-travel-verification-enabled")){if(journal==null||explorationContent==null)throw new IllegalStateException("Travel exploration required");var tf=new java.io.File(plugin.getDataFolder(),"fast-travel-demo.yml");paperTravel=new io.github.jesterportfolio.hearth.travel.PaperTravel(plugin,adapter,journal,worlds,io.github.jesterportfolio.hearth.travel.TravelContent.parse(YamlConfiguration.loadConfiguration(tf).getValues(false),explorationContent),owner);}
+        if(plugin.getConfig().getBoolean("gathering-verification-enabled")){
+            var file=new java.io.File(plugin.getDataFolder(),"gathering-demo.yml");if(!file.exists())plugin.saveResource("gathering-demo.yml",false);
+            gathering=new PaperGathering(plugin,store,access,adapter,worlds,GatheringContent.parse(combatMap(YamlConfiguration.loadConfiguration(file))),owner,manual?System::currentTimeMillis:gatheringClock::get,run->adapter.saveRunBoundary(run).thenComposeAsync(v->quests==null?CompletableFuture.completedFuture(null):quests.barrier(run).thenComposeAsync(x->journal.barrier(run),owner).thenComposeAsync(x->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run),owner),owner));
+        }
         if(plugin.getConfig().getBoolean("combat-player-verification-enabled")){if(combatTrials==null)throw new IllegalStateException("Combat trial required");combatPlayers=new PaperCombatPlayers(plugin,adapter,combatTrials,fieldEncounters,store,store,worlds,owner,(p,session)->{log("COMBAT_PLAYER_DEATH");return questAdapter.combatDeath(p,session);},run->quests==null?CompletableFuture.completedFuture(null):quests.barrier(run).thenComposeAsync(v->journal.barrier(run),owner).thenComposeAsync(v->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run),owner));}
     }
+    public void gatheringFixture(String profile){if(gathering==null)throw new IllegalStateException("Gathering disabled");gathering.fixture(Objects.requireNonNull(Bukkit.getPlayerExact(profile)));}
     public void combatPlayer(String operation,String profile,String condition){if(combatPlayers==null)throw new IllegalStateException("Combat player mode disabled");switch(operation){case "combat-player-start"->combatPlayers.startOnline(profile);case "combat-player-release"->combatPlayers.release(profile);case "combat-player-revive"->combatPlayers.condition(profile,condition).whenCompleteAsync((v,error)->log("COMBAT_REVIVE "+(error==null?"APPLIED":"HOLD_OR_REJECTED")),owner);default->throw new IllegalArgumentException("Unknown combat fixture operation");}}
     private List<CommunityBoundary.Ref> storyMembers(ServerProgressAccess.Context ctx){var refs=adapter.community(ctx);if(storyTestRoster==null)return refs;return refs.stream().map(ref->new CommunityBoundary.Ref(ref.run(),ref.player(),ref.name(),ctx.storyRunId().equals(a)?storyTestRoster.containsKey(ref.player()):ref.player().equals(b3.playerId()))).toList();}
     private static QuestCatalog loadCatalog(JavaPlugin plugin) {
@@ -301,6 +310,8 @@ public final class SessionVerification implements AutoCloseable {
         case "npc-pages" -> npcPages();
         case "npc-dialogue-book" -> npcTopicsStart().thenCompose(v->npcTopicsIsolation()).thenCompose(v->npcPagesPrepared()).thenCompose(v->plugin.getConfig().getBoolean("phone-dialog-enabled",false)?readerIntegration():CompletableFuture.completedFuture(null));
         case "location-play" -> locationPlay();
+        case "gathering-start" -> gatheringPlay(false);
+        case "gathering-restored" -> gatheringPlay(true);
         case "travel-play" -> travelPlay();
         case "playthrough-run" -> playthroughRun();
         case "playthrough-restored" -> playthroughRestored();
@@ -393,6 +404,48 @@ public final class SessionVerification implements AutoCloseable {
         case "session-prepare-quit" -> preparingQuit();case "session-prepare-done" -> preparingDone();case "session-move-quit" -> movingQuit();
         case "session-restored" -> restored();case "session-move-failure" -> moveFailure();case "session-write-failure" -> writeFailure();
         default -> throw new IllegalArgumentException("Unknown session phase");};}
+    /** 실제 블록/구역/DB, 이동만 제어 포트입니다. 실제 Player 접속은 만들지 않습니다. */
+    private final class GatheringActor implements GatheringDungeon.Member {
+        final PlayerSessions.Session session;GatheringActor(PlayerSessions.Session session){this.session=session;}
+        public UUID player(){return session.context().playerId();}public Object session(){return session;}public boolean current(){return coordinator.playable(session);}
+    }
+    private PaperGatheringArea.People gatheringPeople(UUID run){return new PaperGatheringArea.People(){
+        public void notice(String text){log("GATHERING_NOTICE "+text);}
+        public CompletionStage<Void> save(List<GatheringDungeon.Member> members){return coordinator.saveRunBoundary(run).thenComposeAsync(v->quests.barrier(run),owner);}
+        public CompletionStage<Void> evacuate(List<GatheringDungeon.Member> members,BooleanSupplier valid){check(valid.getAsBoolean(),"gathering_controlled_evacuation_generation_checked");return CompletableFuture.completedFuture(null);}
+        public CompletionStage<Boolean> enter(GatheringDungeon.Member member,long generation,BooleanSupplier valid){if(gatheringEntryGate!=null&&run.equals(a)){gatheringEntryBlocked=true;return gatheringEntryGate;}return CompletableFuture.completedFuture(valid.getAsBoolean()&&member.current());}
+    };}
+    private Material gatheredResource(UUID run){return Bukkit.getWorld(worlds.get(run).mapping().physicalId()).getBlockAt(33,64,1).getType();}
+    private void gatheringBlocks(UUID run,Material resource){var w=Bukkit.getWorld(worlds.get(run).mapping().physicalId());check(w.getBlockAt(32,63,0).getType()==Material.STONE&&gatheredResource(run)==resource,"gathering_actual_blocks_"+run+"_"+resource);var manager=com.sk89q.worldguard.WorldGuard.getInstance().getPlatform().getRegionContainer().get(com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(w));var region=manager.getRegion("hearth_gather_"+gathering.content.id());check(region!=null&&region.getPriority()==30&&region.getFlag(com.sk89q.worldguard.protection.flags.Flags.BUILD)==com.sk89q.worldguard.protection.flags.StateFlag.State.ALLOW,"gathering_native_WorldGuard_region_"+run);}
+    private CompletionStage<Void> gatheringPlay(boolean restored){
+        var bindings=new PaperGathering.Binding[2];var actor=new GatheringActor[3];var savedId=worlds.get(a).mapping().physicalId();
+        return openAll().thenCompose(v->gathering.bind(a1,!restored,gatheringPeople(a))).thenAccept(bd->bindings[0]=bd)
+            .thenCompose(v->gathering.bind(b3,!restored,gatheringPeople(b))).thenAccept(bd->bindings[1]=bd)
+            .thenCompose(v->{actor[0]=new GatheringActor(s1);actor[1]=new GatheringActor(s2);actor[2]=new GatheringActor(s3);var d=bindings[0].dungeon();var other=bindings[1].dungeon();
+                if(restored){gatheringBlocks(a,Material.IRON_ORE);gatheringBlocks(b,Material.IRON_ORE);check(d.snapshot().generation()==4&&d.snapshot().template().equals("ore_v1")&&!d.snapshot().emptyReset()&&other.snapshot().generation()==1,"gathering_new_JVM_ledger_and_old_template_restored_without_create");return verify(a1,30,1).thenCompose(x->d.enter(actor[0])).thenRun(()->check(d.snapshot().generation()==4&&d.snapshot().template().equals("ore_v1"),"gathering_new_template_not_applied_to_running_generation")).thenCompose(x->d.leave(actor[0])).thenCompose(x->d.enter(actor[0])).thenRun(()->{check(d.snapshot().generation()==5&&d.snapshot().template().equals("ore_v2"),"gathering_template_switch_only_at_reset_boundary");gatheringBlocks(a,Material.COPPER_ORE);gatheringBlocks(b,Material.IRON_ORE);}).thenCompose(x->d.leave(actor[0])).thenCompose(x->gatheringSqlFailure(other));}
+                return d.enter(actor[0]).thenCompose(x->d.enter(actor[1])).thenCompose(x->other.enter(actor[2])).thenRun(()->{check(d.occupants()==2&&d.snapshot().generation()==1&&other.snapshot().generation()==1,"gathering_same_run_shared_other_run_separate");gatheringBlocks(a,Material.IRON_ORE);gatheringBlocks(b,Material.IRON_ORE);})
+                    .thenCompose(x->d.leave(actor[0])).thenCompose(x->d.enter(actor[0])).thenRun(()->check(d.snapshot().generation()==1,"gathering_partial_exit_keeps_current_resources"))
+                    .thenCompose(x->d.leave(actor[0])).thenCompose(x->{gatheringEntryGate=new CompletableFuture<>();gatheringPendingEntry=d.enter(actor[0]);return until(()->gatheringEntryBlocked);}).thenRun(()->{Bukkit.getWorld(savedId).getBlockAt(33,64,1).setType(Material.AIR,false);one.count(30);coordinator.refresh(s1);gatheringClock.set(d.snapshot().nextReset()-1000);})
+                    .thenCompose(x->d.pulse()).thenRun(()->gatheringClock.set(d.snapshot().nextReset())).thenCompose(x->{var reset=d.pulse();check(!reset.toCompletableFuture().isDone()&&d.snapshot().generation()==1&&gatheredResource(a)==Material.AIR,"gathering_actual_area_untouched_while_old_entry_move_pending");gatheringEntryGate.complete(true);gatheringEntryGate=null;return rejectQuest(gatheringPendingEntry).thenCompose(y->reset);}).thenRun(()->{check(d.snapshot().generation()==2&&d.occupants()==0&&!s1.save().dirty(),"gathering_periodic_reset_evicts_controlled_members_after_actual_save");gatheringBlocks(a,Material.IRON_ORE);check(other.snapshot().generation()==1,"gathering_A_reset_preserves_B_generation");})
+                    .thenCompose(x->verify(a1,30,1)).thenCompose(x->d.enter(actor[0])).thenRun(()->check(d.snapshot().generation()==2,"gathering_periodic_fresh_generation_not_reset_again_on_entry"))
+                    .thenCompose(x->d.leave(actor[0])).thenCompose(x->d.enter(actor[0])).thenRun(()->check(d.snapshot().generation()==3,"gathering_all_exit_then_entry_resets_once"))
+                    .thenCompose(x->d.leave(actor[0])).thenCompose(x->{UUID id=UUID.randomUUID();return d.reset(id).thenCompose(y->d.reset(id));}).thenRun(()->check(d.snapshot().generation()==4&&!d.snapshot().emptyReset(),"gathering_empty_periodic_refresh_and_duplicate_request_no_extra_generation"))
+                    .thenCompose(x->other.leave(actor[2]));
+            }).thenCompose(v->restored?CompletableFuture.completedFuture(null):mainResult(coordinator.disconnect(s1)).thenCompose(x->mainResult(coordinator.disconnect(s2))).thenCompose(x->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
+                .thenRun(()->check(Bukkit.getWorld(savedId)==null,"gathering_idle_unload_releases_owned_chunk_tickets"))
+                .thenCompose(x->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return mainResult(s1.ready()).thenCompose(y->mainResult(s2.ready()));})
+                .thenCompose(x->gathering.bind(a1,false,gatheringPeople(a))).thenAccept(bd->{check(bd.dungeon().snapshot().generation()==4&&worlds.get(a).mapping().physicalId().equals(savedId),"gathering_same_JVM_reload_existing_UUID_and_ledger");gatheringBlocks(a,Material.IRON_ORE);}))
+            .thenCompose(v->verify(a1,30,1)).thenRun(()->check(true,restored?"gathering_second_JVM_existing_inventory_and_new_template_boundary":"gathering_first_JVM_ready_for_restart"));
+    }
+    private CompletionStage<Void> gatheringSqlFailure(GatheringDungeon other){
+        var c=gathering.content;var probeContent=new GatheringContent("public_failure_probe",c.area(),c.entrance(),c.spawn(),c.intervalMillis(),c.warningMillis(),c.active(),c.templates());
+        var repo=new PostgresGatheringStore(store,access,a1,probeContent.id());var t=c.templates().get(c.active());var initial=new GatheringStore.State(a,probeContent.id(),worlds.get(a).mapping().physicalId(),0,0,c.area().hash(),t.version(),t.hash(),GatheringStore.Phase.OPEN,null,false,1000000);var before=other.snapshot();
+        GatheringDungeon.Boundary boundary=new GatheringDungeon.Boundary(){public boolean current(){return true;}public void notice(String s){}public CompletionStage<Void> prepare(GatheringContent.Template t,UUID id,BooleanSupplier valid){return CompletableFuture.completedFuture(null);}public CompletionStage<Void> save(List<GatheringDungeon.Member> m){throw new AssertionError("stale DB row must reject before save");}public CompletionStage<Void> evacuate(List<GatheringDungeon.Member> m,BooleanSupplier v){throw new AssertionError();}public CompletionStage<Void> apply(GatheringContent.Template t,BooleanSupplier v){throw new AssertionError();}public CompletionStage<Void> flush(){throw new AssertionError();}public CompletionStage<Void> acknowledge(UUID id){throw new AssertionError();}public CompletionStage<Boolean> enter(GatheringDungeon.Member m,long g,BooleanSupplier v){throw new AssertionError();}};
+        return mainResult(repo.create(initial)).thenCompose(row->{var next=new GatheringStore.State(a,row.dungeon(),row.world(),1,0,row.area(),row.template(),row.hash(),row.phase(),null,false,row.nextReset());var wrongWorld=new GatheringStore.State(a,row.dungeon(),UUID.randomUUID(),1,0,row.area(),row.template(),row.hash(),row.phase(),null,false,row.nextReset());try{repo.save(row,wrongWorld);throw new AssertionError("mapping mutation accepted");}catch(SecurityException expected){check(true,"gathering_physical_mapping_cannot_be_reassigned_by_CAS");}
+            var first=repo.save(row,next).handle((v,e)->e==null);var duplicate=repo.save(row,next).handle((v,e)->e==null);
+            return mainResult(first.thenCombine(duplicate,(x,y)->x!=y)).thenCompose(won->{check(won,"gathering_real_DB_same_revision_concurrent_write_has_one_winner");var stale=new GatheringDungeon(probeContent,repo,row,boundary,owner,SessionVerification::main,gatheringClock::get);return rejectQuest(stale.reset(UUID.randomUUID())).thenCompose(v->mainResult(repo.read())).thenAccept(actual->{check(actual.equals(next)&&stale.snapshot().phase()==GatheringStore.Phase.ERROR_HOLD&&stale.snapshot().generation()==0&&other.snapshot().equals(before),"gathering_real_DB_CAS_failure_original_and_other_run_preserved");stale.close();});});});
+    }
+
     private CompletionStage<Void> travelPlay(){return openAll().thenCompose(v->{
         var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(a).mapping().physicalId()));for(var station:paperTravel.content.stations().values()){var p=station.facility();world.getBlockAt((int)p.x(),(int)p.y(),(int)p.z()).setType(Material.CHISELED_STONE_BRICKS,false);}
         return journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,2,64,1.5);
@@ -2070,15 +2123,15 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->rejectQuest(probe.barrier(a))))
             .thenCompose(v->matrix());
     }
-    public CompletionStage<Void> barrier(UUID run){return (paperTravel==null?CompletableFuture.<Void>completedFuture(null):paperTravel.barrier(run)).thenComposeAsync(v->coordinator.barrier(run),owner).thenComposeAsync(v->combatPlayers==null?CompletableFuture.completedFuture(null):combatPlayers.barrier(run),owner).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)).thenCompose(v2->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run)),owner);}
-    public boolean canUnload(UUID run){return (paperTravel==null||paperTravel.settled(run))&&coordinator.canUnload(run) && (quests==null || quests.settled(run) && journal.settled(run) && (sharedStory==null||sharedStory.settled(run)));}
+    public CompletionStage<Void> barrier(UUID run){return (gathering==null?CompletableFuture.<Void>completedFuture(null):gathering.drain(run)).thenComposeAsync(v->paperTravel==null?CompletableFuture.completedFuture(null):paperTravel.barrier(run),owner).thenComposeAsync(v->coordinator.barrier(run),owner).thenComposeAsync(v->combatPlayers==null?CompletableFuture.completedFuture(null):combatPlayers.barrier(run),owner).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)).thenCompose(v2->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run)),owner);}
+    public boolean canUnload(UUID run){return (gathering==null||gathering.settled(run))&&(paperTravel==null||paperTravel.settled(run))&&coordinator.canUnload(run) && (quests==null || quests.settled(run) && journal.settled(run) && (sharedStory==null||sharedStory.settled(run)));}
     public CompletionStage<Void> restoreStoryWorld(UUID run){if(paperTravel!=null)paperTravel.ensureRegions(run);if(blockEffect==null)return CompletableFuture.completedFuture(null);blockEffect.prepared(run);var context=ctx(run,1);return sharedStory.load(context).thenComposeAsync(s->sharedStory.reconcile(context),owner).thenAccept(ok->{});}
-    public void releaseQuests(UUID run){if(quests!=null)quests.release(run);if(blockEffect!=null){blockEffect.unloaded(run);sharedStory.worldUnloaded(run);}}
+    public void releaseQuests(UUID run){if(gathering!=null)gathering.unloaded(run);if(quests!=null)quests.release(run);if(blockEffect!=null){blockEffect.unloaded(run);sharedStory.worldUnloaded(run);}}
     public CompletionStage<Void> shutdown(){
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
-        if(paperTravel!=null)paperTravel.close();if(combatPlayers!=null)combatPlayers.close();if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
+        if(gathering!=null)gathering.close();if(paperTravel!=null)paperTravel.close();if(combatPlayers!=null)combatPlayers.close();if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
         CompletionStage<Void> other=s3==null ? CompletableFuture.completedFuture(null) : coordinator.disconnect(s3);
-        return (economy==null?CompletableFuture.<Void>completedFuture(null):economy.shutdown()).thenCompose(v->mainResult(other)).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
+        return (gathering==null?CompletableFuture.<Void>completedFuture(null):CompletableFuture.allOf(worlds.keySet().stream().map(gathering::drain).map(CompletionStage::toCompletableFuture).toArray(CompletableFuture[]::new))).thenCompose(v->economy==null?CompletableFuture.<Void>completedFuture(null):economy.shutdown()).thenCompose(v->mainResult(other)).thenCompose(ignored -> coordinator.shutdown().handleAsync((v,error)->{
             if(error!=null && !(expectedHold && "23514".equals(s1.error()) && "MOVE_FAILED".equals(s2.error())
                     && generationProbes.size()==2 && generationProbes.values().stream().allMatch(s->s.state()==PlayerSessions.State.HOLD && "STALE_WORLD".equals(s.error()))
                     && Set.of("23514","MOVE_FAILED","STALE_WORLD").contains(LifecycleFailure.code(error))))throw new CompletionException(error);
@@ -2113,6 +2166,6 @@ public final class SessionVerification implements AutoCloseable {
             .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
     @Override public void close(){if(paperTravel!=null)paperTravel.close();
-        io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(economy,combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
+        io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(gathering,economy,combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
     }
 }

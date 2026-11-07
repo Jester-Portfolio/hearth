@@ -1,0 +1,17 @@
+package io.github.jesterportfolio.hearth.gathering;
+import io.github.jesterportfolio.hearth.persistence.*;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+/** 새 worker/풀 없이 기존 서버 발급 컨텍스트와 제한 DB 작업을 사용합니다. 소유자는 run+dungeon입니다. */
+public final class PostgresGatheringStore implements GatheringStore {
+    private final PostgresProgressStore db;private final ServerProgressAccess access;private final ServerProgressAccess.Context context;private final String dungeon;
+    public PostgresGatheringStore(PostgresProgressStore db,ServerProgressAccess access,ServerProgressAccess.Context context,String dungeon){this.db=db;this.access=access;this.context=context;this.dungeon=dungeon;access.requireIssued(context);GatheringContent.key(dungeon);}
+    private State row(ResultSet r)throws Exception{return new State(context.storyRunId(),dungeon,r.getObject(1,UUID.class),r.getLong(2),r.getLong(3),r.getString(4),r.getString(5),r.getString(6),Phase.valueOf(r.getString(7)),r.getObject(8,UUID.class),r.getBoolean(9),r.getLong(10));}
+    public CompletionStage<State> read(){return db.module("gathering_read",c->{access.requireIssued(context);try(var q=c.prepareStatement("SELECT world_uuid,revision,generation,area_hash,template_version,template_hash,phase,request_id,empty_reset,next_reset FROM hearth_progress.gathering_instance WHERE story_run_id=? AND dungeon_id=?")){q.setObject(1,context.storyRunId());q.setString(2,dungeon);try(var r=q.executeQuery()){if(!r.next())throw new StorageFailure("gathering","GATHERING_MISSING");return row(r);}}});}
+    private void require(State s){access.requireIssued(context);if(!s.run().equals(context.storyRunId())||!s.dungeon().equals(dungeon))throw new SecurityException("GATHERING_OWNER");}
+    public CompletionStage<State> create(State s){require(s);return db.module("gathering_create",c->{try(var q=c.prepareStatement("INSERT INTO hearth_progress.gathering_instance VALUES(?,?,?,?,?,?,?,?,?,?,?,?)")){q.setObject(1,s.run());q.setString(2,s.dungeon());values(q,s,3);q.executeUpdate();return s;}});}
+    private static void values(PreparedStatement q,State s,int offset)throws Exception{q.setObject(offset,s.world());q.setLong(offset+1,s.revision());q.setLong(offset+2,s.generation());q.setString(offset+3,s.area());q.setString(offset+4,s.template());q.setString(offset+5,s.hash());q.setString(offset+6,s.phase().name());q.setObject(offset+7,s.request());q.setBoolean(offset+8,s.emptyReset());q.setLong(offset+9,s.nextReset());}
+    public CompletionStage<State> save(State expected,State next){require(expected);require(next);if(!next.world().equals(expected.world())||!next.area().equals(expected.area()))throw new SecurityException("GATHERING_MAPPING_IMMUTABLE");if(next.revision()!=expected.revision()+1)throw new IllegalArgumentException("GATHERING_REVISION");return db.module("gathering_save",c->{try(var q=c.prepareStatement("UPDATE hearth_progress.gathering_instance SET world_uuid=?,revision=?,generation=?,area_hash=?,template_version=?,template_hash=?,phase=?,request_id=?,empty_reset=?,next_reset=? WHERE story_run_id=? AND dungeon_id=? AND revision=? AND generation=? AND phase=?")){values(q,next,1);q.setObject(11,expected.run());q.setString(12,dungeon);q.setLong(13,expected.revision());q.setLong(14,expected.generation());q.setString(15,expected.phase().name());if(q.executeUpdate()!=1)throw new StorageFailure("gathering","CAS_CONFLICT");return next;}});}
+}

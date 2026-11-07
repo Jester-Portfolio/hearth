@@ -39,3 +39,6 @@ economy-verification-enabled: false
 
 # ADR-0008 이동 기술 경로만 격리 시험합니다. 일반 서버에서는 비활성입니다.
 fast-travel-verification-enabled: false
+
+# 제한 구역 채집 인던은 명시적 격리 시험에서만 활성화합니다.
+gathering-verification-enabled: false

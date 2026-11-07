@@ -1,0 +1,59 @@
+package io.github.jesterportfolio.hearth.gathering;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.*;
+import static io.github.jesterportfolio.hearth.gathering.GatheringStore.*;
+
+/** 전투 재도전과 독립된 채집 구역 수명주기. 시간/주기/구역은 제작자 콘텐츠 값입니다. */
+public final class GatheringDungeon implements AutoCloseable {
+    public interface Member {UUID player();Object session();boolean current();}
+    public interface Boundary {
+        boolean current();void notice(String message);CompletionStage<Void> prepare(GatheringContent.Template template,UUID request,BooleanSupplier valid);
+        CompletionStage<Void> save(List<Member> members);CompletionStage<Void> evacuate(List<Member> members,BooleanSupplier valid);
+        CompletionStage<Void> apply(GatheringContent.Template template,BooleanSupplier valid);CompletionStage<Void> flush();CompletionStage<Void> acknowledge(UUID request);
+        CompletionStage<Boolean> enter(Member member,long generation,BooleanSupplier valid);default void release(){}
+    }
+    private record Lease(Member member,long generation){}
+    private record Reservation(Member member,CompletableFuture<Void> result){}
+    private record Arrival(boolean ok,long generation){}
+    private final GatheringContent content;private final GatheringStore store;private final Boundary boundary;private final Executor owner;private final Runnable check;private final LongSupplier clock;
+    private State row;private final Map<UUID,Lease> members=new HashMap<>();private final Map<UUID,Reservation> reservations=new HashMap<>();private final Map<Member,CompletableFuture<Boolean>> arriving=new IdentityHashMap<>();private CompletableFuture<Void> reset;private CompletionStage<Void> bookkeeping=CompletableFuture.completedFuture(null);private final Set<CompletableFuture<?>> work=new HashSet<>();private boolean closed,hold,warned,populated;private long publishedGeneration;
+    public GatheringDungeon(GatheringContent content,GatheringStore store,State state,Boundary boundary,Executor owner,Runnable check,LongSupplier clock){this.content=content;this.store=store;row=state;this.boundary=boundary;this.owner=owner;this.check=check;this.clock=clock;publishedGeneration=state.generation();var old=content.templates().get(state.template());if(!state.dungeon().equals(content.id())||!state.area().equals(content.area().hash())||old==null||!old.hash().equals(state.hash()))throw new IllegalArgumentException("GATHERING_MAPPING_OR_TEMPLATE");hold=state.phase()!=Phase.OPEN;}
+    public State snapshot(){check.run();return new State(row.run(),row.dungeon(),row.world(),row.revision(),publishedGeneration,row.area(),row.template(),row.hash(),hold?Phase.ERROR_HOLD:reset!=null&&!reset.isDone()?Phase.RESETTING:row.phase(),row.request(),row.emptyReset(),row.nextReset());}
+    private boolean current(){check.run();return !closed&&!hold&&boundary.current();}
+    private void require(){if(!current())throw new IllegalStateException("GATHERING_STALE_OR_HOLD");}
+    private State next(Phase phase,long generation,String version,String hash,UUID request,boolean empty,long due){return new State(row.run(),row.dungeon(),row.world(),row.revision()+1,generation,row.area(),version,hash,phase,request,empty,due);}
+    private CompletionStage<Void> persist(State next){var expected=row;return store.save(expected,next).thenAcceptAsync(saved->{if(!saved.equals(next))throw new IllegalStateException("GATHERING_STORE_RESULT");row=saved;},owner);}
+    private <T> CompletionStage<T> track(CompletionStage<T> stage){var future=stage.toCompletableFuture();work.add(future);stage.whenCompleteAsync((v,e)->work.remove(future),owner);return stage;}
+    public boolean canGather(Member m,long generation){check.run();var l=members.get(m.player());return current()&&(reset==null||reset.isDone())&&row.phase()==Phase.OPEN&&generation==publishedGeneration&&l!=null&&l.member().session()==m.session()&&l.generation()==generation&&m.current();}
+    public CompletionStage<Void> enter(Member member){check.run();if(!current()||!member.current())return CompletableFuture.failedFuture(new IllegalStateException("GATHERING_ENTRY_DENIED"));var existing=members.get(member.player());if(existing!=null&&reset!=null&&!reset.isDone())return reset.thenComposeAsync(v->enter(member),owner);if(existing!=null)return existing.member().session()==member.session()?CompletableFuture.completedFuture(null):CompletableFuture.failedFuture(new IllegalStateException("GATHERING_SESSION_BUSY"));var reserved=reservations.get(member.player());if(reserved!=null)return reserved.member().session()==member.session()?reserved.result():CompletableFuture.failedFuture(new IllegalStateException("GATHERING_SESSION_BUSY"));
+        if(members.size()+reservations.size()>=32)return CompletableFuture.failedFuture(new IllegalStateException("GATHERING_CAPACITY"));var result=new CompletableFuture<Void>();var r=new Reservation(member,result);reservations.put(member.player(),r);
+        var task=bookkeeping.thenComposeAsync(v->{require();return reset!=null&&!reset.isDone()?reset:row.emptyReset()||clock.getAsLong()>=row.nextReset()?reset(UUID.randomUUID()):CompletableFuture.completedFuture(null);},owner)
+            .thenComposeAsync(v->{require();if(reservations.get(member.player())!=r||result.isDone()||!member.current())throw new IllegalStateException("GATHERING_ENTRY_STALE");long gen=publishedGeneration;if(row.phase()!=Phase.OPEN||reset!=null&&!reset.isDone())throw new IllegalStateException("GATHERING_ENTRY_RESETTING");
+                var movement=boundary.enter(member,gen,()->entryAllowed(member,r,gen)).toCompletableFuture().orTimeout(30,TimeUnit.SECONDS);arriving.put(member,movement);movement.whenCompleteAsync((ok,error)->arriving.remove(member,movement),owner);return movement.thenApply(ok->new Arrival(Boolean.TRUE.equals(ok),gen));},owner)
+            .thenAcceptAsync(ok->{require();if(!ok.ok()||!entryAllowed(member,r,ok.generation()))throw new IllegalStateException("GATHERING_ENTRY_FAILED");members.put(member.player(),new Lease(member,publishedGeneration));populated=true;},owner);
+        track(task.toCompletableFuture().orTimeout(30,TimeUnit.SECONDS).whenCompleteAsync((v,error)->{reservations.remove(member.player(),r);if(error==null)result.complete(null);else result.completeExceptionally(error);if(members.isEmpty()&&reservations.isEmpty())markEmpty();},owner));return result;
+    }
+    private boolean entryAllowed(Member m,Reservation r,long gen){return current()&&row.phase()==Phase.OPEN&&(reset==null||reset.isDone())&&reservations.get(m.player())==r&&!r.result().isDone()&&m.current()&&publishedGeneration==gen;}
+    public boolean reserved(Member m){check.run();var r=reservations.get(m.player());return current()&&(reset==null||reset.isDone())&&r!=null&&r.member().session()==m.session()&&!r.result().isDone();}
+    public CompletionStage<Void> leave(Member member){check.run();var r=reservations.get(member.player());if(r!=null&&r.member().session()==member.session())r.result().completeExceptionally(new IllegalStateException("GATHERING_ENTRY_CANCELLED"));var l=members.get(member.player());if(l!=null&&l.member().session()==member.session())members.remove(member.player(),l);return markEmpty();}
+    private CompletionStage<Void> markEmpty(){if(closed||hold||!populated||!members.isEmpty()||!reservations.isEmpty()||reset!=null&&!reset.isDone())return bookkeeping;populated=false;
+        bookkeeping=bookkeeping.thenComposeAsync(v->{if(hold||row.emptyReset())return CompletableFuture.completedFuture(null);return persist(next(Phase.OPEN,publishedGeneration,row.template(),row.hash(),row.request(),true,row.nextReset()));},owner);bookkeeping.whenCompleteAsync((v,e)->{if(e!=null)hold=true;},owner);return bookkeeping;}
+    /** 정기/재입장 요청은 같은 pending 작업을 공유하고 성공 전에는 공개 세대를 올리지 않습니다. */
+    public CompletionStage<Void> reset(UUID request){check.run();Objects.requireNonNull(request);if(reset!=null&&!reset.isDone())return reset;if(row.request()!=null&&row.request().equals(request))return hold?CompletableFuture.failedFuture(new IllegalStateException("GATHERING_HOLD")):CompletableFuture.completedFuture(null);if(!current())return CompletableFuture.failedFuture(new IllegalStateException("GATHERING_HOLD"));
+        reset=new CompletableFuture<>();var result=reset;var template=content.templates().get(content.active());var oldGeneration=publishedGeneration;var people=new LinkedHashMap<UUID,Member>();members.values().forEach(l->people.put(l.member().player(),l.member()));arriving.keySet().forEach(m->people.put(m.player(),m));var occupants=List.copyOf(people.values());var oldArrivals=CompletableFuture.allOf(arriving.values().toArray(CompletableFuture[]::new)).handle((v,e)->(Void)null);
+        boundary.notice("채집 인던 초기화 안내 · 저장 후 입구로 이동합니다.");
+        CompletionStage<Void> task=bookkeeping.thenComposeAsync(v->oldArrivals,owner).thenComposeAsync(v->{require();return boundary.prepare(template,request,this::current);},owner)
+            .thenComposeAsync(v->{require();return persist(next(Phase.RESETTING,oldGeneration,row.template(),row.hash(),request,row.emptyReset(),row.nextReset()));},owner)
+            .thenComposeAsync(v->{require();return boundary.save(occupants);},owner).thenComposeAsync(v->{require();return boundary.evacuate(occupants,this::current);},owner)
+            .thenComposeAsync(v->{require();members.clear();populated=false;return boundary.apply(template,this::current);},owner).thenComposeAsync(v->{require();return boundary.flush();},owner)
+            .thenComposeAsync(v->{require();return persist(next(Phase.OPEN,Math.incrementExact(oldGeneration),template.version(),template.hash(),request,false,Math.addExact(clock.getAsLong(),content.intervalMillis())));},owner)
+            .thenComposeAsync(v->{require();return boundary.acknowledge(request);},owner).thenRunAsync(()->{require();publishedGeneration=row.generation();warned=false;},owner);
+        track(task.toCompletableFuture().orTimeout(30,TimeUnit.SECONDS)).whenCompleteAsync((v,error)->{try{boundary.release();}catch(RuntimeException e){if(error==null)error=e;}if(error==null){result.complete(null);return;}hold=true;var failure=error;var held=next(Phase.ERROR_HOLD,oldGeneration,row.template(),row.hash(),request,true,row.nextReset());store.save(row,held).whenCompleteAsync((saved,writeError)->{if(writeError==null)row=saved;result.completeExceptionally(failure);},owner);},owner);return result;
+    }
+    public CompletionStage<Void> pulse(){check.run();if(!current())return CompletableFuture.failedFuture(new IllegalStateException("GATHERING_HOLD"));long left=row.nextReset()-clock.getAsLong();if(!warned&&left<=content.warningMillis()){warned=true;boundary.notice("채집 인던 정기 초기화가 곧 시작됩니다.");}return left<=0?reset(UUID.randomUUID()):CompletableFuture.completedFuture(null);}
+    public int occupants(){check.run();return members.size();}public boolean settled(){check.run();return work.stream().allMatch(CompletableFuture::isDone)&&arriving.values().stream().allMatch(CompletableFuture::isDone)&&bookkeeping.toCompletableFuture().isDone()&&(reset==null||reset.isDone());}
+    public CompletionStage<Void> barrier(){check.run();var book=bookkeeping;var resetting=reset;var all=new ArrayList<CompletableFuture<?>>();all.addAll(work);all.addAll(arriving.values());all.add(book.toCompletableFuture());if(resetting!=null)all.add(resetting);return CompletableFuture.allOf(all.toArray(CompletableFuture[]::new)).handleAsync((v,error)->error,owner).thenComposeAsync(error->{if(bookkeeping!=book||reset!=resetting||!settled())return barrier();return error==null?CompletableFuture.completedFuture(null):CompletableFuture.failedFuture(error);},owner);}
+    public void close(){check.run();if(closed)return;markEmpty();for(var r:reservations.values())r.result().completeExceptionally(new IllegalStateException("GATHERING_CLOSED"));closed=true;}
+}
