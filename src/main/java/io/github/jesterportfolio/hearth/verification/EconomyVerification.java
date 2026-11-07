@@ -134,6 +134,58 @@ public final class EconomyVerification implements AutoCloseable {
                 .thenAccept(found->check(EconomyRecovery.decide(request,before,after,found)==EconomyRecovery.Decision.REVIEW_REQUIRED,"newer_account_cannot_be_overwritten_by_old_receipt"));
         });
     }
+    public CompletionStage<Void> runReport(){
+        return on(economy.store.migrate()).thenCompose(v->on(economy.store.createRealm(PaperEconomy.REALM,System.currentTimeMillis())))
+            .thenCompose(v->on(economy.store.createRealm(PaperEconomy.OTHER,System.currentTimeMillis()))).thenCompose(v->{
+                var jobs=new ArrayList<CompletionStage<?>>();for(int i=1;i<=2;i++){var a=new Actor(i);actors.add(a);jobs.add(economy.store.createAccount(a.context,100000,items(8)));}
+                jobs.add(economy.store.createAccount(economy.store.context(PaperEconomy.OTHER,actors.getFirst().context.playerId()),1234,items(3)));return all(jobs);
+            }).thenCompose(v->{var jobs=new ArrayList<CompletionStage<?>>();for(var a:actors){a.session=economy.sessions.connect(a.context,economy.world,a);jobs.add(a.session.ready());}return all(jobs);})
+            .thenCompose(v->reportDeferred()).thenCompose(v->reportInitial()).thenCompose(v->reportShippingAndEvents()).thenCompose(v->reportPrivate())
+            .thenCompose(v->cycle());
+    }
+    private CompletionStage<Void> reportDeferred(){
+        var calls=new int[1];int tick=Bukkit.getCurrentTick();var current=new java.util.concurrent.atomic.AtomicBoolean(true);
+        economy.deferReportView(()->true,()->calls[0]+=Bukkit.getCurrentTick()>tick?1:100);economy.deferReportView(current::get,()->calls[0]+=10);current.set(false);
+        check(calls[0]==0,"report_view_not_changed_inside_click_path");return waitUntil(()->Bukkit.getCurrentTick()>=tick+2).thenRun(()->{plugin.getLogger().info("HEARTH_REPORT_DEFER original_tick="+tick+" current_tick="+Bukkit.getCurrentTick()+" calls="+calls[0]);check(calls[0]==1,"report_next_tick_stale_view_rejected");});
+    }
+    private CompletionStage<EconomyReport.View> report(String region){return on(economy.store.report(actors.getFirst().context,economy.reportDefinition,region));}
+    private void reportViews(EconomyReport.View view){
+        var a=actors.getFirst();var before=a.value;for(String section:List.of("MARKET","REGIONS","ROUTES","EVENTS","FACILITIES")){
+            var inventory=economy.previewReport(a.session,view,section,0);check(inventory.getSize()==54&&inventory.getItem(45)!=null&&inventory.getItem(51)!=null,"report_actual_inventory_"+section);
+            if(section.equals("MARKET"))check(inventory.getItem(0).getType()==Material.IRON_INGOT,"report_market_goods_not_placeholder");
+        }check(before.equals(a.value)&&!a.session.save().dirty(),"report_render_no_inventory_dirty");
+    }
+    private CompletionStage<Void> reportInitial(){
+        var a=actors.getFirst();return on(economy.store.snapshot(PaperEconomy.REALM)).thenCompose(before->report("capital").thenCompose(view->{
+            check(view.tick()==0&&view.markets().size()==2&&view.routes().getFirst().inTransit()==0&&view.events().isEmpty(),"report_initial_actual_values");reportViews(view);
+            return on(economy.store.report(actors.get(1).context,economy.reportDefinition,"capital")).thenAccept(other->check(view.equals(other),"report_shared_market_not_personal_inventory"));
+        }).thenCompose(v->on(economy.store.snapshot(PaperEconomy.REALM))).thenAccept(after->check(before.equals(after),"report_query_no_tick_or_market_change")))
+            .thenCompose(v->rejectedCall(()->economy.store.report(a.context,economy.reportDefinition,"missing"),null))
+            .thenCompose(v->rejected(economy.store.report(economy.store.context(PaperEconomy.REALM,new UUID(0x45434f,999)),economy.reportDefinition,"capital"),"ECON_ACCOUNT_MISSING"))
+            .thenCompose(v->rejected(economy.store.report(new ServerProgressAccess().forVerifiedServerLink(PaperEconomy.REALM,a.context.playerId()),economy.reportDefinition,"capital"),null));
+    }
+    private CompletionStage<Void> reportShippingAndEvents(){
+        return on(economy.store.tick(PaperEconomy.REALM,0,System.currentTimeMillis())).thenCompose(v->report("capital")).thenCompose(cached->{
+            check(cached.tick()==1&&cached.routes().getFirst().inTransit()==10&&cached.routes().getFirst().nextArrival()==3,"report_actual_departure_delay");
+            var work=economy.store.event(PaperEconomy.REALM,new UUID(89,1),"road_block");return on(work).thenCompose(v->on(economy.store.event(PaperEconomy.REALM,new UUID(89,2),"mine_collapse")))
+                .thenCompose(v->on(economy.store.event(PaperEconomy.REALM,new UUID(89,3),"demand_surge"))).thenCompose(v->report("capital"))
+                .thenAccept(view->check(view.events().size()==3&&view.events().stream().allMatch(EconomyReport.EventRow::scheduled)&&!view.routes().getFirst().blocked(),"report_scheduled_event_not_early_apply"))
+                .thenCompose(v->{var ticking=economy.store.tick(PaperEconomy.REALM,1,System.currentTimeMillis());var reading=economy.store.report(actors.getFirst().context,economy.reportDefinition,"capital");return on(ticking.thenCombine(reading,(applied,view)->{if(!applied)throw new AssertionError("Tick rejected");return view;}));})
+                .thenAccept(view->{check(view.tick()==1||view.tick()==2,"report_tick_concurrent_atomic_read");check(view.routes().getFirst().blocked()==(view.tick()==2)&&view.routes().getFirst().nextArrival()==4-view.tick(),"report_route_and_event_same_clock");})
+                .thenCompose(v->report("capital")).thenAccept(view->{check(view.tick()==2&&view.events().size()==3&&view.events().stream().noneMatch(EconomyReport.EventRow::scheduled),"report_refresh_observes_active_events");check(view.markets().getFirst().demand()==6&&view.routes().getFirst().blocked()&&view.routes().getFirst().inTransit()==10,"report_current_demand_route_state");check(cached.tick()==1&&!cached.routes().getFirst().blocked(),"report_old_snapshot_stays_immutable");reportViews(view);})
+                .thenCompose(v->report("mine")).thenAccept(view->check(view.facilities().getFirst().capacity()==0&&view.events().size()==2,"report_public_mine_production_stop"))
+                .thenCompose(v->on(economy.store.tick(PaperEconomy.REALM,2,System.currentTimeMillis()))).thenCompose(v->on(economy.store.tick(PaperEconomy.REALM,3,System.currentTimeMillis())))
+                .thenCompose(v->report("capital")).thenAccept(view->check(view.tick()==4&&view.routes().getFirst().blocked()&&view.routes().getFirst().inTransit()==0&&view.routes().getFirst().shipments()==0,"report_arrival_processed_while_new_departures_blocked"));
+        });
+    }
+    private CompletionStage<Void> reportPrivate(){
+        var settings=new Properties();try{PaperEconomy.load(plugin,settings);}catch(Exception e){return CompletableFuture.failedFuture(e);}settings.setProperty("report-events","");settings.setProperty("report-routes","");settings.setProperty("report-facilities","");
+        var hidden=EconomyReport.parse(settings,economy.store.content(),economy.shop);var a=actors.getFirst();
+        return on(economy.store.report(a.context,hidden,"capital")).thenAccept(view->check(view.events().isEmpty()&&view.routes().isEmpty()&&view.facilities().isEmpty()&&!view.toString().contains("mine_collapse"),"report_unlisted_details_not_in_public_DTO"))
+            .thenCompose(v->on(economy.store.report(economy.store.context(PaperEconomy.OTHER,a.context.playerId()),economy.reportDefinition,"capital")))
+            .thenAccept(view->check(view.tick()==0&&view.events().isEmpty()&&view.routes().getFirst().inTransit()==0&&view.markets().getFirst().stock()==100,"report_other_realm_unchanged"))
+            .thenCompose(v->on(economy.store.account(a.context))).thenAccept(account->check(account.balance()==100000&&account.inventory().revision()==0&&account.inventory().payload().equals(items(8)),"report_owner_account_inventory_unchanged"));
+    }
     public CompletionStage<Void> shutdown(){return economy.shutdown().thenComposeAsync(v->waitUntil(()->economy.world.state()==WorldLifecycle.State.OFFLINE),owner).thenRun(()->plugin.getLogger().info("HEARTH_ECONOMY_TIMING "+timings));}
     public void close(){economy.close();}
 }

@@ -1,0 +1,179 @@
+{
+  "outcome": "PASS",
+  "failure": null,
+  "cleanup_errors": [],
+  "workspace": "/tmp/hearth-s4-11.ltgZdJbf",
+  "duration_seconds": 35.148,
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 1,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "processes": {
+    "database": {
+      "pid": 3940953,
+      "exit_code": 0,
+      "ready_seconds": null,
+      "duration_seconds": 34.545,
+      "shutdown_seconds": 0.408,
+      "max_sampled_rss_kib": 220136,
+      "observed_cpu_seconds": 2.32,
+      "min_sampled_host_available_kib": 12310884,
+      "sample_count": 550,
+      "checks": [],
+      "timings": [],
+      "states": []
+    },
+    "paper-prepare": {
+      "pid": 3941009,
+      "exit_code": 0,
+      "ready_seconds": 15.884,
+      "duration_seconds": 31.535,
+      "shutdown_seconds": 3.754,
+      "max_sampled_rss_kib": 1189376,
+      "observed_cpu_seconds": 59.91,
+      "min_sampled_host_available_kib": 12310884,
+      "sample_count": 497,
+      "checks": [
+        "world_IO_pool_closed"
+      ],
+      "timings": [],
+      "states": []
+    }
+  },
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "a8af2afde60450b1fbee3ce58f93977b649a198982108a3f59e47d32cc423b40",
+  "session_checks": [
+    "fixture_prepared_no_login_provisioning",
+    "economy_report_view_not_changed_inside_click_path",
+    "economy_report_next_tick_stale_view_rejected",
+    "economy_report_initial_actual_values",
+    "economy_report_actual_inventory_MARKET",
+    "economy_report_market_goods_not_placeholder",
+    "economy_report_actual_inventory_REGIONS",
+    "economy_report_actual_inventory_ROUTES",
+    "economy_report_actual_inventory_EVENTS",
+    "economy_report_actual_inventory_FACILITIES",
+    "economy_report_render_no_inventory_dirty",
+    "economy_report_shared_market_not_personal_inventory",
+    "economy_report_query_no_tick_or_market_change",
+    "economy_reject_SQL_rollback",
+    "economy_reject_ECON_ACCOUNT_MISSING",
+    "economy_reject_SQL_rollback",
+    "economy_report_actual_departure_delay",
+    "economy_report_scheduled_event_not_early_apply",
+    "economy_report_tick_concurrent_atomic_read",
+    "economy_report_route_and_event_same_clock",
+    "economy_report_refresh_observes_active_events",
+    "economy_report_current_demand_route_state",
+    "economy_report_old_snapshot_stays_immutable",
+    "economy_report_actual_inventory_MARKET",
+    "economy_report_market_goods_not_placeholder",
+    "economy_report_actual_inventory_REGIONS",
+    "economy_report_actual_inventory_ROUTES",
+    "economy_report_actual_inventory_EVENTS",
+    "economy_report_actual_inventory_FACILITIES",
+    "economy_report_render_no_inventory_dirty",
+    "economy_report_public_mine_production_stop",
+    "economy_report_arrival_processed_while_new_departures_blocked",
+    "economy_report_unlisted_details_not_in_public_DTO",
+    "economy_report_other_realm_unchanged",
+    "economy_report_owner_account_inventory_unchanged",
+    "economy_world_saved_regions_unloaded"
+  ],
+  "economy_report_mode": true,
+  "economy_desk_mode": false,
+  "economy_mode": true,
+  "boss_areas_mode": false,
+  "boss_patterns_mode": false,
+  "combat_departures_mode": false,
+  "combat_players_mode": false,
+  "combat_paths_mode": false,
+  "combat_state_mode": false,
+  "field_encounters_mode": false,
+  "branch_progression_mode": false,
+  "quest_completion_mode": false,
+  "general_npcs_mode": false,
+  "npc_topics_mode": false,
+  "world_effects_mode": false,
+  "story_batch_mode": false,
+  "explore_batch_mode": false,
+  "sessions_mode": true,
+  "quests_mode": false,
+  "quest_list_mode": false,
+  "quest_info_mode": false,
+  "quest_auto_mode": false,
+  "quest_npc_mode": false,
+  "quest_start_mode": false,
+  "quest_requires_mode": false,
+  "quest_batch_mode": false,
+  "manual_player_mode": false,
+  "installed_plugin_sha256": "a8af2afde60450b1fbee3ce58f93977b649a198982108a3f59e47d32cc423b40",
+  "snapshots": [],
+  "runtime_library_jars": [
+    "libraries/com/zaxxer/HikariCP/7.1.0/HikariCP-7.1.0.jar",
+    "libraries/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar",
+    "libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+    "libraries/org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar",
+    "libraries/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar"
+  ],
+  "player_actions_verdict": "NOT_RUN",
+  "not_executed": [
+    "실제 인증 플레이어/로그인·텔레포트",
+    "PostgreSQL 프로세스 재시작",
+    "실제 파일시스템 저장 장애·강제 종료 복구",
+    "TPS/MSPT·장기 부하·메모리 누수",
+    "운영 배포·운영 경제 정책",
+    "실제 NPC/시장 화면 클릭·거리 이탈·종료/재접속",
+    "두 번째 Paper JVM(저장 형식 불변)",
+    "실물 운송·운송비·운영 화폐·사건의 퀘스트 조건 실행"
+  ],
+  "runtime_source_sha256": "1d281d99eb8d377729e8993a318ef050bae25515633e8b6e4634df4834768931",
+  "unit_checks": {
+    "io.github.jesterportfolio.hearth.economy.EconomyReportTest": {
+      "tests": 10,
+      "result": "PASS"
+    },
+    "io.github.jesterportfolio.hearth.economy.EconomyEngineTest": {
+      "tests": 3,
+      "result": "PASS"
+    },
+    "io.github.jesterportfolio.hearth.economy.EconomyDeskTest": {
+      "tests": 7,
+      "result": "PASS"
+    }
+  },
+  "previous_bundles": [
+    {
+      "workspace": "/tmp/hearth-s4-11.CxPUEUSy",
+      "outcome": "PASS",
+      "failure": null,
+      "duration_seconds": 36.355,
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "524a90c5cdab3c4302da8a7d5c459a4ae971d0513054a32af38d94a0c0281663"
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.1xL3v3Ys",
+      "outcome": "FAIL",
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+      "duration_seconds": 32.492,
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "all_owned_processes_and_ports_closed": false,
+      "plugin_sha256": "a922d73865f7c5da0d88b04783b21e2ffb9f3d26a918eafb4768df8875728647",
+      "subsequent_cleanup_observation": "Hikari 종료 완료 로그, 부모 프로세스 부재, localhost 25585/46115 미연결, postmaster.pid 부재를 확인. 원본 FAIL 표식은 보존."
+    }
+  ],
+  "deferred_view_observation": {
+    "original_tick": 146,
+    "observation_tick": 148,
+    "applied_callbacks": 1
+  }
+}

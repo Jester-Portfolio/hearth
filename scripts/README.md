@@ -95,3 +95,5 @@
 경제 전용 통합은 새 격리 환경의 `verify-lifecycle.py --sessions --economy` 단독 경로다. 기존 제한 worker·PG 1개·순차 두 Paper JVM·600초/CPU/RAM 감시를 재사용한다. 경제 fixture와 스토리 데이터를 분리하며 NPC 클릭/인증 플레이어 시험은 실행하지 않는다. 정확한 범위와 결과는 [경제 검증](../docs/economy-verification.md)을 따른다.
 
 경제 상점/관리 변경만 검사할 때는 `--sessions --economy --economy-desk`를 사용한다. E001 기존 행을 새 격리 DB에 준비한 뒤 E002 보존·두 상품/기록·명시적 HOLD 정리·새 내부 세션 복원을 Paper 한 JVM에서 검사한다. 이전 90일/두 JVM 전체 검사는 반복하지 않는다. [범위·관리 명령](../docs/economy-desk-verification.md)을 따른다.
+
+시장 정보 연결은 `--sessions --economy --economy-report` 단독 한 JVM 경로로 검사한다. 기존 두 JVM 전체 검사를 반복하지 않고 공개 범위·조회 불변·경제 Tick 동시 조회·실제 운송/사건·화면 객체·다음 틱 전환을 함께 확인한다. [범위와 결과](../docs/economy-report-verification.md)를 따른다.

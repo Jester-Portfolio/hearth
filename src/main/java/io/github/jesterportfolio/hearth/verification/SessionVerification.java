@@ -267,7 +267,7 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
-        case "economy-start", "economy-resume", "economy-desk" -> {if(economy!=null)throw new IllegalStateException("Economy already initialized");adapter.close();autosave.close();try{economy=new EconomyVerification(plugin,store,owner,codec,phase.equals("economy-resume"));}catch(Exception e){throw new CompletionException(e);}yield phase.equals("economy-desk")?economy.runDesk():economy.run();}
+        case "economy-start", "economy-resume", "economy-desk", "economy-report" -> {if(economy!=null)throw new IllegalStateException("Economy already initialized");adapter.close();autosave.close();try{economy=new EconomyVerification(plugin,store,owner,codec,phase.equals("economy-resume"));}catch(Exception e){throw new CompletionException(e);}yield switch(phase){case "economy-desk"->economy.runDesk();case "economy-report"->economy.runReport();default->economy.run();};}
         case "effect-prepare" -> effectPrepare();
         case "effect-db-failure" -> effectDbFailure();
         case "effect-db-recover" -> sharedStory.refresh(a1).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.openVote(a1,s1,()->true)).thenAccept(vote->storyVote=vote);

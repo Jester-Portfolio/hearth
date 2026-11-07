@@ -84,6 +84,11 @@ public final class EconomyStore implements InventoryStore {
         try(var st=c.prepareStatement("SELECT request_id,region_id,good_id,quantity,buy,total,inventory_revision,player_uuid,fingerprint FROM hearth_economy.trade WHERE realm_id=? AND request_id=?")){st.setObject(1,request.context().storyRunId());st.setObject(2,request.id());try(var rows=st.executeQuery()){if(rows.next()){if(!rows.getObject(8,UUID.class).equals(request.context().playerId())||!rows.getString(9).equals(request.fingerprint()))throw fail("ECON_REQUEST_CONFLICT");found=Optional.of(entry(rows));}}}
         return new Inspection(found,account(c,request.context(),false));
     });});}
+    /** 소유 Context는 worker에서 확인하고 같은 realm 잠금 아래 읽은 실제 상태만 공개 DTO로 투영합니다. */
+    public CompletionStage<EconomyReport.View> report(ServerProgressAccess.Context context,EconomyReport.Definition definition,String region){
+        if(!definition.allows(region))throw new IllegalArgumentException("ECON_REPORT_REGION");
+        return db.module("economy_report",c->{access(context);return tx(c,()->{var clock=realm(c,context.storyRunId(),true);account(c,context,false);return definition.project(content,snapshot(c,context.storyRunId(),clock[0]),region);});});
+    }
     private Optional<Receipt> receipt(Connection c,ServerProgressAccess.Context ctx,UUID id,String fingerprint)throws Exception{try(var st=c.prepareStatement("SELECT player_uuid,fingerprint,total FROM hearth_economy.trade WHERE realm_id=? AND request_id=?")){st.setObject(1,ctx.storyRunId());st.setObject(2,id);try(var r=st.executeQuery()){if(!r.next())return Optional.empty();if(!r.getObject(1,UUID.class).equals(ctx.playerId())||fingerprint!=null&&!fingerprint.equals(r.getString(2)))throw fail("ECON_REQUEST_CONFLICT");return Optional.of(new Receipt(id,r.getLong(3),account(c,ctx,false),true));}}}
     public CompletionStage<Optional<Receipt>> receipt(ServerProgressAccess.Context ctx,UUID id){return db.module("economy_receipt",c->{access(ctx);return receipt(c,ctx,id,null);});}
     public CompletionStage<Receipt> trade(Request request,Stored before,InventoryPayload after,BooleanSupplier valid,Probe probe){return db.module("economy_trade",c->{access(request.context());var result=tx(c,()->{
