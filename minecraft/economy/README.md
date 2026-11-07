@@ -29,3 +29,11 @@ AI 스마트폰 어시스턴트는 선택 기능이며 제거할 수 있도록 �
 `report-regions`, `report-goods`, `report-routes`, `report-facilities`, `report-events`와 이름/사건 설명·공개 지역을 콘텐츠에 지정한다. 기본값은 상점 지역/상품이며 미등록 시설·운송로·사건은 공개하지 않는다. 기존 설정 파일을 자동 덮어쓰거나 hot reload하지 않는다.
 
 `EconomyReport`는 계정/인벤토리/물리 월드 식별자가 없는 공개 DTO를 만든다. 상점의 탭·페이지는 같은 조회 결과를 재사용하고 새로고침에서만 DB를 읽는다. 다른 지역 화면은 참고 조회이며 실제 거래는 상점의 최신 견적을 다시 읽는다. 새로운 저장 스키마·가격 규칙·화폐/운송비 정책을 추가하지 않았다. [최신 검증](../../docs/economy-report-verification.md)과 `--sessions --economy --economy-report` 한 JVM 도구를 따른다.
+
+## 복수 지역 상인
+
+`merchants` 목록과 `merchant.<id>.name/region/goods/x/y/z`로 상인의 ID·지역·취급 상품·위치를 각각 정의한다. 기존 `merchant-*` 단일 설정은 `legacy_merchant`로 읽는다. 새 공개 fixture는 수도 상인과 광산 상인을 같은 격리 플랫폼의 서로 다른 위치에 배치한다. 이 배치는 실제 운영 지리나 이동 수단을 확정하지 않는다. 기존 콘텐츠 파일·실제 월드를 자동 덮어쓰지 않는다.
+
+NPC 우클릭으로 고른 상인의 지역 재고/가격으로만 거래한다. 화면·비동기 조회는 상인 ID·엔티티 UUID·월드 세대·현재 선택에 연결하며 다른 상인으로 전환하면 이전 결과를 적용하지 않는다. 인벤토리/잔액은 기존 경제 realm 계정을 사용하고 지역별로 복제하지 않는다. 기록에는 실제 거래 지역을 보존한다.
+
+월드 준비 시 정의당 NPC를 한 번 생성하고 언로드 전에 참조/화면을 정리한다. 상인이 있는 청크만 미리 인덱싱하며 관련 청크 로드 후 1틱 지연과 세대 확인을 거쳐 필요한 NPC만 확인한다. [검증과 미실행 범위](../../docs/economy-merchants-verification.md), 최소 도구 `--sessions --economy --economy-merchants`를 따른다.

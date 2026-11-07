@@ -1,0 +1,161 @@
+{
+  "outcome": "PASS",
+  "failure": null,
+  "cleanup_errors": [],
+  "workspace": "/tmp/hearth-s4-11.UqOHjXiX",
+  "duration_seconds": 35.483,
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 1,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "processes": {
+    "database": {
+      "pid": 4023868,
+      "exit_code": 0,
+      "ready_seconds": null,
+      "duration_seconds": 34.882,
+      "shutdown_seconds": 0.408,
+      "max_sampled_rss_kib": 221056,
+      "observed_cpu_seconds": 2.4,
+      "min_sampled_host_available_kib": 12348040,
+      "sample_count": 545,
+      "checks": [],
+      "timings": [],
+      "states": []
+    },
+    "paper-prepare": {
+      "pid": 4023946,
+      "exit_code": 0,
+      "ready_seconds": 13.565,
+      "duration_seconds": 31.788,
+      "shutdown_seconds": 4.027,
+      "max_sampled_rss_kib": 1204900,
+      "observed_cpu_seconds": 64.26,
+      "min_sampled_host_available_kib": 12348040,
+      "sample_count": 491,
+      "checks": [
+        "world_IO_pool_closed"
+      ],
+      "timings": [],
+      "states": []
+    }
+  },
+  "all_owned_processes_and_ports_closed": true,
+  "plugin_sha256": "d36a4df5067292c7c8613a85a20ebed5a4a3097c6ee56ed6cafe993d59a9e879",
+  "session_checks": [
+    "fixture_prepared_no_login_provisioning",
+    "economy_merchant_two_native_entities_distinct_ids",
+    "economy_merchant_spawn_once_per_definition",
+    "economy_capital_catalog_bound_to_city_merchant",
+    "economy_mine_catalog_only_ore",
+    "economy_mine_product_correct_material",
+    "economy_reject_SQL_rollback",
+    "economy_reject_SQL_rollback",
+    "economy_mine_report_same_merchant_scope",
+    "economy_merchant_views_preserve_inventory",
+    "economy_late_city_callback_rejected_after_mine_selection",
+    "economy_regional_trade_same_owner_wallet_inventory_conserved",
+    "economy_regional_other_player_independent",
+    "economy_regional_market_stock_conservation",
+    "economy_regional_history_records_source_markets",
+    "economy_regional_quotes_follow_distinct_stock",
+    "economy_regional_other_realm_unchanged",
+    "economy_regional_trade_feeds_economy_tick",
+    "economy_regional_ore_supply_manufacture_and_route_reservation",
+    "economy_regional_capital_output_purchase_after_manufacturing",
+    "economy_regional_trade_equipment_offhand_preserved",
+    "economy_world_saved_regions_unloaded",
+    "economy_merchant_registry_released_after_unload",
+    "economy_merchant_reload_no_duplicate_or_old_entity_reference",
+    "economy_merchant_reload_original_world_two_native_villagers",
+    "economy_merchant_old_generation_visit_rejected",
+    "economy_merchant_old_entity_removed_dabc6614-b70e-4463-879a-f08801078989",
+    "economy_merchant_old_entity_removed_e5e8d7f2-ab28-405c-ae05-0fe551931639",
+    "economy_regional_inventories_restored_after_world_reload",
+    "economy_regional_trade_history_retained_after_reload",
+    "economy_regional_market_transport_state_preserved_after_reload",
+    "economy_world_saved_regions_unloaded"
+  ],
+  "economy_merchants_mode": true,
+  "economy_report_mode": false,
+  "economy_desk_mode": false,
+  "economy_mode": true,
+  "boss_areas_mode": false,
+  "boss_patterns_mode": false,
+  "combat_departures_mode": false,
+  "combat_players_mode": false,
+  "combat_paths_mode": false,
+  "combat_state_mode": false,
+  "field_encounters_mode": false,
+  "branch_progression_mode": false,
+  "quest_completion_mode": false,
+  "general_npcs_mode": false,
+  "npc_topics_mode": false,
+  "world_effects_mode": false,
+  "story_batch_mode": false,
+  "explore_batch_mode": false,
+  "sessions_mode": true,
+  "quests_mode": false,
+  "quest_list_mode": false,
+  "quest_info_mode": false,
+  "quest_auto_mode": false,
+  "quest_npc_mode": false,
+  "quest_start_mode": false,
+  "quest_requires_mode": false,
+  "quest_batch_mode": false,
+  "manual_player_mode": false,
+  "installed_plugin_sha256": "d36a4df5067292c7c8613a85a20ebed5a4a3097c6ee56ed6cafe993d59a9e879",
+  "snapshots": [],
+  "runtime_library_jars": [
+    "libraries/com/zaxxer/HikariCP/7.1.0/HikariCP-7.1.0.jar",
+    "libraries/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar",
+    "libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+    "libraries/org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar",
+    "libraries/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar"
+  ],
+  "player_actions_verdict": "NOT_RUN",
+  "not_executed": [
+    "실제 인증 플레이어/로그인·텔레포트",
+    "PostgreSQL 프로세스 재시작",
+    "실제 파일시스템 저장 장애·강제 종료 복구",
+    "TPS/MSPT·장기 부하·메모리 누수",
+    "운영 배포·운영 경제 정책",
+    "실제 NPC/상인 간 이동·GUI·종료/재접속 행동",
+    "실제 접속자의 독립 청크 언로드/재로드",
+    "두 번째 Paper JVM(계정·거래 저장 형식 불변)",
+    "운영 지역 배치·운송비·화폐·대량 NPC 장기 비용"
+  ],
+  "runtime_source_sha256": "b96148debf37b54cf7263940a4f48830d809391a29ba82eb3bdd5343798441af",
+  "unit_checks": {
+    "io.github.jesterportfolio.hearth.economy.EconomyDeskTest": {
+      "tests": 7,
+      "result": "PASS"
+    },
+    "io.github.jesterportfolio.hearth.economy.EconomyReportTest": {
+      "tests": 10,
+      "result": "PASS"
+    },
+    "io.github.jesterportfolio.hearth.economy.EconomyMerchantsTest": {
+      "tests": 9,
+      "result": "PASS"
+    }
+  },
+  "previous_bundle": {
+    "workspace": "/tmp/hearth-s4-11.ywYFbksz",
+    "outcome": "FAIL",
+    "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+    "duration_seconds": 30.62,
+    "cleanup_errors": [
+      "AssertionError: DB 풀 종료 확인 누락"
+    ],
+    "all_owned_processes_and_ports_closed": false,
+    "plugin_sha256": "f3dc861a0eea64b6bef554b5f74b4d242de4163c6ec983e6fec7ba2286d69553",
+    "subsequent_cleanup_observation": "부모 프로세스 4022148/4022224 부재, localhost 25585/36747 미연결, postmaster.pid 부재를 확인. 기존 정리 FAIL 표식은 보존."
+  }
+}

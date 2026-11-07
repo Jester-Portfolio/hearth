@@ -19,7 +19,7 @@ public final class EconomyVerification implements AutoCloseable {
     public final PaperEconomy economy;private final List<Actor> actors=new ArrayList<>();private final Map<String,Long> timings=new TreeMap<>();
     private static final EconomyContent.Key KEY=new EconomyContent.Key("capital","iron_ingot");
     private final class Actor implements PlayerSessions.Port {final ServerProgressAccess.Context context;InventoryPayload value;PlayerSessions.Session session;boolean connected=true;Actor(int i){context=economy.store.context(PaperEconomy.REALM,new UUID(0x45434f,i));}public boolean connected(){return connected;}public InventoryPayload capture(){return value;}public void apply(InventoryPayload p){value=p;}public CompletionStage<Boolean> move(){return CompletableFuture.completedFuture(true);}}
-    public EconomyVerification(JavaPlugin plugin,PostgresProgressStore db,Executor owner,PaperInventoryCodec codec,boolean resume)throws Exception{this.plugin=plugin;this.db=db;this.owner=owner;this.codec=codec;this.resume=resume;Path root=plugin.getDataFolder().toPath();evidence=root.resolve("economy-expected.properties");var settings=new Properties();var content=PaperEconomy.load(plugin,settings);economy=new PaperEconomy(plugin,db,owner,codec,root,settings,content,resume);}
+    public EconomyVerification(JavaPlugin plugin,PostgresProgressStore db,Executor owner,PaperInventoryCodec codec,boolean resume)throws Exception{this.plugin=plugin;this.db=db;this.owner=owner;this.codec=codec;this.resume=resume;Path root=plugin.getDataFolder().toPath();evidence=root.resolve("economy-expected.properties");var settings=new Properties();var content=PaperEconomy.load(plugin,settings);economy=new PaperEconomy(plugin,db,owner,codec,root,settings,content,resume);economy.pinFixtureChunks();}
     private <T> CompletionStage<T> on(CompletionStage<T> task){return task.thenApplyAsync(v->v,owner);}
     private void check(boolean ok,String name){if(!ok)throw new IllegalStateException("ECON_CHECK_"+name);plugin.getLogger().info("HEARTH_SESSION_CHECK PASS economy_"+name);}
     private InventoryPayload items(int n){var slots=new ItemStack[41];slots[0]=new ItemStack(Material.IRON_INGOT,n);slots[36]=new ItemStack(Material.IRON_BOOTS);slots[40]=new ItemStack(Material.SHIELD);return codec.encode(slots);}
@@ -185,6 +185,67 @@ public final class EconomyVerification implements AutoCloseable {
             .thenCompose(v->on(economy.store.report(economy.store.context(PaperEconomy.OTHER,a.context.playerId()),economy.reportDefinition,"capital")))
             .thenAccept(view->check(view.tick()==0&&view.events().isEmpty()&&view.routes().getFirst().inTransit()==0&&view.markets().getFirst().stock()==100,"report_other_realm_unchanged"))
             .thenCompose(v->on(economy.store.account(a.context))).thenAccept(account->check(account.balance()==100000&&account.inventory().revision()==0&&account.inventory().payload().equals(items(8)),"report_owner_account_inventory_unchanged"));
+    }
+    private int quantity(InventoryPayload payload,Material material){return Arrays.stream(codec.decode(payload)).filter(Objects::nonNull).filter(item->item.getType()==material).mapToInt(ItemStack::getAmount).sum();}
+    public CompletionStage<Void> runMerchants(){
+        return on(economy.store.migrate()).thenCompose(v->on(economy.store.createRealm(PaperEconomy.REALM,System.currentTimeMillis())))
+            .thenCompose(v->on(economy.store.createRealm(PaperEconomy.OTHER,System.currentTimeMillis()))).thenCompose(v->{
+                var jobs=new ArrayList<CompletionStage<?>>();for(int i=1;i<=2;i++){var a=new Actor(i);actors.add(a);jobs.add(economy.store.createAccount(a.context,100000,items(8)));}
+                jobs.add(economy.store.createAccount(economy.store.context(PaperEconomy.OTHER,actors.getFirst().context.playerId()),1234,items(3)));return all(jobs);
+            }).thenCompose(v->openMerchantActors()).thenCompose(v->{int tick=Bukkit.getCurrentTick();return waitUntil(()->Bukkit.getCurrentTick()>=tick+2);}).thenCompose(v->merchantViews()).thenCompose(v->merchantTransactions()).thenCompose(v->merchantProduction()).thenCompose(v->merchantReload());
+    }
+    private CompletionStage<Void> openMerchantActors(){var jobs=new ArrayList<CompletionStage<?>>();for(var a:actors){a.connected=true;a.session=economy.sessions.connect(a.context,economy.world,a);jobs.add(a.session.ready());}return all(jobs);}
+    private CompletionStage<Void> merchantViews(){
+        var a=actors.getFirst();var ids=economy.merchantEntities();plugin.getLogger().info("HEARTH_MERCHANT_ENTITIES ids="+ids+" spawns="+economy.merchantSpawns());check(ids.keySet().equals(Set.of("capital_trader","mine_trader"))&&new HashSet<>(ids.values()).size()==2,"merchant_two_native_entities_distinct_ids");
+        check(economy.merchantSpawns()==2,"merchant_spawn_once_per_definition");
+        return on(economy.store.offers(a.context,"capital",economy.merchants.get("capital_trader").shop().goods())).thenCompose(city->{
+            var view=economy.previewAt("capital_trader",a.session,city);check(view.getItem(0).getType()==Material.IRON_INGOT,"capital_catalog_bound_to_city_merchant");
+            return on(economy.store.offers(a.context,"mine",economy.merchants.get("mine_trader").shop().goods())).thenCompose(mine->{
+                var inventory=economy.previewAt("mine_trader",a.session,mine);check(inventory.getItem(0).getType()==Material.IRON_ORE,"mine_catalog_only_ore");
+                var product=economy.previewProductAt("mine_trader",a.session,mine.getFirst());check(product.getItem(4).getType()==Material.IRON_ORE,"mine_product_correct_material");
+                return rejectedCall(()->{economy.previewProductAt("mine_trader",a.session,city.get(1));return CompletableFuture.completedFuture(null);},null)
+                    .thenCompose(v->rejectedCall(()->{economy.previewAt("mine_trader",a.session,city);return CompletableFuture.completedFuture(null);},null));
+            });
+        }).thenCompose(v->on(economy.store.report(a.context,economy.reportDefinition,"mine"))).thenAccept(view->{
+            check(economy.previewReportAt("mine_trader",a.session,view,"MARKET",0).getItem(0)!=null,"mine_report_same_merchant_scope");check(a.session.save().revision()==0&&!a.session.save().dirty()&&a.value.equals(items(8)),"merchant_views_preserve_inventory");
+        }).thenCompose(v->{
+            var old=economy.merchantVisit("capital_trader");var selected=new java.util.concurrent.atomic.AtomicReference<>(old);var applied=new int[1];int tick=Bukkit.getCurrentTick();
+            economy.deferReportView(()->old.current(selected.get(),economy.merchantEntities().get(old.merchant()),economy.world.generation()),()->applied[0]++);selected.set(economy.merchantVisit("mine_trader"));
+            return waitUntil(()->Bukkit.getCurrentTick()>=tick+2).thenRun(()->check(applied[0]==0,"late_city_callback_rejected_after_mine_selection"));
+        });
+    }
+    private CompletionStage<EconomyStore.Receipt> merchantTrade(Actor a,String id,String good,int quantity,boolean buy){var merchant=economy.merchants.get(id);return on(economy.store.offer(a.context,new EconomyContent.Key(merchant.shop().region(),good))).thenCompose(offer->{merchant.require(offer);return economy.trades.execute(economy.sessions,a.session,offer,quantity,buy,UUID.randomUUID(),economy.fence(a.session)::get,EconomyStore.Probe.NONE);});}
+    private CompletionStage<Void> merchantTransactions(){
+        var a=actors.getFirst();long[] totals=new long[3];return merchantTrade(a,"mine_trader","iron_ore",2,true).thenAccept(receipt->totals[0]=receipt.total())
+            .thenCompose(v->merchantTrade(a,"capital_trader","iron_ore",1,false)).thenAccept(receipt->totals[1]=receipt.total())
+            .thenCompose(v->merchantTrade(actors.get(1),"capital_trader","iron_ingot",1,true)).thenAccept(receipt->totals[2]=receipt.total())
+            .thenCompose(v->on(economy.store.account(a.context))).thenAccept(row->check(row.balance()==100000-totals[0]+totals[1]&&row.inventory().revision()==2&&quantity(row.inventory().payload(),Material.IRON_ORE)==1&&count(row.inventory().payload())==8,"regional_trade_same_owner_wallet_inventory_conserved"))
+            .thenCompose(v->on(economy.store.account(actors.get(1).context))).thenAccept(row->check(row.balance()==100000-totals[2]&&row.inventory().revision()==1&&count(row.inventory().payload())==9,"regional_other_player_independent"))
+            .thenCompose(v->on(economy.store.snapshot(PaperEconomy.REALM))).thenAccept(state->check(state.markets().get(new EconomyContent.Key("mine","iron_ore")).stock()==198&&state.markets().get(new EconomyContent.Key("capital","iron_ore")).stock()==201&&state.markets().get(KEY).stock()==99,"regional_market_stock_conservation"))
+            .thenCompose(v->on(economy.store.history(a.context,Long.MAX_VALUE,20))).thenAccept(rows->check(rows.size()==2&&rows.get(0).key().region().equals("capital")&&rows.get(1).key().region().equals("mine"),"regional_history_records_source_markets"))
+            .thenCompose(v->on(economy.store.offer(a.context,new EconomyContent.Key("mine","iron_ore")))).thenCompose(mine->on(economy.store.offer(a.context,new EconomyContent.Key("capital","iron_ore"))).thenAccept(city->check(economy.merchants.get("mine_trader").shop().prices(economy.store.content(),mine).getFirst().total()!=economy.merchants.get("capital_trader").shop().prices(economy.store.content(),city).getFirst().total(),"regional_quotes_follow_distinct_stock")))
+            .thenCompose(v->on(economy.store.account(economy.store.context(PaperEconomy.OTHER,a.context.playerId())))).thenAccept(row->check(row.balance()==1234&&quantity(row.inventory().payload(),Material.IRON_ORE)==0&&count(row.inventory().payload())==3,"regional_other_realm_unchanged"));
+    }
+    private CompletionStage<Void> merchantProduction(){
+        var a=actors.getFirst();return on(economy.store.tick(PaperEconomy.REALM,0,System.currentTimeMillis())).thenCompose(applied->{check(applied,"regional_trade_feeds_economy_tick");return on(economy.store.snapshot(PaperEconomy.REALM));})
+            .thenAccept(state->check(state.markets().get(new EconomyContent.Key("capital","iron_ore")).stock()==193&&state.markets().get(KEY).stock()==100&&state.shipments().size()==1&&state.shipments().getFirst().quantity()==10,"regional_ore_supply_manufacture_and_route_reservation"))
+            .thenCompose(v->merchantTrade(a,"capital_trader","iron_ingot",1,true)).thenAccept(receipt->{
+                check(count(a.value)==9&&quantity(a.value,Material.IRON_ORE)==1&&a.session.save().revision()==3,"regional_capital_output_purchase_after_manufacturing");
+                var slots=codec.decode(a.value);var original=codec.decode(items(8));check(slots[36].equals(original[36])&&slots[40].equals(original[40]),"regional_trade_equipment_offhand_preserved");
+            });
+    }
+    private CompletionStage<Void> merchantReload(){
+        var original=economy.merchantEntities();var visit=economy.merchantVisit("capital_trader");var physical=economy.physicalWorld();var before=new EconomyEngine.State[1];
+        return on(economy.store.snapshot(PaperEconomy.REALM)).thenAccept(state->before[0]=state).thenCompose(v->cycle()).thenRun(()->check(economy.merchantEntities().isEmpty(),"merchant_registry_released_after_unload"))
+            .thenCompose(v->openMerchantActors()).thenCompose(v->{int tick=Bukkit.getCurrentTick();return waitUntil(()->Bukkit.getCurrentTick()>=tick+3);})
+            .thenRun(()->{var restored=economy.merchantEntities();check(restored.size()==2&&Collections.disjoint(original.values(),restored.values())&&economy.merchantSpawns()==4,"merchant_reload_no_duplicate_or_old_entity_reference");
+                check(economy.physicalWorld().equals(physical)&&Bukkit.getWorld(physical).getEntitiesByClass(org.bukkit.entity.Villager.class).size()==2,"merchant_reload_original_world_two_native_villagers");
+                check(!visit.current(economy.merchantVisit("capital_trader"),restored.get("capital_trader"),economy.world.generation()),"merchant_old_generation_visit_rejected");
+                for(UUID id:original.values())check(Bukkit.getEntity(id)==null,"merchant_old_entity_removed_"+id);
+                check(quantity(actors.getFirst().value,Material.IRON_ORE)==1&&actors.getFirst().session.save().revision()==3&&count(actors.getFirst().value)==9&&count(actors.get(1).value)==9,"regional_inventories_restored_after_world_reload");
+            }).thenCompose(v->on(economy.store.history(actors.getFirst().context,Long.MAX_VALUE,20))).thenAccept(rows->check(rows.size()==3,"regional_trade_history_retained_after_reload"))
+            .thenCompose(v->on(economy.store.snapshot(PaperEconomy.REALM))).thenAccept(state->check(state.equals(before[0]),"regional_market_transport_state_preserved_after_reload"))
+            .thenCompose(v->cycle());
     }
     public CompletionStage<Void> shutdown(){return economy.shutdown().thenComposeAsync(v->waitUntil(()->economy.world.state()==WorldLifecycle.State.OFFLINE),owner).thenRun(()->plugin.getLogger().info("HEARTH_ECONOMY_TIMING "+timings));}
     public void close(){economy.close();}

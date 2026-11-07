@@ -10,6 +10,10 @@ public record EconomyShop(String region,List<String> goods,Map<String,String> na
         var goods=Arrays.stream(raw.split(",",-1)).map(String::trim).toList();if(!content.regions().contains(region)||!content.goods().keySet().containsAll(goods))throw new IllegalArgumentException("ECON_SHOP_REF");
         var names=new HashMap<String,String>();for(String id:goods){String name=p.getProperty("good."+id+".name",id).strip();if(name.isEmpty()||name.length()>80)throw new IllegalArgumentException("ECON_SHOP_NAME");names.put(id,name);}return new EconomyShop(region,goods,names);
     }
+    public Map<String,EconomyStore.Offer> index(List<EconomyStore.Offer> offers){
+        var rows=new HashMap<String,EconomyStore.Offer>();for(var offer:offers)if(!offer.key().region().equals(region)||!goods.contains(offer.key().good())||rows.put(offer.key().good(),offer)!=null)throw new IllegalArgumentException("ECON_SHOP_OFFER");
+        if(!rows.keySet().equals(new HashSet<>(goods)))throw new IllegalArgumentException("ECON_SHOP_OFFER_MISSING");return Map.copyOf(rows);
+    }
     public String name(String good){if(!goods.contains(good))throw new IllegalArgumentException("ECON_SHOP_GOOD");return names.getOrDefault(good,good);}
     public record Price(int quantity,boolean buy,long total){}
     public List<Price> prices(EconomyContent content,EconomyStore.Offer offer){

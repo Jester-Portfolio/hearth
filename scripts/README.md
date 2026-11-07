@@ -97,3 +97,5 @@
 경제 상점/관리 변경만 검사할 때는 `--sessions --economy --economy-desk`를 사용한다. E001 기존 행을 새 격리 DB에 준비한 뒤 E002 보존·두 상품/기록·명시적 HOLD 정리·새 내부 세션 복원을 Paper 한 JVM에서 검사한다. 이전 90일/두 JVM 전체 검사는 반복하지 않는다. [범위·관리 명령](../docs/economy-desk-verification.md)을 따른다.
 
 시장 정보 연결은 `--sessions --economy --economy-report` 단독 한 JVM 경로로 검사한다. 기존 두 JVM 전체 검사를 반복하지 않고 공개 범위·조회 불변·경제 Tick 동시 조회·실제 운송/사건·화면 객체·다음 틱 전환을 함께 확인한다. [범위와 결과](../docs/economy-report-verification.md)를 따른다.
+
+복수 지역 상인 변경은 `--sessions --economy --economy-merchants` 단독 한 JVM 경로다. 두 NPC·지역별 화면/거래/제련·이전 NPC 선택 거부·월드 재로드 후 중복/원본 보존을 함께 검사한다. 기존 두 JVM/90일 전체 검사는 반복하지 않는다. [실제 범위](../docs/economy-merchants-verification.md)를 따른다.
