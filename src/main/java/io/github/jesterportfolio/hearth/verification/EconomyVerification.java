@@ -187,6 +187,67 @@ public final class EconomyVerification implements AutoCloseable {
             .thenCompose(v->on(economy.store.account(a.context))).thenAccept(account->check(account.balance()==100000&&account.inventory().revision()==0&&account.inventory().payload().equals(items(8)),"report_owner_account_inventory_unchanged"));
     }
     private int quantity(InventoryPayload payload,Material material){return Arrays.stream(codec.decode(payload)).filter(Objects::nonNull).filter(item->item.getType()==material).mapToInt(ItemStack::getAmount).sum();}
+    private Path flowEvidence(){return evidence.resolveSibling("economy-flow-expected.properties");}
+    private static String flowSignature(Map<EconomyContent.Key,EconomyEngine.Flow> flows){return new TreeMap<>(flows).toString();}
+    public CompletionStage<Void> runFlows(){return resume?flowRestore():flowPrepare();}
+    private CompletionStage<Void> flowPrepare(){
+        return legacy().thenCompose(v->on(db.module("flow_E002_fixture",c->{
+            byte[] sql;try(var in=Objects.requireNonNull(getClass().getResourceAsStream("/db/economy/E002__trade_history.sql"))){sql=in.readAllBytes();}
+            c.setAutoCommit(false);try{try(var st=c.createStatement()){st.execute(new String(sql,java.nio.charset.StandardCharsets.UTF_8));}try(var st=c.prepareStatement("INSERT INTO hearth_economy.version VALUES(2,?)")){st.setString(1,HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(sql)));st.executeUpdate();}c.commit();}catch(Exception e){c.rollback();throw e;}finally{c.setAutoCommit(true);}return null;
+        }))).thenCompose(v->on(economy.store.migrate())).thenCompose(v->on(new EconomyStore(db,economy.store.content()).migrate()))
+            .thenCompose(v->on(economy.store.account(economy.store.context(LEGACY,LEGACY_PLAYER)))).thenAccept(row->check(row.balance()==4321&&row.inventory().revision()==7&&count(row.inventory().payload())==6,"flow_E003_preserves_E002_account"))
+            .thenCompose(v->on(economy.store.history(economy.store.context(LEGACY,LEGACY_PLAYER),Long.MAX_VALUE,20))).thenAccept(rows->check(rows.size()==1&&rows.getFirst().id().equals(LEGACY_REQUEST),"flow_E003_preserves_old_receipt"))
+            .thenCompose(v->on(economy.store.createRealm(PaperEconomy.REALM,System.currentTimeMillis()))).thenCompose(v->on(economy.store.createRealm(PaperEconomy.OTHER,System.currentTimeMillis())))
+            .thenCompose(v->{var jobs=new ArrayList<CompletionStage<?>>();for(int i=1;i<=2;i++){var a=new Actor(i);actors.add(a);jobs.add(economy.store.createAccount(a.context,100000,items(8)));}jobs.add(economy.store.createAccount(economy.store.context(PaperEconomy.OTHER,actors.getFirst().context.playerId()),1234,items(3)));return all(jobs);})
+            .thenCompose(v->openMerchantActors()).thenCompose(v->on(economy.store.report(actors.getFirst().context,economy.reportDefinition,"capital"))).thenAccept(view->check(view.markets().getFirst().flow()==null,"flow_before_first_tick_is_unregistered"))
+            .thenCompose(v->advanceFlows(1)).thenCompose(v->on(economy.store.flows(PaperEconomy.REALM))).thenAccept(flows->{var ingot=flows.get(KEY);var ore=flows.get(new EconomyContent.Key("capital","iron_ore"));check(ingot.produced()==3&&ingot.consumed()==3&&ore.inputs()==6,"flow_actual_manufacture_and_consumption");check(flows.get(new EconomyContent.Key("mine","iron_ore")).departed()==10,"flow_departure_reserved_not_arrived");})
+            .thenCompose(v->advanceFlows(3)).thenCompose(v->on(economy.store.flows(PaperEconomy.REALM))).thenAccept(flows->check(flows.get(new EconomyContent.Key("capital","iron_ore")).arrived()==10,"flow_delayed_arrival_not_production"))
+            .thenCompose(v->flowEvents()).thenCompose(v->flowViews()).thenCompose(v->flowFailure()).thenCompose(v->advanceFlows(24))
+            .thenCompose(v->on(economy.store.flows(PaperEconomy.REALM))).thenAccept(flows->check(flows.get(new EconomyContent.Key("mine","iron_ore")).produced()>0&&flows.get(new EconomyContent.Key("mine","iron_ore")).departed()==10,"flow_supply_resumes_after_events"))
+            .thenCompose(v->flowCorrupt()).thenCompose(v->flowCapture()).thenCompose(v->cycle()).thenCompose(v->openMerchantActors()).thenCompose(v->flowVerifyEvidence("same_JVM_reload"))
+            .thenCompose(v->cycle());
+    }
+    private CompletionStage<Void> advanceFlows(int count){CompletionStage<Void> chain=CompletableFuture.completedFuture(null);for(int i=0;i<count;i++)chain=chain.thenComposeAsync(v->on(economy.store.snapshot(PaperEconomy.REALM)).thenCompose(state->on(economy.store.tick(PaperEconomy.REALM,state.tick(),System.currentTimeMillis()))).thenAccept(ok->{if(!ok)throw new IllegalStateException("FLOW_TICK_REJECTED");}),owner);return chain;}
+    private CompletionStage<Void> flowEvents(){
+        var road=new UUID(0x464c4f57,2);return on(economy.applyEvent("mine_collapse",new UUID(0x464c4f57,1))).thenCompose(v->on(economy.applyEvent("road_block",road))).thenCompose(v->on(economy.applyEvent("road_block",road)))
+            .thenCompose(v->on(economy.applyEvent("demand_surge",new UUID(0x464c4f57,3))))
+            .thenCompose(v->rejectedCall(()->economy.applyEvent("missing",UUID.randomUUID()),null))
+            .thenCompose(v->rejected(economy.applyEvent("mine_collapse",road),"ECON_REQUEST_CONFLICT"))
+            .thenCompose(v->on(economy.store.snapshot(PaperEconomy.REALM))).thenAccept(state->check(state.events().size()==3,"flow_event_duplicate_is_same_request"))
+            .thenCompose(v->advanceFlows(1)).thenCompose(v->on(economy.store.flows(PaperEconomy.REALM))).thenAccept(flows->{var mine=flows.get(new EconomyContent.Key("mine","iron_ore"));check(mine.produced()==0&&mine.departed()==0,"flow_production_and_route_events_applied");check(flows.get(KEY).consumed()==6&&flows.get(KEY).produced()==3,"flow_surge_actual_demand_and_target_limited_output");});
+    }
+    private CompletionStage<Void> flowViews(){var a=actors.getFirst();return on(economy.store.account(a.context)).thenCompose(before->on(economy.store.report(a.context,economy.reportDefinition,"capital")).thenCompose(view->{
+        var f=view.markets().getFirst().flow();check(f!=null&&f.tick()==5&&f.consumed()==6,"flow_public_report_actual_tick");var nativeView=economy.previewReportAt("capital_trader",a.session,view,"MARKET",0);check(nativeView.getItem(0).getItemMeta().lore().contains(net.kyori.adventure.text.Component.text(PaperEconomy.flowText(f))),"flow_native_market_lore");
+        check(economy.previewReportAt("capital_trader",a.session,view,"FACILITIES",0).getItem(0)!=null,"flow_native_facility_diagnosis");
+        return on(economy.store.account(a.context)).thenAccept(after->check(before.equals(after)&&count(a.value)==8&&!a.session.save().dirty(),"flow_readonly_owner_inventory_revision_preserved"));
+    })).thenCompose(v->on(economy.store.report(actors.get(1).context,economy.reportDefinition,"capital"))).thenAccept(view->check(view.markets().getFirst().flow().consumed()==6,"flow_other_player_same_realm_public_values"))
+        .thenCompose(v->on(economy.store.flows(PaperEconomy.OTHER))).thenAccept(flows->check(flows.isEmpty(),"flow_other_realm_not_initialized"));}
+    private CompletionStage<Void> flowFailure(){
+        EconomyEngine.State[] before={null};var previous=new java.util.concurrent.atomic.AtomicReference<Map<EconomyContent.Key,EconomyEngine.Flow>>();return on(economy.store.snapshot(PaperEconomy.REALM)).thenAccept(s->before[0]=s)
+            .thenCompose(v->on(economy.store.flows(PaperEconomy.REALM))).thenAccept(previous::set)
+            .thenCompose(v->on(db.module("flow_failure_trigger",c->{try(var st=c.createStatement()){st.execute("CREATE FUNCTION hearth_economy.verification_flow_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.realm_id = '"+PaperEconomy.REALM+"'::uuid THEN RAISE EXCEPTION 'isolated flow failure' USING ERRCODE = '23514'; END IF; RETURN NEW; END $$");st.execute("CREATE TRIGGER verification_flow_fail BEFORE INSERT OR UPDATE ON hearth_economy.tick_flow FOR EACH ROW EXECUTE FUNCTION hearth_economy.verification_flow_fail()");}return null;})))
+            .thenCompose(v->rejected(economy.store.tick(PaperEconomy.REALM,5,System.currentTimeMillis()),"23514"))
+            .thenCompose(v->on(economy.store.snapshot(PaperEconomy.REALM))).thenAccept(s->check(s.equals(before[0]),"flow_failed_write_rolls_back_markets_transport_tick"))
+            .thenCompose(v->on(economy.store.flows(PaperEconomy.REALM))).thenAccept(f->check(f.equals(previous.get()),"flow_failed_write_preserves_previous_metrics"))
+            .thenCompose(v->on(economy.store.tick(PaperEconomy.OTHER,0,System.currentTimeMillis()))).thenAccept(ok->check(ok,"flow_A_failure_does_not_stop_B"))
+            .thenCompose(v->on(db.module("flow_remove_failure_trigger",c->{try(var st=c.createStatement()){st.execute("DROP TRIGGER verification_flow_fail ON hearth_economy.tick_flow");st.execute("DROP FUNCTION hearth_economy.verification_flow_fail()");}return null;})))
+            .thenCompose(v->on(economy.store.tick(PaperEconomy.REALM,4,System.currentTimeMillis()))).thenAccept(ok->check(!ok,"flow_duplicate_tick_does_not_overwrite_metrics"));
+    }
+    private CompletionStage<Void> flowCorrupt(){var id=new UUID(0x464c4f57,99);return on(economy.store.createRealm(id,System.currentTimeMillis())).thenCompose(v->on(economy.store.tick(id,0,System.currentTimeMillis())))
+        .thenCompose(v->on(db.module("flow_isolated_missing_rows",c->{try(var st=c.prepareStatement("DELETE FROM hearth_economy.tick_flow WHERE realm_id=?")){st.setObject(1,id);st.executeUpdate();}return null;})))
+        .thenCompose(v->rejected(economy.store.flows(id),"ECON_FLOW_MISMATCH"))
+        .thenCompose(v->rejected(economy.store.tick(id,1,System.currentTimeMillis()),"ECON_FLOW_MISMATCH"));}
+    private CompletionStage<Void> flowCapture(){var p=new Properties();var w=Objects.requireNonNull(Bukkit.getWorld(economy.physicalWorld()));w.getBlockAt(5,63,5).setType(Material.GOLD_BLOCK);p.setProperty("world",w.getUID().toString());p.setProperty("key",w.getKey().toString());
+        return on(economy.store.flows(PaperEconomy.REALM)).thenAccept(f->p.setProperty("flows",flowSignature(f))).thenRun(()->{try(var out=Files.newOutputStream(flowEvidence(),StandardOpenOption.CREATE_NEW)){p.store(out,"첫 JVM 실제 Tick 실적");}catch(Exception e){throw new CompletionException(e);}});}
+    private CompletionStage<Void> flowVerifyEvidence(String tag){var p=new Properties();try(var in=Files.newInputStream(flowEvidence())){p.load(in);}catch(Exception e){return CompletableFuture.failedFuture(e);}var w=Objects.requireNonNull(Bukkit.getWorld(economy.physicalWorld()));
+        check(w.getUID().toString().equals(p.getProperty("world"))&&w.getKey().toString().equals(p.getProperty("key"))&&w.getBlockAt(5,63,5).getType()==Material.GOLD_BLOCK,"flow_"+tag+"_UUID_key_block");
+        var manager=com.sk89q.worldguard.WorldGuard.getInstance().getPlatform().getRegionContainer().get(com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(w));check(manager!=null&&manager.getRegion("capital")!=null,"flow_"+tag+"_protection_restored");
+        return on(economy.store.flows(PaperEconomy.REALM)).thenAccept(f->check(flowSignature(f).equals(p.getProperty("flows")),"flow_"+tag+"_metrics_restored"))
+            .thenCompose(v->on(economy.store.account(actors.getFirst().context))).thenAccept(row->check(row.balance()==100000&&row.inventory().revision()==0&&count(row.inventory().payload())==8&&count(actors.getFirst().value)==8,"flow_"+tag+"_account_inventory_preserved"));}
+    private CompletionStage<Void> flowRestore(){return on(economy.store.migrate()).thenRun(()->{actors.add(new Actor(1));actors.add(new Actor(2));}).thenCompose(v->openMerchantActors()).thenCompose(v->flowVerifyEvidence("new_JVM"))
+        .thenCompose(v->on(economy.store.flows(PaperEconomy.OTHER))).thenAccept(f->check(f.values().stream().allMatch(row->row.tick()==1),"flow_new_JVM_other_realm_separate"))
+        .thenCompose(v->on(economy.store.report(actors.getFirst().context,economy.reportDefinition,"capital"))).thenAccept(view->check(view.markets().getFirst().flow().tick()==29&&economy.previewReportAt("capital_trader",actors.getFirst().session,view,"MARKET",0).getItem(0)!=null,"flow_new_JVM_public_UI_restored"))
+        .thenCompose(v->cycle());}
     public CompletionStage<Void> runQuote(){
         return on(economy.store.migrate()).thenCompose(v->on(economy.store.createRealm(PaperEconomy.REALM,System.currentTimeMillis())))
             .thenCompose(v->on(economy.store.createRealm(PaperEconomy.OTHER,System.currentTimeMillis()))).thenCompose(v->{

@@ -165,14 +165,14 @@ public final class PaperEconomy implements Listener,AutoCloseable {
             case MARKET->{total=view.markets().size();for(var row:EconomyReport.page(view.markets(),page)){
                 Action action=view.region().id().equals(shop.region())&&shop.goods().contains(row.good())?nav(Kind.PRODUCT,row.good(),0,0):null;
                 button(screen,slot++,Objects.requireNonNull(Material.matchMaterial(store.content().goods().get(row.good()).material())),row.name()+" · "+stock(row.status()),action,
-                    "조회 시점: 경제 Tick "+view.tick(),"판매 가능 재고: "+row.stock()+" / 목표: "+row.target(),"품목 기준가: "+row.base()+" / 시장 기준가: "+row.anchor(),"1개 구매: "+price(row.ask())+" / 판매: "+price(row.bid()),"현재 수요 설정: "+row.demand()+" / Tick",action==null?"공개 시장 참고 정보":"선택하면 상점의 최신 견적 조회");
+                    "조회 시점: 경제 Tick "+view.tick(),"판매 가능 재고: "+row.stock()+" / 목표: "+row.target(),"품목 기준가: "+row.base()+" / 시장 기준가: "+row.anchor(),"1개 구매: "+price(row.ask())+" / 판매: "+price(row.bid()),"현재 수요 설정: "+row.demand()+" / Tick",flowText(row.flow()),action==null?"공개 시장 참고 정보":"선택하면 상점의 최신 견적 조회");
             }}
             case REGIONS->{total=view.regions().size();for(var row:EconomyReport.page(view.regions(),page))button(screen,slot++,Material.MAP,row.name(),info(Kind.MARKET,row.id(),0),"공개 지역 시장 조회");}
             case ROUTES->{total=view.routes().size();for(var row:EconomyReport.page(view.routes(),page))button(screen,slot++,row.blocked()?Material.BARRIER:Material.CHEST,row.name(),null,
                 row.from()+" → "+row.to()+" / "+row.good(),"신규 출발: "+(row.blocked()?"차단":"경로 개방"),"기본 운송량: "+row.capacity()+" / 지연: "+row.delay()+" Tick","운송 중: "+row.inTransit()+"개 / "+row.shipments()+"건",row.nextArrival()<0?"운송 중인 물량 없음":"가장 빠른 도착까지: "+row.nextArrival()+" Tick","운송 중 물량은 시장 재고에 포함하지 않음");}
             case EVENTS->{total=view.events().size();for(var row:EconomyReport.page(view.events(),page))button(screen,slot++,Material.BOOK,row.name(),null,row.description(),row.scheduled()?"적용 대기 · 시작까지 "+row.startsIn()+" Tick":"적용 중 · 종료까지 "+row.remaining()+" Tick","운영 시간 단위는 설정한 경제 Tick");}
             case FACILITIES->{total=view.facilities().size();for(var row:EconomyReport.page(view.facilities(),page)){
-                var lore=new ArrayList<String>();lore.add("생산 품목: "+row.good());lore.add("현재 생산 상한: "+row.capacity()+" / Tick");for(var input:row.inputs())lore.add(input.name()+" · 1회 소모 "+input.units()+" / 현재 재고 "+input.stock());lore.add("실제 생산량은 재료·목표 재고에 따라 제한");button(screen,slot++,Material.FURNACE,row.name(),null,lore.toArray(String[]::new));
+                var lore=new ArrayList<String>();lore.add("생산 품목: "+row.good());lore.add("현재 생산 상한: "+row.capacity()+" / Tick");lore.add("현재 재고 단독 계산: "+row.possible()+" / "+row.restriction());for(var input:row.inputs())lore.add(input.name()+" · 1회 소모 "+input.units()+" / 현재 재고 "+input.stock());lore.add("단독 참고값이며 다음 Tick 실제 실적은 도착·시설 순서에 따라 다릅니다");button(screen,slot++,Material.FURNACE,row.name(),null,lore.toArray(String[]::new));
             }}
             default->throw new IllegalArgumentException("ECON_REPORT_VIEW");
         }
@@ -183,6 +183,7 @@ public final class PaperEconomy implements Listener,AutoCloseable {
         button(screen,51,Material.CLOCK,"시장 정보 새로고침",info(Kind.REFRESH,view.region().id(),page),"조회 시점: 경제 Tick "+view.tick());
         if(page>0)button(screen,52,Material.ARROW,"이전 페이지",info(kind,view.region().id(),page-1));if((page+1)*45<total)button(screen,53,Material.ARROW,"다음 페이지",info(kind,view.region().id(),page+1));return screen;
     }
+    public static String flowText(EconomyEngine.Flow flow){return flow==null?"완료 Tick 실적 미등록":"완료 Tick "+flow.tick()+" · 생산 "+flow.produced()+" / 제조 투입 "+flow.inputs()+" / 실제 소비 "+flow.consumed()+" / 미충족 "+flow.shortage()+" / 도착 "+flow.arrived()+" / 출발 "+flow.departed()+" / 재고 "+flow.before()+" → "+flow.after();}
     /** InventoryClickEvent 안에서 화면을 직접 바꾸지 않고 다음 틱에 현재 화면/세션을 재검사합니다. */
     public void deferReportView(java.util.function.BooleanSupplier current,Runnable change){main();Bukkit.getScheduler().runTaskLater(plugin,()->{if(!closed&&current.getAsBoolean())change.run();},1);}
     public Inventory previewReport(PlayerSessions.Session session,EconomyReport.View view,String section,int page){main();store.validate(session.context());return information(session,view,Kind.valueOf(section),page,merchantVisit(merchants.first().id())).inventory;}
@@ -250,8 +251,11 @@ public final class PaperEconomy implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof PaperEconomy.Screen)e.setCancelled(true);}
     @EventHandler public void screenClosed(InventoryCloseEvent e){if(e.getInventory().getHolder() instanceof PaperEconomy.Screen screen&&screens.remove(e.getPlayer().getUniqueId(),screen))pending.remove(e.getPlayer().getUniqueId());}
     @EventHandler(priority=EventPriority.LOWEST) public void quit(PlayerQuitEvent e){var session=adapter.linked(e.getPlayer());if(session!=null){invalidate(session);fences.remove(session);}screens.remove(e.getPlayer().getUniqueId());pending.remove(e.getPlayer().getUniqueId());visits.remove(e.getPlayer().getUniqueId());}
+    public CompletionStage<Void> applyEvent(String event,UUID request){main();if(closed)throw new IllegalStateException("ECON_CLOSED");if(!store.content().events().containsKey(event))throw new IllegalArgumentException("ECON_EVENT_MISSING");return store.event(REALM,Objects.requireNonNull(request),event);}
     public void administration(String[] args){
-        main();if(closed)throw new IllegalStateException("ECON_CLOSED");var context=store.context(REALM,UUID.fromString(args[1]));CompletionStage<String> work;
+        main();if(closed)throw new IllegalStateException("ECON_CLOSED");
+        if(args[0].equals("economy-event")){applyEvent(args[1],UUID.fromString(args[2])).whenCompleteAsync((v,error)->plugin.getLogger().info(error==null?"HEARTH_ECONOMY_EVENT 예약 확인 · "+args[1]+" / 요청 "+args[2]:"HEARTH_ECONOMY_EVENT 보류 · "+InventorySaveSession.code(error)),owner);return;}
+        var context=store.context(REALM,UUID.fromString(args[1]));CompletionStage<String> work;
         if(args[0].equals("economy-history")){long cursor=args.length==3?Long.parseLong(args[2]):Long.MAX_VALUE;work=store.history(context,cursor,20).thenApply(rows->"거래 기록 "+rows);}
         else if(args[0].equals("economy-pending")){work=CompletableFuture.completedFuture("보류 요청 "+trades.pending(context));}
         else{UUID request=UUID.fromString(args[2]);work=(args[0].equals("economy-inspect")?trades.inspect(context,request):trades.recover(sessions,context,request,Long.parseLong(args[3]),()->!closed&&Bukkit.getPlayer(context.playerId())==null)).thenApply(view->"요청 "+view.request()+" / DB revision "+view.revision()+" / "+view.decision()+" / 월드 "+world.state());}

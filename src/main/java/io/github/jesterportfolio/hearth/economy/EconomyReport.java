@@ -8,11 +8,11 @@ import static io.github.jesterportfolio.hearth.economy.EconomyEngine.*;
 public final class EconomyReport {
     private EconomyReport(){}
     public record Region(String id,String name){}
-    public record MarketRow(String good,String name,long stock,long target,long base,long anchor,StockStatus status,Long ask,Long bid,long demand){}
+    public record MarketRow(String good,String name,long stock,long target,long base,long anchor,StockStatus status,Long ask,Long bid,long demand,Flow flow){}
     public record RouteRow(String name,String from,String to,String good,long capacity,int delay,boolean blocked,long inTransit,int shipments,long nextArrival){}
     public record EventRow(String name,String description,boolean scheduled,long startsIn,long remaining){}
     public record InputRow(String name,long units,long stock){}
-    public record FacilityRow(String name,String good,long capacity,List<InputRow> inputs){public FacilityRow{inputs=List.copyOf(inputs);}}
+    public record FacilityRow(String name,String good,long capacity,long possible,String restriction,List<InputRow> inputs){public FacilityRow{inputs=List.copyOf(inputs);}}
     public record View(Region region,long tick,List<Region> regions,List<MarketRow> markets,List<RouteRow> routes,List<EventRow> events,List<FacilityRow> facilities){
         public View{regions=List.copyOf(regions);markets=List.copyOf(markets);routes=List.copyOf(routes);events=List.copyOf(events);facilities=List.copyOf(facilities);}
     }
@@ -26,11 +26,13 @@ public final class EconomyReport {
         }
         public boolean allows(String region){return regions.contains(region);}
         public List<Region> regions(){return regions.stream().map(id->new Region(id,regionNames.get(id))).toList();}
-        public View project(EconomyContent c,State state,String region){
+        public View project(EconomyContent c,State state,String region){return project(c,state,region,Map.of());}
+        public View project(EconomyContent c,State state,String region,Map<Key,Flow> flows){
+            if(!flows.isEmpty()&&(!flows.keySet().equals(state.markets().keySet())||flows.values().stream().anyMatch(f->f.tick()!=state.tick())))throw new IllegalArgumentException("ECON_FLOW_MISMATCH");
             if(!allows(region))throw new IllegalArgumentException("ECON_REPORT_REGION");
             var markets=new ArrayList<MarketRow>();
             for(String id:goods){var good=c.goods().get(id);var market=cell(state,region,id);Long ask=market.stock()>0?quote(c,id,market,1,true):null;Long bid=market.stock()<MAX_STOCK?quote(c,id,market,1,false):null;
-                markets.add(new MarketRow(id,goodNames.get(id),market.stock(),good.target(),good.base(),market.price(),stockStatus(good,market),ask,bid,demandFor(c,state,state.tick(),new Key(region,id))));}
+                markets.add(new MarketRow(id,goodNames.get(id),market.stock(),good.target(),good.base(),market.price(),stockStatus(good,market),ask,bid,demandFor(c,state,state.tick(),new Key(region,id)),flows.get(new Key(region,id))));}
             var allRoutes=new HashMap<String,Route>();for(var r:c.routes())allRoutes.put(r.id(),r);
             var pending=new HashMap<String,List<Shipment>>();for(var shipment:state.shipments()){
                 var route=allRoutes.get(shipment.route());if(route==null||!route.from().equals(shipment.from())||!route.to().equals(shipment.to())||!route.good().equals(shipment.good()))throw new IllegalArgumentException("ECON_REPORT_SHIPMENT");
@@ -45,7 +47,10 @@ public final class EconomyReport {
             }
             var facilityRows=new ArrayList<FacilityRow>();for(var f:c.facilities())if(facilities.contains(f.id())&&f.region().equals(region)){
                 var inputs=new ArrayList<InputRow>();for(var e:new TreeMap<>(f.inputs()).entrySet())inputs.add(new InputRow(goodNames.get(e.getKey()),e.getValue(),cell(state,region,e.getKey()).stock()));
-                facilityRows.add(new FacilityRow(facilityNames.get(f.id()),goodNames.get(f.good()),productionCapacity(c,state,state.tick(),f),inputs));}
+                long capacity=productionCapacity(c,state,state.tick(),f),needed=Math.max(0,c.goods().get(f.good()).target()+c.demand().getOrDefault(new Key(region,f.good()),0L)-cell(state,region,f.good()).stock());
+                long possible=Math.min(capacity,needed);for(var e:f.inputs().entrySet())possible=Math.min(possible,cell(state,region,e.getKey()).stock()/e.getValue());
+                String restriction=capacity==0?"효율 또는 경제 사건으로 생산 중단":needed==0?"목표 재고 충족":possible<Math.min(capacity,needed)?"입력 재료 부족":"현재 재고 기준 생산 가능";
+                facilityRows.add(new FacilityRow(facilityNames.get(f.id()),goodNames.get(f.good()),capacity,possible,restriction,inputs));}
             return new View(new Region(region,regionNames.get(region)),state.tick(),regions(),markets,routeRows,eventRows,facilityRows);
         }
     }

@@ -101,3 +101,5 @@
 복수 지역 상인 변경은 `--sessions --economy --economy-merchants` 단독 한 JVM 경로다. 두 NPC·지역별 화면/거래/제련·이전 NPC 선택 거부·월드 재로드 후 중복/원본 보존을 함께 검사한다. 기존 두 JVM/90일 전체 검사는 반복하지 않는다. [실제 범위](../docs/economy-merchants-verification.md)를 따른다.
 
 수량/확인/결과 변경은 `--sessions --economy --economy-quote` 단독 한 JVM 경로로 검사한다. 임의 수량과 네이티브 화면 객체·조회 불변·거래 재검증/중복 거부·DB 롤백/HOLD 보존을 함께 확인한다. [실제 범위](../docs/economy-quote-verification.md)를 따른다.
+
+최근 Tick 실적/제조 진단/사건 적용은 `--sessions --economy --economy-flows` 경로다. 한 묶음의 순차 두 JVM에서 E002→E003 보존·실제 흐름/공개 화면·저장 실패 롤백·진행 격리·월드 재로드와 새 JVM 복원을 확인한다. 과거 전체 플레이 시나리오는 반복하지 않는다. [범위·결과](../docs/economy-flow-verification.md)를 따른다.

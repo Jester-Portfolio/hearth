@@ -1,0 +1,230 @@
+{
+  "outcome": "PASS",
+  "base_commit": "0cae34969ee24365d5cc1561f49a59308d234c03",
+  "scope": "최근 Tick 실적·제조 진단·등록 경제 사건·E003·두 JVM 복원",
+  "unit_tests_initial": [
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyDeskTest",
+      "tests": "7",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:00:50.499Z",
+      "hostname": "rocky-laptop",
+      "time": "0.063"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyEngineTest",
+      "tests": "10",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:00:50.566Z",
+      "hostname": "rocky-laptop",
+      "time": "10.926"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyFlowTest",
+      "tests": "10",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:01:01.494Z",
+      "hostname": "rocky-laptop",
+      "time": "0.041"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyQuoteTest",
+      "tests": "10",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:01:01.559Z",
+      "hostname": "rocky-laptop",
+      "time": "0.022"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyReportTest",
+      "tests": "10",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:01:01.583Z",
+      "hostname": "rocky-laptop",
+      "time": "0.03"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyMerchantsTest",
+      "tests": "9",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:01:01.537Z",
+      "hostname": "rocky-laptop",
+      "time": "0.021"
+    }
+  ],
+  "unit_tests_affected_recheck": [
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyFlowTest",
+      "tests": "11",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:15:38.514Z",
+      "hostname": "rocky-laptop",
+      "time": "0.102"
+    }
+  ],
+  "unit_test_count_without_duplicate": 57,
+  "runtime_bundle_count": 2,
+  "attempts": [
+    {
+      "workspace": "/tmp/hearth-s4-11.gS1YLkkO",
+      "outcome": "FAIL",
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+      "raw_cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "followup_cleanup": {
+        "owned_pids_absent": true,
+        "postmaster_pid_absent": true,
+        "raw_cleanup_errors": [
+          "AssertionError: DB 풀 종료 확인 누락"
+        ],
+        "owned_ports_returned": true
+      },
+      "reason": "기존 목표 재고 계산의 실제 생산 3개를 생산 상한 5개로 기대한 시험 오류. 경제 규칙은 유지하고 기대값과 관련 사례만 수정했다."
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.7FQa06zJ",
+      "outcome": "PASS"
+    }
+  ],
+  "runtime_checks": [
+    "economy_flow_E003_preserves_E002_account",
+    "economy_flow_E003_preserves_old_receipt",
+    "economy_flow_before_first_tick_is_unregistered",
+    "economy_flow_actual_manufacture_and_consumption",
+    "economy_flow_departure_reserved_not_arrived",
+    "economy_flow_delayed_arrival_not_production",
+    "economy_reject_SQL_rollback",
+    "economy_reject_ECON_REQUEST_CONFLICT",
+    "economy_flow_event_duplicate_is_same_request",
+    "economy_flow_production_and_route_events_applied",
+    "economy_flow_surge_actual_demand_and_target_limited_output",
+    "economy_flow_public_report_actual_tick",
+    "economy_flow_native_market_lore",
+    "economy_flow_native_facility_diagnosis",
+    "economy_flow_readonly_owner_inventory_revision_preserved",
+    "economy_flow_other_player_same_realm_public_values",
+    "economy_flow_other_realm_not_initialized",
+    "economy_reject_23514",
+    "economy_flow_failed_write_rolls_back_markets_transport_tick",
+    "economy_flow_failed_write_preserves_previous_metrics",
+    "economy_flow_A_failure_does_not_stop_B",
+    "economy_flow_duplicate_tick_does_not_overwrite_metrics",
+    "economy_flow_supply_resumes_after_events",
+    "economy_reject_ECON_FLOW_MISMATCH",
+    "economy_reject_ECON_FLOW_MISMATCH",
+    "economy_world_saved_regions_unloaded",
+    "economy_flow_same_JVM_reload_UUID_key_block",
+    "economy_flow_same_JVM_reload_protection_restored",
+    "economy_flow_same_JVM_reload_metrics_restored",
+    "economy_flow_same_JVM_reload_account_inventory_preserved",
+    "economy_world_saved_regions_unloaded",
+    "economy_flow_new_JVM_UUID_key_block",
+    "economy_flow_new_JVM_protection_restored",
+    "economy_flow_new_JVM_metrics_restored",
+    "economy_flow_new_JVM_account_inventory_preserved",
+    "economy_flow_new_JVM_other_realm_separate",
+    "economy_flow_new_JVM_public_UI_restored",
+    "economy_world_saved_regions_unloaded"
+  ],
+  "runtime_check_count": 38,
+  "duration_seconds": 56.245,
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "processes": {
+    "database": {
+      "pid": 4034949,
+      "exit_code": 0,
+      "ready_seconds": null,
+      "duration_seconds": 55.543,
+      "shutdown_seconds": 0.408,
+      "max_sampled_rss_kib": 224220,
+      "observed_cpu_seconds": 2.34,
+      "min_sampled_host_available_kib": 12344176,
+      "sample_count": 844,
+      "checks": [],
+      "timings": [],
+      "states": []
+    },
+    "paper-prepare": {
+      "pid": 4035004,
+      "exit_code": 0,
+      "ready_seconds": 13.754,
+      "duration_seconds": 37.257,
+      "shutdown_seconds": 3.756,
+      "max_sampled_rss_kib": 1168060,
+      "observed_cpu_seconds": 72.73,
+      "min_sampled_host_available_kib": 12344176,
+      "sample_count": 551,
+      "checks": [
+        "world_IO_pool_closed"
+      ],
+      "timings": [],
+      "states": []
+    },
+    "paper-resume": {
+      "pid": 4035256,
+      "exit_code": 0,
+      "ready_seconds": 8.812,
+      "duration_seconds": 15.088,
+      "shutdown_seconds": 3.478,
+      "max_sampled_rss_kib": 963924,
+      "observed_cpu_seconds": 29.86,
+      "min_sampled_host_available_kib": 12507576,
+      "sample_count": 237,
+      "checks": [
+        "world_IO_pool_closed"
+      ],
+      "timings": [],
+      "states": []
+    }
+  },
+  "all_owned_processes_and_ports_closed": true,
+  "source_sha256": "d0742edc7034efdb13f769344db7f17afb2fa725803727dee0a2bc2500e4bcc8",
+  "jar_sha256": "e3031d5eb2cfba26f069f4ade14ad7e7365d31bdb174b62859f19d5f63cf78c5",
+  "installed_plugin_sha256": "e3031d5eb2cfba26f069f4ade14ad7e7365d31bdb174b62859f19d5f63cf78c5",
+  "source_matches_runtime": true,
+  "schema": "E003__tick_flow.sql; E001/E002 원본 유지",
+  "simulation_measurement": {
+    "virtual_days": 90,
+    "ticks": 2160,
+    "small_cells": 4,
+    "small_ns": 129198251,
+    "large_cells": 512,
+    "large_ns": 8124734684,
+    "quote_200_ns": 712638,
+    "reference_200_ns": 2247455506,
+    "cpu_ns": 10358592899,
+    "heap_used_bytes": 135031128
+  },
+  "actual_client": "NOT_RUN",
+  "not_executed": [
+    "실제 인증 플레이어의 NPC/GUI 클릭·이동·인벤토리 조작",
+    "PostgreSQL 프로세스 재시작",
+    "Tick commit 결과 불명 신규 장애 주입·운영 복구",
+    "운영 규모 DB 부하·TPS/MSPT·장기 메모리 누수",
+    "운영 활성화·운영 경제 정책"
+  ]
+}
