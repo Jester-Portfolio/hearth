@@ -1,0 +1,169 @@
+{
+  "outcome": "PASS",
+  "base_commit": "0be39ec07a39fceb277fc6dc4a2483e83b6a6491",
+  "scope": "공개 상품 공급망·콘텐츠 경제 안내·기존 상점 연결",
+  "unit_tests": [
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyFlowTest",
+      "tests": "11",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:54:17.077Z",
+      "hostname": "rocky-laptop",
+      "time": "0.105"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomySupplyTest",
+      "tests": "11",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:54:17.282Z",
+      "hostname": "rocky-laptop",
+      "time": "0.053"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyReportTest",
+      "tests": "10",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:54:17.249Z",
+      "hostname": "rocky-laptop",
+      "time": "0.032"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyQuoteTest",
+      "tests": "10",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:54:17.215Z",
+      "hostname": "rocky-laptop",
+      "time": "0.032"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.economy.EconomyMerchantsTest",
+      "tests": "9",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T19:54:17.185Z",
+      "hostname": "rocky-laptop",
+      "time": "0.028"
+    }
+  ],
+  "unit_test_count": 51,
+  "runtime_bundle_count": 2,
+  "attempts": [
+    {
+      "workspace": "/tmp/hearth-s4-11.P24l6LKE",
+      "outcome": "FAIL",
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+      "raw_cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "followup_cleanup": {
+        "owned_pids_absent": true,
+        "postmaster_pid_absent": true,
+        "raw_cleanup_errors": [
+          "AssertionError: DB 풀 종료 확인 누락"
+        ],
+        "owned_ports_returned": true,
+        "verified_ports": [
+          25585,
+          37977
+        ]
+      },
+      "reason": "잘못된 상품 ID의 IllegalArgumentException을 저장 오류 코드로 기대한 통합 시험 오류. 검증기의 기대 예외 타입만 수정했다."
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.aznePZTw",
+      "outcome": "PASS"
+    }
+  ],
+  "runtime_checks": [
+    "economy_supply_ore_chain_and_content_guide",
+    "economy_supply_native_chain_screen",
+    "economy_supply_native_ordered_guide_screen",
+    "economy_supply_native_public_goods_screen",
+    "economy_supply_cross_region_no_remote_trade",
+    "economy_supply_mine_merchant_view_reuses_public_data",
+    "economy_supply_readonly_account_inventory_revision",
+    "economy_supply_same_realm_public_information_shared",
+    "economy_supply_cached_transition_next_tick",
+    "economy_supply_late_different_merchant_callback_rejected",
+    "economy_supply_navigation_keeps_existing_trade_path",
+    "economy_supply_refresh_replaces_but_does_not_mutate_cache",
+    "economy_supply_actual_route_block_and_in_transit",
+    "economy_supply_completed_flow_in_market_node",
+    "economy_supply_guide_uses_same_live_snapshot",
+    "economy_supply_existing_market_multiline_flow_preserved",
+    "economy_supply_other_realm_state_isolated",
+    "economy_supply_other_player_inventory_preserved",
+    "economy_reject_ECON_ACCOUNT_MISSING",
+    "economy_reject_IllegalArgumentException",
+    "economy_supply_other_realm_owner_preserved",
+    "economy_world_saved_regions_unloaded"
+  ],
+  "runtime_check_count": 22,
+  "duration_seconds": 35.555,
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 1,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "processes": {
+    "database": {
+      "pid": 4042460,
+      "exit_code": 0,
+      "ready_seconds": null,
+      "duration_seconds": 34.951,
+      "shutdown_seconds": 0.408,
+      "max_sampled_rss_kib": 219588,
+      "observed_cpu_seconds": 2.28,
+      "min_sampled_host_available_kib": 12273060,
+      "sample_count": 541,
+      "checks": [],
+      "timings": [],
+      "states": []
+    },
+    "paper-prepare": {
+      "pid": 4042545,
+      "exit_code": 0,
+      "ready_seconds": 13.754,
+      "duration_seconds": 31.95,
+      "shutdown_seconds": 3.749,
+      "max_sampled_rss_kib": 1209128,
+      "observed_cpu_seconds": 66.03,
+      "min_sampled_host_available_kib": 12273060,
+      "sample_count": 488,
+      "checks": [
+        "world_IO_pool_closed"
+      ],
+      "timings": [],
+      "states": []
+    }
+  },
+  "all_owned_processes_and_ports_closed": true,
+  "source_sha256": "931fa60269ea5f42eea4c70fa9d6c783226ab4018dd75d686c1d964eab5fd88d",
+  "jar_sha256": "f7f5e0ef16448ea77c2363b9b34024a928f131b229dd6b3e532c0b919a0741ee",
+  "installed_plugin_sha256": "f7f5e0ef16448ea77c2363b9b34024a928f131b229dd6b3e532c0b919a0741ee",
+  "source_matches_runtime": true,
+  "schema_changes": false,
+  "simulation_rules_changed": false,
+  "actual_client": "NOT_RUN",
+  "not_executed": [
+    "실제 인증 플레이어의 NPC/GUI 클릭·화면 가독성·이동·인벤토리 조작",
+    "새 JVM/DB 재시작: 저장 계약 변경 없음",
+    "기존 전체 90일 계산: 경제 계산 변경 없음",
+    "TPS/MSPT·대규모 콘텐츠/DB 부하·장기 누수",
+    "운영 활성화·운영 경제 정책"
+  ]
+}

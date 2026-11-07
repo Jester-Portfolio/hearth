@@ -9,10 +9,10 @@ public final class EconomyReport {
     private EconomyReport(){}
     public record Region(String id,String name){}
     public record MarketRow(String good,String name,long stock,long target,long base,long anchor,StockStatus status,Long ask,Long bid,long demand,Flow flow){}
-    public record RouteRow(String name,String from,String to,String good,long capacity,int delay,boolean blocked,long inTransit,int shipments,long nextArrival){}
+    public record RouteRow(String id,String name,String from,String to,String good,long capacity,int delay,boolean blocked,long inTransit,int shipments,long nextArrival){}
     public record EventRow(String name,String description,boolean scheduled,long startsIn,long remaining){}
-    public record InputRow(String name,long units,long stock){}
-    public record FacilityRow(String name,String good,long capacity,long possible,String restriction,List<InputRow> inputs){public FacilityRow{inputs=List.copyOf(inputs);}}
+    public record InputRow(String good,String name,long units,long stock){}
+    public record FacilityRow(String id,String name,String good,long capacity,long possible,String restriction,List<InputRow> inputs){public FacilityRow{inputs=List.copyOf(inputs);}}
     public record View(Region region,long tick,List<Region> regions,List<MarketRow> markets,List<RouteRow> routes,List<EventRow> events,List<FacilityRow> facilities){
         public View{regions=List.copyOf(regions);markets=List.copyOf(markets);routes=List.copyOf(routes);events=List.copyOf(events);facilities=List.copyOf(facilities);}
     }
@@ -24,6 +24,10 @@ public final class EconomyReport {
         private Definition(List<String> regions,List<String> goods,List<String> routes,List<String> facilities,Map<String,String> regionNames,Map<String,String> goodNames,Map<String,String> routeNames,Map<String,String> facilityNames,Map<String,EventInfo> events){
             this.regions=List.copyOf(regions);this.goods=List.copyOf(goods);this.routes=List.copyOf(routes);this.facilities=List.copyOf(facilities);this.regionNames=Map.copyOf(regionNames);this.goodNames=Map.copyOf(goodNames);this.routeNames=Map.copyOf(routeNames);this.facilityNames=Map.copyOf(facilityNames);this.events=Map.copyOf(events);
         }
+        public List<String> goods(){return goods;}
+        public boolean allowsGood(String good){return goods.contains(good);}
+        public boolean allowsRoute(String id){return routes.contains(id);}
+        public boolean allowsFacility(String id){return facilities.contains(id);}
         public boolean allows(String region){return regions.contains(region);}
         public List<Region> regions(){return regions.stream().map(id->new Region(id,regionNames.get(id))).toList();}
         public View project(EconomyContent c,State state,String region){return project(c,state,region,Map.of());}
@@ -40,17 +44,17 @@ public final class EconomyReport {
             }
             var routeRows=new ArrayList<RouteRow>();for(String id:routes){var r=allRoutes.get(id);if(!r.from().equals(region)&&!r.to().equals(region))continue;var shipments=pending.getOrDefault(id,List.of());long quantity=0,next=-1;
                 for(var shipment:shipments){quantity=Math.addExact(quantity,shipment.quantity());long due=Math.max(0,shipment.due()-state.tick());next=next<0?due:Math.min(next,due);}
-                routeRows.add(new RouteRow(routeNames.get(id),regionNames.get(r.from()),regionNames.get(r.to()),goodNames.get(r.good()),r.amount(),r.delay(),effectFactor(c,state,state.tick(),"ROUTE",id)==0,quantity,shipments.size(),next));}
+                routeRows.add(new RouteRow(id,routeNames.get(id),regionNames.get(r.from()),regionNames.get(r.to()),goodNames.get(r.good()),r.amount(),r.delay(),effectFactor(c,state,state.tick(),"ROUTE",id)==0,quantity,shipments.size(),next));}
             var eventRows=new ArrayList<EventRow>();for(var event:state.events()){
                 var visible=events.get(event.event());if(visible==null||!visible.regions().contains(region)||event.end()<=state.tick())continue;
                 eventRows.add(new EventRow(visible.name(),visible.description(),event.start()>state.tick(),Math.max(0,event.start()-state.tick()),event.end()-Math.max(state.tick(),event.start())));
             }
             var facilityRows=new ArrayList<FacilityRow>();for(var f:c.facilities())if(facilities.contains(f.id())&&f.region().equals(region)){
-                var inputs=new ArrayList<InputRow>();for(var e:new TreeMap<>(f.inputs()).entrySet())inputs.add(new InputRow(goodNames.get(e.getKey()),e.getValue(),cell(state,region,e.getKey()).stock()));
+                var inputs=new ArrayList<InputRow>();for(var e:new TreeMap<>(f.inputs()).entrySet())inputs.add(new InputRow(e.getKey(),goodNames.get(e.getKey()),e.getValue(),cell(state,region,e.getKey()).stock()));
                 long capacity=productionCapacity(c,state,state.tick(),f),needed=Math.max(0,c.goods().get(f.good()).target()+c.demand().getOrDefault(new Key(region,f.good()),0L)-cell(state,region,f.good()).stock());
                 long possible=Math.min(capacity,needed);for(var e:f.inputs().entrySet())possible=Math.min(possible,cell(state,region,e.getKey()).stock()/e.getValue());
                 String restriction=capacity==0?"효율 또는 경제 사건으로 생산 중단":needed==0?"목표 재고 충족":possible<Math.min(capacity,needed)?"입력 재료 부족":"현재 재고 기준 생산 가능";
-                facilityRows.add(new FacilityRow(facilityNames.get(f.id()),goodNames.get(f.good()),capacity,possible,restriction,inputs));}
+                facilityRows.add(new FacilityRow(f.id(),facilityNames.get(f.id()),goodNames.get(f.good()),capacity,possible,restriction,inputs));}
             return new View(new Region(region,regionNames.get(region)),state.tick(),regions(),markets,routeRows,eventRows,facilityRows);
         }
     }

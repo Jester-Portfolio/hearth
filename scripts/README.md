@@ -103,3 +103,5 @@
 수량/확인/결과 변경은 `--sessions --economy --economy-quote` 단독 한 JVM 경로로 검사한다. 임의 수량과 네이티브 화면 객체·조회 불변·거래 재검증/중복 거부·DB 롤백/HOLD 보존을 함께 확인한다. [실제 범위](../docs/economy-quote-verification.md)를 따른다.
 
 최근 Tick 실적/제조 진단/사건 적용은 `--sessions --economy --economy-flows` 경로다. 한 묶음의 순차 두 JVM에서 E002→E003 보존·실제 흐름/공개 화면·저장 실패 롤백·진행 격리·월드 재로드와 새 JVM 복원을 확인한다. 과거 전체 플레이 시나리오는 반복하지 않는다. [범위·결과](../docs/economy-flow-verification.md)를 따른다.
+
+상품 공급망/공개 플레이 안내는 `--sessions --economy --economy-supply` 단독 한 JVM 경로다. 콘텐츠/공개 필터·실제 시장/제조/운송 DTO·화면 객체·조회 불변·상인/진행 격리와 기존 최신 견적 거래 연결을 검사한다. 저장 규약을 변경하지 않아 두 JVM/90일 전체 검사는 반복하지 않는다. [범위·결과](../docs/economy-supply-verification.md)를 따른다.

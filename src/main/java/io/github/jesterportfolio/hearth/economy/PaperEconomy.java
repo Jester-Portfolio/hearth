@@ -34,18 +34,19 @@ public final class PaperEconomy implements Listener,AutoCloseable {
     private final JavaPlugin plugin;private final PostgresProgressStore db;private final Executor owner;private final PaperInventoryCodec codec;private final Path mappingFile;private final Properties settings;
     private final PaperWorldBackend backend=new PaperWorldBackend();private WorldBackend.Placement placement;private final Map<String,Villager> merchantEntities=new HashMap<>();private final Map<UUID,String> entityMerchants=new HashMap<>();private final Map<UUID,Visit> visits=new HashMap<>();private int merchantSpawns;private boolean fixtureChunks;private final Set<Long> pinnedChunks=new HashSet<>();private final PaperInventoryAutosave autosave;
     private final Map<UUID,UUID> pending=new HashMap<>();private final Map<UUID,Screen> screens=new HashMap<>();private final Map<PlayerSessions.Session,AtomicBoolean> fences=new IdentityHashMap<>();private BukkitTask ticker;private CompletionStage<?> ticking=CompletableFuture.completedFuture(null);private long nextTick;private boolean closed,tickHold;public long pulses;
-    public final EconomyMerchants merchants;public final EconomyShop shop;public final EconomyReport.Definition reportDefinition;private final Map<String,EconomyReport.Definition> merchantReports=new HashMap<>();
-    private enum Kind { CATALOG, PRODUCT, QUANTITY, MAX_BUY, MAX_SELL, CONFIRM_BUY, CONFIRM_SELL, RESULT, HISTORY, BUY, SELL, MARKET, REGIONS, ROUTES, EVENTS, FACILITIES, REFRESH }
+    public final EconomyMerchants merchants;public final EconomyShop shop;public final EconomyReport.Definition reportDefinition;private final Map<String,EconomyReport.Definition> merchantReports=new HashMap<>();private final Map<String,EconomySupply.Plan> merchantGuides=new HashMap<>();
+    private enum Kind { CATALOG, PRODUCT, QUANTITY, MAX_BUY, MAX_SELL, CONFIRM_BUY, CONFIRM_SELL, RESULT, SUPPLY, SUPPLY_GOODS, GUIDE, SUPPLY_REFRESH, HISTORY, BUY, SELL, MARKET, REGIONS, ROUTES, EVENTS, FACILITIES, REFRESH }
+    private static final Set<Kind> SUPPLY_VIEWS=Set.of(Kind.SUPPLY,Kind.SUPPLY_GOODS,Kind.GUIDE);
     private static final Set<Kind> INFORMATION=Set.of(Kind.MARKET,Kind.REGIONS,Kind.ROUTES,Kind.EVENTS,Kind.FACILITIES);
     private record Action(Kind kind,String good,int quantity,UUID request,long cursor,int page,String region){}
     private final class Screen implements InventoryHolder {
-        final UUID player;final Visit visit;final PlayerSessions.Session session;final long generation;final EconomyStore.Offer offer;final Inventory inventory;final Map<Integer,Action> actions=new HashMap<>();boolean busy;int quantity=1;EconomyQuote.View quote;EconomyReport.View report;Kind reportKind;int reportPage;
+        final UUID player;final Visit visit;final PlayerSessions.Session session;final long generation;final EconomyStore.Offer offer;final Inventory inventory;final Map<Integer,Action> actions=new HashMap<>();boolean busy;int quantity=1;EconomyQuote.View quote;EconomyReport.View report;Kind reportKind;int reportPage;EconomySupply.View supply;Kind supplyKind;int supplyPage;
         Screen(PlayerSessions.Session session,EconomyStore.Offer offer,String title,Visit visit){this.visit=visit;this.player=session.context().playerId();this.session=session;this.offer=offer;generation=world.generation();inventory=Bukkit.createInventory(this,54,Component.text(merchants.get(visit.merchant()).name()+" · "+title));}
         public Inventory getInventory(){return inventory;}
     }
     public static EconomyContent load(JavaPlugin plugin,Properties settings)throws Exception{var file=plugin.getDataFolder().toPath().resolve("economy-demo.properties");if(!Files.exists(file))plugin.saveResource("economy-demo.properties",false);try(var reader=Files.newBufferedReader(file)){settings.load(reader);}return EconomyContent.parse(settings);}
     public PaperEconomy(JavaPlugin plugin,PostgresProgressStore db,Executor owner,PaperInventoryCodec codec,Path root,Properties settings,EconomyContent content,boolean resume)throws Exception{
-        main();if(!plugin.getConfig().getBoolean("economy-verification-enabled")||!Boolean.getBoolean("hearth.verification.economy")||!Bukkit.getOnlinePlayers().isEmpty())throw new IllegalStateException("ECON_ISOLATED_GATE");this.plugin=plugin;this.db=db;this.owner=owner;this.codec=codec;this.settings=settings;mappingFile=root.resolve("economy-world.properties");store=new EconomyStore(db,content);trades=new EconomyTrade(store,codec,owner);merchants=EconomyMerchants.parse(settings,content);shop=merchants.first().shop();for(var merchant:merchants.all())merchantReports.put(merchant.id(),EconomyReport.parse(settings,content,merchant.shop()));reportDefinition=merchantReports.get(merchants.first().id());
+        main();if(!plugin.getConfig().getBoolean("economy-verification-enabled")||!Boolean.getBoolean("hearth.verification.economy")||!Bukkit.getOnlinePlayers().isEmpty())throw new IllegalStateException("ECON_ISOLATED_GATE");this.plugin=plugin;this.db=db;this.owner=owner;this.codec=codec;this.settings=settings;mappingFile=root.resolve("economy-world.properties");store=new EconomyStore(db,content);trades=new EconomyTrade(store,codec,owner);merchants=EconomyMerchants.parse(settings,content);shop=merchants.first().shop();for(var merchant:merchants.all())merchantReports.put(merchant.id(),EconomyReport.parse(settings,content,merchant.shop()));reportDefinition=merchantReports.get(merchants.first().id());for(var merchant:merchants.all())merchantGuides.put(merchant.id(),EconomySupply.parse(settings,content,merchantReports.get(merchant.id())));
         if(resume){var p=new Properties();try(var in=Files.newInputStream(mappingFile)){p.load(in);}if(!REALM.toString().equals(p.getProperty("realm")))throw new IllegalStateException("ECON_MAPPING_OWNER");var key=Objects.requireNonNull(NamespacedKey.fromString(p.getProperty("key")));placement=new WorldBackend.Placement(REALM,key,UUID.fromString(p.getProperty("uuid")),Path.of(p.getProperty("directory")));backend.registerExisting(placement);backend.load(placement);}
         else{if(Files.exists(mappingFile))throw new IllegalStateException("ECON_MAPPING_EXISTS");placement=backend.create(REALM,new NamespacedKey("hearth_verify","economy_fixture"));var w=Objects.requireNonNull(Bukkit.getWorld(placement.physicalId()));for(int x=0;x<16;x++)for(int z=0;z<16;z++)w.getBlockAt(x,63,z).setType(Material.STONE,false);w.save(true);Files.writeString(placement.directory().resolve(".hearth-s4-spatial-ready"),REALM+"/"+placement.key()+"/"+placement.physicalId());var p=new Properties();p.setProperty("realm",REALM.toString());p.setProperty("key",placement.key().toString());p.setProperty("uuid",placement.physicalId().toString());p.setProperty("directory",placement.directory().toString());try(var out=Files.newOutputStream(mappingFile,StandardOpenOption.CREATE_NEW)){p.store(out,"격리 경제 월드 매핑");}}
         var physical=Objects.requireNonNull(Bukkit.getWorld(placement.physicalId()));for(var definition:merchants.all())if(definition.point().y()<physical.getMinHeight()||definition.point().y()>=physical.getMaxHeight())throw new IllegalArgumentException("ECON_MERCHANT_HEIGHT");
@@ -113,7 +114,7 @@ public final class PaperEconomy implements Listener,AutoCloseable {
         int slot=0;for(String good:shop.page(page)){var offer=Objects.requireNonNull(byGood.get(good));String ask=offer.market().stock()>0?""+EconomyEngine.quote(store.content(),good,offer.market(),1,true):"품절";
             button(screen,slot++,Objects.requireNonNull(Material.matchMaterial(store.content().goods().get(good).material())),shop.name(good),nav(Kind.PRODUCT,good,0,0),"재고: "+offer.market().stock(),"1개 구매: "+ask,"1개 판매: "+EconomyEngine.quote(store.content(),good,offer.market(),1,false),"개발 화폐 잔액: "+offer.balance());}
         if(page>0)button(screen,45,Material.ARROW,"이전 상품",nav(Kind.CATALOG,null,page-1,0));if((page+1)*45<shop.goods().size())button(screen,53,Material.ARROW,"다음 상품",nav(Kind.CATALOG,null,page+1,0));
-        button(screen,48,Material.COMPASS,"시장 상황",info(Kind.MARKET,shop.region(),0));button(screen,49,Material.BOOK,"본인 거래 기록",nav(Kind.HISTORY,null,0,Long.MAX_VALUE));button(screen,50,Material.CLOCK,"시세 새로고침",nav(Kind.CATALOG,null,page,0));return screen;
+        button(screen,46,Material.MAP,"상품 공급망",nav(Kind.SUPPLY_GOODS,report(visit).goods().getFirst(),0,0));button(screen,47,Material.WRITABLE_BOOK,"경제 플레이 안내",nav(Kind.GUIDE,report(visit).goods().getFirst(),0,0));button(screen,48,Material.COMPASS,"시장 상황",info(Kind.MARKET,shop.region(),0));button(screen,49,Material.BOOK,"본인 거래 기록",nav(Kind.HISTORY,null,0,Long.MAX_VALUE));button(screen,50,Material.CLOCK,"시세 새로고침",nav(Kind.CATALOG,null,page,0));return screen;
     }
     private Screen product(PlayerSessions.Session session,EconomyStore.Offer offer,Visit visit){return product(session,offer,visit,1,null);}
     private Screen product(PlayerSessions.Session session,EconomyStore.Offer offer,Visit visit,int quantity,InventoryPayload payload){
@@ -126,7 +127,7 @@ public final class PaperEconomy implements Listener,AutoCloseable {
         button(screen,28,sell.available()?Material.ORANGE_DYE:Material.GRAY_DYE,"판매 견적 · "+quantity+"개",sell.available()?new Action(Kind.SELL,offer.key().good(),quantity,null,0,0,null):null,"총액: "+(sell.total()==null?"거래 불가":sell.total()),sell.guidance(),"다음 화면에서 최종 확인");
         int slot=19;for(int delta:new int[]{-64,-8,-1,1,8,64}){int next=EconomyQuote.adjust(quantity,delta);button(screen,slot++,Material.PAPER,(delta>0?"+":"")+delta+"개",new Action(Kind.QUANTITY,offer.key().good(),next,null,0,0,null));}
         button(screen,16,Material.CHEST,"최대 구매 가능 수량",nav(Kind.MAX_BUY,offer.key().good(),0,0));button(screen,34,Material.HOPPER,"최대 판매 가능 수량",nav(Kind.MAX_SELL,offer.key().good(),0,0));
-        button(screen,45,Material.ARROW,"상품 목록",nav(Kind.CATALOG,null,0,0));button(screen,48,Material.COMPASS,"시장 상황",info(Kind.MARKET,shop.region(),0));button(screen,49,Material.BOOK,"본인 거래 기록",nav(Kind.HISTORY,null,0,Long.MAX_VALUE));button(screen,50,Material.CLOCK,"견적 새로고침",nav(Kind.PRODUCT,offer.key().good(),0,0));return screen;
+        button(screen,45,Material.ARROW,"상품 목록",nav(Kind.CATALOG,null,0,0));button(screen,48,Material.COMPASS,"시장 상황",info(Kind.MARKET,shop.region(),0));button(screen,49,Material.BOOK,"본인 거래 기록",nav(Kind.HISTORY,null,0,Long.MAX_VALUE));button(screen,50,Material.CLOCK,"견적 새로고침",nav(Kind.PRODUCT,offer.key().good(),0,0));if(report(visit).allowsGood(offer.key().good())){button(screen,51,Material.MAP,"이 상품 공급망",nav(Kind.SUPPLY,offer.key().good(),0,0));button(screen,52,Material.WRITABLE_BOOK,"경제 플레이 안내",nav(Kind.GUIDE,offer.key().good(),0,0));}return screen;
     }
     private Screen confirmation(PlayerSessions.Session session,EconomyStore.Offer offer,Visit visit,int quantity,boolean buy,InventoryPayload payload){
         merchants.get(visit.merchant()).require(offer);var shop=shop(visit);var quote=EconomyQuote.view(store.content(),offer,trades.capacity(payload,offer.key().good()),quantity,buy);
@@ -154,6 +155,23 @@ public final class PaperEconomy implements Listener,AutoCloseable {
         button(screen,45,Material.ARROW,"상품 목록",nav(Kind.CATALOG,null,0,0));button(screen,49,Material.CLOCK,"최신 기록",nav(Kind.HISTORY,null,0,Long.MAX_VALUE));
         if(rows.size()==20)button(screen,53,Material.ARROW,"이전 거래",nav(Kind.HISTORY,null,0,rows.getLast().inventoryRevision()));return screen;
     }
+    private Action supplyTarget(EconomySupply.Node node,Visit visit){
+        if(!report(visit).allows(node.region()))throw new IllegalArgumentException("ECON_REPORT_REGION");
+        if(node.section()==EconomySupply.Section.MARKET){return EconomySupply.localTrade(node,merchants.get(visit.merchant()))?nav(Kind.PRODUCT,node.reference(),0,0):info(Kind.MARKET,node.region(),0);}
+        return info(node.section()==EconomySupply.Section.ROUTE?Kind.ROUTES:Kind.FACILITIES,node.region(),0);
+    }
+    private Screen supplyScreen(PlayerSessions.Session session,EconomySupply.View view,Kind kind,int page,Visit visit){
+        if(!SUPPLY_VIEWS.contains(kind)||!report(visit).allowsGood(view.good()))throw new IllegalArgumentException("ECON_SUPPLY_VIEW");
+        var screen=new Screen(session,null,kind==Kind.GUIDE?"경제 플레이 안내":kind==Kind.SUPPLY_GOODS?"공급망 상품 선택":view.name()+" · 공급망",visit);screen.supply=view;screen.supplyKind=kind;screen.supplyPage=page;int total,slot=0;
+        if(kind==Kind.SUPPLY_GOODS){total=view.goods().size();for(var row:EconomyReport.page(view.goods(),page))button(screen,slot++,Objects.requireNonNull(Material.matchMaterial(store.content().goods().get(row.id()).material())),row.name(),nav(Kind.SUPPLY,row.id(),0,0),"공개 지역의 생산·사용처·운송·시장 조회");}
+        else if(kind==Kind.GUIDE){total=view.steps().size();for(var row:EconomyReport.page(view.steps(),page)){var lines=new ArrayList<String>();lines.add(row.text());lines.addAll(row.target().lines());lines.add("조회 시점: 경제 Tick "+view.tick());lines.add("읽기 전용 안내 · 완료/보상 판정 없음");button(screen,slot++,Material.WRITABLE_BOOK,row.title(),supplyTarget(row.target(),visit),lines.toArray(String[]::new));}}
+        else{total=view.nodes().size();for(var row:EconomyReport.page(view.nodes(),page)){var lines=new ArrayList<>(row.lines());lines.add("조회 시점: 경제 Tick "+view.tick());String label=switch(row.section()){case MARKET->"시장";case PRODUCER->"생산시설";case USE->"재료 사용처";case ROUTE->"운송로";};button(screen,slot++,switch(row.section()){case MARKET->Material.EMERALD;case PRODUCER,USE->Material.FURNACE;case ROUTE->Material.CHEST;},label+" · "+row.title(),supplyTarget(row,visit),lines.toArray(String[]::new));}}
+        if(total==0)button(screen,22,Material.PAPER,kind==Kind.GUIDE?"등록된 경제 플레이 안내가 없습니다":"공개 공급망 정보가 없습니다",null);
+        button(screen,45,Material.ARROW,"상점으로",nav(Kind.CATALOG,null,0,0));button(screen,46,Material.MAP,"상품 선택",nav(Kind.SUPPLY_GOODS,view.good(),0,0));button(screen,47,Material.WRITABLE_BOOK,"경제 플레이 안내",nav(Kind.GUIDE,view.good(),0,0));button(screen,48,Material.CHEST,"상품 공급망",nav(Kind.SUPPLY,view.good(),0,0));button(screen,49,Material.BOOK,"본인 거래 기록",nav(Kind.HISTORY,null,0,Long.MAX_VALUE));button(screen,50,Material.CLOCK,"공급망 새로고침",nav(Kind.SUPPLY_REFRESH,view.good(),page,0));
+        if(page>0)button(screen,52,Material.ARROW,"이전 페이지",nav(kind,view.good(),page-1,0));if((page+1)*45<total)button(screen,53,Material.ARROW,"다음 페이지",nav(kind,view.good(),page+1,0));return screen;
+    }
+    public Inventory previewSupplyAt(String id,PlayerSessions.Session session,EconomySupply.View view,String kind,int page){main();store.validate(session.context());return supplyScreen(session,view,Kind.valueOf(kind),page,merchantVisit(id)).inventory;}
+    public CompletionStage<EconomySupply.View> supply(ServerProgressAccess.Context context,String merchant,String good){main();var visit=merchants.get(merchant);return store.supply(context,merchantReports.get(visit.id()),merchants,merchantGuides.get(visit.id()),good);}
     private Action info(Kind kind,String region,int page){return new Action(kind,null,0,null,0,page,region);}
     private String price(Long value){return value==null?"거래 불가":value.toString();}
     private String stock(EconomyEngine.StockStatus value){return switch(value){case NORMAL->"보통";case SHORTAGE->"부족";case SURPLUS->"공급 과잉";};}
@@ -164,8 +182,8 @@ public final class PaperEconomy implements Listener,AutoCloseable {
         switch(kind){
             case MARKET->{total=view.markets().size();for(var row:EconomyReport.page(view.markets(),page)){
                 Action action=view.region().id().equals(shop.region())&&shop.goods().contains(row.good())?nav(Kind.PRODUCT,row.good(),0,0):null;
-                button(screen,slot++,Objects.requireNonNull(Material.matchMaterial(store.content().goods().get(row.good()).material())),row.name()+" · "+stock(row.status()),action,
-                    "조회 시점: 경제 Tick "+view.tick(),"판매 가능 재고: "+row.stock()+" / 목표: "+row.target(),"품목 기준가: "+row.base()+" / 시장 기준가: "+row.anchor(),"1개 구매: "+price(row.ask())+" / 판매: "+price(row.bid()),"현재 수요 설정: "+row.demand()+" / Tick",flowText(row.flow()),action==null?"공개 시장 참고 정보":"선택하면 상점의 최신 견적 조회");
+                var lore=new ArrayList<String>(List.of("조회 시점: 경제 Tick "+view.tick(),"판매 가능 재고: "+row.stock()+" / 목표: "+row.target(),"품목 기준가: "+row.base()+" / 시장 기준가: "+row.anchor(),"1개 구매: "+price(row.ask())+" / 판매: "+price(row.bid()),"현재 수요 설정: "+row.demand()+" / Tick"));lore.addAll(EconomySupply.flowLines(row.flow()));lore.add(action==null?"공개 시장 참고 정보":"선택하면 상점의 최신 견적 조회");
+                button(screen,slot++,Objects.requireNonNull(Material.matchMaterial(store.content().goods().get(row.good()).material())),row.name()+" · "+stock(row.status()),action,lore.toArray(String[]::new));
             }}
             case REGIONS->{total=view.regions().size();for(var row:EconomyReport.page(view.regions(),page))button(screen,slot++,Material.MAP,row.name(),info(Kind.MARKET,row.id(),0),"공개 지역 시장 조회");}
             case ROUTES->{total=view.routes().size();for(var row:EconomyReport.page(view.routes(),page))button(screen,slot++,row.blocked()?Material.BARRIER:Material.CHEST,row.name(),null,
@@ -201,12 +219,13 @@ public final class PaperEconomy implements Listener,AutoCloseable {
     private void open(Player player,Kind kind,String good,int page,long cursor,String region){
         main();var visit=visits.get(player.getUniqueId());var session=adapter.current(player);if(visit==null||session==null||!current(player,visit)||pending.containsKey(player.getUniqueId()))return;var shop=shop(visit);
         if(kind==Kind.PRODUCT&&!shop.goods().contains(good))return;
-        if(INFORMATION.contains(kind)&&!report(visit).allows(region))return;
+        if(INFORMATION.contains(kind)&&!report(visit).allows(region)||SUPPLY_VIEWS.contains(kind)&&!report(visit).allowsGood(good))return;
         UUID nonce=UUID.randomUUID();pending.put(player.getUniqueId(),nonce);long generation=world.generation();
         CompletionStage<Screen> reading=switch(kind){
             case CATALOG->store.offers(session.context(),shop.region(),shop.goods()).thenApplyAsync(rows->catalog(session,rows,page,visit),owner);
             case PRODUCT->store.offer(session.context(),new EconomyContent.Key(shop.region(),good)).thenApplyAsync(offer->product(session,offer,visit,1,codec.capture(player.getInventory())),owner);
             case MARKET,REGIONS,ROUTES,EVENTS,FACILITIES->store.report(session.context(),report(visit),region).thenApplyAsync(view->information(session,view,kind,page,visit),owner);
+            case SUPPLY,SUPPLY_GOODS,GUIDE->supply(session.context(),visit.merchant(),good).thenApplyAsync(view->supplyScreen(session,view,kind,page,visit),owner);
             case HISTORY->store.history(session.context(),cursor,20).thenApplyAsync(rows->history(session,rows,visit),owner);
             default->throw new IllegalArgumentException("ECON_SHOP_VIEW");};
         reading.whenCompleteAsync((screen,error)->{
@@ -220,6 +239,10 @@ public final class PaperEconomy implements Listener,AutoCloseable {
         if(!(e.getView().getTopInventory().getHolder() instanceof PaperEconomy.Screen screen))return;e.setCancelled(true);
         if(!(e.getWhoClicked() instanceof Player player)||!valid(player,screen)||screen.busy||e.getClickedInventory()!=screen.inventory||e.getClick()!=ClickType.LEFT)return;
         var action=screen.actions.get(e.getSlot());if(action==null)return;screen.busy=true;
+        if(action.kind()==Kind.SUPPLY_REFRESH){open(player,screen.supplyKind,screen.supply.good(),screen.supplyPage,0);return;}
+        if(SUPPLY_VIEWS.contains(action.kind())&&screen.supply!=null&&screen.supply.good().equals(action.good())){
+            deferReportView(()->valid(player,screen)&&player.getOpenInventory().getTopInventory()==screen.inventory,()->{try{var next=supplyScreen(screen.session,screen.supply,action.kind(),action.page(),screen.visit);screens.put(player.getUniqueId(),next);player.openInventory(next.inventory);}catch(RuntimeException error){screen.busy=false;player.sendMessage(Component.text("공급망 화면 전환 실패"));}});return;
+        }
         if(action.kind()==Kind.REFRESH){open(player,screen.reportKind,null,screen.reportPage,0,screen.report.region().id());return;}
         if(INFORMATION.contains(action.kind())&&screen.report!=null&&screen.report.region().id().equals(action.region())){
             deferReportView(()->valid(player,screen)&&player.getOpenInventory().getTopInventory()==screen.inventory,()->{
