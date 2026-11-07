@@ -32,16 +32,17 @@ public final class PaperEconomy implements Listener,AutoCloseable {
     private final JavaPlugin plugin;private final PostgresProgressStore db;private final Executor owner;private final PaperInventoryCodec codec;private final Path mappingFile;private final Properties settings;
     private final PaperWorldBackend backend=new PaperWorldBackend();private WorldBackend.Placement placement;private Villager merchant;private final PaperInventoryAutosave autosave;
     private final Map<UUID,UUID> pending=new HashMap<>();private final Map<UUID,Screen> screens=new HashMap<>();private final Map<PlayerSessions.Session,AtomicBoolean> fences=new IdentityHashMap<>();private BukkitTask ticker;private CompletionStage<?> ticking=CompletableFuture.completedFuture(null);private long nextTick;private boolean closed,tickHold;public long pulses;
-    private final String region,good;private final org.bukkit.util.Vector merchantPoint;
-    private record Action(int quantity,boolean buy,UUID request){}
+    public final EconomyShop shop;private final org.bukkit.util.Vector merchantPoint;
+    private enum Kind { CATALOG, PRODUCT, HISTORY, BUY, SELL }
+    private record Action(Kind kind,String good,int quantity,UUID request,long cursor,int page){}
     private final class Screen implements InventoryHolder {
-        final UUID player,nonce=UUID.randomUUID();final PlayerSessions.Session session;final long generation;final EconomyStore.Offer offer;final Inventory inventory;final Map<Integer,Action> actions=new HashMap<>();boolean busy;
-        Screen(Player player,PlayerSessions.Session session,EconomyStore.Offer offer){this.player=player.getUniqueId();this.session=session;this.offer=offer;generation=world.generation();inventory=Bukkit.createInventory(this,54,Component.text("수도 개발 상점"));}
+        final UUID player;final PlayerSessions.Session session;final long generation;final EconomyStore.Offer offer;final Inventory inventory;final Map<Integer,Action> actions=new HashMap<>();boolean busy;
+        Screen(PlayerSessions.Session session,EconomyStore.Offer offer,String title){this.player=session.context().playerId();this.session=session;this.offer=offer;generation=world.generation();inventory=Bukkit.createInventory(this,54,Component.text(title));}
         public Inventory getInventory(){return inventory;}
     }
     public static EconomyContent load(JavaPlugin plugin,Properties settings)throws Exception{var file=plugin.getDataFolder().toPath().resolve("economy-demo.properties");if(!Files.exists(file))plugin.saveResource("economy-demo.properties",false);try(var reader=Files.newBufferedReader(file)){settings.load(reader);}return EconomyContent.parse(settings);}
     public PaperEconomy(JavaPlugin plugin,PostgresProgressStore db,Executor owner,PaperInventoryCodec codec,Path root,Properties settings,EconomyContent content,boolean resume)throws Exception{
-        main();if(!plugin.getConfig().getBoolean("economy-verification-enabled")||!Boolean.getBoolean("hearth.verification.economy")||!Bukkit.getOnlinePlayers().isEmpty())throw new IllegalStateException("ECON_ISOLATED_GATE");this.plugin=plugin;this.db=db;this.owner=owner;this.codec=codec;this.settings=settings;mappingFile=root.resolve("economy-world.properties");store=new EconomyStore(db,content);trades=new EconomyTrade(store,codec,owner);region=settings.getProperty("merchant-region");good=settings.getProperty("merchant-good");if(!content.regions().contains(region)||!content.goods().containsKey(good))throw new IllegalArgumentException("ECON_MERCHANT_REF");
+        main();if(!plugin.getConfig().getBoolean("economy-verification-enabled")||!Boolean.getBoolean("hearth.verification.economy")||!Bukkit.getOnlinePlayers().isEmpty())throw new IllegalStateException("ECON_ISOLATED_GATE");this.plugin=plugin;this.db=db;this.owner=owner;this.codec=codec;this.settings=settings;mappingFile=root.resolve("economy-world.properties");store=new EconomyStore(db,content);trades=new EconomyTrade(store,codec,owner);shop=EconomyShop.parse(settings,content);
         if(resume){var p=new Properties();try(var in=Files.newInputStream(mappingFile)){p.load(in);}if(!REALM.toString().equals(p.getProperty("realm")))throw new IllegalStateException("ECON_MAPPING_OWNER");var key=Objects.requireNonNull(NamespacedKey.fromString(p.getProperty("key")));placement=new WorldBackend.Placement(REALM,key,UUID.fromString(p.getProperty("uuid")),Path.of(p.getProperty("directory")));backend.registerExisting(placement);backend.load(placement);}
         else{if(Files.exists(mappingFile))throw new IllegalStateException("ECON_MAPPING_EXISTS");placement=backend.create(REALM,new NamespacedKey("hearth_verify","economy_fixture"));var w=Objects.requireNonNull(Bukkit.getWorld(placement.physicalId()));for(int x=0;x<16;x++)for(int z=0;z<16;z++)w.getBlockAt(x,63,z).setType(Material.STONE,false);w.save(true);Files.writeString(placement.directory().resolve(".hearth-s4-spatial-ready"),REALM+"/"+placement.key()+"/"+placement.physicalId());var p=new Properties();p.setProperty("realm",REALM.toString());p.setProperty("key",placement.key().toString());p.setProperty("uuid",placement.physicalId().toString());p.setProperty("directory",placement.directory().toString());try(var out=Files.newOutputStream(mappingFile,StandardOpenOption.CREATE_NEW)){p.store(out,"격리 경제 월드 매핑");}}
         var initial=Objects.requireNonNull(Bukkit.getWorld(placement.physicalId()));merchantPoint=new org.bukkit.util.Vector(Double.parseDouble(settings.getProperty("merchant-x")),Double.parseDouble(settings.getProperty("merchant-y")),Double.parseDouble(settings.getProperty("merchant-z")));
@@ -65,13 +66,70 @@ public final class PaperEconomy implements Listener,AutoCloseable {
     private boolean near(Player player){return merchant!=null&&merchant.isValid()&&player.getWorld()==merchant.getWorld()&&player.getLocation().distanceSquared(merchant.getLocation())<=25;}
     private boolean valid(Player player,Screen screen){return !closed&&player.getUniqueId().equals(screen.player)&&screens.get(screen.player)==screen&&adapter.current(player)==screen.session&&world.generation()==screen.generation&&near(player);}
     @EventHandler(priority=EventPriority.HIGHEST) public void npc(PlayerInteractEntityEvent e){if(e.getRightClicked()!=merchant)return;e.setCancelled(true);if(e.getHand()==EquipmentSlot.HAND)open(e.getPlayer());}
-    public void open(Player player){main();var session=adapter.current(player);if(session==null||!near(player)||pending.containsKey(player.getUniqueId()))return;UUID nonce=UUID.randomUUID();pending.put(player.getUniqueId(),nonce);screens.remove(player.getUniqueId());long generation=world.generation();store.offer(session.context(),new EconomyContent.Key(region,good)).whenCompleteAsync((offer,error)->{if(!nonce.equals(pending.get(player.getUniqueId()))||closed||adapter.current(player)!=session||world.generation()!=generation||!near(player))return;pending.remove(player.getUniqueId());if(error!=null){player.sendMessage(Component.text("시장 조회 실패 · 거래하지 않았습니다."));return;}var screen=new Screen(player,session,offer);var item=new ItemStack(Objects.requireNonNull(Material.matchMaterial(store.content().goods().get(good).material())));item.editMeta(meta->{meta.displayName(Component.text("철괴 · 재고 "+offer.market().stock()));meta.lore(List.of(Component.text("개발 화폐 잔액: "+offer.balance())));});screen.inventory.setItem(4,item);
-            int index=0;for(boolean buy:List.of(true,false))for(int quantity:new int[]{1,8,32}){int slot=(buy?10:28)+index%3;index++;try{long total=EconomyEngine.quote(store.content(),good,offer.market(),quantity,buy);var button=item.clone();button.editMeta(meta->meta.displayName(Component.text((buy?"구매 ":"판매 ")+quantity+"개 · "+total)));screen.inventory.setItem(slot,button);screen.actions.put(slot,new Action(quantity,buy,UUID.randomUUID()));}catch(IllegalArgumentException unavailable){screen.inventory.setItem(slot,new ItemStack(Material.BARRIER));}}screens.put(player.getUniqueId(),screen);player.openInventory(screen.inventory);},owner);}
-    @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){if(!(e.getView().getTopInventory().getHolder() instanceof PaperEconomy.Screen screen))return;e.setCancelled(true);if(!(e.getWhoClicked() instanceof Player player)||!valid(player,screen)||screen.busy||e.getClickedInventory()!=screen.inventory||e.getClick()!=ClickType.LEFT)return;var action=screen.actions.get(e.getSlot());if(action==null)return;screen.busy=true;
-        trades.execute(sessions,screen.session,screen.offer,action.quantity(),action.buy(),action.request(),fence(screen.session)::get,EconomyStore.Probe.NONE).whenCompleteAsync((receipt,error)->{if(adapter.linked(player)!=screen.session)return;player.sendMessage(Component.text(error==null?"경제 거래 DB 반영·인벤토리 적용 완료":"거래 거부 또는 보류 · 성공으로 처리하지 않았습니다."));if(screens.get(player.getUniqueId())==screen&&adapter.current(player)==screen.session)open(player);},owner);}
+    private void button(Screen screen,int slot,Material material,String label,Action action,String... lore){
+        var item=new ItemStack(material);item.editMeta(meta->{meta.displayName(Component.text(label));meta.lore(Arrays.stream(lore).map(Component::text).toList());});screen.inventory.setItem(slot,item);if(action!=null)screen.actions.put(slot,action);
+    }
+    private Action nav(Kind kind,String good,int page,long cursor){return new Action(kind,good,0,null,cursor,page);}
+    private Screen catalog(PlayerSessions.Session session,List<EconomyStore.Offer> offers,int page){
+        var screen=new Screen(session,null,"지역 상점 · "+shop.region());var byGood=new HashMap<String,EconomyStore.Offer>();for(var offer:offers)byGood.put(offer.key().good(),offer);
+        int slot=0;for(String good:shop.page(page)){var offer=Objects.requireNonNull(byGood.get(good));String ask=offer.market().stock()>0?""+EconomyEngine.quote(store.content(),good,offer.market(),1,true):"품절";
+            button(screen,slot++,Objects.requireNonNull(Material.matchMaterial(store.content().goods().get(good).material())),shop.name(good),nav(Kind.PRODUCT,good,0,0),"재고: "+offer.market().stock(),"1개 구매: "+ask,"1개 판매: "+EconomyEngine.quote(store.content(),good,offer.market(),1,false),"개발 화폐 잔액: "+offer.balance());}
+        if(page>0)button(screen,45,Material.ARROW,"이전 상품",nav(Kind.CATALOG,null,page-1,0));if((page+1)*45<shop.goods().size())button(screen,53,Material.ARROW,"다음 상품",nav(Kind.CATALOG,null,page+1,0));
+        button(screen,49,Material.BOOK,"본인 거래 기록",nav(Kind.HISTORY,null,0,Long.MAX_VALUE));return screen;
+    }
+    private Screen product(PlayerSessions.Session session,EconomyStore.Offer offer){
+        var screen=new Screen(session,offer,shop.name(offer.key().good())+" · 구매/판매");button(screen,4,Objects.requireNonNull(Material.matchMaterial(store.content().goods().get(offer.key().good()).material())),shop.name(offer.key().good()),null,"재고: "+offer.market().stock(),"개발 화폐 잔액: "+offer.balance());
+        int buy=10,sell=28;for(var price:shop.prices(store.content(),offer)){int slot=price.buy()?buy++:sell++;button(screen,slot,Material.PAPER,(price.buy()?"구매 ":"판매 ")+price.quantity()+"개 · "+price.total(),new Action(price.buy()?Kind.BUY:Kind.SELL,offer.key().good(),price.quantity(),UUID.randomUUID(),0,0));}
+        button(screen,45,Material.ARROW,"상품 목록",nav(Kind.CATALOG,null,0,0));button(screen,49,Material.BOOK,"본인 거래 기록",nav(Kind.HISTORY,null,0,Long.MAX_VALUE));return screen;
+    }
+    private Screen history(PlayerSessions.Session session,List<EconomyStore.Entry> rows){
+        var screen=new Screen(session,null,"본인 거래 기록");int slot=0;
+        for(var row:rows){String name=shop.names().getOrDefault(row.key().good(),row.key().good());button(screen,slot++,Material.PAPER,(row.buy()?"구매 · ":"판매 · ")+name,null,"수량: "+row.quantity()+" / 총액: "+row.total(),"지역: "+row.key().region(),"거래 revision: "+row.inventoryRevision(),"요청: "+row.id());}
+        if(rows.isEmpty())button(screen,22,Material.PAPER,"거래 기록이 없습니다",null);
+        button(screen,45,Material.ARROW,"상품 목록",nav(Kind.CATALOG,null,0,0));button(screen,49,Material.CLOCK,"최신 기록",nav(Kind.HISTORY,null,0,Long.MAX_VALUE));
+        if(rows.size()==20)button(screen,53,Material.ARROW,"이전 거래",nav(Kind.HISTORY,null,0,rows.getLast().inventoryRevision()));return screen;
+    }
+    /** 기존 렌더러의 실제 Inventory 객체 검사 경계. 화면을 열거나 Player를 만들지 않습니다. */
+    public Inventory preview(PlayerSessions.Session session,List<EconomyStore.Offer> offers){main();store.validate(session.context());return catalog(session,offers,0).inventory;}
+    public Inventory previewProduct(PlayerSessions.Session session,EconomyStore.Offer offer){main();store.validate(session.context());return product(session,offer).inventory;}
+    public void open(Player player){open(player,Kind.CATALOG,null,0,0);}
+    private void open(Player player,Kind kind,String good,int page,long cursor){
+        main();var session=adapter.current(player);if(session==null||!near(player)||pending.containsKey(player.getUniqueId()))return;
+        if(kind==Kind.PRODUCT&&!shop.goods().contains(good))return;
+        UUID nonce=UUID.randomUUID();pending.put(player.getUniqueId(),nonce);long generation=world.generation();
+        CompletionStage<Screen> reading=switch(kind){
+            case CATALOG->store.offers(session.context(),shop.region(),shop.goods()).thenApplyAsync(rows->catalog(session,rows,page),owner);
+            case PRODUCT->store.offer(session.context(),new EconomyContent.Key(shop.region(),good)).thenApplyAsync(offer->product(session,offer),owner);
+            case HISTORY->store.history(session.context(),cursor,20).thenApplyAsync(rows->history(session,rows),owner);
+            default->throw new IllegalArgumentException("ECON_SHOP_VIEW");};
+        reading.whenCompleteAsync((screen,error)->{
+            if(!nonce.equals(pending.get(player.getUniqueId())))return;pending.remove(player.getUniqueId());
+            if(closed||adapter.current(player)!=session||world.generation()!=generation||!near(player))return;
+            if(error!=null){var old=screens.get(player.getUniqueId());if(old!=null)old.busy=false;player.sendMessage(Component.text("상점 조회 실패 · 빈 기록이나 거래 성공으로 처리하지 않았습니다."));return;}
+            screens.put(player.getUniqueId(),screen);player.openInventory(screen.inventory);
+        },owner);
+    }
+    @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){
+        if(!(e.getView().getTopInventory().getHolder() instanceof PaperEconomy.Screen screen))return;e.setCancelled(true);
+        if(!(e.getWhoClicked() instanceof Player player)||!valid(player,screen)||screen.busy||e.getClickedInventory()!=screen.inventory||e.getClick()!=ClickType.LEFT)return;
+        var action=screen.actions.get(e.getSlot());if(action==null)return;screen.busy=true;
+        if(action.kind()!=Kind.BUY&&action.kind()!=Kind.SELL){open(player,action.kind(),action.good(),action.page(),action.cursor());return;}
+        trades.execute(sessions,screen.session,screen.offer,action.quantity(),action.kind()==Kind.BUY,action.request(),fence(screen.session)::get,EconomyStore.Probe.NONE).whenCompleteAsync((receipt,error)->{
+            if(adapter.linked(player)!=screen.session||world.generation()!=screen.generation)return;
+            player.sendMessage(Component.text(error==null?"경제 거래 DB 반영·인벤토리 적용 완료":"거래 거부 또는 보류 · 요청 "+action.request()+" · 성공으로 처리하지 않았습니다."));
+            if(screens.get(player.getUniqueId())==screen&&adapter.current(player)==screen.session&&player.getOpenInventory().getTopInventory()==screen.inventory)open(player,Kind.PRODUCT,action.good(),0,0);
+        },owner);
+    }
     @EventHandler(priority=EventPriority.HIGHEST) public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof PaperEconomy.Screen)e.setCancelled(true);}
-    @EventHandler public void screenClosed(InventoryCloseEvent e){if(e.getInventory().getHolder() instanceof PaperEconomy.Screen screen)screens.remove(e.getPlayer().getUniqueId(),screen);}
+    @EventHandler public void screenClosed(InventoryCloseEvent e){if(e.getInventory().getHolder() instanceof PaperEconomy.Screen screen&&screens.remove(e.getPlayer().getUniqueId(),screen))pending.remove(e.getPlayer().getUniqueId());}
     @EventHandler(priority=EventPriority.LOWEST) public void quit(PlayerQuitEvent e){var session=adapter.linked(e.getPlayer());if(session!=null){invalidate(session);fences.remove(session);}screens.remove(e.getPlayer().getUniqueId());pending.remove(e.getPlayer().getUniqueId());}
+    public void administration(String[] args){
+        main();if(closed)throw new IllegalStateException("ECON_CLOSED");var context=store.context(REALM,UUID.fromString(args[1]));CompletionStage<String> work;
+        if(args[0].equals("economy-history")){long cursor=args.length==3?Long.parseLong(args[2]):Long.MAX_VALUE;work=store.history(context,cursor,20).thenApply(rows->"거래 기록 "+rows);}
+        else if(args[0].equals("economy-pending")){work=CompletableFuture.completedFuture("보류 요청 "+trades.pending(context));}
+        else{UUID request=UUID.fromString(args[2]);work=(args[0].equals("economy-inspect")?trades.inspect(context,request):trades.recover(sessions,context,request,Long.parseLong(args[3]),()->!closed&&Bukkit.getPlayer(context.playerId())==null)).thenApply(view->"요청 "+view.request()+" / DB revision "+view.revision()+" / "+view.decision()+" / 월드 "+world.state());}
+        work.whenCompleteAsync((text,error)->plugin.getLogger().info(error==null?"HEARTH_ECONOMY_ADMIN "+text:"HEARTH_ECONOMY_ADMIN HOLD · "+InventorySaveSession.code(error)),owner);
+    }
     public void fixture(String profile,boolean existing){main();if(!profile.matches("[A-Za-z0-9_]{3,16}"))throw new IllegalArgumentException("ECON_PROFILE");Bukkit.createPlayerProfile(profile).update().thenComposeAsync(p->{if(p.getUniqueId()==null||!p.isComplete())throw new IllegalStateException("ECON_AUTH_PROFILE");var ctx=store.context(REALM,p.getUniqueId());var slots=new ItemStack[41];slots[0]=new ItemStack(Material.IRON_INGOT,8);var prepared=existing?store.account(ctx).thenApply(a->(Void)null):store.createAccount(ctx,store.content().fixtureBalance(),codec.encode(slots));return prepared.thenRunAsync(()->{adapter.fixture(new PaperSessionAdapter.Link(ctx,world,this::entry));plugin.getLogger().info("HEARTH_ECONOMY_FIXTURE READY "+profile);},owner);},owner).exceptionally(error->{plugin.getLogger().warning("HEARTH_ECONOMY_FIXTURE HOLD");return null;});}
     public void startTicker(){main();if(ticker!=null)throw new IllegalStateException("ECON_TICKER_EXISTS");ticking=store.resumeClock(REALM,System.currentTimeMillis()).whenCompleteAsync((v,error)->{if(error!=null){tickHold=true;plugin.getLogger().warning("HEARTH_ECONOMY_OFFLINE_HOLD");}},owner);nextTick=System.nanoTime()+store.content().tickMillis()*1000000;ticker=Bukkit.getScheduler().runTaskTimer(plugin,()->{pulses++;if(closed||tickHold||!ticking.toCompletableFuture().isDone()||System.nanoTime()<nextTick)return;nextTick=System.nanoTime()+store.content().tickMillis()*1000000;ticking=store.snapshot(REALM).thenCompose(s->store.tick(REALM,s.tick(),System.currentTimeMillis())).whenCompleteAsync((v,error)->{if(error!=null){tickHold=true;plugin.getLogger().warning("HEARTH_ECONOMY_TICK_HOLD");}},owner);},1,1);}
     public CompletionStage<Void> stopTicker(){main();if(ticker!=null){ticker.cancel();ticker=null;}return ticking.thenApply(v->null);}

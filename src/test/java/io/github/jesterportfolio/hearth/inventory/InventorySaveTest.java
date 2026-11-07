@@ -83,7 +83,7 @@ final class InventorySaveTest {
     }
     @Test void staleRewardCallbackCannotApplyAndLeavesHold(){var f=new Fixture();var grant=new CompletableFuture<InventoryStore.Stored>();var work=f.session.transaction(before->grant,saved->f.memory.set(saved.payload()));f.pump();f.valid.set(false);grant.complete(new InventoryStore.Stored(payload(3),1));f.pump();assertTrue(work.toCompletableFuture().isCompletedExceptionally());assertEquals(payload(1),f.memory.get());assertEquals("STALE_CONTEXT",f.session.holdCode());}
     @Test void economyBusinessRefusalThawsButUnknownCommitHolds(){
-        for(String code:List.of("ECON_QUOTE_CHANGED","ECON_STOCK","ECON_FUNDS","ECON_ITEMS","ECON_INVENTORY_FULL","COMMIT_UNKNOWN")){
+        for(String code:List.of("ECON_REQUEST_BUSY","ECON_QUOTE_CHANGED","ECON_STOCK","ECON_FUNDS","ECON_ITEMS","ECON_INVENTORY_FULL","COMMIT_UNKNOWN")){
             var f=new Fixture();var work=f.session.transaction(before->CompletableFuture.failedFuture(new StorageFailure("economy",code)),saved->fail("Rejected transaction must not apply"));f.pump();
             assertTrue(work.toCompletableFuture().isCompletedExceptionally());assertEquals(payload(1),f.memory.get());assertEquals(0,f.session.revision());
             if(code.equals("COMMIT_UNKNOWN")){assertEquals(code,f.session.holdCode());assertThrows(IllegalStateException.class,f.session::acknowledgeKnownRollback);}

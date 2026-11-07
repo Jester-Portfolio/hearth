@@ -93,3 +93,5 @@
 `--sessions --quests --story-batch --combat-players --boss-areas`는 방향 공격·고정/현재 좌표 기준·예고 후 위치/권한 변경을 한 JVM에서 검사한다. 실제 시험 몹의 이동/피해와 참가자별 표시 데이터를 검사하며 클라이언트 입자 렌더링 성공을 뜻하지 않는다. [결과](../docs/boss-areas-verification.md).
 
 경제 전용 통합은 새 격리 환경의 `verify-lifecycle.py --sessions --economy` 단독 경로다. 기존 제한 worker·PG 1개·순차 두 Paper JVM·600초/CPU/RAM 감시를 재사용한다. 경제 fixture와 스토리 데이터를 분리하며 NPC 클릭/인증 플레이어 시험은 실행하지 않는다. 정확한 범위와 결과는 [경제 검증](../docs/economy-verification.md)을 따른다.
+
+경제 상점/관리 변경만 검사할 때는 `--sessions --economy --economy-desk`를 사용한다. E001 기존 행을 새 격리 DB에 준비한 뒤 E002 보존·두 상품/기록·명시적 HOLD 정리·새 내부 세션 복원을 Paper 한 JVM에서 검사한다. 이전 90일/두 JVM 전체 검사는 반복하지 않는다. [범위·관리 명령](../docs/economy-desk-verification.md)을 따른다.

@@ -54,6 +54,86 @@ public final class EconomyVerification implements AutoCloseable {
     private CompletionStage<Void> capture(){var p=new Properties();p.setProperty("world",economy.physicalWorld().toString());return on(economy.store.snapshot(PaperEconomy.REALM)).thenCompose(state->{p.setProperty("tick",""+state.tick());for(var e:state.markets().entrySet())p.setProperty("market."+e.getKey(),e.getValue().toString());p.setProperty("shipments",state.shipments().toString());p.setProperty("events",state.events().toString());var chain=CompletableFuture.<Void>completedFuture(null);for(int i=1;i<=8;i++){int player=i;chain=chain.thenCompose(v->on(economy.store.account(economy.store.context(PaperEconomy.REALM,new UUID(0x45434f,player)))).thenAccept(a->{p.setProperty("account."+player,a.balance()+"/"+a.inventory().revision()+"/"+Base64.getEncoder().encodeToString(a.inventory().payload().bytes()));})).toCompletableFuture();}return chain;}).thenRun(()->{try(var out=Files.newOutputStream(evidence,StandardOpenOption.CREATE_NEW)){p.store(out,"첫 JVM 저장값");}catch(Exception e){throw new CompletionException(e);}check(true,"expected_state_saved_for_new_JVM");});}
     private CompletionStage<Void> cycle(){var jobs=new ArrayList<CompletionStage<?>>();for(var a:actors)jobs.add(economy.sessions.disconnect(a.session));return all(jobs).thenCompose(v->waitUntil(()->economy.world.state()==WorldLifecycle.State.OFFLINE)).thenRun(()->check(Bukkit.getWorld(economy.physicalWorld())==null,"world_saved_regions_unloaded"));}
     private CompletionStage<Void> restore(){var p=new Properties();try(var in=Files.newInputStream(evidence)){p.load(in);}catch(Exception e){return CompletableFuture.failedFuture(e);}check(economy.physicalWorld().toString().equals(p.getProperty("world")),"new_JVM_physical_UUID_existing");return on(economy.store.snapshot(PaperEconomy.REALM)).thenCompose(state->{check(state.tick()==Long.parseLong(p.getProperty("tick")),"new_JVM_tick_restored");for(var e:state.markets().entrySet())check(e.getValue().toString().equals(p.getProperty("market."+e.getKey())),"new_JVM_market_"+e.getKey().region()+"_"+e.getKey().good());check(state.shipments().toString().equals(p.getProperty("shipments"))&&state.events().toString().equals(p.getProperty("events")),"new_JVM_transport_events_restored");var jobs=new ArrayList<CompletionStage<?>>();for(int i=1;i<=8;i++){int player=i;jobs.add(on(economy.store.account(economy.store.context(PaperEconomy.REALM,new UUID(0x45434f,player)))).thenAccept(a->check((a.balance()+"/"+a.inventory().revision()+"/"+Base64.getEncoder().encodeToString(a.inventory().payload().bytes())).equals(p.getProperty("account."+player)),"new_JVM_account_"+player)));}return all(jobs);}).thenCompose(v->{var a=new Actor(1);actors.add(a);a.session=economy.sessions.connect(a.context,economy.world,a);return on(a.session.ready()).thenRun(()->{check(count(a.value)==12,"restored_inventory_session_applied");check(Objects.requireNonNull(Bukkit.getWorld(economy.physicalWorld())).getBlockAt(5,63,5).getType()==Material.STONE,"world_block_preserved");}).thenCompose(x->cycle());});}
+    private static final UUID LEGACY=new UUID(0x45434f,90),LEGACY_PLAYER=new UUID(0x45434f,91),LEGACY_REQUEST=new UUID(0x45434f,92);
+    /** 이번 변경만 검사합니다. 90일 시뮬레이션·기존 두 JVM 전체 흐름을 다시 실행하지 않습니다. */
+    public CompletionStage<Void> runDesk(){
+        return legacy().thenCompose(v->on(economy.store.migrate())).thenCompose(v->on(economy.store.account(economy.store.context(LEGACY,LEGACY_PLAYER))))
+            .thenAccept(a->check(a.balance()==4321&&a.inventory().revision()==7&&count(a.inventory().payload())==6,"E002_legacy_account_preserved"))
+            .thenCompose(v->on(economy.store.history(economy.store.context(LEGACY,LEGACY_PLAYER),Long.MAX_VALUE,20))).thenAccept(rows->check(rows.size()==1&&rows.getFirst().id().equals(LEGACY_REQUEST),"E002_legacy_receipt_preserved"))
+            .thenCompose(v->on(new EconomyStore(db,economy.store.content()).migrate())).thenCompose(v->on(economy.store.createRealm(PaperEconomy.REALM,System.currentTimeMillis())))
+            .thenCompose(v->on(economy.store.createRealm(PaperEconomy.OTHER,System.currentTimeMillis()))).thenCompose(v->{
+                var jobs=new ArrayList<CompletionStage<?>>();for(int i=1;i<=3;i++){var a=new Actor(i);actors.add(a);jobs.add(economy.store.createAccount(a.context,100000,items(8)));}
+                jobs.add(economy.store.createAccount(economy.store.context(PaperEconomy.OTHER,actors.getFirst().context.playerId()),1234,items(3)));return all(jobs);
+            }).thenCompose(v->{var jobs=new ArrayList<CompletionStage<?>>();for(var a:actors){a.session=economy.sessions.connect(a.context,economy.world,a);jobs.add(a.session.ready());}return all(jobs);})
+            .thenCompose(v->deskViews()).thenCompose(v->deskHistory()).thenCompose(v->deskRecovery(actors.get(1),EconomyStore.Probe.COMMIT_UNKNOWN))
+            .thenCompose(v->deskRecovery(actors.get(2),EconomyStore.Probe.ROLLBACK)).thenCompose(v->newerState())
+            .thenCompose(v->on(economy.store.account(economy.store.context(PaperEconomy.OTHER,actors.getFirst().context.playerId()))))
+            .thenAccept(a->check(a.balance()==1234&&count(a.inventory().payload())==3,"desk_other_realm_unchanged"))
+            .thenCompose(v->cycle());
+    }
+    private CompletionStage<Void> legacy(){
+        var content=economy.store.content();var payload=items(6);return on(db.module("economy_legacy_fixture",c->{
+            try(var q=c.createStatement();var r=q.executeQuery("SELECT to_regnamespace('hearth_economy')")){r.next();if(r.getString(1)!=null)throw new IllegalStateException("LEGACY_FIXTURE_REQUIRES_NEW_DB");}
+            byte[] sql;try(var in=Objects.requireNonNull(getClass().getResourceAsStream("/db/economy/E001__economy.sql"))){sql=in.readAllBytes();}
+            c.setAutoCommit(false);try{
+                try(var st=c.createStatement()){st.execute(new String(sql,java.nio.charset.StandardCharsets.UTF_8));}
+                try(var st=c.prepareStatement("INSERT INTO hearth_economy.version VALUES(1,?)")){st.setString(1,HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(sql)));st.executeUpdate();}
+                try(var st=c.prepareStatement("INSERT INTO hearth_economy.realm VALUES(?,?,0,0,?)")){st.setObject(1,LEGACY);st.setString(2,content.fingerprint());st.setLong(3,System.currentTimeMillis());st.executeUpdate();}
+                try(var st=c.prepareStatement("INSERT INTO hearth_economy.account VALUES(?,?,?,?,7)")){st.setObject(1,LEGACY);st.setObject(2,LEGACY_PLAYER);st.setLong(3,4321);st.setBytes(4,payload.bytes());st.executeUpdate();}
+                try(var st=c.prepareStatement("INSERT INTO hearth_economy.trade VALUES(?,?,?,'legacy','capital','iron_ingot',1,true,100,7)")){st.setObject(1,LEGACY);st.setObject(2,LEGACY_PLAYER);st.setObject(3,LEGACY_REQUEST);st.executeUpdate();}c.commit();
+            }catch(Exception e){c.rollback();throw e;}finally{c.setAutoCommit(true);}return null;
+        }));
+    }
+    private CompletionStage<Void> deskViews(){
+        var a=actors.getFirst();var before=a.value;return on(economy.store.offers(a.context,economy.shop.region(),economy.shop.goods())).thenAccept(offers->{
+            check(offers.size()==2,"multi_product_one_query_boundary");var view=economy.preview(a.session,offers);check(view.getSize()==54&&view.getItem(0).getType()==Material.IRON_INGOT&&view.getItem(1).getType()==Material.IRON_ORE,"actual_inventory_catalog_two_goods");
+            check(view.getItem(1).getItemMeta().displayName().equals(net.kyori.adventure.text.Component.text("철광석")),"content_product_name_not_hardcoded_ingot");
+            var product=economy.previewProduct(a.session,offers.get(1));check(product.getItem(4).getType()==Material.IRON_ORE&&product.getItem(10)!=null&&product.getItem(28)!=null,"actual_inventory_selected_good_buy_sell");check(a.value.equals(before),"shop_render_preserves_41_slots");
+        }).thenCompose(v->on(economy.store.history(a.context,Long.MAX_VALUE,20))).thenAccept(rows->check(rows.isEmpty(),"history_empty_is_successful_query"))
+            .thenCompose(v->rejected(economy.store.history(economy.store.context(PaperEconomy.REALM,new UUID(0x45434f,999)),Long.MAX_VALUE,20),"ECON_ACCOUNT_MISSING"));
+    }
+    private CompletionStage<Void> deskHistory(){
+        var a=actors.getFirst();var ore=new EconomyContent.Key("capital","iron_ore");
+        return on(economy.store.offer(a.context,ore)).thenCompose(offer->economy.trades.execute(economy.sessions,a.session,offer,1,true,UUID.randomUUID(),economy.fence(a.session)::get,EconomyStore.Probe.NONE)).thenCompose(receipt->{
+            check(Arrays.stream(codec.decode(a.value)).filter(Objects::nonNull).anyMatch(i->i.getType()==Material.IRON_ORE&&i.getAmount()==1),"selected_ore_trade_applied");
+            CompletionStage<Void> chain=CompletableFuture.completedFuture(null);for(int i=0;i<22;i++){boolean buy=i%2==0;chain=chain.thenComposeAsync(v->on(economy.store.offer(a.context,KEY)).thenCompose(offer->economy.trades.execute(economy.sessions,a.session,offer,1,buy,UUID.randomUUID(),economy.fence(a.session)::get,EconomyStore.Probe.NONE)).thenAccept(row->{}),owner);}return chain;
+        }).thenCompose(v->on(economy.store.account(a.context))).thenCompose(before->on(economy.store.history(a.context,Long.MAX_VALUE,20)).thenCompose(first->{
+            check(first.size()==20,"history_first_page_twenty");for(int i=1;i<first.size();i++)check(first.get(i-1).inventoryRevision()>first.get(i).inventoryRevision(),"history_revision_order_"+i);
+            return on(economy.store.history(a.context,first.getLast().inventoryRevision(),20)).thenCompose(second->{
+                check(second.size()==3&&Collections.disjoint(first.stream().map(EconomyStore.Entry::id).toList(),second.stream().map(EconomyStore.Entry::id).toList()),"history_keyset_no_duplicate");
+                var rows=new ArrayList<>(first);rows.addAll(second);long balance=100000;for(var row:rows)balance+=row.buy()?-row.total():row.total();check(balance==before.balance()&&count(before.inventory().payload())==8,"all_trade_amounts_currency_items_conserved");
+                return on(economy.store.account(a.context)).thenAccept(after->check(before.equals(after),"history_read_no_account_revision_change"));
+            });
+        })).thenCompose(v->on(economy.store.snapshot(PaperEconomy.REALM))).thenAccept(s->check(s.markets().get(KEY).stock()==100&&s.markets().get(ore).stock()==199,"two_product_market_stock_conservation"))
+            .thenCompose(v->on(economy.store.history(actors.get(1).context,Long.MAX_VALUE,20))).thenAccept(rows->check(rows.isEmpty(),"other_player_history_isolated"))
+            .thenCompose(v->on(economy.store.history(economy.store.context(PaperEconomy.OTHER,a.context.playerId()),Long.MAX_VALUE,20))).thenAccept(rows->check(rows.isEmpty(),"other_realm_history_isolated"));
+    }
+    private CompletionStage<Void> rejectedCall(Supplier<CompletionStage<?>> action,String code){try{return rejected(action.get(),code);}catch(RuntimeException e){return rejected(CompletableFuture.failedFuture(e),code);}}
+    private CompletionStage<Void> deskRecovery(Actor a,EconomyStore.Probe probe){
+        UUID request=UUID.randomUUID();var old=a.session;var decision=probe==EconomyStore.Probe.COMMIT_UNKNOWN?EconomyRecovery.Decision.COMMITTED_RELOAD:EconomyRecovery.Decision.NOT_COMMITTED_RELOAD;
+        String code=probe==EconomyStore.Probe.COMMIT_UNKNOWN?"COMMIT_UNKNOWN":"23514";long revision=probe==EconomyStore.Probe.COMMIT_UNKNOWN?1:0;
+        return on(economy.store.offer(a.context,KEY)).thenCompose(offer->rejected(economy.trades.execute(economy.sessions,old,offer,1,true,request,economy.fence(old)::get,probe),code))
+            .thenRun(()->check(old.state()==PlayerSessions.State.HOLD&&economy.trades.pending(a.context).contains(request),"request_retained_HOLD_"+code))
+            .thenCompose(v->rejectedCall(()->economy.trades.inspect(actors.getFirst().context,request),"ECON_NO_SETTLED_REQUEST"))
+            .thenCompose(v->on(economy.trades.inspect(a.context,request))).thenAccept(review->check(review.decision()==decision&&review.revision()==revision,"inspection_"+decision))
+            .thenCompose(v->rejectedCall(()->economy.trades.recover(economy.sessions,a.context,request,revision+1,()->true),"ECON_RECOVERY_REVIEW_REQUIRED"))
+            .thenCompose(v->rejectedCall(()->economy.trades.recover(economy.sessions,a.context,request,revision,()->true),"RECOVERY_NOT_SETTLED"))
+            .thenRun(()->a.connected=false).thenCompose(v->rejectedCall(()->economy.trades.recover(economy.sessions,a.context,request,revision,()->false),"ECON_RECOVERY_REVIEW_REQUIRED"))
+            .thenCompose(v->on(economy.trades.recover(economy.sessions,a.context,request,revision,()->true)))
+            .thenRun(()->check(old.state()==PlayerSessions.State.CLOSED&&old.closed().toCompletableFuture().isCompletedExceptionally(),"explicit_retirement_preserves_failure_evidence_"+code))
+            .thenCompose(v->rejectedCall(()->economy.trades.recover(economy.sessions,a.context,request,revision,()->true),"ECON_NO_SETTLED_REQUEST"))
+            .thenCompose(v->{a.connected=true;a.session=economy.sessions.connect(a.context,economy.world,a);return on(a.session.ready());})
+            .thenRun(()->check(count(a.value)==(probe==EconomyStore.Probe.COMMIT_UNKNOWN?9:8)&&a.session.save().revision()==revision,"fresh_session_DB_reload_no_duplicate_"+code))
+            .thenCompose(v->on(economy.store.history(a.context,Long.MAX_VALUE,20))).thenAccept(rows->check(rows.size()==(probe==EconomyStore.Probe.COMMIT_UNKNOWN?1:0),"recovery_never_reexecutes_trade_"+code));
+    }
+    private CompletionStage<Void> newerState(){
+        var ctx=economy.store.context(PaperEconomy.REALM,new UUID(0x45434f,95));var before=new InventoryStore.Stored(items(8),0);var after=economy.trades.change(before.payload(),"iron_ingot",1,true);var id=UUID.randomUUID();
+        return on(economy.store.createAccount(ctx,100000,before.payload())).thenCompose(v->on(economy.store.offer(ctx,KEY))).thenCompose(offer->{
+            var request=new EconomyStore.Request(ctx,id,KEY,1,true,offer.market().revision());return on(economy.store.trade(request,before,after,()->true,EconomyStore.Probe.NONE))
+                .thenCompose(receipt->on(economy.store.saveInventory(ctx,1,items(10)))).thenCompose(saved->on(economy.store.inspect(request)))
+                .thenAccept(found->check(EconomyRecovery.decide(request,before,after,found)==EconomyRecovery.Decision.REVIEW_REQUIRED,"newer_account_cannot_be_overwritten_by_old_receipt"));
+        });
+    }
     public CompletionStage<Void> shutdown(){return economy.shutdown().thenComposeAsync(v->waitUntil(()->economy.world.state()==WorldLifecycle.State.OFFLINE),owner).thenRun(()->plugin.getLogger().info("HEARTH_ECONOMY_TIMING "+timings));}
     public void close(){economy.close();}
 }

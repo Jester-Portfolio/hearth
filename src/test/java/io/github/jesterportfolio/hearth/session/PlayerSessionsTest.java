@@ -154,4 +154,26 @@ final class PlayerSessionsTest {
         var next=f.open(id,new Port());assertEquals(1,f.store.reads.size());f.saved(0,1);f.read(1,6,1);assertEquals(PlayerSessions.State.ACTIVE,next.state());
     }
 
+    @Test void reconciledHoldCanOnlyRetireOfflineSettledMatchingLease(){
+        var f=new Fixture();var id=UUID.randomUUID();var p=new Port();var old=f.active(id,p);
+        var work=f.sessions.inventoryTransaction(old,before->CompletableFuture.failedFuture(new StorageFailure("economy","COMMIT_UNKNOWN")));f.pump();
+        assertTrue(work.toCompletableFuture().isCompletedExceptionally());assertEquals(PlayerSessions.State.HOLD,old.state());assertThrows(LifecycleFailure.class,()->f.sessions.retireReconciledHold(old,0));
+        p.online=false;assertThrows(LifecycleFailure.class,()->f.sessions.retireReconciledHold(old,1));f.sessions.retireReconciledHold(old,0);
+        assertTrue(old.closed().toCompletableFuture().isCompletedExceptionally());assertEquals("COMMIT_UNKNOWN",old.error());assertTrue(f.sessions.clear(f.run));
+        var nextPort=new Port();var next=f.open(id,nextPort);f.read(1,2,1);assertTrue(f.sessions.playable(next));assertEquals(payload(2),nextPort.memory);
+        assertThrows(LifecycleFailure.class,()->f.sessions.retireReconciledHold(old,0));assertEquals(payload(2),nextPort.memory);
+    }
+    @Test void reconciliationCannotDiscardDirtyFailureOrClearWorldHold(){
+        var f=new Fixture();var p=new Port();var s=f.active(UUID.randomUUID(),p);p.memory=payload(2);f.sessions.refresh(s);s.save().flush();
+        f.store.writes.getFirst().completeExceptionally(new StorageFailure("test","08006"));f.pump();p.online=false;
+        assertTrue(s.save().dirty());assertThrows(LifecycleFailure.class,()->f.sessions.retireReconciledHold(s,0));assertFalse(f.sessions.clear(f.run));
+    }
+    @Test void shutdownRejectsLateManualRetirement(){
+        var f=new Fixture();var p=new Port();var s=f.active(UUID.randomUUID(),p);f.sessions.inventoryTransaction(s,before->CompletableFuture.failedFuture(new StorageFailure("economy","COMMIT_UNKNOWN")));f.pump();p.online=false;
+        assertTrue(f.sessions.shutdown().toCompletableFuture().isCompletedExceptionally());assertThrows(LifecycleFailure.class,()->f.sessions.retireReconciledHold(s,0));assertEquals(PlayerSessions.State.HOLD,s.state());
+    }
+    @Test void manualRetirementNeverClearsWorldRecoveryRequired(){
+        var f=new Fixture();var p=new Port();var s=f.active(UUID.randomUUID(),p);f.sessions.inventoryTransaction(s,before->CompletableFuture.failedFuture(new StorageFailure("economy","COMMIT_UNKNOWN")));f.pump();p.online=false;
+        f.world.invalidate("ISOLATED_FAILURE");f.sessions.retireReconciledHold(s,0);assertEquals(WorldLifecycle.State.RECOVERY_REQUIRED,f.world.state());assertTrue(f.sessions.clear(f.run));assertTrue(s.closed().toCompletableFuture().isCompletedExceptionally());
+    }
 }

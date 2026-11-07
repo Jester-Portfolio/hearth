@@ -16,11 +16,15 @@ public final class EconomyStore implements InventoryStore {
     public record Offer(Key key,Market market,long balance){}
     public record Request(ServerProgressAccess.Context context,UUID id,Key key,int quantity,boolean buy,long marketRevision){public Request{Objects.requireNonNull(context);Objects.requireNonNull(id);Objects.requireNonNull(key);if(quantity<1||quantity>4096||marketRevision<0)throw new IllegalArgumentException("ECON_REQUEST");}String fingerprint(){return key+"/"+quantity+"/"+buy+"/"+marketRevision;}}
     public record Receipt(UUID id,long total,Account account,boolean replay){}
+    public record Entry(UUID id,Key key,int quantity,boolean buy,long total,long inventoryRevision){}
+    public record Inspection(Optional<Entry> entry,Account account){}
+
     private final PostgresProgressStore db;private final EconomyContent content;private final String contentHash;private final ServerProgressAccess issuer=new ServerProgressAccess();private volatile boolean ready;
     public EconomyStore(PostgresProgressStore db,EconomyContent content){this.db=db;this.content=content;this.contentHash=content.fingerprint();}
     public EconomyContent content(){return content;}
     public ServerProgressAccess.Context context(UUID realm,UUID player){return issuer.forVerifiedServerLink(realm,player);}
     private void access(ServerProgressAccess.Context ctx){issuer.requireIssued(ctx);if(!ready)throw new StorageFailure("economy","SCHEMA_NOT_READY");}
+    void validate(ServerProgressAccess.Context context){access(context);}
     private static StorageFailure fail(String code){return new StorageFailure("economy",code);}
     @FunctionalInterface private interface Tx<T>{T run() throws Exception;}
     private static <T>T tx(Connection c,Tx<T> work)throws Exception{c.setAutoCommit(false);try{T result=work.run();c.commit();return result;}catch(Exception e){c.rollback();throw e;}finally{c.setAutoCommit(true);}}
@@ -35,7 +39,13 @@ public final class EconomyStore implements InventoryStore {
                 try(var st=c.createStatement()){st.execute(new String(bytes,java.nio.charset.StandardCharsets.UTF_8));}
                 try(var insert=c.prepareStatement("INSERT INTO hearth_economy.version VALUES(1,?)")){insert.setString(1,hash);insert.executeUpdate();}
             }else{
-                try(var st=c.createStatement();var versions=st.executeQuery("SELECT version,checksum FROM hearth_economy.version")){if(!versions.next()||versions.getInt(1)!=1||!hash.equals(versions.getString(2))||versions.next())throw fail("ECON_SCHEMA_MISMATCH");}
+                try(var st=c.createStatement();var versions=st.executeQuery("SELECT version,checksum FROM hearth_economy.version ORDER BY version")){if(!versions.next()||versions.getInt(1)!=1||!hash.equals(versions.getString(2)))throw fail("ECON_SCHEMA_MISMATCH");}
+            }
+            byte[] upgrade;try(var in=Objects.requireNonNull(getClass().getResourceAsStream("/db/economy/E002__trade_history.sql"))){upgrade=in.readAllBytes();}
+            String upgradeHash=HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(upgrade));
+            try(var st=c.createStatement();var rows=st.executeQuery("SELECT version,checksum FROM hearth_economy.version WHERE version<>1 ORDER BY version")){
+                if(rows.next()){if(rows.getInt(1)!=2||!upgradeHash.equals(rows.getString(2))||rows.next())throw fail("ECON_SCHEMA_MISMATCH");}
+                else{try(var ddl=c.createStatement()){ddl.execute(new String(upgrade,java.nio.charset.StandardCharsets.UTF_8));}try(var marker=c.prepareStatement("INSERT INTO hearth_economy.version VALUES(2,?)")){marker.setString(1,upgradeHash);marker.executeUpdate();}}
             }
             for(String query:List.of("SELECT tick,revision,content_hash FROM hearth_economy.realm LIMIT 0","SELECT stock,price,revision FROM hearth_economy.market LIMIT 0","SELECT balance,payload,inventory_revision FROM hearth_economy.account LIMIT 0","SELECT due_tick,arrived FROM hearth_economy.shipment LIMIT 0","SELECT fingerprint,total FROM hearth_economy.trade LIMIT 0"))try(var st=c.createStatement()){st.executeQuery(query).close();}
             return null;
@@ -52,6 +62,28 @@ public final class EconomyStore implements InventoryStore {
     @Override public CompletionStage<Stored> saveInventory(ServerProgressAccess.Context ctx,long revision,InventoryPayload payload){return db.module("economy_inventory",c->{access(ctx);try(var st=c.prepareStatement("UPDATE hearth_economy.account SET payload=?,inventory_revision=inventory_revision+1 WHERE realm_id=? AND player_uuid=? AND inventory_revision=?")){st.setBytes(1,payload.bytes());st.setObject(2,ctx.storyRunId());st.setObject(3,ctx.playerId());st.setLong(4,revision);if(st.executeUpdate()!=1)throw fail("CAS_CONFLICT");}return new Stored(payload,revision+1);});}
     private Market market(Connection c,UUID realm,Key key)throws Exception{try(var st=c.prepareStatement("SELECT stock,price,revision FROM hearth_economy.market WHERE realm_id=? AND region_id=? AND good_id=?")){st.setObject(1,realm);st.setString(2,key.region());st.setString(3,key.good());try(var r=st.executeQuery()){if(!r.next())throw fail("ECON_MARKET_MISSING");return new Market(r.getLong(1),r.getLong(2),r.getLong(3));}}}
     public CompletionStage<Offer> offer(ServerProgressAccess.Context ctx,Key key){return db.module("economy_offer",c->{access(ctx);return tx(c,()->{realm(c,ctx.storyRunId(),true);return new Offer(key,market(c,ctx.storyRunId(),key),account(c,ctx,false).balance());});});}
+    /** 상점 한 화면의 상품은 한 작업/계정 조회로 읽습니다. 클라이언트가 지역·소유자를 정하지 않습니다. */
+    public CompletionStage<List<Offer>> offers(ServerProgressAccess.Context ctx,String region,List<String> goods){
+        var selected=List.copyOf(goods);if(selected.isEmpty()||selected.size()>64||new HashSet<>(selected).size()!=selected.size()||!content.regions().contains(region)||!content.goods().keySet().containsAll(selected))throw new IllegalArgumentException("ECON_SHOP_REF");
+        return db.module("economy_offers",c->{access(ctx);return tx(c,()->{realm(c,ctx.storyRunId(),true);var a=account(c,ctx,false);var byGood=new HashMap<String,Market>();
+            try(var st=c.prepareStatement("SELECT good_id,stock,price,revision FROM hearth_economy.market WHERE realm_id=? AND region_id=?")){st.setObject(1,ctx.storyRunId());st.setString(2,region);try(var rows=st.executeQuery()){while(rows.next())byGood.put(rows.getString(1),new Market(rows.getLong(2),rows.getLong(3),rows.getLong(4)));}}
+            var result=new ArrayList<Offer>();for(String good:selected){var m=byGood.get(good);if(m==null)throw fail("ECON_MARKET_MISSING");result.add(new Offer(new Key(region,good),m,a.balance()));}return List.copyOf(result);
+        });});
+    }
+    private static Entry entry(ResultSet r)throws SQLException{return new Entry(r.getObject(1,UUID.class),new Key(r.getString(2),r.getString(3)),r.getInt(4),r.getBoolean(5),r.getLong(6),r.getLong(7));}
+    /** 계정 revision 내림차순 keyset 조회. payload·다른 플레이어 정보는 표시 DTO에 포함하지 않습니다. */
+    public CompletionStage<List<Entry>> history(ServerProgressAccess.Context ctx,long before,int limit){
+        if(before<1||limit<1||limit>20)throw new IllegalArgumentException("ECON_HISTORY_PAGE");
+        return db.module("economy_history",c->{access(ctx);account(c,ctx,false);var result=new ArrayList<Entry>();
+            try(var st=c.prepareStatement("SELECT request_id,region_id,good_id,quantity,buy,total,inventory_revision FROM hearth_economy.trade WHERE realm_id=? AND player_uuid=? AND inventory_revision<? ORDER BY inventory_revision DESC LIMIT ?")){owner(st,ctx);st.setLong(3,before);st.setInt(4,limit);try(var rows=st.executeQuery()){while(rows.next())result.add(entry(rows));}}return List.copyOf(result);
+        });
+    }
+    /** 미확정 거래와 계정은 같은 realm 잠금 아래 비교합니다. 없는 영수증을 재실행하지 않습니다. */
+    public CompletionStage<Inspection> inspect(Request request){return db.module("economy_inspect",c->{access(request.context());return tx(c,()->{
+        realm(c,request.context().storyRunId(),true);Optional<Entry> found=Optional.empty();
+        try(var st=c.prepareStatement("SELECT request_id,region_id,good_id,quantity,buy,total,inventory_revision,player_uuid,fingerprint FROM hearth_economy.trade WHERE realm_id=? AND request_id=?")){st.setObject(1,request.context().storyRunId());st.setObject(2,request.id());try(var rows=st.executeQuery()){if(rows.next()){if(!rows.getObject(8,UUID.class).equals(request.context().playerId())||!rows.getString(9).equals(request.fingerprint()))throw fail("ECON_REQUEST_CONFLICT");found=Optional.of(entry(rows));}}}
+        return new Inspection(found,account(c,request.context(),false));
+    });});}
     private Optional<Receipt> receipt(Connection c,ServerProgressAccess.Context ctx,UUID id,String fingerprint)throws Exception{try(var st=c.prepareStatement("SELECT player_uuid,fingerprint,total FROM hearth_economy.trade WHERE realm_id=? AND request_id=?")){st.setObject(1,ctx.storyRunId());st.setObject(2,id);try(var r=st.executeQuery()){if(!r.next())return Optional.empty();if(!r.getObject(1,UUID.class).equals(ctx.playerId())||fingerprint!=null&&!fingerprint.equals(r.getString(2)))throw fail("ECON_REQUEST_CONFLICT");return Optional.of(new Receipt(id,r.getLong(3),account(c,ctx,false),true));}}}
     public CompletionStage<Optional<Receipt>> receipt(ServerProgressAccess.Context ctx,UUID id){return db.module("economy_receipt",c->{access(ctx);return receipt(c,ctx,id,null);});}
     public CompletionStage<Receipt> trade(Request request,Stored before,InventoryPayload after,BooleanSupplier valid,Probe probe){return db.module("economy_trade",c->{access(request.context());var result=tx(c,()->{

@@ -190,6 +190,15 @@ public final class PlayerSessions {
     }
     public boolean canUnload(UUID run) { check.run();return leases.values().stream().noneMatch(s -> s.key.run().equals(run) && (s.save!=null || s.state==State.HOLD)); }
     public boolean clear(UUID run) { check.run();return leases.keySet().stream().noneMatch(k -> k.run().equals(run)); }
+    /** 서버 측 거래 증거를 확인한 관리 경계만 호출합니다. 오프라인·정리 완료 HOLD 임대를 폐기하고 새 복원을 허용합니다. */
+    public void retireReconciledHold(Session s,long sourceRevision){
+        check.run();Objects.requireNonNull(s);
+        if(stopping||s.state!=State.HOLD||s.connected||s.port.connected()||leases.get(s.key)!=s||connections.containsKey(s.key.player())
+                ||s.save==null||s.save.holdCode()==null||s.save.revision()!=sourceRevision||s.save.dirty()||s.save.saving()||s.save.transacting()||s.joined)
+            throw new LifecycleFailure("RECOVERY_NOT_SETTLED");
+        unregister.accept(s.save);s.leaseValid=false;leases.remove(s.key,s);s.state=State.CLOSED;
+        // 기존 실패 future·오류·월드 HOLD는 보존합니다. 이전 세션에 값을 적용하거나 월드 실패를 해제하지 않습니다.
+    }
     public CompletionStage<Void> shutdown() {
         check.run();stopping=true;
         for (var s:List.copyOf(connections.values())) disconnect(s);

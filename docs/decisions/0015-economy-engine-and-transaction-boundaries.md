@@ -52,3 +52,7 @@
 일반 서버 기본 비활성. 기존 격리 루트·JVM gate·설정이 모두 필요하다. 격리 전용 경제 세션 adapter는 스토리 adapter와 동시에 같은 플레이어 이벤트를 관리하지 않는다. 수도 상인·개발 잔액·계정 생성은 명시적 fixture에서만 준비한다. 일반 최초 접속/계정 생성·스토리↔경제 이전·운영 화폐·오프라인 정책·운영 배포는 이번 결정에 포함하지 않는다.
 
 실제 NPC 클릭/GUI/다인 행동, 운영 규모 Tick·조회 인덱스/정리 주기·백업/롤백·미확정 E1 규칙 검토 뒤에만 운영 적용을 판단한다. WorldGuard 구역 저장은 [공식 스레드 계약](https://worldguard.enginehub.org/en/latest/developer/regions/managers/)에 따라 worker에서 완료를 기다리고 Bukkit 월드 저장/언로드는 기존 안전한 owner 시점에서 수행한다.
+
+## 2026-11-07 후속 구현 — 상점/관리 경계
+
+E002로 거래 기록 조회 인덱스를 추가하고 E001 행·파일을 보존한다. 콘텐츠 취급 상품 목록과 이름, 본인 기록 keyset 조회를 연결한다. commit 불명/롤백 요청의 영수증·DB revision/payload를 확인한 뒤 오프라인·정리 완료 HOLD 임대만 관리자가 폐기할 수 있다. 이전 실패 future·dirty·월드 HOLD는 보존하며 DB 수정/재실행/강제 해제를 하지 않는다. 운영 정책 변경을 뜻하지 않는다. [조건·검증·명령](../economy-desk-verification.md)을 따른다.
