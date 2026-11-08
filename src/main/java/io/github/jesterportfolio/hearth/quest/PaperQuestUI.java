@@ -30,6 +30,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         }
         @Override public Inventory getInventory(){return inventory;}
     }
+    private String dungeonNpc,dungeonQuest;public void dungeon(String npc,String quest){dungeonNpc=npc;dungeonQuest=quest;}
     private Consumer<Player> storyGuide=p->{};
     private Predicate<String> storyNpc=npc->false;
     public void storyNpcs(Predicate<String> registered){storyNpc=registered;}
@@ -78,7 +79,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         quests.requireListDisplay(session.context(),rows);
         var buttons=page.equals("npc-topics")?QuestScreens.npcTopics(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0):QuestScreens.npc(catalog,npc,rows,c->journal.questAllowed(session.context(),c.id()),0);
         if(!valid.getAsBoolean())throw new IllegalStateException("STALE_NPC_MENU");
-        if(page.equals("npc")){buttons=QuestScreens.npcGuide(buttons,storyNpc.test(npc));buttons=QuestScreens.npcJourney(buttons,playthrough!=null);}
+        if(page.equals("npc")){buttons=QuestScreens.npcGuide(buttons,storyNpc.test(npc));buttons=QuestScreens.npcJourney(buttons,playthrough!=null);if(Objects.equals(dungeonNpc,npc)&&journal.questAllowed(session.context(),dungeonQuest))buttons=QuestScreens.npcDungeon(buttons,catalog,rows,npc,dungeonNpc,dungeonQuest);}
         p.openInventory(new Screen(p.getUniqueId(),session,buttons,page,npc,0,valid).inventory);
     }
     public static net.kyori.adventure.inventory.Book book(QuestBookView view,List<Component> actions){
@@ -95,7 +96,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         journal.requireView(session.context(),view);
         var detail=QuestBookView.accepted(catalog,view.states(),view.exploration().blockedQuests(),id);
         if(detail.isEmpty()){p.sendMessage(Component.text(QuestListView.UNAVAILABLE));return;}
-        showBook(p,session,detail.get(),List.of(Component.text("[진행 관리]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthquest manage "+id)),Component.text("[퀘스트 목록]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthquest list"))));
+        var links=new ArrayList<Component>();if(Objects.equals(id,dungeonQuest))links.add(Component.text("[던전 전투 상태]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthcombat status")));links.addAll(List.of(Component.text("[진행 관리]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthquest manage "+id)),Component.text("[퀘스트 목록]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthquest list"))));showBook(p,session,detail.get(),links);
     }
     private java.util.function.BiConsumer<Player,String> questAction=(p,c)->{};
     public void questAction(java.util.function.BiConsumer<Player,String> handler){questAction=handler;}
@@ -170,7 +171,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(!(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen previous)||!previous.dialogueValid.getAsBoolean())return;
             valid=previous.dialogueValid;
         }
-        var buttons=QuestScreens.screen(catalog,view,page,quest,Math.max(0,offset));if(page.equals("npc")){buttons=QuestScreens.npcGuide(buttons,storyNpc.test(quest));buttons=QuestScreens.npcJourney(buttons,playthrough!=null);}
+        var buttons=QuestScreens.screen(catalog,view,page,quest,Math.max(0,offset));if(page.equals("npc")){buttons=QuestScreens.npcGuide(buttons,storyNpc.test(quest));buttons=QuestScreens.npcJourney(buttons,playthrough!=null);if(Objects.equals(dungeonNpc,quest)&&journal.questAllowed(s.context(),dungeonQuest))buttons=QuestScreens.npcDungeon(buttons,catalog,view.states(),quest,dungeonNpc,dungeonQuest);}
         p.openInventory(new Screen(p.getUniqueId(),s,buttons,page,quest,Math.max(0,offset),valid).inventory);
     }
     public boolean command(Player p,String command){
@@ -209,7 +210,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             String action=button.action();
             if(action.equals("detail")||action.equals("book"))load(p,s,v->acceptedBook(p,s,v,button.quest()));
             else if(action.equals("npc-select")||action.equals("npc-action")){p.closeInventory();npcSelection.select(p,screen.quest,button.quest(),action.equals("npc-action")?button.revision():null);}
-            else if(Set.of("npc-read","npc-topics-open","npc-topic","npc-menu","npc-close","npc-story","npc-journey").contains(action)){p.closeInventory();npcNavigation.open(p,screen.quest,action,button.quest());}
+            else if(Set.of("npc-read","npc-topics-open","npc-topic","npc-menu","npc-close","npc-story","npc-journey","npc-dungeon").contains(action)){p.closeInventory();npcNavigation.open(p,screen.quest,action,button.quest());}
             else if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
             else if(action.equals("quest-retry")||action.equals("quest-reward")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-retry")?"retry ":"claim ")+button.quest());}
             else if(action.equals("quest-chapter-play")||action.equals("quest-chapter-skip")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-chapter-skip")?"chapter-skip ":"chapter-play ")+button.quest());}

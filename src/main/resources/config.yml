@@ -42,3 +42,6 @@ fast-travel-verification-enabled: false
 
 # 제한 구역 채집 인던은 명시적 격리 시험에서만 활성화합니다.
 gathering-verification-enabled: false
+
+# 공개 던전 의뢰 연결도 명시적인 격리 개발 실행에서만 켭니다.
+dungeon-play-verification-enabled: false

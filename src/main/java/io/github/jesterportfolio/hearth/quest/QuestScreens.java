@@ -76,6 +76,7 @@ public final class QuestScreens {
         for(int i=0;i<buttons.size();i++){var b=buttons.get(i);if(b.action().equals("npc"))buttons.set(i,new Button(b.slot(),b.label(),b.action(),npc,b.revision()));}
         return List.copyOf(buttons);
     }
+    public static List<Button> npcDungeon(List<Button> rows,QuestCatalog catalog,Map<String,QuestStore.Saved> states,String npc,String registeredNpc,String quest){if(!Objects.equals(npc,registeredNpc)||quest==null)return rows;var q=states.get(quest);if(q==null||q.phase()!=QuestStore.Phase.ACTIVE||catalog.quest(quest).goal(q).interaction()==null||!catalog.quest(quest).goal(q).interaction().startsWith("dungeon:"))return rows;var buttons=new ArrayList<>(rows);buttons.add(new Button(40,"활성 의뢰로 던전 입장","npc-dungeon",quest,q.revision()));return List.copyOf(buttons);}
     public static List<Button> npcGuide(List<Button> rows,boolean registered){
         if(!registered)return rows;var buttons=new ArrayList<>(rows);buttons.add(new Button(38,"공동 조사 안내","npc-story",null,0));return List.copyOf(buttons);
     }

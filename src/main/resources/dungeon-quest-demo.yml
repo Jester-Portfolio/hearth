@@ -1,0 +1,21 @@
+# 기존 퀘스트 파일을 덮지 않고 격리 모드에서만 합치는 공개 의뢰입니다.
+quests:
+  - id: public_dungeon_quest
+    title: 공개 던전 현장 의뢰
+    npc-id: survey_guide
+    objective:
+      min-x: 0
+      max-x: 16
+      min-y: 64
+      max-y: 68
+      min-z: 0
+      max-z: 16
+      interaction: dungeon:public_dungeon_control
+    text:
+      offer: 공개 길목과 보스의 진행을 확인해 주세요. 수락한 뒤 이 안내원에게 입장을 요청하세요.
+      accept: 공개 던전 의뢰 수락
+      active: 안내원의 던전 입장 버튼으로 시작하세요. 길목 체크포인트를 거쳐 최종 보스에 승리한 뒤 보고합니다.
+      report-ready: 던전 승리 목표를 저장했습니다. 담당 안내원에게 보고하세요.
+      report: 던전 조사 보고
+      completed: 공개 던전 현장 의뢰 보고를 마쳤습니다.
+      failure: 의뢰 상태를 확인한 뒤 담당 안내원에게 문의하세요.

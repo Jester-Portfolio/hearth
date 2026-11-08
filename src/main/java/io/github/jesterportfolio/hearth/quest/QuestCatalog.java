@@ -91,6 +91,7 @@ public final class QuestCatalog {
     }
     private static String interaction(Map<?,?> row,QuestContent.Area bounds,Map<String,Map<?,?>> npcs){
         if(!row.containsKey("interaction"))return null;String value=string(row,"interaction");String[] parts=value.split(":",-1);
+        if(parts.length==2&&parts[0].equals("dungeon")&&parts[1].matches("[a-z][a-z0-9_]{0,63}"))return value;
         if(parts.length==2&&parts[0].equals("npc")){var npc=npcs.get(parts[1]);if(npc==null||!bounds.contains(number(npc,"x"),number(npc,"y"),number(npc,"z")))throw new IllegalArgumentException("Invalid objective NPC");return value;}
         if(parts.length!=5||!parts[0].equals("block")||!parts[4].matches("[A-Z][A-Z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid block objective");
         try{int x=Integer.parseInt(parts[1]),y=Integer.parseInt(parts[2]),z=Integer.parseInt(parts[3]);if(!bounds.contains(x,y,z)||!value.equals("block:"+x+":"+y+":"+z+":"+parts[4]))throw new IllegalArgumentException("Block objective outside bounds");}catch(NumberFormatException error){throw new IllegalArgumentException("Invalid block objective coordinate");}return value;

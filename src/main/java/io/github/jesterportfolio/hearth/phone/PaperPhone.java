@@ -42,6 +42,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory story){playthrough=content;sharedStory=story;}
     private final Map<UUID,Screen> screens=new HashMap<>();private final JavaPlugin plugin;private final PaperSessionAdapter players;
     private final QuestJournal journal;private final QuestCatalog catalog;
+    private String dungeonQuest;private java.util.function.BiConsumer<Player,String> dungeonGuide=(p,q)->{};
+    public void dungeon(String quest,java.util.function.BiConsumer<Player,String> guide){dungeonQuest=quest;dungeonGuide=guide;}
     private java.util.function.BiConsumer<Player,String> report=(p,id)->{};
     private java.util.function.BiConsumer<Player,String> contact=(p,key)->{};
     public void contact(java.util.function.BiConsumer<Player,String> handler){contact=handler;}
@@ -126,6 +128,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
             if(origin!=null)actions.add(button(p,s,"이전 정보",()->reader(p,advance(p),origin,1)));
             if(section.equals("quests")){
                 var quest=PhoneQuestLinks.quests(catalog,view).get(index);
+                if(quest.id().equals(dungeonQuest))actions.add(button(p,s,"던전 진행 안내",()->{information(p,s,view);advance(p);p.closeDialog();dungeonGuide.accept(p,quest.id());}));
                 var reward=view.completion().rewards().get(quest.id());
                 if(reward!=null)actions.add(button(p,s,reward.label(),()->completionList(p,advance(p),"rewards",1)));
                 if(view.states().get(quest.id()).phase()==io.github.jesterportfolio.hearth.persistence.QuestStore.Phase.FAILED)actions.add(button(p,s,"재시작 확인",()->confirm(p,s,view,PhoneCompletion.Operation.RETRY,quest.id())));

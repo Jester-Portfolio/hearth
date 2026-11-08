@@ -25,6 +25,7 @@ public final class CombatDepartures {
     static boolean settled(List<CompletionStage<Void>> barriers){
         boolean done=true;for(var barrier:barriers){var future=barrier.toCompletableFuture();if(future.isCompletedExceptionally())throw new IllegalStateException("COMBAT_DEPARTURE_SAVE_HOLD");done&=future.isDone();}return done;
     }
+    public UUID run(){return run;}
     public UUID attempt(){return attempt;}
     boolean overlaps(CombatDepartures other){return run.equals(other.run)&&pending.keySet().stream().anyMatch(other.pending::containsKey);}
     public boolean pending(Context context){return run.equals(context.storyRunId())&&pending.containsKey(context.playerId());}

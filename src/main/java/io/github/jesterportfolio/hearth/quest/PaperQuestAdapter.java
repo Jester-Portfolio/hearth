@@ -48,12 +48,15 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void completion(QuestRules definitions,QuestRewards rewardService,io.github.jesterportfolio.hearth.persistence.QuestCompletionStore storage){
         rules=definitions;rewards=rewardService;completionStore=storage;quests.completed((ctx,id)->{if(rules.rule(id).reward()==null)return;var p=Bukkit.getPlayer(ctx.playerId());if(p==null)return;var s=players.current(p);if(s!=null&&s.context().storyRunId().equals(ctx.storyRunId()))claim(p,s,id);});
     }
+    private String dungeonNpc,dungeonQuest;private java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> dungeonEntry=(p,v)->{};
+    public void dungeon(String npc,String quest,java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> entry,java.util.function.BiConsumer<Player,String> guide){dungeonNpc=npc;dungeonQuest=quest;dungeonEntry=entry;ui.dungeon(npc,quest);if(phone!=null)phone.dungeon(quest,guide);}
     private final Set<UUID> loadingDialogues=new HashSet<>();
     private boolean closed;
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){ui.playthrough(content,shared);if(phone!=null)phone.playthrough(content,shared);}
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
         for(var c:catalog.all())for(var goal:c.goals())if(goal.interaction()!=null&&goal.interaction().startsWith("block:")){var material=Material.matchMaterial(goal.interaction().split(":")[4]);if(material==null||!material.isBlock()||material.isAir())throw new IllegalArgumentException("Unknown objective block material");}
+        if(!plugin.getConfig().getBoolean("dungeon-play-verification-enabled")&&catalog.all().stream().anyMatch(q->q.goals().stream().anyMatch(g->g.interaction()!=null&&g.interaction().startsWith("dungeon:"))))throw new IllegalArgumentException("DUNGEON_BINDING_REQUIRED");
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         phone=plugin.getConfig().getBoolean("phone-dialog-enabled",false)?new io.github.jesterportfolio.hearth.phone.PaperPhone(plugin,players,journal,catalog,owner):null;
@@ -164,7 +167,9 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     }
     private boolean talkAllowed(Player p,String npc,UUID id){
         if(!npcPermitted(p,npc)||!near(p,npc,id))return false;
-        Entity target=entity(p.getWorld(),npc);var local=com.sk89q.worldguard.bukkit.WorldGuardPlugin.inst().wrapPlayer(p);
+        return regionInteract(p,npc);
+    }
+    private boolean regionInteract(Player p,String npc){Entity target=entity(p.getWorld(),npc);if(target==null)return false;var local=com.sk89q.worldguard.bukkit.WorldGuardPlugin.inst().wrapPlayer(p);
         var platform=WorldGuard.getInstance().getPlatform();
         return platform.getSessionManager().hasBypass(local,BukkitAdapter.adapt(p.getWorld()))||platform.getRegionContainer().createQuery().testState(BukkitAdapter.adapt(target.getLocation()),local,Flags.INTERACT);
     }
@@ -189,6 +194,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         var session=players.current(p);if(session==null)return;
         try{
             var scope=dialogues.conversation(p.getUniqueId());if(scope.session()!=session||!scope.npc().equals(npc)||!p.getWorld().getUID().equals(scope.world())||!talkAllowed(p,npc,scope.entity()))throw new IllegalArgumentException("STALE_NPC_MENU");
+            if(action.equals("npc-dungeon")){if(!npc.equals(dungeonNpc)||!Objects.equals(topic,dungeonQuest)||!journal.questAllowed(session.context(),dungeonQuest))throw new IllegalArgumentException("UNREGISTERED_DUNGEON");dungeonEntry.accept(p,()->!closed&&players.prepared(p)==session&&dialogues.current(scope)&&p.getWorld().getUID().equals(scope.world())&&near(p,npc,scope.entity())&&regionInteract(p,npc)&&(story==null||story.access().content(session.context().storyRunId(),catalog.npc(npc).x(),catalog.npc(npc).y(),catalog.npc(npc).z())));return;}
             if(action.equals("npc-close")){dialogues.clear(p.getUniqueId());p.closeInventory();return;}
             if(action.equals("npc-topic")){command(p,dialogues.topicCommand(dialogues.topicSelection(p.getUniqueId(),session,npc,topic)));return;}
             if(action.equals("npc-journey")){ui.journey(p,()->dialogues.current(scope)&&talkAllowed(p,npc,scope.entity()),List.of(Component.text("[NPC 선택창]").clickEvent(ClickEvent.runCommand(dialogues.menuCommand(scope)))));return;}

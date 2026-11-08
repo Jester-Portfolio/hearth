@@ -1,0 +1,7 @@
+# 새 격리 개발 실행용 공개 의뢰 연결. 운영 입장/오프라인 공적 정책을 확정하지 않습니다.
+format: 1
+isolated-current-session-credit: true
+id: public_dungeon_control
+quest: public_dungeon_quest
+npc: survey_guide
+entry-area: {min-x: 0, max-x: 6, min-y: 64, max-y: 68, min-z: 0, max-z: 6}
