@@ -1,0 +1,19 @@
+# 자원→제작 공개 실습 전용. 운영 배치·초기화 주기가 아닙니다.
+format: 1
+isolated-region-prototype: true
+id: public_workshop_gathering
+area: {x: 32, y: 63, z: 0, width: 4, height: 4, depth: 4}
+entrance: {x: 5.5, y: 64, z: 5.5, yaw: 0, pitch: 0}
+spawn: {x: 32.5, y: 64, z: 0.5, yaw: 0, pitch: 0}
+interval-ms: 60000
+warning-ms: 5000
+active-template: wood_stone_v1
+templates:
+  - version: wood_stone_v1
+    layers: [{y: 63, material: STONE}]
+    blocks:
+      - {x: 33, y: 64, z: 1, material: OAK_LOG}
+      - {x: 34, y: 64, z: 1, material: OAK_LOG}
+      - {x: 33, y: 64, z: 2, material: STONE}
+      - {x: 34, y: 64, z: 2, material: STONE}
+      - {x: 35, y: 64, z: 2, material: STONE}

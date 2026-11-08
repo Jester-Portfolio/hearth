@@ -22,5 +22,10 @@ public final class PaperCraftingPlan {
         for(var item:returns)if(item!=null&&!item.isEmpty())slots=codec.withCursor(slots,item);
         return codec.encode(slots);
     }
+    public List<CraftingMaterials.Need> materials(CraftContent.Recipe recipe,InventoryPayload inventory){
+        var slots=codec.decode(inventory);var available=new LinkedHashMap<String,Integer>();
+        for(String type:recipe.matrix())if(!type.equals("AIR")&&!available.containsKey(type)){var plain=new ItemStack(Objects.requireNonNull(Material.matchMaterial(type)));int count=0;for(int i=0;i<36;i++)if(slots[i]!=null&&slots[i].isSimilar(plain))count+=slots[i].getAmount();available.put(type,count);}
+        return CraftingMaterials.view(recipe,available);
+    }
     public static List<String> ingredients(CraftContent.Recipe recipe){var counts=new LinkedHashMap<String,Integer>();recipe.matrix().stream().filter(m->!m.equals("AIR")).forEach(m->counts.merge(m,1,Integer::sum));return counts.entrySet().stream().map(e->e.getKey()+" × "+e.getValue()).toList();}
 }

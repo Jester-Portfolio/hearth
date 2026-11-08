@@ -51,3 +51,6 @@ crafting-verification-enabled: false
 
 # 공개 탐험·제작·개인 목표 연결도 명시적 격리 모드 전용입니다.
 crafting-quest-verification-enabled: false
+
+# 채집 자원과 제작 의뢰의 공개 실습 연결. 일반 서버에서는 비활성입니다.
+gathering-workshop-verification-enabled: false

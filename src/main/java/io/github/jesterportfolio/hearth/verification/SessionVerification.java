@@ -143,6 +143,7 @@ public final class SessionVerification implements AutoCloseable {
                 var explorationRoot=new HashMap<String,Object>(YamlConfiguration.loadConfiguration(file).getValues(false));
                 if(plugin.getConfig().getBoolean("fast-travel-verification-enabled")){var tf=new java.io.File(plugin.getDataFolder(),"fast-travel-demo.yml");if(!tf.exists())plugin.saveResource("fast-travel-demo.yml",false);var extra=YamlConfiguration.loadConfiguration(tf).getList("extra-places");var places=new ArrayList<Object>((List<?>)explorationRoot.get("places"));if(extra!=null)places.addAll(extra);explorationRoot.put("places",places);}
                 if(plugin.getConfig().getBoolean("crafting-quest-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"crafting-quest-demo.yml"));for(String key:List.of("places","journal")){var all=new ArrayList<Object>((List<?>)explorationRoot.get(key));all.addAll(Objects.requireNonNull(extra.getList(key)));explorationRoot.put(key,all);}}
+                if(plugin.getConfig().getBoolean("gathering-workshop-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"gathering-workshop-course.yml"));for(String key:List.of("places","journal")){var all=new ArrayList<Object>((List<?>)explorationRoot.get(key));all.addAll(Objects.requireNonNull(extra.getList(key)));explorationRoot.put(key,all);}}
                 explorationContent=ExplorationContent.parse(explorationRoot,catalog);
                 var bindings=new HashMap<String,ExplorationContent.Fact>();explorationContent.questFacts().forEach((quest,fact)->bindings.put(quest,explorationContent.facts().get(fact)));store.configureQuestDiary(bindings);
                 if(plugin.getConfig().getBoolean("story-verification-enabled")){
@@ -168,7 +169,7 @@ public final class SessionVerification implements AutoCloseable {
             if(plugin.getConfig().getBoolean("playthrough-verification-enabled")){
                 if(sharedStory==null||!Boolean.getBoolean("hearth.verification.playthrough"))throw new IllegalStateException("Playthrough gate missing");
                 var planFile=new java.io.File(plugin.getDataFolder(),"playthrough-demo.yml");if(!planFile.exists())plugin.saveResource("playthrough-demo.yml",false);
-                var plan=new HashMap<String,Object>(YamlConfiguration.loadConfiguration(planFile).getValues(false));if(plugin.getConfig().getBoolean("crafting-quest-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"crafting-quest-demo.yml"));var steps=new ArrayList<Object>(Objects.requireNonNull(extra.getList("steps")));steps.addAll((List<?>)plan.get("steps"));plan.put("steps",steps);}playthrough=Playthrough.parse(plan,catalog,sharedStory.content(),explorationContent);questAdapter.playthrough(playthrough,sharedStory);
+                var plan=new HashMap<String,Object>(YamlConfiguration.loadConfiguration(planFile).getValues(false));if(plugin.getConfig().getBoolean("crafting-quest-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"crafting-quest-demo.yml"));var steps=new ArrayList<Object>(Objects.requireNonNull(extra.getList("steps")));steps.addAll((List<?>)plan.get("steps"));plan.put("steps",steps);}if(plugin.getConfig().getBoolean("gathering-workshop-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"gathering-workshop-course.yml"));var steps=new ArrayList<Object>(Objects.requireNonNull(extra.getList("steps")));steps.addAll((List<?>)plan.get("steps"));plan.put("steps",steps);}playthrough=Playthrough.parse(plan,catalog,sharedStory.content(),explorationContent);questAdapter.playthrough(playthrough,sharedStory);
             }
             if(plugin.getConfig().getBoolean("world-effect-verification-enabled")){
                 if(sharedStory==null||!Boolean.getBoolean("hearth.verification.worldEffect"))throw new IllegalStateException("World effect gate missing");
@@ -180,12 +181,13 @@ public final class SessionVerification implements AutoCloseable {
                 sharedStory.effects(blockEffect);
             }
         }
-        if(plugin.getConfig().getBoolean("crafting-verification-enabled")){var cf=new java.io.File(plugin.getDataFolder(),"crafting-demo.yml");if(!cf.exists())plugin.saveResource("crafting-demo.yml",false);crafting=new PaperCrafting(plugin,adapter,worlds,CraftContent.parse(YamlConfiguration.loadConfiguration(cf).getValues(false)),codec,(ctx,f)->sharedStory==null||new StoryAccess(sharedStory).content(ctx.storyRunId(),f.x(),f.y(),f.z()),owner);if(plugin.getConfig().getBoolean("crafting-quest-verification-enabled")){if(quests==null||journal==null)throw new IllegalStateException("CRAFT_QUEST_DEPENDENCIES");craftingQuests=new CraftingQuest(quests,catalog,crafting.content,owner,SessionVerification::main);crafting.quests(craftingQuests,journal::questAllowed);}}
+        if(plugin.getConfig().getBoolean("crafting-verification-enabled")){var cf=new java.io.File(plugin.getDataFolder(),"crafting-demo.yml");if(!cf.exists())plugin.saveResource("crafting-demo.yml",false);crafting=new PaperCrafting(plugin,adapter,worlds,craftContent(cf),codec,(ctx,f)->sharedStory==null||new StoryAccess(sharedStory).content(ctx.storyRunId(),f.x(),f.y(),f.z()),owner);if(plugin.getConfig().getBoolean("crafting-quest-verification-enabled")){if(quests==null||journal==null)throw new IllegalStateException("CRAFT_QUEST_DEPENDENCIES");craftingQuests=new CraftingQuest(quests,catalog,crafting.content,owner,SessionVerification::main);crafting.quests(craftingQuests,journal::questAllowed);}}
         if(plugin.getConfig().getBoolean("fast-travel-verification-enabled")){if(journal==null||explorationContent==null)throw new IllegalStateException("Travel exploration required");var tf=new java.io.File(plugin.getDataFolder(),"fast-travel-demo.yml");paperTravel=new io.github.jesterportfolio.hearth.travel.PaperTravel(plugin,adapter,journal,worlds,io.github.jesterportfolio.hearth.travel.TravelContent.parse(YamlConfiguration.loadConfiguration(tf).getValues(false),explorationContent),owner);}
         if(plugin.getConfig().getBoolean("gathering-verification-enabled")){
-            var file=new java.io.File(plugin.getDataFolder(),"gathering-demo.yml");if(!file.exists())plugin.saveResource("gathering-demo.yml",false);
+            var filename=plugin.getConfig().getString("gathering-content-file","gathering-demo.yml");if(!Set.of("gathering-demo.yml","gathering-workshop-demo.yml").contains(filename))throw new IllegalArgumentException("GATHERING_CONTENT_FILE");var file=new java.io.File(plugin.getDataFolder(),filename);if(!file.exists())plugin.saveResource(filename,false);
             gathering=new PaperGathering(plugin,store,access,adapter,worlds,GatheringContent.parse(combatMap(YamlConfiguration.loadConfiguration(file))),owner,manual?System::currentTimeMillis:gatheringClock::get,run->adapter.saveRunBoundary(run).thenComposeAsync(v->quests==null?CompletableFuture.completedFuture(null):quests.barrier(run).thenComposeAsync(x->journal.barrier(run),owner).thenComposeAsync(x->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run),owner),owner));
         }
+        if(plugin.getConfig().getBoolean("gathering-workshop-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"gathering-workshop-course.yml"));if(gathering==null||craftingQuests==null||!gathering.content.id().equals(extra.getString("gathering-id")))throw new IllegalStateException("GATHERING_COURSE_REFERENCE");}
         if(plugin.getConfig().getBoolean("combat-player-verification-enabled")){if(combatTrials==null)throw new IllegalStateException("Combat trial required");combatPlayers=new PaperCombatPlayers(plugin,adapter,combatTrials,fieldEncounters,store,store,worlds,owner,(p,session)->{log("COMBAT_PLAYER_DEATH");return questAdapter.combatDeath(p,session);},run->quests==null?CompletableFuture.completedFuture(null):quests.barrier(run).thenComposeAsync(v->journal.barrier(run),owner).thenComposeAsync(v->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run),owner));}
         if(plugin.getConfig().getBoolean("dungeon-play-verification-enabled")){if(combatPlayers==null||quests==null)throw new IllegalStateException("DUNGEON_DEPENDENCIES");var f=new java.io.File(plugin.getDataFolder(),"dungeon-play.yml");if(!f.exists())plugin.saveResource("dungeon-play.yml",false);dungeonDefinition=DungeonPlay.Definition.parse(combatMap(YamlConfiguration.loadConfiguration(f)));dungeonPlay=new PaperDungeonPlay(plugin,dungeonDefinition,catalog,quests,journal,adapter,combatPlayers,combatContent,worlds,owner,run->coordinator.saveRunBoundary(run).thenComposeAsync(v->quests.barrier(run),owner).thenComposeAsync(v->journal.barrier(run),owner));questAdapter.dungeon(dungeonDefinition.npc(),dungeonDefinition.quest(),dungeonPlay::enter,dungeonPlay::guide);}
 
@@ -193,6 +195,7 @@ public final class SessionVerification implements AutoCloseable {
     public void gatheringFixture(String profile){if(gathering==null)throw new IllegalStateException("Gathering disabled");gathering.fixture(Objects.requireNonNull(Bukkit.getPlayerExact(profile)));}
     public void combatPlayer(String operation,String profile,String condition){if(combatPlayers==null)throw new IllegalStateException("Combat player mode disabled");switch(operation){case "combat-player-start"->combatPlayers.startOnline(profile);case "combat-player-release"->combatPlayers.release(profile);case "combat-player-revive"->combatPlayers.condition(profile,condition).whenCompleteAsync((v,error)->log("COMBAT_REVIVE "+(error==null?"APPLIED":"HOLD_OR_REJECTED")),owner);default->throw new IllegalArgumentException("Unknown combat fixture operation");}}
     private List<CommunityBoundary.Ref> storyMembers(ServerProgressAccess.Context ctx){var refs=adapter.community(ctx);if(storyTestRoster==null)return refs;return refs.stream().map(ref->new CommunityBoundary.Ref(ref.run(),ref.player(),ref.name(),ctx.storyRunId().equals(a)?storyTestRoster.containsKey(ref.player()):ref.player().equals(b3.playerId()))).toList();}
+    private CraftContent craftContent(java.io.File file){var content=CraftContent.parse(YamlConfiguration.loadConfiguration(file).getValues(false));if(plugin.getConfig().getBoolean("gathering-workshop-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"gathering-workshop-course.yml"));content=content.extended(extra.getString("facility-id"),Objects.requireNonNull(extra.getList("recipes")));}return content;}
     private static QuestCatalog loadCatalog(JavaPlugin plugin) {
         java.io.File file=new java.io.File(plugin.getDataFolder(),"quest-demo.yml");
         if(!file.exists())plugin.saveResource("quest-demo.yml",false);
@@ -212,7 +215,7 @@ public final class SessionVerification implements AutoCloseable {
         if(!(yaml.get("format") instanceof Number n) || n.doubleValue()!=2 || !(yaml.get("npcs") instanceof List<?> npcs) || !(yaml.get("quests") instanceof List<?> rows))
             throw new IllegalArgumentException("Unsupported or malformed quest content format");
         var combined=new ArrayList<Object>(rows);
-        for(var entry:Map.of("dungeon-play-verification-enabled","dungeon-quest-demo.yml","crafting-quest-verification-enabled","crafting-quest-demo.yml").entrySet())if(plugin.getConfig().getBoolean(entry.getKey())){var extra=new java.io.File(plugin.getDataFolder(),entry.getValue());if(!extra.exists())plugin.saveResource(entry.getValue(),false);combined.addAll(Objects.requireNonNull(YamlConfiguration.loadConfiguration(extra).getList("quests")));}
+        for(var entry:Map.of("dungeon-play-verification-enabled","dungeon-quest-demo.yml","crafting-quest-verification-enabled","crafting-quest-demo.yml","gathering-workshop-verification-enabled","gathering-workshop-course.yml").entrySet())if(plugin.getConfig().getBoolean(entry.getKey())){var extra=new java.io.File(plugin.getDataFolder(),entry.getValue());if(!extra.exists())plugin.saveResource(entry.getValue(),false);combined.addAll(Objects.requireNonNull(YamlConfiguration.loadConfiguration(extra).getList("quests")));}
         return QuestCatalog.parse(npcs,combined);
     }
 
@@ -264,7 +267,7 @@ public final class SessionVerification implements AutoCloseable {
             }else{
                 var target=world.getBlockAt(7,64,7);if(!target.getType().isAir())throw new IllegalStateException("Existing interaction fixture conflict");
                 for(int x=0;x<=40;x++)for(int z=0;z<=40;z++){var type=world.getBlockAt(x,63,z).getType();if(!type.isAir()&&type!=Material.STONE)throw new IllegalStateException("Existing course floor conflict; preserve original");}
-                for(int x=0;x<=40;x++)for(int z=0;z<=40;z++)if(world.getBlockAt(x,63,z).getType().isAir())world.getBlockAt(x,63,z).setType(Material.STONE,false);
+                for(int x=0;x<=40;x++)for(int z=0;z<=40;z++)if((gathering==null||!gathering.content.area().contains(x,63,z))&&world.getBlockAt(x,63,z).getType().isAir())world.getBlockAt(x,63,z).setType(Material.STONE,false);
                 var lever=(org.bukkit.block.data.type.Switch)Material.LEVER.createBlockData();lever.setAttachedFace(org.bukkit.block.data.FaceAttachable.AttachedFace.FLOOR);target.setBlockData(lever,false);
                 world.getWorldBorder().setCenter(20,20);world.getWorldBorder().setSize(40);
                 java.nio.file.Files.writeString(file,"version=2\nrun="+run+"\nworld="+world.getUID()+"\n",java.nio.file.StandardOpenOption.CREATE_NEW);
@@ -330,6 +333,7 @@ public final class SessionVerification implements AutoCloseable {
         case "location-play" -> locationPlay();
         case "gathering-start" -> gatheringPlay(false);
         case "gathering-restored" -> gatheringPlay(true);
+        case "gathering-crafting-play" -> gatheringCraftingPlay();
         case "crafting-quest-play" -> craftingQuestPlay();
         case "crafting-play" -> craftingPlay();
         case "travel-play" -> travelPlay();
@@ -1542,6 +1546,78 @@ public final class SessionVerification implements AutoCloseable {
             check(w.getEntitiesByClass(org.bukkit.entity.Villager.class).stream().filter(e->e.getPersistentDataContainer().has(new NamespacedKey(plugin,"quest_demo_npc"))).allMatch(e->!e.isVisibleByDefault()),"npc_default_hidden_until_authorized");
             questAdapter.ensure(w);for(var c:catalog.npcs())check(questAdapter.count(w,c.npcId())==1,"npc_no_duplicate_after_projection");
         });
+    }
+    /** 실제 순정 드롭 API + 시험용 인벤토리 투영입니다. Player 채굴/줍기 이벤트를 흉내 내지 않습니다. */
+    private CompletionStage<Void> gatherFixtureItem(PaperGathering.Binding binding,GatheringActor actor,int x,int y,int z,ItemStack tool,Material expected){
+        var run=actor.session.context().storyRunId();var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));var chunk=world.getChunkAt(x>>4,z>>4);long generation=binding.dungeon().snapshot().generation();boolean owned=chunk.addPluginChunkTicket(plugin);
+        return until(()->chunk.getLoadLevel()==Chunk.LoadLevel.ENTITY_TICKING).thenComposeAsync(v->{if(!binding.dungeon().canGather(actor,generation))throw new IllegalStateException("SUPPLY_STALE_HARVEST");return gatherLoadedFixtureItem(binding,actor,x,y,z,tool,expected);},owner).whenCompleteAsync((v,error)->{if(owned)chunk.removePluginChunkTicket(plugin);},owner);
+    }
+    private CompletionStage<Void> gatherLoadedFixtureItem(PaperGathering.Binding binding,GatheringActor actor,int x,int y,int z,ItemStack tool,Material expected){
+        var state=binding.dungeon().snapshot();var run=actor.session.context().storyRunId();check(run.equals(state.run())&&binding.dungeon().canGather(actor,state.generation()),"supply_harvest_current_run_member_and_generation");
+        var w=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));var block=w.getBlockAt(x,y,z);var chunk=block.getChunk();chunk.getEntities();var spawned=new ArrayList<org.bukkit.entity.Item>();
+        var observer=new org.bukkit.event.Listener(){@org.bukkit.event.EventHandler(priority=org.bukkit.event.EventPriority.MONITOR) public void spawn(org.bukkit.event.entity.ItemSpawnEvent e){var item=e.getEntity();if(item.getWorld().equals(w)&&item.getLocation().distanceSquared(new Location(w,x+.5,y+.5,z+.5))<9){log("SUPPLY_DROP_EVENT material="+item.getItemStack().getType()+" cancelled="+e.isCancelled());if(!e.isCancelled())spawned.add(item);}}};
+        Bukkit.getPluginManager().registerEvents(observer,plugin);log("SUPPLY_DROP_CHUNK loaded="+chunk.isEntitiesLoaded()+" level="+chunk.getLoadLevel());
+        try{check(block.getDrops(tool).stream().mapToInt(i->i.getType()==expected?i.getAmount():0).sum()==1,"supply_native_drop_rule_"+expected);check(block.breakNaturally(tool,false)&&block.getType().isAir(),"supply_native_break_"+expected);}catch(RuntimeException error){org.bukkit.event.HandlerList.unregisterAll(observer);throw error;}
+        return later(()->{check(binding.dungeon().canGather(actor,state.generation()),"supply_pickup_projection_same_generation");chunk.getEntities();var items=spawned.stream().filter(i->i.isValid()&&i.getItemStack().getType()==expected).distinct().toList();check(items.stream().mapToInt(i->i.getItemStack().getAmount()).sum()==1,"supply_real_item_entity_"+expected);
+            var slots=codec.decode(one.capture());for(var item:items)slots=codec.withCursor(slots,item.getItemStack());one.apply(codec.encode(slots));coordinator.refresh(s1);check(coordinator.playable(s1),"supply_existing_dirty_capture_after_controlled_pickup");items.forEach(org.bukkit.entity.Item::remove);
+        }).whenCompleteAsync((v,error)->org.bukkit.event.HandlerList.unregisterAll(observer),owner);
+    }
+    private void supplyMaterials(boolean woodReady,boolean stoneReady){
+        var before=one.capture();var needs=crafting.planner.materials(crafting.content.recipes().get("stone_pickaxe"),before);var cobble=needs.stream().filter(n->n.material().equals("COBBLESTONE")).findFirst().orElseThrow();check(cobble.required()==3&&cobble.missing()==(stoneReady?0:3),"supply_stone_pickaxe_shortage_"+stoneReady);
+        var panel=PaperCrafting.previewMaterials(needs);check(panel.getItem(9)!=null&&panel.getItem(9).getItemMeta().hasLore()&&codec.equivalent(before,one.capture()),"supply_material_panel_read_only_actual_inventory_object");
+        if(woodReady)check(craftingCount(before,Material.WOODEN_PICKAXE)==1,"supply_crafted_wooden_pickaxe_preserved");
+    }
+    private CompletionStage<Void> supplyQuestRead(QuestStore.Phase phase,long revision,int index){return mainResult(store.readQuest(a1,"gathering_workshop_route")).thenAccept(row->check(row.phase()==phase&&row.revision()==revision&&row.objectiveIndex()==index,"supply_quest_"+phase+"_r"+revision+"_i"+index));}
+    private CompletionStage<Void> supplyQuestView(){return journal.load(a1,s1,()->coordinator.playable(s1)).thenAccept(view->{
+        journal.requireView(a1,view);var id="gathering_workshop_route";check(QuestListView.detail(catalog,view.states(),id).isPresent()&&QuestBookView.accepted(catalog,view.states(),journal.blocked(a1),id).isPresent(),"supply_existing_quest_detail_and_book_data");
+        check(view.exploration().places().stream().anyMatch(p->p.key().equals("public_material_site")&&p.discovered()&&!p.hubUnlocked()),"supply_discovered_map_place_not_hub_unlock");
+        if(view.states().get(id).phase()==QuestStore.Phase.COMPLETED){check(view.exploration().facts().stream().filter(f->f.id().equals("gathering_workshop_report")).count()==1&&view.journal().notices().stream().filter(n->n.quest().equals(id)).count()==6,"supply_private_report_diary_and_six_progress_notices");check(!view.journal().tracked().contains(id),"supply_completed_tracking_removed");}
+    });}
+    private CompletionStage<Void> gatheringCraftingPlay(){
+        var bd=new PaperGathering.Binding[2];var actor=new GatheringActor[3];var payload=new InventoryPayload[1];var revision=new long[1];var gen=new long[1];var physical=worlds.get(a).mapping().physicalId();var course=catalog.quest("gathering_workshop_route");
+        return openAll().thenRun(()->{
+            for(UUID run:List.of(a,b)){var w=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));if(!w.getBlockAt(6,64,6).getType().isAir())throw new IllegalStateException("SUPPLY_WORKBENCH_CONFLICT");w.getBlockAt(6,64,6).setType(Material.CRAFTING_TABLE,false);crafting.ensureRegions(run);}
+            supplyMaterials(false,false);check(craftingCount(one.capture(),Material.OAK_LOG)==0&&craftingCount(one.capture(),Material.COBBLESTONE)==0,"supply_no_free_raw_material_fixture");
+        }).thenCompose(v->gathering.bind(a1,true,gatheringPeople(a))).thenAccept(value->bd[0]=value)
+        .thenCompose(v->gathering.bind(b3,true,gatheringPeople(b))).thenAccept(value->bd[1]=value)
+        .thenCompose(v->{actor[0]=new GatheringActor(s1);actor[1]=new GatheringActor(s2);actor[2]=new GatheringActor(s3);return bd[0].dungeon().enter(actor[0]);})
+        .thenCompose(v->bd[1].dungeon().enter(actor[2]))
+        .thenRun(()->check(!bd[0].dungeon().canGather(actor[1],bd[0].dungeon().snapshot().generation())&&!bd[0].dungeon().canGather(actor[2],bd[0].dungeon().snapshot().generation()),"supply_unregistered_and_other_run_members_denied"))
+        .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.accept(q,course))
+        .thenCompose(v->journal.track(a1,s1,()->coordinator.playable(s1),course.id(),true))
+        .thenCompose(v->journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,32.5,64,.5))
+        .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.reach(q,course,32.5,64,.5))
+        .thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,1,1)).thenCompose(v->supplyQuestView())
+        .thenCompose(v->gatherFixtureItem(bd[0],actor[0],33,64,1,new ItemStack(Material.AIR),Material.OAK_LOG))
+        .thenCompose(v->gatherFixtureItem(bd[0],actor[0],34,64,1,new ItemStack(Material.AIR),Material.OAK_LOG))
+        .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(row->check(row.revision()==0&&s1.save().dirty()&&craftingCount(one.capture(),Material.OAK_LOG)==2,"supply_two_pickups_dirty_without_per_item_DB_write"))
+        .thenCompose(v->coordinator.saveBoundary(s1)).thenCompose(v->bd[0].dungeon().leave(actor[0]))
+        .thenCompose(v->craftingQuestTool()).thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,2,2))
+        .thenRun(()->{supplyMaterials(true,false);check(craftingQuestSaves==1,"supply_wood_tool_goal_after_confirmed_source_save");gen[0]=bd[0].dungeon().snapshot().generation();})
+        .thenCompose(v->bd[0].dungeon().enter(actor[0]))
+        .thenRun(()->{check(bd[0].dungeon().snapshot().generation()==gen[0]+1&&!bd[0].dungeon().canGather(actor[0],gen[0]),"supply_reentry_reset_old_generation_rejected");supplyMaterials(true,false);check(Bukkit.getWorld(worlds.get(b).mapping().physicalId()).getBlockAt(33,64,1).getType()==Material.OAK_LOG&&bd[1].dungeon().snapshot().generation()==1,"supply_other_run_resources_generation_unchanged");})
+        .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.reach(q,course,32.5,64,.5))
+        .thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,3,3))
+        .thenRun(()->{var block=Bukkit.getWorld(physical).getBlockAt(33,64,2);check(block.getDrops(new ItemStack(Material.AIR)).isEmpty(),"supply_stone_requires_native_appropriate_tool");})
+        .thenCompose(v->gatherFixtureItem(bd[0],actor[0],33,64,2,new ItemStack(Material.WOODEN_PICKAXE),Material.COBBLESTONE))
+        .thenCompose(v->gatherFixtureItem(bd[0],actor[0],34,64,2,new ItemStack(Material.WOODEN_PICKAXE),Material.COBBLESTONE))
+        .thenCompose(v->gatherFixtureItem(bd[0],actor[0],35,64,2,new ItemStack(Material.WOODEN_PICKAXE),Material.COBBLESTONE))
+        .thenRun(()->{supplyMaterials(true,true);var protectedSlots=codec.decode(one.capture());protectedSlots[36]=new ItemStack(Material.COBBLESTONE,3);protectedSlots[40]=new ItemStack(Material.STICK,2);protectedSlots[9]=new ItemStack(Material.COBBLESTONE,3);protectedSlots[9].editMeta(m->m.displayName(Component.text("제작 제외 시험 재료")));for(int i=0;i<36;i++)if(protectedSlots[i]!=null&&!protectedSlots[i].hasItemMeta()&&protectedSlots[i].getType()==Material.COBBLESTONE)protectedSlots[i]=null;var counts=crafting.planner.materials(crafting.content.recipes().get("stone_pickaxe"),codec.encode(protectedSlots));check(counts.stream().filter(n->n.material().equals("COBBLESTONE")).allMatch(n->n.available()==0),"supply_material_counts_ignore_named_and_equipment_slots");})
+        .thenCompose(v->coordinator.saveBoundary(s1)).thenCompose(v->bd[0].dungeon().leave(actor[0]))
+        .thenCompose(v->craftingQuestRecipe("stone_pickaxe")).thenCompose(v->supplyQuestRead(QuestStore.Phase.REPORT_READY,4,3))
+        .thenRun(()->check(craftingQuestSaves==2&&craftingCount(one.capture(),Material.STONE_PICKAXE)==1&&craftingCount(one.capture(),Material.COBBLESTONE)==0,"supply_real_recipe_consumes_collected_cobble_and_saves_before_goal"))
+        .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.advance(q,QuestStore.Phase.COMPLETED))
+        .thenCompose(v->supplyQuestRead(QuestStore.Phase.COMPLETED,5,3)).thenCompose(v->supplyQuestView())
+        .thenCompose(v->questRead(a2,course.id(),QuestStore.Phase.NOT_ACCEPTED,-1)).thenCompose(v->questRead(ctx(b,1),course.id(),QuestStore.Phase.NOT_ACCEPTED,-1))
+        .thenCompose(v->bd[0].dungeon().enter(actor[0])).thenRun(()->check(craftingCount(one.capture(),Material.STONE_PICKAXE)==1&&craftingCount(one.capture(),Material.WOODEN_PICKAXE)==1&&Bukkit.getWorld(physical).getBlockAt(33,64,2).getType()==Material.STONE,"supply_next_reset_keeps_obtained_items_and_restores_resources"))
+        .thenCompose(v->bd[0].dungeon().leave(actor[0]))
+        .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(row->{payload[0]=row.payload();revision[0]=row.revision();gen[0]=bd[0].dungeon().snapshot().generation();check(codec.equivalent(row.payload(),one.capture()),"supply_latest_inventory_durable");})
+        .thenCompose(v->coordinator.disconnect(s1)).thenCompose(v->coordinator.disconnect(s2)).thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
+        .thenRun(()->check(Bukkit.getWorld(physical)==null&&coordinator.playable(s3),"supply_world_unload_other_run_active"))
+        .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return CompletableFuture.allOf(s1.ready().toCompletableFuture(),s2.ready().toCompletableFuture());})
+        .thenCompose(v->gathering.bind(a1,false,gatheringPeople(a)))
+        .thenAccept(value->{bd[0]=value;check(value.dungeon().snapshot().generation()==gen[0]&&codec.equivalent(payload[0],one.capture())&&s1.save().revision()==revision[0],"supply_existing_gather_generation_inventory_revision_restored_without_create");check(Bukkit.getWorld(physical).getBlockAt(6,64,6).getType()==Material.CRAFTING_TABLE,"supply_existing_workbench_preserved");check(GatheringStatus.lines(value.dungeon().snapshot(),0,false,gatheringClock.get()).stream().anyMatch(line->line.contains("다음 입장 전에 초기화")),"supply_empty_reset_status_after_reload");})
+        .thenCompose(v->supplyQuestRead(QuestStore.Phase.COMPLETED,5,3)).thenCompose(v->supplyQuestView()).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(ctx(b,1),7,0));
     }
     private int craftingQuestSaves;
     private CompletionStage<List<String>> craftingQuestRecipe(String recipe){

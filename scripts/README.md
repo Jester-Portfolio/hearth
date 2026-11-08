@@ -117,3 +117,5 @@
 작업대 제작 통합은 `verify-lifecycle.py --sessions --crafting` 단독 한 JVM 모드다. 새 경로에서 순정 레시피·잔여물·41슬롯 보존·실제 DB 저장/실패와 제어 세션 재연결을 검사한다. [검증 범위](../docs/crafting-verification.md)를 따르며 실제 Player 클릭이나 새 JVM 복원 시험은 포함하지 않는다.
 
 탐험·제작 의뢰 통합은 `verify-lifecycle.py --sessions --quests --story-batch --crafting-quests` 단독 한 JVM 모드다. 공개 코스의 발견·제작 후 저장·목표 전이·NPC 보고/후속 해금·개인 격리·실제 DB 충돌·월드 재입장을 함께 검사한다. [검증과 미실행 범위](../docs/workshop-quest-verification.md)를 따르며 실제 클라이언트 시험은 실행하지 않는다.
+
+채집 재료→제작 의뢰 통합은 `verify-lifecycle.py --sessions --quests --story-batch --gathering-crafting` 단독 한 JVM 모드다. 신규 채집 템플릿, 순정 드롭/실제 아이템·제어 인벤토리, 재료 표시·두 도구 제작·보고·초기화/월드 재입장을 함께 검사한다. [실행 범위와 실패 이력](../docs/material-supply-verification.md)을 따르며 실제 Player 채굴/줍기나 운영 배치를 검증하지 않는다.

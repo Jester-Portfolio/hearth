@@ -38,7 +38,7 @@ public final class PaperCrafting implements Listener,AutoCloseable {
         final Inventory inventory;final Map<Integer,String> choices=new HashMap<>();final String recipe;CraftingAction.Ticket ticket;CraftingQuest.Prepared prepared;boolean used,frozen;
         Screen(Player p,PlayerSessions.Session s,CraftContent.Facility f,String recipe){player=p;session=s;facility=f;generation=worlds.get(s.context().storyRunId()).generation();this.recipe=recipe;inventory=Bukkit.createInventory(this,54,Component.text("작업대 · 격리 제작"));
             if(recipe==null){inventory.setContents(previewRecipes(content,f,planner,p.getWorld()).getContents());int slot=0;for(String id:f.recipes())choices.put(slot++,id);}
-            else{var r=content.recipes().get(recipe);inventory.setItem(22,item(planner.result(p.getWorld(),r).getResult(),r.title(),PaperCraftingPlan.ingredients(r)));inventory.setItem(45,item(new ItemStack(Material.ARROW),"제작 목록으로",List.of()));}
+            else{var r=content.recipes().get(recipe);inventory.setItem(22,item(planner.result(p.getWorld(),r).getResult(),r.title(),PaperCraftingPlan.ingredients(r)));inventory.setItem(45,item(new ItemStack(Material.ARROW),"제작 목록으로",List.of()));var panel=previewMaterials(planner.materials(r,codec.capture(p.getInventory())));for(int slot=9;slot<18;slot++)inventory.setItem(slot,panel.getItem(slot));inventory.setItem(49,item(new ItemStack(Material.CLOCK),"재료 다시 확인",List.of("현재 보관 슬롯의 수량을 다시 확인합니다")));}
         }
         public Inventory getInventory(){return inventory;}
     }
@@ -55,6 +55,7 @@ public final class PaperCrafting implements Listener,AutoCloseable {
     public static Inventory previewRecipes(CraftContent content,CraftContent.Facility facility,PaperCraftingPlan planner,World world){
         var inventory=Bukkit.createInventory(null,54,Component.text("작업대 · 격리 제작"));int slot=0;for(String id:facility.recipes()){var recipe=content.recipes().get(id);inventory.setItem(slot++,item(planner.result(world,recipe).getResult(),recipe.title(),PaperCraftingPlan.ingredients(recipe)));}return inventory;
     }
+    public static Inventory previewMaterials(List<CraftingMaterials.Need> needs){var inventory=Bukkit.createInventory(null,54,Component.text("제작 재료 확인"));int slot=9;for(var need:needs){var icon=new ItemStack(Objects.requireNonNull(Material.matchMaterial(need.material())));icon.editMeta(m->m.lore(need.lines().stream().map(Component::text).toList()));inventory.setItem(slot++,icon);}return inventory;}
     private static ItemStack item(ItemStack source,String title,List<String> lore){var i=source.clone();i.editMeta(m->{m.displayName(Component.text(title));m.lore(lore.stream().map(Component::text).toList());});return i;}
     private boolean permitted(Player p,CraftContent.Facility f){var platform=WorldGuard.getInstance().getPlatform();var local=WorldGuardPlugin.inst().wrapPlayer(p);return platform.getSessionManager().hasBypass(local,BukkitAdapter.adapt(p.getWorld()))||platform.getRegionContainer().createQuery().testState(BukkitAdapter.adapt(new Location(p.getWorld(),f.x(),f.y(),f.z())),local,Flags.INTERACT);}
     private boolean eligible(Player p,PlayerSessions.Session s,CraftContent.Facility f,long gen){return eligible(p,s,f,gen,false);}
@@ -76,7 +77,7 @@ public final class PaperCrafting implements Listener,AutoCloseable {
     private void show(Player p,PlayerSessions.Session s,CraftContent.Facility f,String recipe){
         try{var screen=new Screen(p,s,f,recipe);screens.put(p.getUniqueId(),screen);
             p.openInventory(screen.inventory);if(p.getOpenInventory().getTopInventory()!=screen.inventory){screens.remove(p.getUniqueId(),screen);return;}
-            if(recipe!=null){try{screen.ticket=actions.preview(port(screen));screen.inventory.setItem(31,item(new ItemStack(Material.LIME_DYE),"한 번 제작하기",List.of("재료와 공간을 다시 검사한 뒤 적용합니다","기존 비동기 인벤토리 저장 사용")));}catch(RuntimeException error){screen.inventory.setItem(31,item(new ItemStack(Material.BARRIER),"현재 제작할 수 없습니다",List.of("재료 또는 보관 공간을 확인해 주세요")));}}
+            if(recipe!=null){try{screen.ticket=actions.preview(port(screen));screen.inventory.setItem(31,item(new ItemStack(Material.LIME_DYE),"한 번 제작하기",List.of("재료와 공간을 다시 검사한 뒤 적용합니다","기존 비동기 인벤토리 저장 사용")));}catch(RuntimeException error){screen.inventory.setItem(31,item(new ItemStack(Material.BARRIER),"CURSOR_STORAGE_FULL".equals(error.getMessage())?"보관 공간이 부족합니다":"재료 또는 제작 상태를 확인해 주세요",List.of("위 재료 아이템에서 필요·보유·부족 수량을 확인하세요")));}}
         }catch(RuntimeException error){p.sendMessage(Component.text("제작 정보를 확인하지 못했습니다. 원본 인벤토리를 보존했습니다."));}
     }
     private CraftingAction.Port port(Screen s){return new CraftingAction.Port(){
@@ -86,7 +87,7 @@ public final class PaperCrafting implements Listener,AutoCloseable {
     };}
     @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){if(!(e.getView().getTopInventory().getHolder() instanceof Screen s))return;e.setCancelled(true);if(e.getWhoClicked()!=s.player||!valid(s)||s.used||e.getClickedInventory()!=s.inventory||e.getClick()!=ClickType.LEFT)return;
         if(s.recipe!=null&&e.getSlot()==31&&s.ticket!=null){s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->confirm(s),1);return;}
-        String choice=s.choices.get(e.getSlot());if(choice==null&&!(s.recipe!=null&&e.getSlot()==45))return;s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)show(s.player,s.session,s.facility,choice);},1);
+        String choice=s.choices.get(e.getSlot());if(choice==null&&!(s.recipe!=null&&(e.getSlot()==45||e.getSlot()==49)))return;if(e.getSlot()==49)choice=s.recipe;String selected=choice;s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)show(s.player,s.session,s.facility,selected);},1);
     }
     private boolean connected(Screen s){var w=worlds.get(s.session.context().storyRunId());return !closed&&sessions.prepared(s.player)==s.session&&w.generation()==s.generation&&s.player.getWorld().getUID().equals(w.mapping().physicalId());}
     private void confirm(Screen s){

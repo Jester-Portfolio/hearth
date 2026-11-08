@@ -18,6 +18,12 @@ public record CraftContent(Map<String,Recipe> recipes,Map<String,Facility> facil
         for(Object o:list(root.get("facilities"))){var r=map(o);var f=new Facility(text(r,"id"),integer(r,"x"),integer(r,"y"),integer(r,"z"),strings(r.get("recipes")));if(facilities.putIfAbsent(f.id(),f)!=null)throw new IllegalArgumentException("CRAFT_DUPLICATE_ID");}
         return new CraftContent(recipes,facilities);
     }
+    /** 기존 시설/레시피를 보존하고 명시된 신규 레시피만 연결합니다. 기존 ID를 덮어쓰지 않습니다. */
+    public CraftContent extended(String facility,List<?> rows){
+        var old=facilities.get(facility);if(old==null||rows==null||rows.isEmpty())throw new IllegalArgumentException("CRAFT_EXTENSION_FACILITY");var all=new LinkedHashMap<>(recipes);var ids=new ArrayList<>(old.recipes());
+        for(Object value:rows){var row=map(value);var recipe=new Recipe(text(row,"id"),text(row,"title"),text(row,"recipe-key"),strings(row.get("matrix")));if(all.putIfAbsent(recipe.id(),recipe)!=null)throw new IllegalArgumentException("CRAFT_DUPLICATE_ID");ids.add(recipe.id());}
+        var stations=new LinkedHashMap<>(facilities);stations.put(facility,new Facility(old.id(),old.x(),old.y(),old.z(),ids));return new CraftContent(all,stations);
+    }
     private static void identifier(String s){if(s==null||!s.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("CRAFT_ID");}
     private static Map<?,?> map(Object o){if(!(o instanceof Map<?,?> m))throw new IllegalArgumentException("CRAFT_MAP");return m;}
     private static List<?> list(Object o){if(!(o instanceof List<?> l))throw new IllegalArgumentException("CRAFT_LIST");return l;}
