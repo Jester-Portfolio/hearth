@@ -1,0 +1,352 @@
+{
+  "outcome": "PASS",
+  "base_commit": "fd6607baf52bf4cc74ea344312842bee8d11f0f4",
+  "scope": "같은 길목 도전의 복수 구간·체크포인트·최종 보스·지정 구간 재시작",
+  "unit_suites": [
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.BossPatternAreaTest",
+      "tests": "6",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.798Z",
+      "hostname": "rocky-laptop",
+      "time": "0.029"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.BossPatternContentTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.829Z",
+      "hostname": "rocky-laptop",
+      "time": "0.006"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.BossPatternsTest",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.836Z",
+      "hostname": "rocky-laptop",
+      "time": "0.016"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CheckpointContentTest",
+      "tests": "2",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.853Z",
+      "hostname": "rocky-laptop",
+      "time": "0.006"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CheckpointRosterTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.859Z",
+      "hostname": "rocky-laptop",
+      "time": "0.007"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatAttemptTest",
+      "tests": "16",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.867Z",
+      "hostname": "rocky-laptop",
+      "time": "0.027"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatCheckpointTest",
+      "tests": "6",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.894Z",
+      "hostname": "rocky-laptop",
+      "time": "0.019"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatDeparturesTest",
+      "tests": "9",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.914Z",
+      "hostname": "rocky-laptop",
+      "time": "0.019"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatGatheringTest",
+      "tests": "9",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.933Z",
+      "hostname": "rocky-laptop",
+      "time": "0.021"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatHudTest",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.955Z",
+      "hostname": "rocky-laptop",
+      "time": "0.018"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatPathRestartTest",
+      "tests": "5",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.974Z",
+      "hostname": "rocky-laptop",
+      "time": "0.011"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatPlayersTest",
+      "tests": "16",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:00.986Z",
+      "hostname": "rocky-laptop",
+      "time": "0.018"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatRestartTest",
+      "tests": "12",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:01.005Z",
+      "hostname": "rocky-laptop",
+      "time": "0.013"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatRetryVoteTest",
+      "tests": "15",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:01.019Z",
+      "hostname": "rocky-laptop",
+      "time": "0.017"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatReturnTest",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:01.036Z",
+      "hostname": "rocky-laptop",
+      "time": "0.012"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatRouteTest",
+      "tests": "13",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:01.048Z",
+      "hostname": "rocky-laptop",
+      "time": "0.027"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.FieldEncountersTest",
+      "tests": "13",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:01.075Z",
+      "hostname": "rocky-laptop",
+      "time": "0.022"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.session.PlayerSessionsTest",
+      "tests": "22",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-07T23:57:01.097Z",
+      "hostname": "rocky-laptop",
+      "time": "0.038"
+    }
+  ],
+  "unit_affected_final": [
+    {
+      "name": "io.github.jesterportfolio.hearth.combat.CombatHudTest",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T00:39:32.931Z",
+      "hostname": "rocky-laptop",
+      "time": "0.05"
+    }
+  ],
+  "unit_unique_tests": 175,
+  "source_sha256": "741402b57af3672d8ab4b1ad7eb5e1d0be12d54149e783bc2d9d97c6f2263cb9",
+  "jar_sha256": "f0d6494a927b4c397955644c94967962ffc7fdd52fa24cd21caaaefefbab3feb",
+  "build_log": "/tmp/hearth-route-build.log",
+  "final_build_log": "/tmp/hearth-route-final-build.log",
+  "runtime_workspace": "/tmp/hearth-s4-11.fxbcniel",
+  "runtime": {
+    "outcome": "PASS",
+    "failure": null,
+    "duration_seconds": 42.136,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 1,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "processes": {
+      "database": {
+        "pid": 4092762,
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 41.537,
+        "shutdown_seconds": 0.208,
+        "max_sampled_rss_kib": 221548,
+        "observed_cpu_seconds": 2.29,
+        "min_sampled_host_available_kib": 12287260,
+        "sample_count": 643,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-prepare": {
+        "pid": 4092819,
+        "exit_code": 0,
+        "ready_seconds": 13.937,
+        "duration_seconds": 38.805,
+        "shutdown_seconds": 3.672,
+        "max_sampled_rss_kib": 1133300,
+        "observed_cpu_seconds": 77.86,
+        "min_sampled_host_available_kib": 12287260,
+        "sample_count": 593,
+        "checks": [
+          "region_isolation_hearth_verify:restart_b",
+          "region_isolation_hearth_verify:restart_a",
+          "region_priorities_restored",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "shared_progress_hearth_verify:restart_b_r0",
+          "shared_progress_hearth_verify:restart_a_r0",
+          "world_IO_pool_closed"
+        ],
+        "timings": [
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE elapsed_ms=2146",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE elapsed_ms=2145",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING elapsed_ms=197",
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING elapsed_ms=200",
+          "run=00000000-0000-002a-0000-00000000000b state=READY elapsed_ms=53",
+          "run=00000000-0000-002a-0000-00000000000a state=READY elapsed_ms=53",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=0",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE elapsed_ms=8854",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE elapsed_ms=8896",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE elapsed_ms=991",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING elapsed_ms=51",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE elapsed_ms=1001",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING elapsed_ms=47",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING elapsed_ms=186",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING elapsed_ms=211",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING elapsed_ms=112",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING elapsed_ms=75"
+        ],
+        "states": [
+          "run=00000000-0000-002a-0000-00000000000a state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=LOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=READY",
+          "run=00000000-0000-002a-0000-00000000000a state=READY",
+          "run=00000000-0000-002a-0000-00000000000b state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000a state=ACTIVE",
+          "run=00000000-0000-002a-0000-00000000000b state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000a state=IDLE",
+          "run=00000000-0000-002a-0000-00000000000b state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000b state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000a state=QUIESCING",
+          "run=00000000-0000-002a-0000-00000000000a state=SAVING",
+          "run=00000000-0000-002a-0000-00000000000b state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000a state=UNLOADING",
+          "run=00000000-0000-002a-0000-00000000000b state=OFFLINE",
+          "run=00000000-0000-002a-0000-00000000000a state=OFFLINE"
+        ]
+      }
+    },
+    "session_checks": [
+      "fixture_prepared_no_login_provisioning",
+      "no_apply_or_admission_before_prepare",
+      "all_sessions_active_after_move",
+      "combat_controlled_start_chunk_prepared",
+      "combat_controlled_start_chunk_prepared",
+      "route_initial_section_and_no_implicit_boss_entry",
+      "list_fixture_survey_marker_ACTIVE",
+      "list_fixture_survey_marker_ACTIVE",
+      "route_checkpoint_full_health_free_revive_preserves_spent_budget_public_field_one",
+      "route_checkpoint_real_PG_complete_public_field_one",
+      "quest_invalid_or_duplicate_rejected",
+      "route_real_PG_CAS_failure_keeps_inventory_dirty_original_attempt_and_section",
+      "route_duplicate_coalesced_and_save_barrier_waits",
+      "route_first_move_preserves_attempt_mob_health_and_spent_budget",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count31_r1",
+      "route_checkpoint_full_health_free_revive_preserves_spent_budget_public_rest_two",
+      "route_checkpoint_real_PG_complete_public_rest_two",
+      "route_terminal_gate_no_new_path_budget_and_other_run_unchanged",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count30_r2",
+      "path_retry_regather_confirms_new_boss_and_separate_budget",
+      "path_retry_duplicate_joins_same_preparation",
+      "path_retry_both_moves_confirmed_before_reset",
+      "path_retry_fresh_path_mob_roster_and_counters_after_confirmed_reset",
+      "path_retry_checkpoint_prior_zone_and_other_run_preserved",
+      "path_retry_backend_duplicate_receipt_no_second_path",
+      "path_retry_new_entry_respawns_only_reset_zone",
+      "route_restart_uses_authored_section_without_latest_checkpoint_guess",
+      "route_restarted_section_can_rejoin_final_boss_gate",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count30_r2",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_count5_r0",
+      "restored_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000003_count7_r0",
+      "route_checkpoint_data_not_shared_with_other_run"
+    ],
+    "plugin_sha256": "f0d6494a927b4c397955644c94967962ffc7fdd52fa24cd21caaaefefbab3feb",
+    "installed_plugin_sha256": "f0d6494a927b4c397955644c94967962ffc7fdd52fa24cd21caaaefefbab3feb",
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true
+  },
+  "earlier_attempt": {
+    "workspace": "/tmp/hearth-s4-11.8kj4ulu7",
+    "outcome": "FAIL",
+    "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+    "cleanup_errors": [
+      "AssertionError: DB 풀 종료 확인 누락"
+    ],
+    "all_owned_processes_and_ports_closed_reported": false,
+    "later_cleanup_observation": "소유 PID 전부 소멸 및 ss에서 25585/34217 리슨 없음 확인",
+    "cause": "통합 검사에서 정상 증가하는 combatMillis까지 전체 Snapshot 동일 조건으로 비교. 저장/참가/횟수/소유권 비교를 유지하고 시간만 비교 대상에서 제외"
+  },
+  "integration_bundles_used": 2,
+  "actual_player_test": "미실행",
+  "not_run": [
+    "실제 인증 플레이어 구간 이동·체크포인트 회복·보스/필드 전투·화면",
+    "전체 길목 도전/현재 구간의 새 JVM 복원",
+    "두 번째 Paper JVM: DB/저장 복원 계약 변경 없음",
+    "장기 부하/TPS/MSPT·운영 배포"
+  ]
+}

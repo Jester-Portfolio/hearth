@@ -109,3 +109,5 @@
 거점 이동 경로는 `--sessions --quests --story-batch --fast-travel` 단독 한 JVM 모드다. 시설 선택·개인 방문 해금·공유 접근 제한·최신 인벤토리 저장·DB 오류/세대 차단·기존 월드 재입장을 같은 묶음으로 검사한다. 실제 Player 이동·클릭은 실행하지 않는다. [구현/한계](../docs/fast-travel-verification.md)를 따른다. 비용/운영 소요 시간 미정인 기술 시험이며 일반 서버에서는 비활성이다.
 
 채집 인던 자동 통합은 `verify-lifecycle.py --sessions --quests --story-batch --gathering`으로 제한 구역·V009·저장/세대/실패·두 JVM 복원을 확인한다. 기존 준비/자원 감시를 재사용하며 [범위와 결과](../docs/gathering-dungeon-verification.md)를 따른다. 이동은 제어 포트이며 실제 채집/Player 이동 성공을 뜻하지 않는다.
+
+복수 길목 통합은 `verify-lifecycle.py --sessions --quests --story-batch --combat-players --combat-route`로 실행한다. 한 JVM에서 같은 길목 도전의 두 구간·실제 체크포인트 DB·최종 보스/지정 구간 재시작·저장 실패 보존을 기존 도구로 검사한다. [검증 범위](../docs/combat-route-verification.md)를 따르며 실제 Player 이동/전투는 미실행이다.

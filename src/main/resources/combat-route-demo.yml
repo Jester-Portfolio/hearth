@@ -1,0 +1,94 @@
+# 새 격리 개발 실행에서만 사용하는 공개 합성 수치입니다.
+format: 1
+id: public_boss_control
+title: 공개 보스 제어 시험
+health-per-player: 20
+attack: 2
+return-protection-ms: 3000
+revival:
+  enabled: true
+  condition: public_rescue
+  pool: SHARED
+  limit: 2
+  health-fraction: 0.5
+  location: START
+  effects:
+    - {type: RESISTANCE, amplifier: 0, ticks: 40}
+# 이 위치·회복값은 공개 합성 재도전 시험 설정이며 운영 밸런스가 아닙니다.
+retry:
+  scope: FROM_PATH
+  entry: {x: 7.5, y: 64.0, z: 7.5, yaw: 90, pitch: 0}
+  health-fraction: 0.5
+  effects: []
+  reset:
+    mode: AFTER_CHECKPOINT
+    zones: [public_field_one, public_field_two]
+    checkpoint: public_field_one
+
+# 새 격리 시험 전용 종료 복귀 설정. 기존 운영 콘텐츠에 자동 적용하지 않습니다.
+exit:
+  entry: {x: 3.5, y: 64.0, z: 3.5, yaw: 0, pitch: 0}
+  health-fraction: 0.5
+  effects: []
+
+# 길목/보스 수치는 독립적인 공개 합성 시험 설정입니다.
+path:
+  combat:
+    format: 1
+    id: public_path_control
+    title: 공개 길목 전투
+    health-per-player: 10
+    attack: 1
+    return-protection-ms: 3000
+    revival:
+      enabled: true
+      condition: public_path_rescue
+      pool: SHARED
+      limit: 1
+      health-fraction: 0.5
+      location: START
+      effects: []
+  gathering: {min-x: 1, max-x: 4, min-y: 64, max-y: 68, min-z: 1, max-z: 5}
+  boss-entry:
+    entry: {x: 3.5, y: 64.0, z: 3.5, yaw: 0, pitch: 0}
+    health-fraction: 0.5
+    effects: []
+  # 제작자가 고정 지정한 길목 재도전 지점. 도달/해금 규칙은 추가하지 않습니다.
+  retry:
+    scope: FROM_PATH
+    entry: {x: 7.5, y: 64.0, z: 7.5, yaw: 90, pitch: 0}
+    health-fraction: 0.5
+    effects: []
+    reset:
+      mode: AFTER_CHECKPOINT
+      zones: [public_field_one, public_field_two]
+      checkpoint: public_field_one
+  route:
+    restart-section: public_second_path
+    sections:
+      - id: public_first_path
+        title: 첫 번째 공개 길목
+        checkpoint: public_field_one
+        gathering: {min-x: 2, max-x: 5, min-y: 64, max-y: 68, min-z: 2, max-z: 5}
+        next-entry: {x: 10.5, y: 64, z: 10.5, yaw: 0, pitch: 0}
+      - id: public_second_path
+        title: 두 번째 공개 길목
+        checkpoint: public_rest_two
+        gathering: {min-x: 9, max-x: 12, min-y: 64, max-y: 68, min-z: 9, max-z: 12}
+        next-entry: {x: 3.5, y: 64, z: 3.5, yaw: 0, pitch: 0}
+  restart-checkpoint: public_rest_two
+  checkpoints:
+    - id: public_field_one
+      quest: survey_marker
+      area: {min-x: 2, max-x: 5, min-y: 64, max-y: 68, min-z: 2, max-z: 5}
+      entry:
+        entry: {x: 7.5, y: 64.0, z: 7.5, yaw: 90, pitch: 0}
+        health-fraction: 1
+        effects: []
+    - id: public_rest_two
+      quest: survey_marker
+      area: {min-x: 9, max-x: 12, min-y: 64, max-y: 68, min-z: 9, max-z: 12}
+      entry:
+        entry: {x: 11.5, y: 64.0, z: 11.5, yaw: 0, pitch: 0}
+        health-fraction: 1
+        effects: []
