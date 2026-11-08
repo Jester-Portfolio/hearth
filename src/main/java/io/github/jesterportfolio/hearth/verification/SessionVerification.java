@@ -41,7 +41,7 @@ public final class SessionVerification implements AutoCloseable {
     private PlayerSessions.Session s1,s2,s3,oldSession,newSession;
     private CompletionStage<Void> oldClosing,barrier;
     private boolean cycle,expectedHold;
-    private PaperCrafting crafting;private CraftingQuest craftingQuests;
+    private PaperCrafting crafting;private CraftingQuest craftingQuests;private PreparationGuide preparation;
     private boolean craftingDelay,craftingCaptured;
     private CompletableFuture<Void> craftingGate;
     private InventoryStore craftingStore(){return new InventoryStore(){
@@ -191,6 +191,15 @@ public final class SessionVerification implements AutoCloseable {
         if(plugin.getConfig().getBoolean("combat-player-verification-enabled")){if(combatTrials==null)throw new IllegalStateException("Combat trial required");combatPlayers=new PaperCombatPlayers(plugin,adapter,combatTrials,fieldEncounters,store,store,worlds,owner,(p,session)->{log("COMBAT_PLAYER_DEATH");return questAdapter.combatDeath(p,session);},run->quests==null?CompletableFuture.completedFuture(null):quests.barrier(run).thenComposeAsync(v->journal.barrier(run),owner).thenComposeAsync(v->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run),owner));}
         if(plugin.getConfig().getBoolean("dungeon-play-verification-enabled")){if(combatPlayers==null||quests==null)throw new IllegalStateException("DUNGEON_DEPENDENCIES");var f=new java.io.File(plugin.getDataFolder(),"dungeon-play.yml");if(!f.exists())plugin.saveResource("dungeon-play.yml",false);dungeonDefinition=DungeonPlay.Definition.parse(combatMap(YamlConfiguration.loadConfiguration(f)));dungeonPlay=new PaperDungeonPlay(plugin,dungeonDefinition,catalog,quests,journal,adapter,combatPlayers,combatContent,worlds,owner,run->coordinator.saveRunBoundary(run).thenComposeAsync(v->quests.barrier(run),owner).thenComposeAsync(v->journal.barrier(run),owner));questAdapter.dungeon(dungeonDefinition.npc(),dungeonDefinition.quest(),dungeonPlay::enter,dungeonPlay::guide);}
 
+        if(plugin.getConfig().getBoolean("play-preparation-verification-enabled")){
+            if(!Boolean.getBoolean("hearth.verification.preparation")||crafting==null||gathering==null||dungeonPlay==null||journal==null)throw new IllegalStateException("PREPARATION_DEPENDENCIES");
+            var file=new java.io.File(plugin.getDataFolder(),"play-preparation-demo.yml");if(!file.exists())plugin.saveResource("play-preparation-demo.yml",false);
+            preparation=PreparationGuide.parse(combatMap(YamlConfiguration.loadConfiguration(file)),catalog,crafting.content,explorationContent,gathering.content,dungeonDefinition);
+            questAdapter.preparation((player,view)->{var session=Objects.requireNonNull(adapter.current(player),"PREPARATION_SESSION_REQUIRED");var result=preparationView(session,view,codec.capture(player.getInventory()),dungeonDefinition.entry().contains(player.getX(),player.getY(),player.getZ()),gathering.information(player),dungeonPlay.information(player));if(adapter.current(player)!=session)throw new IllegalStateException("STALE_PREPARATION");return result;});
+        }
+    }
+    private PreparationGuide.Page preparationView(PlayerSessions.Session session,QuestJournal.View view,InventoryPayload inventory,boolean atEntry,List<String> gatheringInfo,List<String> dungeonInfo){
+        main();if(!coordinator.playable(session))throw new IllegalStateException("PREPARATION_SESSION_REQUIRED");journal.requireView(session.context(),view);var materials=new HashMap<String,List<CraftingMaterials.Need>>();for(var entry:preparation.entries())for(String recipe:entry.recipes())materials.put(recipe,crafting.planner.materials(crafting.content.recipes().get(recipe),inventory));return preparation.build(catalog,crafting.content,view,new PreparationGuide.Facts(materials,gatheringInfo,dungeonInfo,atEntry,session.save().dirty(),session.save().saving()));
     }
     public void gatheringFixture(String profile){if(gathering==null)throw new IllegalStateException("Gathering disabled");gathering.fixture(Objects.requireNonNull(Bukkit.getPlayerExact(profile)));}
     public void combatPlayer(String operation,String profile,String condition){if(combatPlayers==null)throw new IllegalStateException("Combat player mode disabled");switch(operation){case "combat-player-start"->combatPlayers.startOnline(profile);case "combat-player-release"->combatPlayers.release(profile);case "combat-player-revive"->combatPlayers.condition(profile,condition).whenCompleteAsync((v,error)->log("COMBAT_REVIVE "+(error==null?"APPLIED":"HOLD_OR_REJECTED")),owner);default->throw new IllegalArgumentException("Unknown combat fixture operation");}}
@@ -333,6 +342,7 @@ public final class SessionVerification implements AutoCloseable {
         case "location-play" -> locationPlay();
         case "gathering-start" -> gatheringPlay(false);
         case "gathering-restored" -> gatheringPlay(true);
+        case "preparation-play" -> preparationPlay();
         case "gathering-crafting-play" -> gatheringCraftingPlay();
         case "crafting-quest-play" -> craftingQuestPlay();
         case "crafting-play" -> craftingPlay();
@@ -1573,6 +1583,47 @@ public final class SessionVerification implements AutoCloseable {
         check(view.exploration().places().stream().anyMatch(p->p.key().equals("public_material_site")&&p.discovered()&&!p.hubUnlocked()),"supply_discovered_map_place_not_hub_unlock");
         if(view.states().get(id).phase()==QuestStore.Phase.COMPLETED){check(view.exploration().facts().stream().filter(f->f.id().equals("gathering_workshop_report")).count()==1&&view.journal().notices().stream().filter(n->n.quest().equals(id)).count()==6,"supply_private_report_diary_and_six_progress_notices");check(!view.journal().tracked().contains(id),"supply_completed_tracking_removed");}
     });}
+    /** 실제 Paper 객체·격리 DB를 이용한 읽기 전용 경계 시험. Player 접속/클릭 시험은 아닙니다. */
+    private CompletionStage<Void> preparationPlay(){
+        var first=new PreparationGuide.Page[1];var before=new Object[5];var old=new PlayerSessions.Session[1];
+        return openAll().thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(value->before[0]=value)
+        .thenCompose(v->mainResult(store.readPersonal(a1))).thenAccept(value->before[1]=value)
+        .thenCompose(v->mainResult(store.readShared(a1))).thenAccept(value->before[2]=value)
+        .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{
+            before[3]=Map.copyOf(view.states());before[4]=dungeonPlay.play.lines(new DungeonActor(s1));var page=preparationView(s1,view,one.capture(),false,List.of("채집 구역 미준비 · 현장 입장 시 확인"),dungeonPlay.play.lines(new DungeonActor(s1)));first[0]=page;
+            check(page.cards().size()==3,"preparation_public_three_sections_and_dependencies_loaded");
+            check(page.card("dungeon_entry").quest()==null&&!page.card("dungeon_entry").lines().toString().contains(catalog.quest(dungeonDefinition.quest()).title()),"preparation_unaccepted_title_and_details_not_disclosed");
+            check(page.card("workbench").lines().stream().anyMatch(line->line.contains("부족")),"preparation_native_material_requirements_from_41slot_snapshot");
+            check(page.cards().stream().allMatch(card->card.lines().getLast().contains("읽기 전용")),"preparation_all_sections_explicitly_read_only");
+            var slots=codec.decode(one.capture());slots[10]=new ItemStack(Material.OAK_PLANKS,3);slots[11]=new ItemStack(Material.STICK,2);var preview=codec.encode(slots);
+            var changed=preparationView(s1,view,preview,false,List.of("채집 구역 미준비 · 현장 입장 시 확인"),dungeonPlay.play.lines(new DungeonActor(s1)));
+            check(changed.card("workbench").lines().stream().anyMatch(line->line.contains("보유 3"))&&!codec.equivalent(preview,one.capture()),"preparation_controlled_material_snapshot_changes_without_inventory_application");
+            try{PreparationGuide.require(changed,page,"workbench");throw new AssertionError("Old preparation accepted");}catch(IllegalStateException expected){check(true,"preparation_changed_materials_reject_stale_selection");}
+            check(Bukkit.getPluginManager().getPlugin("Hearth").getDescription().getCommands().containsKey("hearthprepare"),"preparation_development_command_registered");
+            check(plugin.getConfig().getBoolean("phone-dialog-enabled"),"preparation_phone_adapter_initialized_without_client");
+        }).thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(value->check(before[0].equals(value),"preparation_reads_preserve_inventory_payload_and_revision"))
+        .thenCompose(v->mainResult(store.readPersonal(a1))).thenAccept(value->check(before[1].equals(value),"preparation_reads_preserve_personal_revision"))
+        .thenCompose(v->mainResult(store.readShared(a1))).thenAccept(value->check(before[2].equals(value),"preparation_reads_preserve_shared_revision"))
+        .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->check(before[3].equals(view.states()),"preparation_reads_do_not_accept_or_advance_any_quest"))
+        .thenCompose(v->quests.open(a1,dungeonDefinition.quest(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.accept(q,catalog.quest(dungeonDefinition.quest())))
+        .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{
+            var outside=preparationView(s1,view,one.capture(),false,List.of("채집 구역 미준비"),dungeonPlay.play.lines(new DungeonActor(s1)));var inside=preparationView(s1,view,one.capture(),true,List.of("채집 구역 미준비"),dungeonPlay.play.lines(new DungeonActor(s1)));
+            check(outside.card("dungeon_entry").quest().equals(dungeonDefinition.quest())&&outside.card("dungeon_entry").revision()==0,"preparation_accepted_personal_quest_revision0_display");
+            check(inside.card("dungeon_entry").lines().toString().contains("입구 범위 안")&&outside.card("dungeon_entry").lines().toString().contains("입구 범위 밖"),"preparation_current_entry_location_without_movement");
+            check(inside.card("dungeon_entry").lines().toString().contains("새 필수 입장 조건이 아닙니다"),"preparation_crafting_is_not_new_dungeon_requirement");
+            check(before[4].equals(dungeonPlay.play.lines(new DungeonActor(s1))),"preparation_dungeon_information_has_no_entry_action");
+            try{PreparationGuide.require(outside,first[0],"dungeon_entry");throw new AssertionError("Old quest accepted");}catch(IllegalStateException expected){check(true,"preparation_saved_quest_change_rejects_old_page");}
+        }).thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->check(preparationView(s2,view,two.capture(),false,List.of("채집 구역 미준비"),dungeonPlay.play.lines(new DungeonActor(s2))).card("dungeon_entry").quest()==null,"preparation_P2_personal_quest_remains_unaccepted"))
+        .thenCompose(v->journal.load(b3,s3,()->coordinator.playable(s3))).thenAccept(view->check(preparationView(s3,view,three.capture(),false,List.of("채집 구역 미준비"),dungeonPlay.play.lines(new DungeonActor(s3))).card("dungeon_entry").quest()==null,"preparation_other_run_personal_quest_remains_unaccepted"))
+        .thenCompose(v->rejectQuest(journal.load(a1,s1,()->false))).thenRun(()->check(true,"preparation_invalidated_async_read_is_failure_not_empty_page"))
+        .thenCompose(v->mainResult(store.readQuest(a1,dungeonDefinition.quest()))).thenAccept(saved->check(saved.phase()==QuestStore.Phase.ACTIVE&&saved.revision()==0,"preparation_repeated_views_do_not_advance_saved_dungeon_quest"))
+        .thenCompose(v->{old[0]=s1;return mainResult(coordinator.disconnect(s1));})
+        .thenCompose(v->{one=new Controlled();s1=connect(a1,one);return mainResult(s1.ready());})
+        .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{
+            try{preparationView(old[0],view,one.capture(),false,List.of(),List.of());throw new AssertionError("Old session accepted");}catch(IllegalStateException expected){check(true,"preparation_old_session_rejected_after_controlled_reconnect");}
+            var restored=preparationView(s1,view,one.capture(),false,List.of("채집 구역 미준비"),dungeonPlay.play.lines(new DungeonActor(s1)));check(restored.card("dungeon_entry").revision()==0,"preparation_current_session_restores_accepted_revision");
+        });
+    }
     private CompletionStage<Void> gatheringCraftingPlay(){
         var bd=new PaperGathering.Binding[2];var actor=new GatheringActor[3];var payload=new InventoryPayload[1];var revision=new long[1];var gen=new long[1];var physical=worlds.get(a).mapping().physicalId();var course=catalog.quest("gathering_workshop_route");
         return openAll().thenRun(()->{

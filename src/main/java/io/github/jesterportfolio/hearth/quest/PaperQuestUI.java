@@ -34,6 +34,19 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     private Consumer<Player> storyGuide=p->{};
     private Predicate<String> storyNpc=npc->false;
     public void storyNpcs(Predicate<String> registered){storyNpc=registered;}
+    private java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> preparation;
+    private final Map<UUID,Object> preparationFrames=new HashMap<>();
+    public void preparation(java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> reader){preparation=reader;}
+    private Component preparationButton(Player p,PlayerSessions.Session session,Object frame,BooleanSupplier current,String label,Runnable action){return Component.text(label).clickEvent(net.kyori.adventure.text.event.ClickEvent.callback(audience->{if(audience!=p)return;Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(p)==session&&preparationFrames.get(p.getUniqueId())==frame&&current.getAsBoolean())action.run();},1);},net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build()));}
+    private void preparation(Player p,PlayerSessions.Session session,BooleanSupplier current,List<Component> back,String selected,PreparationGuide.Page expected){
+        if(preparation==null){p.sendMessage(Component.text("현재 콘텐츠에 준비 안내가 등록되지 않았습니다."));return;}if(requests.containsKey(p.getUniqueId())){p.sendMessage(Component.text("기존 조회를 처리 중입니다."));return;}
+        Object frame=new Object();preparationFrames.put(p.getUniqueId(),frame);
+        load(p,session,view->{if(!current.getAsBoolean()||preparationFrames.get(p.getUniqueId())!=frame)return;try{var page=preparation.apply(p,view);if(expected!=null)PreparationGuide.require(page,expected,selected);var actions=new ArrayList<Component>();List<String> lines;
+            if(selected==null){lines=page.cards().isEmpty()?List.of("현재 공개된 준비 안내가 없습니다."):page.cards().stream().map(PreparationGuide.Card::title).toList();for(var card:page.cards())actions.add(preparationButton(p,session,frame,current,card.title(),()->preparation(p,session,current,back,card.id(),page)));}
+            else{lines=page.card(selected).lines();actions.add(preparationButton(p,session,frame,current,"준비 안내 목록",()->preparation(p,session,current,back,null,null)));}
+            actions.add(preparationButton(p,session,frame,current,"준비 상태 새로고침",()->preparation(p,session,current,back,selected,null)));actions.addAll(back);showBook(p,session,new QuestBookView(selected==null?"시설·재료·던전 준비":page.card(selected).title(),QuestBookView.paginate(lines)),actions);
+        }catch(RuntimeException stale){p.sendMessage(Component.text("준비 안내 상태가 바뀌었거나 조회할 수 없습니다. 최신 상태로 다시 조회해 주세요."));}});
+    }
     private Playthrough playthrough;
     private io.github.jesterportfolio.hearth.story.SharedStory sharedStory;
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory story){playthrough=content;sharedStory=story;}
@@ -52,6 +65,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
                     load(p,session,fresh->{if(!current.getAsBoolean())return;QuestJourneyView.require(journeyView(session,fresh),page,link);journeyAction(p,session,fresh,link,current,back);});
                 },1);
             },net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build())));
+            if(preparation!=null)actions.add(Component.text("시설·재료·던전 준비").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthprepare")));
             actions.addAll(back);actions.add(Component.text("안내 새로고침").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney")));
             showBook(p,session,new QuestBookView(guide.title(),QuestBookView.paginate(guide.lines())),actions);
         });
@@ -176,6 +190,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     public boolean command(Player p,String command){
         var s=players.current(p);if(s==null)return false;
+        if(command.equals("/hearthprepare")){preparation(p,s,()->true,List.of(Component.text("다음 플레이 안내").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney"))),null,null);return true;}
+        if(command.startsWith("/hearthprepare ")){p.sendMessage(Component.text("사용법: /hearthprepare"));return true;}
         if(command.equals("/hearthjourney")){journey(p,s,null);return true;}
         if(command.startsWith("/hearthjourney ")){var args=command.split(" ",-1);if(args.length==3&&args[1].equals("talk")&&args[2].matches("[a-z][a-z0-9_]{0,63}"))journey(p,s,args[2]);else p.sendMessage(Component.text("사용법: /hearthjourney"));return true;}
         if(command.equals("/hearthinfo")||command.startsWith("/hearthinfo ")){
@@ -229,6 +245,6 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     @EventHandler(priority=EventPriority.MONITOR) public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Screen)e.setCancelled(true);}
     @EventHandler public void closed(InventoryCloseEvent e){if(e.getInventory().getHolder() instanceof Screen)requests.remove(e.getPlayer().getUniqueId());}
-    @EventHandler public void quit(PlayerQuitEvent e){clearBars(e.getPlayer());clearProjection.accept(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());hudOnly.remove(e.getPlayer().getUniqueId());}
-    @Override public void close(){if(closed)return;closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
+    @EventHandler public void quit(PlayerQuitEvent e){preparationFrames.remove(e.getPlayer().getUniqueId());clearBars(e.getPlayer());clearProjection.accept(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());hudOnly.remove(e.getPlayer().getUniqueId());}
+    @Override public void close(){preparationFrames.clear();if(closed)return;closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
 }

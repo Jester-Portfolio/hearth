@@ -1,0 +1,27 @@
+# 공개 합성 안내만 연결합니다. 새 진행/장비/입장 조건은 추가하지 않습니다.
+format: 1
+public-prototype: true
+material-names:
+  OAK_PLANKS: 참나무 판자
+  STICK: 막대기
+  COBBLESTONE: 조약돌
+entries:
+  - id: material_site
+    title: 채집 구역 이용 안내
+    kind: GATHERING
+    reference: public_workshop_gathering
+    place: public_material_site
+    hint: 원목과 돌은 등록 구역에서 순정 방식으로 채집합니다. 입퇴장 안내와 초기화 상태를 확인하세요.
+  - id: workbench
+    title: 작업대 재료와 제작 안내
+    kind: CRAFTING
+    reference: public_workbench
+    place: public_workshop
+    recipes: [wooden_pickaxe, stone_pickaxe]
+    hint: 재료를 준비해 현장 작업대를 이용하세요. 여기서는 인벤토리를 소모하거나 원격 제작하지 않습니다.
+  - id: dungeon_entry
+    title: 공개 던전 준비 안내
+    kind: DUNGEON
+    reference: public_dungeon_control
+    quest: public_dungeon_quest
+    hint: 준비 상황을 확인한 뒤 담당 NPC 가까이에서 기존 입장 버튼을 사용하세요.

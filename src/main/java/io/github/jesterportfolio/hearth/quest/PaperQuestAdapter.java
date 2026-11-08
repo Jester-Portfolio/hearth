@@ -52,6 +52,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void dungeon(String npc,String quest,java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> entry,java.util.function.BiConsumer<Player,String> guide){dungeonNpc=npc;dungeonQuest=quest;dungeonEntry=entry;ui.dungeon(npc,quest);if(phone!=null)phone.dungeon(quest,guide);}
     private final Set<UUID> loadingDialogues=new HashSet<>();
     private boolean closed;
+    public void preparation(java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> reader){ui.preparation(reader);if(phone!=null)phone.preparation(reader);}
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){ui.playthrough(content,shared);if(phone!=null)phone.playthrough(content,shared);}
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);

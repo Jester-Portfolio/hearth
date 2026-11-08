@@ -105,6 +105,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 actions.add(button(p,s,"실패·재시작",()->completionList(p,advance(p),"failed",1)));
                 actions.add(button(p,s,"지급 대기 보상",()->completionList(p,advance(p),"rewards",1)));
                 actions.add(button(p,s,"장별 따라잡기",()->completionList(p,advance(p),"chapters",1)));
+                if(preparation!=null)actions.add(button(p,s,"시설·재료·던전 준비",()->preparation(p,advance(p),null,null)));
                 actions.add(button(p,s,"다음 플레이 안내",()->journey(p,advance(p))));
                 if(pendingActions.contains(s.session())||actionResults.containsKey(s.session()))actions.add(button(p,s,"최근 처리 결과",()->completionResult(p,advance(p))));
                 actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
@@ -204,12 +205,27 @@ public final class PaperPhone implements Listener,AutoCloseable {
         Boolean success=actionResults.get(s.session());
         info(p,s,success==null?"처리 기록 없음":success?"처리 완료":"처리 보류/실패",List.of(success==null?"이 접속 세션에서 실행한 스마트폰 처리 결과가 없습니다.":success?"기존 저장 경로의 완료를 확인했습니다. 목록에서 최신 상태를 조회해 주세요.":"성공으로 기록하지 않습니다. 저장/HOLD·인벤토리 공간·최신 진행 상태를 확인해 주세요."));
     }
+    private java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> preparation;
+    public void preparation(java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> reader){preparation=reader;}
+    private void preparation(Player p,Screen s,String selected,PreparationGuide.Page expected){
+        if(preparation==null){info(p,s,"준비 안내 미등록",List.of("현재 콘텐츠에 준비 안내가 등록되지 않았습니다."));return;}
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"준비 안내 조회 실패",List.of("오류를 빈 목록이나 준비 완료로 처리하지 않습니다. 최신 상태로 다시 조회해 주세요."));return;}
+            try{information(p,s,view);var page=preparation.apply(p,view);if(expected!=null)PreparationGuide.require(page,expected,selected);var actions=new ArrayList<ActionButton>();List<String> lines;
+                if(selected==null){lines=page.cards().isEmpty()?List.of("현재 공개된 준비 안내가 없습니다."):page.cards().stream().map(PreparationGuide.Card::title).toList();for(var card:page.cards())actions.add(button(p,s,card.title(),()->preparation(p,advance(p),card.id(),page)));}
+                else{lines=page.card(selected).lines();actions.add(button(p,s,"준비 안내 목록",()->preparation(p,advance(p),null,null)));}
+                actions.add(button(p,s,"준비 상태 새로고침",()->preparation(p,advance(p),selected,null)));actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
+                show(p,s,selected==null?"시설·재료·던전 준비":page.card(selected).title(),lines.stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
+            }catch(RuntimeException stale){info(p,s,"준비 안내 상태 변경",List.of("현재 공개 정보·재료·진행 상태를 다시 조회해 주세요."));}
+        },owner);
+    }
     private void journey(Player p,Screen s){
         if(playthrough==null||sharedStory==null){info(p,s,"플레이 안내",List.of("현재 개발 콘텐츠에 다음 플레이 안내가 등록되지 않았습니다."));return;}
         journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
             if(!valid(p,s))return;if(error!=null){info(p,s,"안내 조회 실패",List.of("현재 상태로 다시 조회해 주세요."));return;}
             try{information(p,s,view);var page=journeyView(s,view);var guide=page.guide();var actions=new ArrayList<ActionButton>();
                 for(var link:page.links())actions.add(button(p,s,link.label(),()->journeyAction(p,s,page,link)));
+                if(preparation!=null)actions.add(button(p,s,"시설·재료·던전 준비",()->preparation(p,advance(p),null,null)));
                 actions.add(button(p,s,"안내 새로고침",()->journey(p,advance(p))));actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
                 show(p,s,guide.title(),guide.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
             }catch(RuntimeException stale){info(p,s,"안내 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
