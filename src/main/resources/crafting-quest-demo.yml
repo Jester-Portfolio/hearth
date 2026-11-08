@@ -1,0 +1,95 @@
+# 공개 합성 제작 코스. 기존 콘텐츠/월드/기록은 덮어쓰지 않습니다.
+quests:
+  - id: workshop_route
+    title: 공개 작업대 현장 실습
+    npc-id: survey_guide
+    objectives:
+      - description: 공개 작업대 주변을 직접 방문하세요.
+        min-x: 4
+        max-x: 5
+        min-y: 64
+        max-y: 67
+        min-z: 5
+        max-z: 7
+        location: {kind: EXACT, x: 4, y: 64, z: 6}
+      - description: 등록 작업대에서 나무 곡괭이를 한 번 제작하세요. 판자와 막대기도 같은 작업대에서 준비할 수 있습니다.
+        min-x: 6
+        max-x: 6
+        min-y: 64
+        max-y: 64
+        min-z: 6
+        max-z: 6
+        interaction: craft:public_workbench:wooden_pickaxe
+        location: {kind: EXACT, x: 6, y: 64, z: 6}
+      - description: 제작 뒤 공개 조사 지점을 방문하세요. 아이템 제출이나 소모는 없습니다.
+        min-x: 13
+        max-x: 14
+        min-y: 64
+        max-y: 67
+        min-z: 13
+        max-z: 14
+        location: {kind: EXACT, x: 13, y: 64, z: 13}
+    text:
+      offer: 작업대 주변을 조사하고 순정 재료로 도구를 제작한 뒤 현장 방문 결과를 보고해 주세요. 보상이나 아이템 제출은 없습니다.
+      accept: 작업대 현장 실습 수락
+      active: 작업대 주변을 방문하세요.
+      report-ready: 실습 목표를 저장했습니다. 시험 안내원에게 보고하세요.
+      report: 작업대 현장 실습 보고
+      completed: 작업대 현장 실습을 보고했습니다.
+      failure: 기존 진행을 보존했습니다. 안내원에게 상태를 확인하세요.
+  - id: workshop_followup
+    title: 작업대 후속 제작 확인
+    npc-id: survey_guide
+    requires-completed: workshop_route
+    start-mode: automatic
+    start-area: {min-x: 4, max-x: 5, min-y: 64, max-y: 67, min-z: 5, max-z: 7}
+    completion-mode: automatic
+    objective:
+      min-x: 6
+      max-x: 6
+      min-y: 64
+      max-y: 64
+      min-z: 6
+      max-z: 6
+      interaction: craft:public_workbench:stick
+      location: {kind: EXACT, x: 6, y: 64, z: 6}
+    text:
+      offer: 선행 실습을 보고한 뒤 작업대 주변에 다시 진입하면 후속 확인이 시작됩니다.
+      accept: 작업대 구역 자동 시작
+      active: 등록 작업대에서 막대기를 한 번 제작하세요.
+      report-ready: 제작 상태를 확인하세요.
+      report: 별도 보고 없음
+      completed: 후속 제작 확인을 마쳤습니다. 별도 NPC 보고는 없습니다.
+      failure: 기존 진행을 보존했습니다. 상태를 확인하세요.
+places:
+  - id: public_workshop
+    marker-key: marker_workshop
+    name: 공개 실습 작업대
+    region: public_fields
+    category: 제작 시설
+    visibility: PUBLIC
+    discovery: ENTRY
+    hub: false
+    bounds: {min-x: 4, max-x: 7, min-y: 64, max-y: 67, min-z: 5, max-z: 7}
+    location: {kind: EXACT, x: 6, y: 64, z: 6}
+    journal: workshop_visit
+journal:
+  - id: workshop_visit
+    category: EXPLORATION
+    title: 공개 실습 작업대 방문
+    summary: 순정 재료로 도구를 만드는 실습 장소를 직접 확인했다.
+    detail: 이 기록은 개인 방문을 나타낸다. 퀘스트 수락이나 제작 목표를 자동 완료하지 않는다.
+    version: 1
+    important: true
+  - id: workshop_report
+    category: STORY
+    title: 공개 작업대 실습 보고
+    summary: 탐험과 도구 제작 이후 개인 실습 결과를 보고했다.
+    detail: 이 기록은 본인의 실습 보고 결과이며 다른 플레이어의 퀘스트나 공동 진행을 바꾸지 않는다.
+    version: 1
+    important: true
+    quest-completed: workshop_route
+steps:
+  - {id: workshop_place, kind: PLACE, reference: public_workshop, title: 공개 작업대 탐험, hint: 공개 작업대 주변을 직접 방문하고 지도와 일지에서 확인하세요.}
+  - {id: workshop_course, kind: QUEST, reference: workshop_route, title: 탐험과 제작 실습, hint: 안내원에게 수락한 뒤 작업대 방문·나무 곡괭이 제작·조사 지점 방문을 마치고 보고하세요.}
+  - {id: workshop_next, kind: QUEST, reference: workshop_followup, title: 후속 제작 실습, hint: 선행 실습 보고 후 작업대 주변에 다시 진입하고 막대기를 제작하세요.}

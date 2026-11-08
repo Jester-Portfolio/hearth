@@ -56,6 +56,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
         this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;dialogues=new QuestDialogue(catalog);
         for(var c:catalog.all())for(var goal:c.goals())if(goal.interaction()!=null&&goal.interaction().startsWith("block:")){var material=Material.matchMaterial(goal.interaction().split(":")[4]);if(material==null||!material.isBlock()||material.isAir())throw new IllegalArgumentException("Unknown objective block material");}
+        if((!plugin.getConfig().getBoolean("crafting-quest-verification-enabled")||!plugin.getConfig().getBoolean("crafting-verification-enabled"))&&catalog.all().stream().anyMatch(q->q.goals().stream().anyMatch(g->g.interaction()!=null&&g.interaction().startsWith("craft:"))))throw new IllegalArgumentException("CRAFT_BINDING_REQUIRED");
         if(!plugin.getConfig().getBoolean("dungeon-play-verification-enabled")&&catalog.all().stream().anyMatch(q->q.goals().stream().anyMatch(g->g.interaction()!=null&&g.interaction().startsWith("dungeon:"))))throw new IllegalArgumentException("DUNGEON_BINDING_REQUIRED");
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);

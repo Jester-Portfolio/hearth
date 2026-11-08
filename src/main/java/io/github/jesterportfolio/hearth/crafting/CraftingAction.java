@@ -8,7 +8,7 @@ import java.util.function.*;
 /** 기존 저장 체계에 불변 제작 결과만 전달하는 일회용 확인 경계입니다. DB를 따로 쓰지 않습니다. */
 public final class CraftingAction implements AutoCloseable {
     public interface Port {
-        UUID run();UUID player();boolean valid();InventoryPayload capture();InventoryPayload plan(InventoryPayload before);
+        UUID run();UUID player();default String source(){return "";}boolean valid();InventoryPayload capture();InventoryPayload plan(InventoryPayload before);
         void apply(InventoryPayload after);void changed();void hold();
     }
     public static final class Ticket {
