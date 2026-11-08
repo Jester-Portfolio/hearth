@@ -1,0 +1,26 @@
+# 순정 레시피 참조만 사용하며 기존 콘텐츠/블록을 자동 덮어쓰지 않습니다.
+format: 1
+isolated-prototype: true
+facilities:
+  - id: public_workbench
+    x: 6
+    y: 64
+    z: 6
+    recipes: [oak_planks, stick, crafting_table, wooden_pickaxe]
+recipes:
+  - id: oak_planks
+    title: 참나무 판자
+    recipe-key: minecraft:oak_planks
+    matrix: [OAK_LOG, AIR, AIR, AIR, AIR, AIR, AIR, AIR, AIR]
+  - id: stick
+    title: 막대기
+    recipe-key: minecraft:stick
+    matrix: [OAK_PLANKS, AIR, AIR, OAK_PLANKS, AIR, AIR, AIR, AIR, AIR]
+  - id: crafting_table
+    title: 작업대
+    recipe-key: minecraft:crafting_table
+    matrix: [OAK_PLANKS, OAK_PLANKS, AIR, OAK_PLANKS, OAK_PLANKS, AIR, AIR, AIR, AIR]
+  - id: wooden_pickaxe
+    title: 나무 곡괭이
+    recipe-key: minecraft:wooden_pickaxe
+    matrix: [OAK_PLANKS, OAK_PLANKS, OAK_PLANKS, AIR, STICK, AIR, AIR, STICK, AIR]

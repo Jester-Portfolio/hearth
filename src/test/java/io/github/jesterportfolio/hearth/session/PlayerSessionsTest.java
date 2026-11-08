@@ -48,6 +48,11 @@ final class PlayerSessionsTest {
         PlayerSessions.Session active(UUID id,Port p){var s=open(id,p);loaded.complete(null);pump();read(store.reads.size()-1,1,0);assertEquals(PlayerSessions.State.ACTIVE,s.state());return s;}
         void saved(int i,long rev){store.writes.get(i).complete(new InventoryStore.Stored(store.snapshots.get(i),rev));pump();}
     }
+    @Test void inventoryBoundaryFailurePreservesDirtyAndBlocksUnloadAndReconnect(){
+        var f=new Fixture();var id=UUID.randomUUID();var p=new Port();var s=f.active(id,p);p.memory=payload(8);f.sessions.refresh(s);
+        f.sessions.inventoryHold(s,"CRAFT_APPLY_HOLD");f.pump();assertEquals(PlayerSessions.State.HOLD,s.state());assertTrue(s.save().dirty());assertFalse(f.sessions.canUnload(f.run));assertFalse(f.sessions.playable(s));assertTrue(f.store.writes.isEmpty());
+        var next=f.open(id,new Port());assertTrue(next.ready().toCompletableFuture().isCompletedExceptionally());assertEquals(1,f.store.reads.size());
+    }
     @Test void noApplicationBeforeWorldAndInventoryAndMovementComplete() {
         var f=new Fixture();var p=new Port();p.movement=new CompletableFuture<>();var s=f.open(UUID.randomUUID(),p);
         assertEquals(0,p.applies);f.loaded.complete(null);f.pump();assertEquals(0,p.applies);

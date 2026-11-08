@@ -172,6 +172,8 @@ public final class PlayerSessions {
             s.state=State.CLOSED;s.leaseValid=false;leases.remove(s.key,s);connections.remove(s.key.player(),s);s.closed.complete(null);
         },owner);
     }
+    /** 게임 경계의 부분 적용 오류는 기존 lease와 미저장 상태를 유지한 채 HOLD합니다. */
+    public void inventoryHold(Session s,String code){check.run();if(leases.get(s.key)==s)hold(s,code);}
     private void hold(Session s,String code) {
         check.run();s.state=State.HOLD;s.error=code;s.connected=false;connections.remove(s.key.player(),s);
         if (s.save!=null) unregister.accept(s.save);

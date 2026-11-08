@@ -26,7 +26,8 @@ public final class PlayerInteractionRules {
     public static boolean facility(String material){return material.equals("LEVER")||material.endsWith("_BUTTON")||material.endsWith("_DOOR")||material.endsWith("_TRAPDOOR")||material.endsWith("_FENCE_GATE");}
     public static List<String> help(){return List.of(
         "격리 플레이 조작: 숫자키로 본인 슬롯/핫바 교환, Shift로 장비·보관 슬롯 이동, Q로 슬롯 아이템 버리기.",
-        "보관 슬롯은 클릭으로 집기·나누기·합치기와 드래그를 지원합니다. 제작·상자/창고는 아직 지원하지 않습니다.",
+        "보관 슬롯은 클릭으로 집기·나누기·합치기와 드래그를 지원합니다. 순정 제작칸·상자/창고는 아직 지원하지 않습니다.",
+        "등록된 격리 작업대는 별도 제작 메뉴에서 재료와 공간을 확인합니다.",
         "문·울타리 문·다락문·버튼·레버는 WorldGuard 권한이 허용할 때 사용할 수 있습니다.",
         "개인 퀘스트: /hearthquest list · 공유 안내: /hearthstory guide · 스마트폰: /hearthphone",
         "본인에게 공개된 게임 정보 요약: /hearthinfo · 공개 코스 안내: /hearthjourney");}

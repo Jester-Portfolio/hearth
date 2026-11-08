@@ -113,3 +113,5 @@
 복수 길목 통합은 `verify-lifecycle.py --sessions --quests --story-batch --combat-players --combat-route`로 실행한다. 한 JVM에서 같은 길목 도전의 두 구간·실제 체크포인트 DB·최종 보스/지정 구간 재시작·저장 실패 보존을 기존 도구로 검사한다. [검증 범위](../docs/combat-route-verification.md)를 따르며 실제 Player 이동/전투는 미실행이다.
 
 공개 던전 의뢰 통합은 `verify-lifecycle.py --sessions --quests --story-batch --combat-players --dungeon-play`로 기존 한 JVM/PG 도구를 사용한다. 새 격리 경로에만 공개 의뢰를 합치고 진입 선별·길목/체크포인트·실제 관리 몹 사망·개인 목표/보고·재접속과 저장 실패 보존을 검사한다. [범위](../docs/dungeon-play-verification.md)를 따르며 NPC 클릭/Player 이동은 제어 포트와 구분한다.
+
+작업대 제작 통합은 `verify-lifecycle.py --sessions --crafting` 단독 한 JVM 모드다. 새 경로에서 순정 레시피·잔여물·41슬롯 보존·실제 DB 저장/실패와 제어 세션 재연결을 검사한다. [검증 범위](../docs/crafting-verification.md)를 따르며 실제 Player 클릭이나 새 JVM 복원 시험은 포함하지 않는다.

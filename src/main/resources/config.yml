@@ -45,3 +45,6 @@ gathering-verification-enabled: false
 
 # 공개 던전 의뢰 연결도 명시적인 격리 개발 실행에서만 켭니다.
 dungeon-play-verification-enabled: false
+
+# 등록된 작업대의 순정 레시피 제작 메뉴. 일반 서버에서는 비활성입니다.
+crafting-verification-enabled: false

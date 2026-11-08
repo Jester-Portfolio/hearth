@@ -56,6 +56,11 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private boolean closed;
     private BiPredicate<Player,String> questCommand=(p,c)->false;
     private BiPredicate<Player,Inventory> developerInventory=(p,i)->false;
+    private BiPredicate<Player,Inventory> craftingInventory=(p,i)->false;
+    private BiPredicate<Player,org.bukkit.block.Block> craftingFacility=(p,b)->false;
+    public void crafting(BiPredicate<Player,Inventory> inventory,BiPredicate<Player,org.bukkit.block.Block> facility){main();craftingInventory=inventory;craftingFacility=facility;}
+    public void crafted(Player p,PlayerSessions.Session s){main();if(current(p)!=s)throw new IllegalStateException("CRAFT_STALE");sessions.refresh(s);if(current(p)!=s)throw new IllegalStateException("CRAFT_HOLD");}
+    public void craftingHold(PlayerSessions.Session s){main();sessions.inventoryHold(s,"CRAFT_APPLY_HOLD");}
     private BiPredicate<Player,Inventory> travelInventory=(p,i)->false;
     public void travelInventory(BiPredicate<Player,Inventory> handler){main();travelInventory=handler;}
     private BiPredicate<Player,Entity> fieldAttack=(p,e)->false;
@@ -168,7 +173,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){
         if(!(e.getPlayer() instanceof Player p))return;
         if(e.getInventory().getType()!=InventoryType.CRAFTING&&e.getInventory().getType()!=InventoryType.PLAYER){
-            if(!allowed(p)||!(developerInventory.test(p,e.getInventory())||travelInventory.test(p,e.getInventory())))e.setCancelled(true);
+            if(!allowed(p)||!(developerInventory.test(p,e.getInventory())||travelInventory.test(p,e.getInventory())||craftingInventory.test(p,e.getInventory())))e.setCancelled(true);
             else try{settleCursor(p);}catch(RuntimeException failure){e.setCancelled(true);sessions.refresh(entry(p).session());}
         }
     }
@@ -194,7 +199,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         if(!PlayerInteractionRules.drag(allowed(p),own,slots))e.setCancelled(true);else if(!e.isCancelled())sample(p);
     }
     @EventHandler(priority=EventPriority.HIGHEST) public void interact(PlayerInteractEvent e){
-        if(!allowed(e.getPlayer()) || e.getClickedBlock()!=null && e.getClickedBlock().getType().isInteractable() && !PlayerInteractionRules.facility(e.getClickedBlock().getType().name()))e.setCancelled(true);
+        if(!allowed(e.getPlayer()) || e.getClickedBlock()!=null && e.getClickedBlock().getType().isInteractable() && !PlayerInteractionRules.facility(e.getClickedBlock().getType().name()) && !craftingFacility.test(e.getPlayer(),e.getClickedBlock()))e.setCancelled(true);
         sample(e.getPlayer());
     }
     @EventHandler(priority=EventPriority.HIGHEST) public void place(BlockPlaceEvent e){if(!allowed(e.getPlayer())||!gatheringChange.test(e.getPlayer(),e.getBlock()))e.setCancelled(true);sample(e.getPlayer());}
