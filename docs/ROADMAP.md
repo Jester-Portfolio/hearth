@@ -50,7 +50,7 @@ Issue #1·#2의 격리 단일 블록 효과는 완료한 기술 기반이다. A/
 | 연출·지도 표시 | 아이템창/책·Dialog·개인 정보 DTO·개발 HUD | 컷신/과거 장면의 미정 세부 정책, 지형 지도/원형 미니맵과 고정 HUD의 기술·사용성 검증. 실제 클라이언트 전 완성 판정 금지 |
 | 플레이 상호작용·통합 수용 | NPC/퀘스트/공유 진행/저장/스마트폰, 공개 던전 승리 보고, 채집 재료→작업대 제작→개인 보고 연결 | 남은 임시 제작칸/컨테이너 행동은 저장 범위를 먼저 정해 연결, 공개 코스의 실제 싱글/코옵·보호·실패/복원 검증. 기술 시험 확장만 다음 목표로 삼지 않음 |
 
-이동과 채집의 구현/검사/미정 범위는 [거점 이동 검증](fast-travel-verification.md)·[채집 인던 검증](gathering-dungeon-verification.md)을 따른다. 복수 길목은 [연결 검증](combat-route-verification.md)을 따르며 공개 던전 의뢰는 [연결 검증](dungeon-play-verification.md)의 현재 온라인 세션 프로토타입 범위다. 작업대 제작·시설·기존 저장 연결은 [격리 프로토타입](crafting-verification.md)으로 추가했다. [공개 실습 흐름](workshop-quest-verification.md)에서 탐험·제작 목표·NPC 보고·후속 자동 시작을 연결했다. [재료 공급 실습](material-supply-verification.md)에서 원목·조약돌과 두 도구 제작·보고를 연결했다. [공개 코스 준비 안내](play-preparation-verification.md)를 읽기 전용으로 연결했다. 다음 배치는 기존 공개 코스의 실제 상호작용 연결 공백을 우선 선정하며, 오프라인 승리 반영·전투 복구는 후속 정책/구현 경계를 먼저 정한다. 실제 클라이언트는 사용자 요청 전 보류한다. S5 로컬 AI와 E1~E3 경제는 위 S4 묶음의 완료로 대체하지 않는다.
+이동과 채집의 구현/검사/미정 범위는 [거점 이동 검증](fast-travel-verification.md)·[채집 인던 검증](gathering-dungeon-verification.md)을 따른다. 복수 길목은 [연결 검증](combat-route-verification.md)을 따르며 공개 던전 의뢰는 [연결 검증](dungeon-play-verification.md)의 현재 온라인 세션 프로토타입 범위다. 작업대 제작·시설·기존 저장 연결은 [격리 프로토타입](crafting-verification.md)으로 추가했다. [공개 실습 흐름](workshop-quest-verification.md)에서 탐험·제작 목표·NPC 보고·후속 자동 시작을 연결했다. [재료 공급 실습](material-supply-verification.md)에서 원목·조약돌과 두 도구 제작·보고를 연결했다. [공개 코스 준비 안내](play-preparation-verification.md)를 읽기 전용으로 연결했고, [현장 채집 시설](gathering-facility-verification.md)에 상태·입퇴장 확인·저장 장벽을 통합했다. 다음 배치는 기존 공개 코스의 실제 상호작용 연결 공백을 우선 선정하며, 오프라인 승리 반영·전투 복구는 후속 정책/구현 경계를 먼저 정한다. 실제 클라이언트는 사용자 요청 전 보류한다. S5 로컬 AI와 E1~E3 경제는 위 S4 묶음의 완료로 대체하지 않는다.
 
 ## 경제 월드 별도 단계
 

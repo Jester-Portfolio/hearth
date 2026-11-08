@@ -53,6 +53,9 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     public Map<UUID,Object> onlineContexts(ServerProgressAccess.Context ctx){main();var found=new HashMap<UUID,Object>();for(var e:entries.values())if(e.player().isOnline()&&e.link().context().storyRunId().equals(ctx.storyRunId()))found.put(e.player().getUniqueId(),e.session());return Map.copyOf(found);}
     private BiPredicate<Player,Location> gatheringEntry=(p,l)->true;private BiPredicate<Player,org.bukkit.block.Block> gatheringChange=(p,b)->true;private BiPredicate<Player,String> gatheringCommand=(p,c)->false;
     public void gathering(BiPredicate<Player,Location> entry,BiPredicate<Player,org.bukkit.block.Block> change,BiPredicate<Player,String> command){main();gatheringEntry=entry;gatheringChange=change;gatheringCommand=command;}
+    private BiPredicate<Player,Inventory> gatheringInventory=(p,i)->false;
+    public void gatheringInventory(BiPredicate<Player,Inventory> handler){main();gatheringInventory=handler;}
+    public void gatheringHold(PlayerSessions.Session session){main();sessions.inventoryHold(session,"GATHERING_VISIT_HOLD");}
     private boolean closed;
     private BiPredicate<Player,String> questCommand=(p,c)->false;
     private BiPredicate<Player,Inventory> developerInventory=(p,i)->false;
@@ -173,7 +176,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){
         if(!(e.getPlayer() instanceof Player p))return;
         if(e.getInventory().getType()!=InventoryType.CRAFTING&&e.getInventory().getType()!=InventoryType.PLAYER){
-            if(!allowed(p)||!(developerInventory.test(p,e.getInventory())||travelInventory.test(p,e.getInventory())||craftingInventory.test(p,e.getInventory())))e.setCancelled(true);
+            if(!allowed(p)||!(developerInventory.test(p,e.getInventory())||travelInventory.test(p,e.getInventory())||craftingInventory.test(p,e.getInventory())||gatheringInventory.test(p,e.getInventory())))e.setCancelled(true);
             else try{settleCursor(p);}catch(RuntimeException failure){e.setCancelled(true);sessions.refresh(entry(p).session());}
         }
     }

@@ -121,3 +121,5 @@
 채집 재료→제작 의뢰 통합은 `verify-lifecycle.py --sessions --quests --story-batch --gathering-crafting` 단독 한 JVM 모드다. 신규 채집 템플릿, 순정 드롭/실제 아이템·제어 인벤토리, 재료 표시·두 도구 제작·보고·초기화/월드 재입장을 함께 검사한다. [실행 범위와 실패 이력](../docs/material-supply-verification.md)을 따르며 실제 Player 채굴/줍기나 운영 배치를 검증하지 않는다.
 
 공개 시설·재료·던전 준비 조회는 `verify-lifecycle.py --sessions --quests --story-batch --combat-players --dungeon-play --play-preparation` 단독 한 JVM 모드다. 기존 모듈을 함께 준비하되 새 안내의 정보 비노출·조회 불변·제어 세션 경계만 검사하며 채집/전투 전체를 반복하지 않는다. [검증과 미실행 범위](../docs/play-preparation-verification.md)를 따른다.
+
+현장 채집 시설은 `verify-lifecycle.py --sessions --quests --story-batch --gathering-crafting --gathering-facilities` 한 JVM 모드다. 신규 격리 fixture의 버튼·구역·메뉴 객체와 저장 지연/중복/DB 충돌·월드 재입장을 함께 확인한다. [실행 범위와 실제 행동 미검증](../docs/gathering-facility-verification.md)을 구분하며 운영 월드나 기존 시험 자료를 덮어쓰지 않는다.

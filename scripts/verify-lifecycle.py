@@ -129,6 +129,7 @@ def main():
     parser.add_argument('--dungeon-play',action='store_true',help='한 JVM에서 공개 던전 의뢰·진입 선별·보스 승리·개인 보고·스마트폰 데이터를 검사합니다')
     parser.add_argument('--combat-route',action='store_true',help='한 JVM에서 복수 길목·체크포인트·최종 보스·지정 구간 재시작을 검사합니다')
     parser.add_argument('--gathering',action='store_true',help='두 JVM에서 제한 구역 채집 인던 초기화·저장·세대·템플릿 변경을 검사합니다')
+    parser.add_argument('--gathering-facilities',action='store_true',help='현장 채집 시설의 메뉴·입퇴장 저장·중복/실패 장벽을 한 JVM에서 검사합니다')
     parser.add_argument('--play-preparation',action='store_true',help='공개 시설·재료·던전 준비의 읽기 전용 표시 경계를 한 JVM에서 확인합니다')
     parser.add_argument('--gathering-crafting',action='store_true',help='한 JVM에서 채집 자원·재료 부족 표시·두 도구 제작·개인 보고·초기화 보존을 연결합니다')
     parser.add_argument('--crafting-quests',action='store_true',help='한 JVM에서 탐험·제작 목표·보고/자동 완료·후속 해금·기존 저장 복원을 연결합니다')
@@ -225,6 +226,8 @@ def main():
         parser.error("--quests는 --sessions가 필요합니다")
     if args.gathering and (not args.sessions or not args.quests or (not args.story_batch and not args.manual_player) or any([args.fast_travel,args.economy,args.combat_players,args.combat_state,args.field_encounters,args.world_effects])):
         parser.error('--gathering은 자동 --sessions --quests --story-batch 또는 별도 수동 세션 모드에서 실행합니다')
+    if args.gathering_facilities and (not all([args.sessions,args.quests,args.story_batch]) or any([args.play_preparation,args.economy,args.fast_travel,args.combat_players,args.world_effects]) or not (args.gathering_crafting or args.manual_player)):
+        parser.error('--gathering-facilities는 --sessions --quests --story-batch 및 자동 --gathering-crafting 또는 --manual-player가 필요합니다')
     if args.play_preparation and (not all([args.sessions,args.quests,args.story_batch,args.combat_players,args.dungeon_play]) or any([args.gathering_crafting,args.crafting_quests,args.crafting,args.gathering,args.manual_player,args.fast_travel,args.economy,args.world_effects,args.phone_dialog])):
         parser.error('--play-preparation은 --sessions --quests --story-batch --combat-players --dungeon-play와 단독 실행합니다')
     if args.gathering_crafting and (not args.sessions or not args.quests or not args.story_batch or any([args.gathering,args.crafting,args.crafting_quests,args.manual_player,args.fast_travel,args.economy,args.combat_players,args.world_effects])):
@@ -306,7 +309,7 @@ def main():
     if args.quest_completion or args.branch_progression or args.combat_players:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('quest-completion-verification-enabled: true\n')
-    if args.playthrough or args.quest_interactions or args.general_npcs or args.crafting_quests or args.gathering_crafting or args.play_preparation:
+    if args.playthrough or args.quest_interactions or args.general_npcs or args.crafting_quests or args.gathering_crafting or args.play_preparation or args.gathering_facilities:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('playthrough-verification-enabled: true\n')
     if args.explore_batch or args.story_batch:
@@ -315,12 +318,14 @@ def main():
     if args.world_effects:
         with (plugins/'Hearth/config.yml').open('a') as config:
             config.write('world-effect-verification-enabled: true\n')
-    if args.gathering or args.gathering_crafting or args.play_preparation:
+    if args.gathering or args.gathering_crafting or args.play_preparation or args.gathering_facilities:
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('gathering-verification-enabled: true\n')
-    if args.gathering_crafting or args.play_preparation:
+    if args.gathering_crafting or args.play_preparation or args.gathering_facilities:
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('gathering-workshop-verification-enabled: true\ngathering-content-file: gathering-workshop-demo.yml\n')
-    if args.crafting or args.crafting_quests or args.gathering_crafting or args.play_preparation:
-        with (plugins/'Hearth/config.yml').open('a') as config:config.write('crafting-verification-enabled: true\n'+('crafting-quest-verification-enabled: true\n' if args.crafting_quests or args.gathering_crafting or args.play_preparation else ''))
+    if args.crafting or args.crafting_quests or args.gathering_crafting or args.play_preparation or args.gathering_facilities:
+        with (plugins/'Hearth/config.yml').open('a') as config:config.write('crafting-verification-enabled: true\n'+('crafting-quest-verification-enabled: true\n' if args.crafting_quests or args.gathering_crafting or args.play_preparation or args.gathering_facilities else ''))
+    if args.gathering_facilities:
+        with (plugins/'Hearth/config.yml').open('a') as config:config.write('gathering-facility-verification-enabled: true\n')
     if args.play_preparation:
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('play-preparation-verification-enabled: true\n')
     if args.fast_travel:
@@ -382,10 +387,12 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.sharedStory=true')
         if args.explore_batch or args.story_batch:
             paper.insert(-3,'-Dhearth.verification.exploration=true')
-        if args.gathering or args.gathering_crafting or args.play_preparation:
+        if args.gathering or args.gathering_crafting or args.play_preparation or args.gathering_facilities:
             paper.insert(-3,'-Dhearth.verification.gathering=true')
-        if args.crafting or args.crafting_quests or args.gathering_crafting or args.play_preparation:
+        if args.crafting or args.crafting_quests or args.gathering_crafting or args.play_preparation or args.gathering_facilities:
             paper.insert(-3,'-Dhearth.verification.crafting=true')
+        if args.gathering_facilities:
+            paper.insert(-3,'-Dhearth.verification.gatheringFacilities=true')
         if args.play_preparation:
             paper.insert(-3,'-Dhearth.verification.preparation=true')
         if args.fast_travel:
@@ -394,7 +401,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.quests=true')
         if args.manual_player:
             paper.insert(-3,'-Dhearth.verification.sessionManual=true')
-        if args.playthrough or args.quest_interactions or args.general_npcs or args.crafting_quests or args.gathering_crafting or args.play_preparation:
+        if args.playthrough or args.quest_interactions or args.general_npcs or args.crafting_quests or args.gathering_crafting or args.play_preparation or args.gathering_facilities:
             paper.insert(-3,'-Dhearth.verification.playthrough=true')
         if args.quest_completion or args.branch_progression or args.combat_players:
             paper.insert(-3,'-Dhearth.verification.questCompletion=true')
@@ -436,7 +443,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.play_preparation:
+                        if args.gathering_facilities:
+                            monitor.action(name,'gathering-facility-play')
+                        elif args.play_preparation:
                             monitor.action(name,'preparation-play')
                         elif args.gathering_crafting:
                             monitor.action(name,'gathering-crafting-play')
@@ -656,7 +665,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

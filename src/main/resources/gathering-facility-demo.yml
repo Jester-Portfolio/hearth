@@ -1,0 +1,19 @@
+# 새 격리 코스의 현장 입퇴장 버튼. 운영 배치·교통 수단을 확정하지 않습니다.
+format: 1
+isolated-prototype: true
+gathering-id: public_workshop_gathering
+sites:
+  - id: workshop_entry
+    title: 공개 채집장 입구
+    action: ENTER
+    x: 8
+    y: 64
+    z: 5
+    material: STONE_BUTTON
+  - id: workshop_exit
+    title: 공개 채집장 출구
+    action: LEAVE
+    x: 31
+    y: 64
+    z: 1
+    material: STONE_BUTTON
