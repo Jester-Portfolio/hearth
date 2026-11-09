@@ -9,7 +9,7 @@ public final class NpcContacts {
     public static List<Contact> forFact(QuestCatalog catalog,QuestJournal.View view,String factKey){
         var fact=view.exploration().facts().stream().filter(f->!f.shared()&&("P:"+f.id()).equals(factKey)).findFirst();
         if(fact.isEmpty())return List.of();String id=fact.get().id();var result=new ArrayList<Contact>();
-        for(var npc:catalog.npcs())if(catalog.availableTopics(npc.npcId(),view.states(),q->!view.exploration().blockedQuests().contains(q)).stream().anyMatch(t->id.equals(t.journal())))result.add(new Contact(npc.npcId(),npc.name(),id+":"+npc.npcId()));
+        for(var npc:catalog.npcs())if(!view.blockedNpcs().contains(npc.npcId())&&catalog.availableTopics(npc.npcId(),view.states(),q->!view.exploration().blockedQuests().contains(q)).stream().anyMatch(t->id.equals(t.journal())))result.add(new Contact(npc.npcId(),npc.name(),id+":"+npc.npcId()));
         return List.copyOf(result);
     }
     public static Optional<Contact> resolve(QuestCatalog catalog,QuestJournal.View view,String key){

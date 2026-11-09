@@ -50,6 +50,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private java.util.function.BiConsumer<Player,String> report=(p,id)->{};
     private java.util.function.BiConsumer<Player,String> contact=(p,key)->{};
     public void contact(java.util.function.BiConsumer<Player,String> handler){contact=handler;}
+    private java.util.function.BiConsumer<Player,String> peopleTalk=(p,npc)->{};
+    public void peopleTalk(java.util.function.BiConsumer<Player,String> handler){peopleTalk=handler;}
     public void report(java.util.function.BiConsumer<Player,String> handler){report=handler;}private final Executor owner;private final AssistantService assistant;private final NamespacedKey device;private boolean closed;
     public PaperPhone(JavaPlugin plugin,PaperSessionAdapter players,QuestJournal journal,QuestCatalog catalog,Executor owner){
         this.plugin=plugin;this.players=players;this.journal=journal;this.catalog=catalog;this.owner=owner;device=new NamespacedKey(plugin,"dev_phone");
@@ -239,6 +241,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
             try{information(p,s,view);var page=journeyView(s,view);var guide=page.guide();var actions=new ArrayList<ActionButton>();
                 for(var link:page.links())actions.add(button(p,s,link.label(),()->journeyAction(p,s,page,link)));
                 if(preparation!=null)actions.add(button(p,s,"시설·재료·던전 준비",()->preparation(p,advance(p),null,null)));
+                actions.add(button(p,s,"관련 인물 안내",()->people(p,advance(p),1,null,null,false,back->journey(p,back))));
                 if(courseRoute!=null)actions.add(button(p,s,"현재 코스 동선",()->route(p,advance(p),null,false)));
                 actions.add(button(p,s,"안내 새로고침",()->journey(p,advance(p))));actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
                 show(p,s,guide.title(),guide.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
@@ -266,6 +269,20 @@ public final class PaperPhone implements Listener,AutoCloseable {
         },owner);
     }
     private java.util.function.BiFunction<Player,QuestJournal.View,CourseRoute.Page> courseRoute;
+    private NpcGuidance.Page peopleView(Screen s,QuestJournal.View view){return NpcGuidance.build(catalog,view,playthrough!=null&&sharedStory!=null?journeyView(s,view):null,sharedStory==null?Set.of():sharedStory.content().guideNpcs());}
+    private void people(Player p,Screen s,int number,NpcGuidance.Page expected,NpcGuidance.Contact selected,boolean talk,Consumer<Screen> back){
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"인물 조회 실패",List.of("저장·공개 상태를 확인한 뒤 다시 조회하세요."));return;}
+            try{information(p,s,view);var page=peopleView(s,view);if(expected!=null)NpcGuidance.require(page,expected,selected);int at=Math.min(number,page.pages());
+                if(talk){if(selected==null)throw new IllegalStateException("NPC_GUIDANCE_SELECTION");advance(p);p.closeDialog();peopleTalk.accept(p,selected.npc());return;}
+                var actions=new ArrayList<ActionButton>();List<String> lines;
+                if(selected!=null){lines=selected.lines();actions.add(button(p,s,"가까운 NPC와 대화",()->people(p,advance(p),at,page,selected,true,back)));actions.add(button(p,s,"인물 목록으로",()->people(p,advance(p),at,null,null,false,back)));}
+                else{lines=page.contacts().isEmpty()?List.of("현재 안내할 수 있는 인물이 없습니다."):page.page(at).stream().map(c->c.name()+" · "+String.join(" / ",c.reasons())).toList();for(var c:page.page(at))actions.add(button(p,s,c.name()+" · 연결 정보",()->people(p,advance(p),at,page,c,false,back)));if(at>1)actions.add(button(p,s,"앞 인물",()->people(p,advance(p),at-1,page,null,false,back)));if(at<page.pages())actions.add(button(p,s,"다음 인물",()->people(p,advance(p),at+1,page,null,false,back)));}
+                actions.add(button(p,s,"인물 안내 새로고침",()->people(p,advance(p),at,null,null,false,back)));if(back!=null)actions.add(button(p,s,"이전 안내로",()->back.accept(advance(p))));actions.add(button(p,s,"홈",()->home(p)));
+                show(p,s,selected==null?"인물 안내 · "+at+" / "+page.pages():selected.name(),lines.stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
+            }catch(RuntimeException stale){info(p,s,"인물 공개 상태 변경",List.of("현재 인물 안내를 다시 조회하세요."));}
+        },owner);
+    }
     public void courseRoute(java.util.function.BiFunction<Player,QuestJournal.View,CourseRoute.Page> reader){courseRoute=reader;}
     private void route(Player p,Screen s,CourseRoute.Page expected,boolean detail){
         if(courseRoute==null){info(p,s,"동선 안내 미등록",List.of("현재 코스의 다음 플레이 안내를 확인하세요."));return;}
@@ -277,6 +294,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 if(page.preparation()!=null)actions.add(button(p,s,"현재 시설 준비 안내",()->{
                     var next=advance(p);journal.load(next.session().context(),next.session(),()->valid(p,next)).whenCompleteAsync((fresh,failure)->{if(!valid(p,next))return;if(failure!=null){info(p,next,"동선 조회 실패",List.of("현재 시설을 다시 확인하세요."));return;}try{information(p,next,fresh);var latest=courseRoute.apply(p,fresh);CourseRoute.require(latest,page);preparation(p,next,latest.preparation(),null,null,back->route(p,back,null,false));}catch(RuntimeException changed){info(p,next,"동선 상태 변경",List.of("다음 플레이 안내에서 현재 동선을 다시 조회하세요."));}},owner);
                 }));
+                actions.add(button(p,s,"관련 인물 안내",()->people(p,advance(p),1,null,null,false,back->route(p,back,null,false))));
                 actions.add(button(p,s,"현재 항목의 진행판",()->course(p,advance(p),page.coursePage(),null)));actions.add(button(p,s,"다음 행동·NPC 안내",()->journey(p,advance(p))));actions.add(button(p,s,"동선 새로고침",()->route(p,advance(p),null,false)));actions.add(button(p,s,"홈",()->home(p)));
                 show(p,s,"현재 코스 동선",page.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
             }catch(RuntimeException changed){info(p,s,"동선 상태 변경",List.of("코스와 공개된 시설을 다시 조회하세요."));}
@@ -352,6 +370,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         var actions=new ArrayList<ActionButton>();
         String[] sections=menu.equals("diary")?new String[]{"STORY","PERSON","EXPLORATION","CHRONICLE"}:new String[]{"members","shared","conditions"};
         for(String section:sections)actions.add(button(p,s,PhoneLibrary.title(section),()->loadLibrary(p,advance(p),section,1)));
+        if(menu.equals("diary"))actions.add(button(p,s,"인물 안내",()->people(p,advance(p),1,null,null,false,back->libraryMenu(p,back,"diary"))));
         if(menu.equals("diary"))actions.add(button(p,s,"공동체 정보",()->libraryMenu(p,advance(p),"community")));
         actions.add(button(p,s,"홈",()->home(p)));
         show(p,s,menu.equals("diary")?"기록":"공동체",List.of(DialogBody.plainMessage(Component.text(menu.equals("diary")?"개인 기록과 공동체 공유 기록을 구분합니다.":"구성원·스토리 진행·진행 조건만 확인합니다. 가입/초대/탈퇴/권한 관리 기능은 없습니다."))),List.of(),actions);

@@ -71,8 +71,8 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         phone=plugin.getConfig().getBoolean("phone-dialog-enabled",false)?new io.github.jesterportfolio.hearth.phone.PaperPhone(plugin,players,journal,catalog,owner):null;
-        if(phone!=null){phone.contact(this::openNpcFromFact);phone.report(this::openNpcFromQuest);phone.completion(this::phoneCompletion,completionFlow);}
-        ui.completion(this::phoneCompletion,completionFlow);ui.npcNavigation(this::npcNavigation);
+        if(phone!=null){phone.peopleTalk(this::openNpcFromGuidance);phone.contact(this::openNpcFromFact);phone.report(this::openNpcFromQuest);phone.completion(this::phoneCompletion,completionFlow);}
+        ui.peopleTalk(this::openNpcFromGuidance);ui.completion(this::phoneCompletion,completionFlow);ui.npcNavigation(this::npcNavigation);
         ui.npcSelection((p,npc,quest,revision)->{var s=players.current(p);if(s==null)return;try{var t=dialogues.selection(p.getUniqueId(),s,npc,quest);command(p,dialogues.command(t,"select"),revision);}catch(RuntimeException invalid){unavailable(p,invalid);}});
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
         ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
@@ -100,7 +100,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     }
     private boolean npcPermitted(Player p,String npc){
         var session=players.current(p);if(session==null)return false;
-        var c=catalog.npc(npc);return story==null||story.access().content(session.context().storyRunId(),c.x(),c.y(),c.z());
+        return journal.npcAllowed(session.context(),npc);
     }
     private void removeMark(Mark mark){Entity e=Bukkit.getEntity(mark.entity());if(e!=null)e.remove();}
     private void clearVisual(Player p){
@@ -183,6 +183,11 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private boolean regionInteract(Player p,String npc){Entity target=entity(p.getWorld(),npc);if(target==null)return false;var local=com.sk89q.worldguard.bukkit.WorldGuardPlugin.inst().wrapPlayer(p);
         var platform=WorldGuard.getInstance().getPlatform();
         return platform.getSessionManager().hasBypass(local,BukkitAdapter.adapt(p.getWorld()))||platform.getRegionContainer().createQuery().testState(BukkitAdapter.adapt(target.getLocation()),local,Flags.INTERACT);
+    }
+    private void openNpcFromGuidance(Player p,String id){
+        var session=players.current(p);if(session==null||!journal.npcAllowed(session.context(),id)){unavailable(p);return;}
+        Entity npc=entity(p.getWorld(),id);if(npc==null||!talkAllowed(p,id,npc.getUniqueId())){p.sendMessage(Component.text("해당 NPC 가까이에서 다시 선택해 주세요. 지역·상호작용 권한도 필요합니다."));return;}
+        conversation(p,id,npc.getUniqueId());
     }
     private void openNpcFromQuest(Player p,String quest){
         var session=players.current(p);if(session==null||!catalog.questIds().contains(quest)||!journal.questAllowed(session.context(),quest)){unavailable(p);return;}

@@ -1,5 +1,20 @@
 # 기존 공개 콘텐츠를 잇는 안내 순서입니다. 수락/입장/공유 조건을 새로 추가하지 않습니다.
 format: 1
+# 현재 코스의 개인 시설 기록과 연결된 공개 합성 인물입니다. 공유 개방 전에는 노출하지 않습니다.
+npcs:
+  - id: course_researcher
+    name: 공개 경로 연구원
+    x: 21.5
+    y: 64.0
+    z: 10.5
+    dialogue-pages:
+      - 개인 시설 기록과 공동 경로 선택은 서로 다른 진행입니다. 본인이 질문한 내용만 개인 일지에서 확인하세요.
+    topics:
+      - id: course_records
+        label: 개인 시설 기록과 공동 경로는 어떻게 구분하나요?
+        text: 개인 조사와 도구 제작은 본인의 기록입니다. 공동 경로는 현재 접속자의 조건과 투표로 정하며 다른 사람의 개인 완료나 아이템을 대신하지 않습니다.
+        requires-completed: survey_marker
+        journal: facility_clue
 steps:
   - {id: survey, kind: QUEST, reference: survey_marker, title: 개인 방문 조사, hint: 안내원에게 수락하고 현장 조사 결과를 보고하세요.}
   - {id: shared_start, kind: STAGE, reference: trial_vote, title: 공동 조사 준비, hint: 접속 구성원의 조사 완료를 확인한 뒤 기존 공동 조사 안내로 진행하세요.}

@@ -253,7 +253,9 @@ public final class SessionVerification implements AutoCloseable {
             throw new IllegalArgumentException("Unsupported or malformed quest content format");
         var combined=new ArrayList<Object>(rows);
         for(var entry:Map.of("dungeon-play-verification-enabled","dungeon-quest-demo.yml","crafting-quest-verification-enabled","crafting-quest-demo.yml","gathering-workshop-verification-enabled","gathering-workshop-course.yml").entrySet())if(plugin.getConfig().getBoolean(entry.getKey())){var extra=new java.io.File(plugin.getDataFolder(),entry.getValue());if(!extra.exists())plugin.saveResource(entry.getValue(),false);combined.addAll(Objects.requireNonNull(YamlConfiguration.loadConfiguration(extra).getList("quests")));}
-        return QuestCatalog.parse(npcs,combined);
+        var actors=new ArrayList<Object>(npcs);
+        if(plugin.getConfig().getBoolean("playthrough-verification-enabled")&&"public-course-demo.yml".equals(plugin.getConfig().getString("playthrough-content-file"))){var extra=new java.io.File(plugin.getDataFolder(),"public-course-demo.yml");if(!extra.exists())plugin.saveResource("public-course-demo.yml",false);var additions=YamlConfiguration.loadConfiguration(extra);if(additions.isSet("npcs"))actors.addAll(Objects.requireNonNull(additions.getList("npcs"),"Invalid public course NPC definitions"));}
+        return QuestCatalog.parse(actors,combined);
     }
 
     private ServerProgressAccess.Context ctx(UUID run,int player){return access.forVerifiedServerLink(run,new UUID(49,player));}
@@ -1502,6 +1504,22 @@ public final class SessionVerification implements AutoCloseable {
             previousPublicRoute=page;check(codec.equivalent(before,one.capture())&&s1.save().revision()==revision,"public_route_reads_preserve_inventory_"+Objects.toString(step,"complete"));
         });
     }
+    private NpcGuidance.Page previousPublicContacts;
+    private CompletionStage<Void> publicContacts(boolean open){
+        var inventory=one.capture();long revision=s1.save().revision();var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(a).mapping().physicalId()));
+        return mainResult(world.getChunkAtAsync(1,0)).thenAccept(chunk->{chunk.addPluginChunkTicket(plugin);questAdapter.ensure(world);}).thenCompose(v->later(()->{})).thenCompose(v->mainResult(store.readJournal(a1))).thenCompose(before->journal.load(a1,s1,()->coordinator.playable(s1)).thenCompose(view->{
+            var journey=QuestJourneyView.build(playthrough,catalog,view,sharedStory.cached(a),sharedStory.phase(a));var page=NpcGuidance.build(catalog,view,journey,sharedStory.content().guideNpcs());
+            var contacts=NpcContacts.forFact(catalog,view,"P:facility_clue");check(contacts.stream().anyMatch(c->c.npc().equals("course_researcher"))==open&&page.contacts().stream().anyMatch(c->c.npc().equals("course_researcher"))==open&&view.blockedNpcs().contains("course_researcher")!=open&&journal.npcAllowed(a1,"course_researcher")==open,"npc_guidance_same_location_permission_contacts_and_directory_"+open);
+            int fact=io.github.jesterportfolio.hearth.phone.PhoneLibrary.facts(view,"PERSON").indexOf(view.exploration().facts().stream().filter(f->!f.shared()&&f.id().equals("facility_clue")).findFirst().orElseThrow());var source=io.github.jesterportfolio.hearth.phone.PhoneReaderLinks.library(catalog,view,"PERSON",fact);var links=io.github.jesterportfolio.hearth.phone.PhoneReaderLinks.links(catalog,view,journal.placeFacts(a1,view),source);
+            check(QuestScreens.screen(catalog,view,"fact","P:facility_clue",0).stream().anyMatch(button->button.action().equals("npc-contact")&&"facility_clue:course_researcher".equals(button.quest()))==open,"npc_guidance_book_fact_contact_filtered_"+open);
+            check(links.stream().anyMatch(link->link.kind()==io.github.jesterportfolio.hearth.phone.PhoneReaderLinks.Kind.NPC&&link.key().equals("facility_clue:course_researcher"))==open,"npc_guidance_phone_reader_filtered_link_"+open);
+            var entity=Bukkit.getWorld(worlds.get(a).mapping().physicalId()).getEntitiesByClass(org.bukkit.entity.Villager.class).stream().filter(e->"course_researcher".equals(e.getPersistentDataContainer().get(new NamespacedKey(plugin,"quest_demo_npc"),org.bukkit.persistence.PersistentDataType.STRING))).findFirst().orElseThrow();check(!entity.isVisibleByDefault()&&!entity.isPersistent()&&questAdapter.count(world,"course_researcher")==1,"npc_guidance_real_actor_hidden_by_default_and_unique_"+open);
+            var book=PaperQuestUI.book(page.book(1),List.of(Component.text("이전 안내로")));var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose("인물 안내",List.of(io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text(page.book(1).pages().getFirst()))),List.of(),List.of(io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("인물 목록으로")).build()));check(book.pages().size()>page.book(1).pages().size()&&dialog!=null,"npc_guidance_native_book_Dialog_and_return_"+open);
+            for(var c:page.contacts())check(!String.join(" ",c.lines()).contains("21.5")&&!String.join(" ",c.lines()).contains(catalog.npc(c.npc()).npcId())&&catalog.topics(c.npc()).stream().noneMatch(t->String.join(" ",c.lines()).contains(t.text())),"npc_guidance_only_name_reasons_question_labels_"+c.npc());
+            if(previousPublicContacts!=null){try{NpcGuidance.require(page,previousPublicContacts,null);throw new AssertionError("old NPC guide accepted");}catch(IllegalStateException stale){check(true,"npc_guidance_shared_open_rejects_previous_selection");}}previousPublicContacts=page;
+            return mainResult(store.readJournal(a1)).thenAccept(after->check(before.equals(after)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"npc_guidance_reads_preserve_journal_inventory_revision_"+open));
+        })).thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->{var page=NpcGuidance.build(catalog,view,null,Set.of());check(page.contacts().stream().noneMatch(c->c.npc().equals("course_researcher"))&&NpcContacts.forFact(catalog,view,"P:facility_clue").isEmpty(),"npc_guidance_P1_record_never_makes_P2_contact_"+open);}).whenCompleteAsync((v,error)->world.removePluginChunkTicket(1,0,plugin),owner);
+    }
     private CompletionStage<Void> publicCourseStart(){
         if(!publicCourse||courseRoute==null)throw new IllegalStateException("PUBLIC_COURSE_REQUIRED");
         check(playthrough.steps().size()==10&&courseRoute.bindings().size()==7,"public_course_packaged_plan_and_facility_links_validated");
@@ -1511,7 +1529,9 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->publicRouteCheck("survey",null)).thenCompose(v->finishCourseQuest(a1,s1,"survey_marker"))
             .thenCompose(v->expectQuestCode(sharedStory.advance(a1,s1,()->true),"CONDITIONS_UNMET"))
             .thenCompose(v->finishCourseQuest(a2,s2,"survey_marker")).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true))
-            .thenCompose(v->publicRouteCheck("materials","material_site"));
+            .thenCompose(v->publicRouteCheck("materials","material_site"))
+            .thenCompose(v->journal.topic(a1,s1,()->coordinator.playable(s1),"survey_guide","facility_clue")).thenCompose(v->publicContacts(false))
+            .thenCompose(v->expectQuestCode(journal.topic(a1,s1,()->coordinator.playable(s1),"course_researcher","course_records"),"NPC_UNAVAILABLE"));
     }
     private CompletionStage<Void> publicCourseVote(){
         publicRoster();return publicRouteCheck("path",null).thenCompose(v->finishCourseQuest(a1,s1,"path_marker"))
@@ -1520,7 +1540,7 @@ public final class SessionVerification implements AutoCloseable {
             .thenRun(()->check(!Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen()),"public_course_one_vote_does_not_open_exploration"))
             .thenCompose(v->sharedStory.cast(a2,s2,()->true,storyVote.id(),"route_one"))
             .thenRun(()->check(Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen())&&!Boolean.TRUE.equals(sharedStory.cached(b).story().explorationOpen()),"public_course_shared_branch_opens_only_own_run"))
-            .thenCompose(v->publicRouteCheck("dungeon",null));
+            .thenCompose(v->publicRouteCheck("dungeon",null)).thenCompose(v->publicContacts(true));
     }
     private CompletionStage<Void> publicCourseFinish(){
         publicRoster();var place=explorationContent.places().get("survey_place");var area=place.bounds();double x=(area.minX()+area.maxX())/2,y=(area.minY()+area.maxY())/2,z=(area.minZ()+area.maxZ())/2;

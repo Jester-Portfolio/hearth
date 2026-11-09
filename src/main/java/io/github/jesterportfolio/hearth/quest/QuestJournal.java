@@ -9,10 +9,11 @@ import java.util.function.*;
 
 /** 기존 quest list/worker/owner에 연결한 작은 개인 UI 조정자입니다. */
 public final class QuestJournal {
-    public record View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal,ExplorationView exploration,QuestCompletionView completion){
+    public record View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal,ExplorationView exploration,QuestCompletionView completion,Set<String> blockedNpcs){
+        public View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal,ExplorationView exploration,QuestCompletionView completion){this(states,journal,exploration,completion,Set.of());}
         public View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal,ExplorationView exploration){this(states,journal,exploration,QuestCompletionView.empty());}
         public View(Map<String,QuestStore.Saved> states,QuestJournalStore.Journal journal){this(states,journal,ExplorationView.empty());}
-        public View{states=Map.copyOf(states);}
+        public View{states=Map.copyOf(states);blockedNpcs=Set.copyOf(blockedNpcs);}
     }
     private record Key(UUID run,UUID player){}
     private final QuestJournalStore store;private final PersonalQuest quests;private final QuestCatalog catalog;private final Executor owner;private final Runnable check;
@@ -33,6 +34,8 @@ public final class QuestJournal {
         if(storyAccess!=null&&!storyAccess.quest(ctx.storyRunId(),catalog.quest(id)))return false;
         var gate=completionRules.rule(id).branch();if(gate==null)return true;var snapshot=story==null?null:story.cached(ctx.storyRunId());var branch=snapshot==null?null:snapshot.branches().get(gate.stage());return story!=null&&story.healthy(ctx.storyRunId())&&branch!=null&&branch.choice().equals(gate.choice());
     }
+    public boolean npcAllowed(ServerProgressAccess.Context ctx,String id){check.run();var npc=catalog.npc(id);return !closed&&(story==null||story.healthy(ctx.storyRunId())&&storyAccess.content(ctx.storyRunId(),npc.x(),npc.y(),npc.z()));}
+    private Set<String> blockedNpcs(ServerProgressAccess.Context ctx){var blocked=new HashSet<String>();for(var npc:catalog.npcs())if(!npcAllowed(ctx,npc.npcId()))blocked.add(npc.npcId());return Set.copyOf(blocked);}
     public boolean travelAllowed(ServerProgressAccess.Context ctx,String place){check.run();if(closed||content==null)return false;var p=content.places().get(place);return p!=null&&(storyAccess==null||storyAccess.region(ctx.storyRunId(),p.region())&&storyAccess.area(ctx.storyRunId(),p.bounds()));}
     public Set<String> blocked(ServerProgressAccess.Context ctx){var result=new HashSet<String>();for(String id:catalog.questIds())if(!questAllowed(ctx,id))result.add(id);return Set.copyOf(result);}
     private ExplorationView explorationView(ServerProgressAccess.Context ctx,ExplorationStore.Data raw,List<CommunityBoundary.Member> members){
@@ -48,6 +51,7 @@ public final class QuestJournal {
     public void exploration(ExplorationStore store,ExplorationContent definitions,CommunityBoundary boundary){check.run();explorationStore=store;content=definitions;community=boundary;}
     public void requireView(ServerProgressAccess.Context ctx,View view){
         check.run();if(completionStore!=null&&(!view.completion().registered()||view.completion().epoch()!=epoch(ctx)))throw new IllegalStateException("STALE_COMPLETION_VIEW");quests.requireListDisplay(ctx,view.states());
+        if(!view.blockedNpcs().equals(blockedNpcs(ctx)))throw new IllegalStateException("STALE_NPC_VISIBILITY");
         if(story!=null&&(!story.healthy(ctx.storyRunId())||story.cached(ctx.storyRunId()).story().revision()!=view.exploration().story().revision()||!blocked(ctx).equals(view.exploration().blockedQuests())))throw new IllegalStateException("STALE_STORY_VIEW");
         if(community!=null && (!community.members(ctx).equals(view.exploration().members()) || !community.status(ctx,view.exploration().story(),view.exploration().members()).equals(view.exploration().conditions())))throw new IllegalStateException("STALE_COMMUNITY");
     }
@@ -67,11 +71,11 @@ public final class QuestJournal {
     private CompletionStage<View> read(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid){
         long epoch=epoch(ctx);CompletionStage<?> prepared=story==null?CompletableFuture.completedFuture(null):story.load(ctx).thenComposeAsync(s->story.updateConditions(ctx),owner);
         return prepared.thenComposeAsync(v->quests.list(ctx,token,valid),owner).thenCompose(rows->store.readJournal(ctx).thenCompose(data->{
-            if(content==null)return CompletableFuture.completedFuture(new View(rows,data));
-            return explorationStore.readExploration(ctx).thenApplyAsync(raw->{valid(valid);var members=community.members(ctx);return new View(rows,data,explorationView(ctx,raw,members));},owner);
+            if(content==null)return CompletableFuture.supplyAsync(()->{valid(valid);return new View(rows,data,ExplorationView.empty(),QuestCompletionView.empty(),blockedNpcs(ctx));},owner);
+            return explorationStore.readExploration(ctx).thenApplyAsync(raw->{valid(valid);var members=community.members(ctx);return new View(rows,data,explorationView(ctx,raw,members),QuestCompletionView.empty(),blockedNpcs(ctx));},owner);
         })).thenComposeAsync(view->{
             if(completionStore==null)return CompletableFuture.completedFuture(view);
-            return completionStore.readRewards(ctx).thenCompose(grants->completionStore.readChapters(ctx).thenApplyAsync(skips->{valid(valid);if(epoch!=epoch(ctx))throw new IllegalStateException("STALE_COMPLETION_VIEW");return new View(view.states(),view.journal(),view.exploration(),QuestCompletionView.build(catalog,completionRules,view.states(),blocked(ctx),grants,skips,story==null?null:story.cached(ctx.storyRunId()),epoch));},owner));
+            return completionStore.readRewards(ctx).thenCompose(grants->completionStore.readChapters(ctx).thenApplyAsync(skips->{valid(valid);if(epoch!=epoch(ctx))throw new IllegalStateException("STALE_COMPLETION_VIEW");return new View(view.states(),view.journal(),view.exploration(),QuestCompletionView.build(catalog,completionRules,view.states(),blocked(ctx),grants,skips,story==null?null:story.cached(ctx.storyRunId()),epoch),view.blockedNpcs());},owner));
         },owner).thenApplyAsync(view->{valid(valid);requireView(ctx,view);return view;},owner);
     }
     private CompletionStage<View> perform(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,Function<View,CompletionStage<Void>> write){
@@ -97,10 +101,10 @@ public final class QuestJournal {
     /** 서버가 검증한 현재 대화에서만 호출합니다. 기록 조회나 일반 인사는 이 경로를 사용하지 않습니다. */
     public CompletionStage<View> topic(ServerProgressAccess.Context ctx,Object token,BooleanSupplier valid,String npc,String topic){
         check.run();final QuestCatalog.Topic definition;
-        try{definition=catalog.topic(npc,topic);}catch(RuntimeException e){return CompletableFuture.failedFuture(e);}
-        if(definition.journal()==null)return load(ctx,token,valid).thenApplyAsync(view->{valid(valid);requireView(ctx,view);if(!definition.available(view.states(),id->questAllowed(ctx,id)))throw new IllegalStateException("TOPIC_LOCKED");return view;},owner);
+        try{if(!npcAllowed(ctx,npc))throw new IllegalStateException("NPC_UNAVAILABLE");definition=catalog.topic(npc,topic);}catch(RuntimeException e){return CompletableFuture.failedFuture(e);}
+        if(definition.journal()==null)return load(ctx,token,valid).thenApplyAsync(view->{valid(valid);requireView(ctx,view);if(!npcAllowed(ctx,npc)||!definition.available(view.states(),id->questAllowed(ctx,id)))throw new IllegalStateException("TOPIC_LOCKED");return view;},owner);
         Function<View,CompletionStage<Void>> write=view->{
-            if(!definition.available(view.states(),id->questAllowed(ctx,id)))throw new IllegalStateException("TOPIC_LOCKED");
+            if(!npcAllowed(ctx,npc)||!definition.available(view.states(),id->questAllowed(ctx,id)))throw new IllegalStateException("TOPIC_LOCKED");
             if(content==null||explorationStore==null)throw new IllegalStateException("TOPIC_JOURNAL_UNAVAILABLE");
             var fact=content.facts().get(definition.journal());if(fact==null||!fact.important())throw new IllegalStateException("TOPIC_JOURNAL_UNAVAILABLE");
             return explorationStore.recordFact(ctx,fact,false).thenAccept(first->{});
