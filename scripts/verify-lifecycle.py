@@ -116,6 +116,7 @@ def main():
     parser.add_argument('--quest-navigation', action='store_true', help='보고·추적·알림 동선을 한 JVM에서 검증합니다')
     parser.add_argument('--game-information', action='store_true', help='공개 게임 정보 조회 경계를 한 JVM에서 검증합니다')
     parser.add_argument('--npc-views', action='store_true', help='개인 NPC 표시 데이터·표식 엔티티를 한 JVM에서 검증합니다')
+    parser.add_argument('--inventory-workspaces',action='store_true',help='순정 임시 제작·월드 보관함·저장/실패와 두 JVM의 기존 DB/월드 복원을 함께 검사합니다')
     parser.add_argument('--player-interactions', action='store_true', help='41슬롯 조작 정책·dirty 저장 연결을 한 JVM에서 검증합니다')
     parser.add_argument('--guide-safety-only', action='store_true', help='공동 조사 화면 요청의 실제 SQL 실패·불명 결과만 기존 도구로 추가 검사합니다')
     parser.add_argument('--gameplay-guide', action='store_true', help='공유 진행 안내·GUI 연결만 한 JVM에서 검증합니다')
@@ -255,6 +256,10 @@ def main():
         parser.error('--economy-desk는 --sessions --economy가 필요합니다')
     if args.economy and (not args.sessions or args.quests or args.manual_player or args.player_interactions or args.phone_dialog):
         parser.error('--economy는 자동 --sessions 단독 경제 모드입니다')
+    if args.inventory_workspaces:
+        allowed={'inventory_workspaces','sessions','accept_eula'}
+        if not args.sessions or any(isinstance(value,bool) and value and key not in allowed for key,value in vars(args).items()):parser.error('--inventory-workspaces는 자동 --sessions와 단독 실행합니다')
+        args.player_interactions=True
     if args.completion_navigation and (not all([args.sessions,args.quests,args.story_batch,args.quest_completion,args.phone_dialog]) or args.manual_player):
         parser.error('--completion-navigation은 자동 --sessions --quests --story-batch --quest-completion --phone-dialog가 필요합니다')
     if args.completion_navigation:
@@ -438,7 +443,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.dungeonPlay=true')
         if args.combat_players:
             paper.insert(-3,'-Dhearth.verification.combatPlayers=true')
-        for phase in (['prepare','resume'] if args.combat_paths else ['prepare'] if args.gathering_crafting or args.crafting_quests or args.crafting or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
+        for phase in (['prepare','resume'] if args.combat_paths else ['prepare'] if args.gathering_crafting or args.crafting_quests or args.crafting or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions and not args.inventory_workspaces or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
             if phase=='resume' and args.gathering:
                 content=plugins/'Hearth/gathering-demo.yml'
@@ -515,6 +520,7 @@ motd=Hearth isolated S4-11 verification
                             monitor.action(name,'navigation-play')
                         elif args.player_interactions:
                             monitor.action(name,'interaction-play')
+                            if args.inventory_workspaces:monitor.action(name,'inventory-workspace-play')
                             monitor.db('write-fail-on'); monitor.action(name,'interaction-write-failure'); monitor.db('write-fail-off')
                         elif args.world_effects:
                             monitor.action(name,'effect-prepare')
@@ -611,6 +617,8 @@ motd=Hearth isolated S4-11 verification
                         monitor.send(name,'hearthverify session-link-existing '+args.profile)
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
+                    elif args.inventory_workspaces:
+                        monitor.action(name,'session-resume'); monitor.action(name,'inventory-workspace-restored')
                     elif args.gathering:
                         monitor.action(name,'session-resume'); monitor.action(name,'gathering-restored')
                     elif args.economy:
@@ -692,7 +700,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    inventory_workspaces_mode=args.inventory_workspaces,s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

@@ -1,6 +1,6 @@
 package io.github.jesterportfolio.hearth.inventory;
 
-import java.util.Arrays;
+import java.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.*;
 
@@ -36,6 +36,17 @@ public final class PaperInventoryCodec {
         if(left!=0)throw new IllegalStateException("CURSOR_STORAGE_FULL");
         return slots;
     }
+    /** 제작 결과 미리보기는 포함하지 않습니다. 실제 투입 재료·커서만 기존 41칸에 합칩니다. */
+    public ItemStack[] withTemporary(ItemStack[] original,ItemStack cursor,ItemStack[] matrix){
+        main();if(matrix.length!=0&&matrix.length!=4&&matrix.length!=9)throw new IllegalArgumentException("TEMPORARY_MATRIX_LAYOUT");
+        var returned=new ArrayList<ItemStack>();returned.add(empty(cursor));for(var item:matrix)returned.add(empty(item));
+        var normalized=Arrays.stream(original).map(PaperInventoryCodec::empty).toList();
+        return InventoryPacking.pack(normalized,returned,new InventoryPacking.Items<ItemStack>(){
+            public ItemStack copy(ItemStack item){return item.clone();}public int amount(ItemStack item){return item.getAmount();}public int maximum(ItemStack item){return item.getMaxStackSize();}public boolean similar(ItemStack a,ItemStack b){return a.isSimilar(b);}public ItemStack amount(ItemStack item,int value){var result=item.clone();result.setAmount(value);return result;}
+        }).toArray(ItemStack[]::new);
+    }
+    private static ItemStack empty(ItemStack item){return item==null||item.isEmpty()?null:item;}
+    public InventoryPayload capture(PlayerInventory inventory,ItemStack cursor,CraftingInventory crafting){return encode(withTemporary(contents(inventory),cursor,crafting==null?new ItemStack[0]:crafting.getMatrix()));}
     public InventoryPayload encode(ItemStack[] slots) {
         main();
         if (slots==null || slots.length!=41) throw new IllegalArgumentException("Expected 41 slots");

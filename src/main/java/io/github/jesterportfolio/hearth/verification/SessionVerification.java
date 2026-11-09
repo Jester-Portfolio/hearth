@@ -11,6 +11,8 @@ import io.github.jesterportfolio.hearth.exploration.*;
 import io.github.jesterportfolio.hearth.story.*;
 import io.github.jesterportfolio.hearth.combat.*;
 import org.bukkit.configuration.file.YamlConfiguration;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
@@ -326,13 +328,15 @@ public final class SessionVerification implements AutoCloseable {
         if(playthrough!=null)prepareCourse(run);else for(int x=1;x<=(manual?15:3);x++)for(int z=1;z<=(manual?15:3);z++)w.getBlockAt(x,63,z).setType(Material.STONE,false);
         return new Location(w,2.5,64,2.5);
     }
-    private final class Controlled implements PlayerSessions.Port {
+    private final class Controlled implements PlayerSessions.Port,TemporaryInventory.Port {
         final Inventory inventory=Bukkit.createInventory(null,45,Component.text("제어 세션 41슬롯"));
+        final Inventory inputs=Bukkit.createInventory(null,9,Component.text("제어 임시 제작 입력"));int matrixSize;
         ItemStack cursor;boolean connected=true;int applies,moves;CompletableFuture<Boolean> movement=CompletableFuture.completedFuture(true);
         public boolean connected(){main();return connected;}
-        public InventoryPayload capture(){main();return codec.encode(codec.withCursor(Arrays.copyOf(inventory.getContents(),41),cursor));}
+        public InventoryPayload capture(){main();return new TemporaryInventory(codec).capture(this);}
+        public ItemStack[] slots(){return Arrays.copyOf(inventory.getContents(),41);}public ItemStack cursor(){return cursor;}public void cursor(ItemStack value){cursor=value;}public ItemStack[] matrix(){return Arrays.copyOf(inputs.getContents(),matrixSize);}public void clearMatrix(){inputs.clear();}
         public void apply(InventoryPayload value){main();ItemStack[] slots=codec.decode(value);for(int i=0;i<41;i++)inventory.setItem(i,slots[i]);applies++;}
-        public void settle(){if(cursor!=null&&!cursor.isEmpty()){var value=capture();apply(value);cursor=null;}}
+        public void settle(){new TemporaryInventory(codec).settle(this);}
         public CompletionStage<Boolean> move(){main();moves++;return movement;}
         void count(int value){inventory.setItem(0,new ItemStack(Material.STONE,value));}
     }
@@ -396,6 +400,8 @@ public final class SessionVerification implements AutoCloseable {
         case "navigation-play" -> navigationPlay();
         case "game-information" -> gameInformation();
         case "npc-views" -> npcViews();
+        case "inventory-workspace-play" -> inventoryWorkspacePlay();
+        case "inventory-workspace-restored" -> inventoryWorkspaceRestored();
         case "interaction-play" -> interactionPlay();
         case "interaction-write-failure" -> interactionWriteFailure();
         case "gameplay-guide" -> gameplayGuide();
@@ -2213,6 +2219,58 @@ public final class SessionVerification implements AutoCloseable {
         .thenRun(()->check(s1.save().revision()==revision[0]&&codec.equivalent(one.capture(),finalValue[0]),"craft_reconnect_existing_payload_restored"))
         .thenCompose(v->{var probeCtx=ctx(a,24);return mainResult(store.createPlayer(probeCtx,"craft-failure-probe")).thenCompose(x->mainResult(store.createInventory(probeCtx,fixture.apply(3)))).thenCompose(original->{var failure=new InventorySaveSession(store,probeCtx,99,()->finalValue[0],owner,SessionVerification::main,()->true,c->{});failure.markDirty();return rejectQuest(failure.flush()).thenCompose(x->mainResult(store.readInventory(probeCtx))).thenAccept(after->check(failure.dirty()&&failure.holdCode()!=null&&after.equals(original),"craft_real_DB_CAS_failure_dirty_HOLD_original_preserved"));});})
         .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(row->check(row.revision()==revision[0]&&codec.equivalent(row.payload(),finalValue[0]),"craft_failure_other_inventory_unchanged"));
+    }
+    private org.bukkit.block.Container workspaceBarrel(UUID run){return (org.bukkit.block.Container)Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).getBlockAt(10,64,6).getState(false);}
+    private Inventory workspaceChest(UUID run){return ((org.bukkit.block.Chest)Bukkit.getWorld(worlds.get(run).mapping().physicalId()).getBlockAt(12,64,6).getState(false)).getInventory();}
+    private void workspaceBlocks(UUID run){
+        var world=Bukkit.getWorld(worlds.get(run).mapping().physicalId());for(int x:List.of(10,12,13)){var block=world.getBlockAt(x,64,6);if(!block.getType().isAir())throw new IllegalStateException("WORKSPACE_EXISTING_BLOCK");block.setType(x==10?Material.BARREL:Material.CHEST,false);}
+        var left=world.getBlockAt(12,64,6);var right=world.getBlockAt(13,64,6);var a=(org.bukkit.block.data.type.Chest)left.getBlockData();a.setFacing(org.bukkit.block.BlockFace.NORTH);a.setType(org.bukkit.block.data.type.Chest.Type.LEFT);left.setBlockData(a,false);var b=(org.bukkit.block.data.type.Chest)right.getBlockData();b.setFacing(org.bukkit.block.BlockFace.NORTH);b.setType(org.bukkit.block.data.type.Chest.Type.RIGHT);right.setBlockData(b,false);
+        var manager=WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(world));var region=new com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion("hearth_workspace_storage",com.sk89q.worldedit.math.BlockVector3.at(9,63,5),com.sk89q.worldedit.math.BlockVector3.at(14,66,7));region.setPriority(40);region.setFlag(com.sk89q.worldguard.protection.flags.Flags.CHEST_ACCESS,com.sk89q.worldguard.protection.flags.StateFlag.State.ALLOW);region.setFlag(com.sk89q.worldguard.protection.flags.Flags.INTERACT,com.sk89q.worldguard.protection.flags.StateFlag.State.ALLOW);region.setFlag(com.sk89q.worldguard.protection.flags.Flags.PASSTHROUGH,com.sk89q.worldguard.protection.flags.StateFlag.State.ALLOW);manager.addRegion(region);
+    }
+    private void workspaceAccessChecks(){
+        var world=Bukkit.getWorld(worlds.get(a).mapping().physicalId());var regions=WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(world));java.util.function.Predicate<Location> access=location->regions.getApplicableRegions(com.sk89q.worldedit.math.BlockVector3.at(location.getBlockX(),location.getBlockY(),location.getBlockZ())).testState((com.sk89q.worldguard.protection.association.RegionAssociable)null,com.sk89q.worldguard.protection.flags.Flags.CHEST_ACCESS,com.sk89q.worldguard.protection.flags.Flags.INTERACT);
+        var chest=workspaceChest(a);check(chest.getSize()==54&&WorldInventoryAccess.blocks(chest).size()==2&&WorldInventoryAccess.allowed(world.getUID(),chest,access),"workspace_real_double_chest_both_blocks_and_WorldGuard_allow");
+        check(!WorldInventoryAccess.allowed(Bukkit.getWorld(worlds.get(b).mapping().physicalId()).getUID(),chest,access)&&!WorldInventoryAccess.allowed(world.getUID(),Bukkit.createInventory(null,27),access),"workspace_other_run_and_GUI_inventory_denied");
+        var manager=WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(world));var denied=new com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion("hearth_workspace_denied_half",com.sk89q.worldedit.math.BlockVector3.at(13,64,6),com.sk89q.worldedit.math.BlockVector3.at(13,64,6));denied.setPriority(50);denied.setFlag(com.sk89q.worldguard.protection.flags.Flags.CHEST_ACCESS,com.sk89q.worldguard.protection.flags.StateFlag.State.DENY);manager.addRegion(denied);
+        check(!WorldInventoryAccess.allowed(world.getUID(),chest,access),"workspace_denied_second_half_rejects_entire_double_chest");manager.removeRegion(denied.getId());
+        check(!WorldInventoryAccess.allowed(world.getUID(),chest,location->location.getBlockX()!=13),"workspace_progress_access_checks_both_chest_halves");
+        check(WorldInventoryAccess.allowed(world.getUID(),workspaceBarrel(a).getInventory(),access),"workspace_real_barrel_uses_same_ownership_and_WorldGuard_boundary");
+        check(!WorldInventoryAccess.allowed(world.getUID(),((org.bukkit.block.Container)world.getBlockAt(10,64,6).getState(true)).getSnapshotInventory(),access),"workspace_detached_snapshot_cannot_be_opened_as_live_world_storage");
+    }
+    private void workspaceProjectionChecks(){
+        var world=Bukkit.getWorld(worlds.get(a).mapping().physicalId());var slots=new ItemStack[41];slots[0]=new ItemStack(Material.STONE,5);var inputs=new ItemStack[4];inputs[0]=new ItemStack(Material.OAK_LOG,2);
+        var before=codec.encode(slots);var projected=PaperInventoryWindow.preview(codec,slots,inputs,null,new PaperInventoryWindow.Click(InventoryWindowRules.Slot.STORAGE,0,org.bukkit.event.inventory.InventoryAction.PICKUP_HALF,-1,slots[0],null));
+        check(codec.decode(projected)[0].getAmount()==5&&codec.encode(slots).equals(before)&&inputs[0].getAmount()==2,"workspace_pickup_half_preflight_keeps_original_storage_and_inputs");
+        var result=PaperInventoryWindow.recipe(inputs,world);check(result.getResult().getType()==Material.OAK_PLANKS&&result.getResult().getAmount()==4&&inputs[0].getAmount()==2,"workspace_actual_2x2_recipe_result_does_not_mutate_input");
+        projected=PaperInventoryWindow.preview(codec,slots,inputs,null,new PaperInventoryWindow.Click(InventoryWindowRules.Slot.RESULT,0,org.bukkit.event.inventory.InventoryAction.PICKUP_ALL,-1,result.getResult(),result));var restored=codec.decode(projected);check(Arrays.stream(restored).filter(Objects::nonNull).filter(i->i.getType()==Material.OAK_PLANKS).mapToInt(ItemStack::getAmount).sum()==4&&Arrays.stream(restored).filter(Objects::nonNull).filter(i->i.getType()==Material.OAK_LOG).mapToInt(ItemStack::getAmount).sum()==1,"workspace_result_preflight_counts_output_and_remaining_matrix_once");
+        var cake=new ItemStack[]{new ItemStack(Material.MILK_BUCKET),new ItemStack(Material.MILK_BUCKET),new ItemStack(Material.MILK_BUCKET),new ItemStack(Material.SUGAR),new ItemStack(Material.EGG),new ItemStack(Material.SUGAR),new ItemStack(Material.WHEAT),new ItemStack(Material.WHEAT),new ItemStack(Material.WHEAT)};var crafted=PaperInventoryWindow.recipe(cake,world);var returned=codec.withTemporary(new ItemStack[41],crafted.getResult(),crafted.getResultingMatrix());
+        check(crafted.getResult().getType()==Material.CAKE&&Arrays.stream(returned).filter(Objects::nonNull).filter(i->i.getType()==Material.BUCKET).mapToInt(ItemStack::getAmount).sum()==3,"workspace_actual_3x3_recipe_remainders_preserved");
+        var honey=new ItemStack[4];Arrays.fill(honey,new ItemStack(Material.HONEY_BOTTLE,2));var h=PaperInventoryWindow.recipe(honey,world);var hPreview=codec.decode(PaperInventoryWindow.preview(codec,new ItemStack[41],honey,null,new PaperInventoryWindow.Click(InventoryWindowRules.Slot.RESULT,0,org.bukkit.event.inventory.InventoryAction.PICKUP_ALL,-1,h.getResult(),h)));
+        check(Arrays.stream(hPreview).filter(Objects::nonNull).filter(i->i.getType()==Material.GLASS_BOTTLE).mapToInt(ItemStack::getAmount).sum()==4&&Arrays.stream(hPreview).filter(Objects::nonNull).filter(i->i.getType()==Material.HONEY_BOTTLE).mapToInt(ItemStack::getAmount).sum()==4,"workspace_stackable_recipe_container_overflow_is_preserved");
+        var full=new Controlled();for(int i=0;i<36;i++)full.inventory.setItem(i,new ItemStack(Material.STONE,64));full.matrixSize=4;full.inputs.setItem(0,new ItemStack(Material.OAK_LOG,1));full.cursor=new ItemStack(Material.OAK_PLANKS,4);var original=codec.encode(full.slots());int applies=full.applies;
+        try{full.settle();throw new AssertionError("full temporary return accepted");}catch(IllegalStateException expected){check(codec.encode(full.slots()).equals(original)&&full.inputs.getItem(0).getAmount()==1&&full.cursor.getAmount()==4&&full.applies==applies,"workspace_full_return_before_mutation_preserves_grid_cursor_and_equipment");}
+        try{PaperInventoryWindow.preview(codec,full.slots(),new ItemStack[0],null,new PaperInventoryWindow.Click(InventoryWindowRules.Slot.CONTAINER,0,org.bukkit.event.inventory.InventoryAction.PICKUP_ALL,-1,new ItemStack(Material.OAK_LOG),null));throw new AssertionError("full container pickup accepted");}catch(IllegalStateException expected){check(codec.encode(full.slots()).equals(original),"workspace_container_cursor_capacity_rejects_before_native_move");}
+    }
+    private CompletionStage<Void> inventoryWorkspacePlay(){
+        var preserved=new InventoryStore.Stored[2];var expected=new InventoryPayload[1];
+        return mainResult(store.readInventory(a2)).thenCompose(row->{preserved[0]=row;return mainResult(store.readInventory(ctx(b,1)));}).thenAccept(row->preserved[1]=row)
+            .thenCompose(v->{CompletionStage<Void> chunks=CompletableFuture.completedFuture(null);for(UUID run:List.of(a,b))chunks=chunks.thenCompose(x->mainResult(Bukkit.getWorld(worlds.get(run).mapping().physicalId()).getChunkAtAsync(0,0))).thenAccept(chunk->chunk.addPluginChunkTicket(plugin));return chunks;})
+            .thenRun(()->{workspaceBlocks(a);workspaceBlocks(b);workspaceAccessChecks();workspaceProjectionChecks();workspaceBarrel(a).getInventory().setItem(0,new ItemStack(Material.OAK_LOG,8));workspaceBarrel(b).getInventory().setItem(0,new ItemStack(Material.OAK_LOG,19));var marked=new ItemStack(Material.PAPER,3);marked.editMeta(m->{m.displayName(Component.text("공개 공동 창고 표본"));m.lore(List.of(Component.text("월드 파일 보존")));});workspaceChest(a).setItem(2,marked);workspaceChest(b).setItem(2,new ItemStack(Material.PAPER,7));})
+            .thenCompose(v->mainResult(store.readInventory(a1))).thenCompose(before->{
+                var barrel=workspaceBarrel(a).getInventory();barrel.setItem(0,new ItemStack(Material.OAK_LOG,4));one.inventory.setItem(14,new ItemStack(Material.OAK_LOG,4));coordinator.refresh(s1);
+                return mainResult(store.readInventory(a1)).thenAccept(after->check(before.equals(after)&&s1.save().dirty()&&barrel.getItem(0).getAmount()==4,"workspace_container_move_uses_dirty_without_per_click_DB_save"));
+            }).thenRun(()->{one.matrixSize=4;one.inputs.setItem(0,new ItemStack(Material.OAK_LOG,2));one.inventory.setItem(14,new ItemStack(Material.OAK_LOG,2));var result=PaperInventoryWindow.recipe(one.matrix(),Bukkit.getWorld(worlds.get(a).mapping().physicalId()));one.inputs.clear();var matrix=result.getResultingMatrix();for(int i=0;i<matrix.length;i++)one.inputs.setItem(i,matrix[i]);one.cursor=result.getResult();expected[0]=one.capture();check(one.inputs.getItem(0).getAmount()==1&&one.cursor.getAmount()==4,"workspace_live_grid_and_cursor_remain_until_explicit_boundary");})
+            .thenCompose(v->coordinator.saveBoundary(s1)).thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(saved->{check(codec.equivalent(saved.payload(),expected[0])&&saved.revision()==2&&one.cursor==null&&Arrays.stream(one.matrix()).allMatch(i->i==null||i.isEmpty()),"workspace_boundary_returns_inputs_cursor_before_PG_revision2");var stable=one.capture();one.settle();check(codec.equivalent(stable,one.capture()),"workspace_repeated_close_return_is_idempotent");})
+            .thenCompose(v->{var barrel=workspaceBarrel(a).getInventory();one.inventory.removeItem(new ItemStack(Material.OAK_LOG,1));barrel.addItem(new ItemStack(Material.OAK_LOG,1));coordinator.refresh(s1);var first=s1.save().flush();check(s1.save().saving(),"workspace_first_snapshot_in_flight_before_next_move");one.inventory.addItem(new ItemStack(Material.OAK_LOG,1));barrel.removeItem(new ItemStack(Material.OAK_LOG,1));coordinator.refresh(s1);return first.thenCompose(x->coordinator.saveBoundary(s1));})
+            .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(saved->check(saved.revision()==4&&codec.equivalent(saved.payload(),one.capture())&&craftingCount(one.capture(),Material.OAK_LOG)==3&&craftingCount(one.capture(),Material.OAK_PLANKS)==4,"workspace_latest_dirty_not_overwritten_by_prior_snapshot"))
+            .thenCompose(v->mainResult(store.readInventory(a1))).thenCompose(before->{var failure=new InventorySaveSession(store,a1,before.revision()+1,one::capture,owner,SessionVerification::main,()->true,code->{});failure.markDirty();return rejectQuest(failure.flush()).thenCompose(x->mainResult(store.readInventory(a1))).thenAccept(after->check(before.equals(after)&&failure.dirty()&&failure.holdCode()!=null&&workspaceBarrel(a).getInventory().getItem(0).getAmount()==4,"workspace_real_PG_CAS_failure_preserves_source_dirty_and_world_storage"));})
+            .thenCompose(v->mainResult(store.readInventory(a2))).thenCompose(after->{check(after.equals(preserved[0]),"workspace_other_person_inventory_preserved");return mainResult(store.readInventory(ctx(b,1)));}).thenAccept(after->check(after.equals(preserved[1])&&workspaceBarrel(b).getInventory().getItem(0).getAmount()==19,"workspace_other_run_DB_and_world_storage_preserved"))
+            .thenRun(()->{for(UUID run:List.of(a,b)){Bukkit.getWorld(worlds.get(run).mapping().physicalId()).getChunkAt(0,0).removePluginChunkTicket(plugin);}});
+    }
+    private CompletionStage<Void> inventoryWorkspaceRestored(){
+        return openAll().thenCompose(v->{CompletionStage<Void> chunks=CompletableFuture.completedFuture(null);for(UUID run:List.of(a,b))chunks=chunks.thenCompose(x->mainResult(Bukkit.getWorld(worlds.get(run).mapping().physicalId()).getChunkAtAsync(0,0))).thenAccept(chunk->chunk.addPluginChunkTicket(plugin));return chunks;})
+            .thenRun(()->{check(craftingCount(one.capture(),Material.OAK_LOG)==3&&craftingCount(one.capture(),Material.OAK_PLANKS)==4&&s1.save().revision()==4&&one.matrixSize==0&&one.cursor==null,"workspace_second_JVM_canonical_inventory_restored_without_transient_replay");check(workspaceBarrel(a).getInventory().getItem(0).getAmount()==4&&workspaceBarrel(b).getInventory().getItem(0).getAmount()==19,"workspace_second_JVM_world_barrels_and_progress_isolation");var item=workspaceChest(a).getItem(2);check(item.getAmount()==3&&item.getItemMeta().hasDisplayName()&&item.getItemMeta().hasLore()&&workspaceChest(b).getItem(2).getAmount()==7,"workspace_second_JVM_double_chest_metadata_and_other_run_preserved");workspaceAccessChecks();for(UUID run:List.of(a,b))Bukkit.getWorld(worlds.get(run).mapping().physicalId()).getChunkAt(0,0).removePluginChunkTicket(plugin);})
+            .thenCompose(v->verify(a2,5,0));
     }
     private CompletionStage<Void> interactionPlay(){
         var beforeB=new InventoryStore.Stored[1];

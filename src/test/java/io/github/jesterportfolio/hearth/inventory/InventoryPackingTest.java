@@ -1,0 +1,20 @@
+package io.github.jesterportfolio.hearth.inventory;
+
+import java.util.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+final class InventoryPackingTest {
+    record Stack(String type,String meta,int amount,int maximum){}
+    static final InventoryPacking.Items<Stack> ITEMS=new InventoryPacking.Items<>(){public Stack copy(Stack s){return new Stack(s.type,s.meta,s.amount,s.maximum);}public int amount(Stack s){return s.amount;}public int maximum(Stack s){return s.maximum;}public boolean similar(Stack a,Stack b){return a.type.equals(b.type)&&a.meta.equals(b.meta)&&a.maximum==b.maximum;}public Stack amount(Stack s,int n){return new Stack(s.type,s.meta,n,s.maximum);}};
+    static Stack stone(int n){return new Stack("stone","",n,64);}static ArrayList<Stack> slots(){return new ArrayList<>(Collections.nCopies(41,null));}
+    @Test void mergesCursorAndSeveralInputStacksWithoutMutatingInputs(){var s=slots();s.set(0,stone(60));var before=new ArrayList<>(s);var result=InventoryPacking.pack(s,List.of(stone(12),stone(2)),ITEMS);assertEquals(stone(64),result.get(0));assertEquals(stone(10),result.get(1));assertEquals(before,s);}
+    @Test void keepsDistinctMetadataAndFixedSlots(){var s=slots();s.set(0,stone(60));s.set(36,new Stack("helmet","wear",1,1));s.set(40,new Stack("shield","name",1,1));var named=new Stack("stone","quest lore",4,64);var r=InventoryPacking.pack(s,List.of(named),ITEMS);assertEquals(stone(60),r.get(0));assertEquals(named,r.get(1));assertEquals(s.subList(36,41),r.subList(36,41));}
+    @Test void compactOnlyWhenSplitStacksPreventReturningInputs(){var s=slots();for(int i=0;i<36;i++)s.set(i,stone(1));var r=InventoryPacking.pack(s,List.of(new Stack("log","",1,64)),ITEMS);assertEquals(stone(36),r.get(0));assertEquals("log",r.get(1).type);assertEquals(36,s.stream().filter(Objects::nonNull).count());}
+    @Test void ordinaryReturnKeepsExistingSlotOrder(){var s=slots();s.set(7,stone(2));s.set(16,stone(3));var r=InventoryPacking.pack(s,List.of(new Stack("log","",1,64)),ITEMS);assertEquals(s.get(7),r.get(7));assertEquals(s.get(16),r.get(16));assertEquals("log",r.get(0).type);}
+    @Test void fullStorageFailsBeforeAnySourceOrEquipmentChange(){var s=slots();for(int i=0;i<36;i++)s.set(i,stone(64));var before=new ArrayList<>(s);assertThrows(IllegalStateException.class,()->InventoryPacking.pack(s,List.of(new Stack("log","",1,64)),ITEMS));assertEquals(before,s);assertNull(s.get(36));}
+    @Test void nonStackableRemaindersAndNineInputsStayBounded(){var s=slots();var extras=new ArrayList<Stack>();for(int i=0;i<9;i++)extras.add(new Stack("tool","id"+i,1,1));extras.add(new Stack("bucket","",3,16));var r=InventoryPacking.pack(s,extras,ITEMS);assertEquals(10,r.stream().filter(Objects::nonNull).count());assertEquals(3,r.get(9).amount);}
+    @Test void invalidAmountsAndLayoutsFailBeforeChangingSource(){var s=slots();assertThrows(IllegalArgumentException.class,()->InventoryPacking.pack(s,List.of(stone(65)),ITEMS));assertThrows(IllegalArgumentException.class,()->InventoryPacking.pack(s,List.of(stone(0)),ITEMS));assertThrows(IllegalArgumentException.class,()->InventoryPacking.pack(s,Collections.nCopies(12,stone(1)),ITEMS));assertThrows(IllegalArgumentException.class,()->InventoryPacking.pack(s.subList(0,40),List.of(),ITEMS));assertTrue(s.stream().allMatch(Objects::isNull));}
+    @Test void resultIsImmutableAndEmptyReturnIsIdempotent(){var s=slots();s.set(0,stone(1));var r=InventoryPacking.pack(s,Collections.singletonList(null),ITEMS);assertEquals(s,r);assertEquals(r,InventoryPacking.pack(r,List.of(),ITEMS));assertThrows(UnsupportedOperationException.class,()->r.set(0,null));}
+    @Test void exhaustionAfterPartialCandidateMergeDoesNotLeakChanges(){var s=slots();for(int i=0;i<36;i++)s.set(i,new Stack("stone","id"+i,64,64));s.set(0,new Stack("stone","id0",63,64));var before=new ArrayList<>(s);assertThrows(IllegalStateException.class,()->InventoryPacking.pack(s,List.of(new Stack("stone","id0",2,64)),ITEMS));assertEquals(before,s);}
+}

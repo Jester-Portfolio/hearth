@@ -1,0 +1,18 @@
+package io.github.jesterportfolio.hearth.session;
+
+import java.util.*;
+import org.junit.jupiter.api.Test;
+import static io.github.jesterportfolio.hearth.session.InventoryWindowRules.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+final class InventoryWindowRulesTest {
+    Request r(Kind kind,Slot slot,String click,String action){return new Request(true,true,false,kind,slot,click,action,0,true);}
+    @Test void storageAndAuthorizedWorldContainerClicksUseSameVanillaActions(){for(var kind:List.of(Kind.CRAFTING,Kind.WORKBENCH,Kind.CONTAINER))for(String click:List.of("LEFT","RIGHT"))for(String action:List.of("PICKUP_ALL","PICKUP_HALF","PICKUP_ONE","PLACE_ALL","PLACE_ONE","SWAP_WITH_CURSOR"))assertTrue(inventory(r(kind,Slot.STORAGE,click,action)));assertTrue(inventory(r(Kind.CONTAINER,Slot.CONTAINER,"LEFT","PICKUP_HALF")));}
+    @Test void craftingInputAndResultAreSeparate(){assertTrue(inventory(r(Kind.CRAFTING,Slot.INPUT,"RIGHT","PLACE_ONE")));assertTrue(inventory(r(Kind.WORKBENCH,Slot.RESULT,"LEFT","PICKUP_ALL")));for(String click:List.of("SHIFT_LEFT","NUMBER_KEY","DROP","DOUBLE_CLICK"))assertFalse(inventory(r(Kind.WORKBENCH,Slot.RESULT,click,"PICKUP_ALL")));}
+    @Test void wrongOrRevokedViewAndCreativeCannotMoveAnything(){for(int i=0;i<4;i++)assertFalse(inventory(new Request(i!=0,i!=1,i==2,i==3?Kind.OTHER:Kind.CONTAINER,Slot.CONTAINER,"LEFT","PICKUP_ALL",0,true)));assertFalse(inventory(r(Kind.CONTAINER,Slot.OUTSIDE,"LEFT","PICKUP_ALL")));}
+    @Test void topInventoryRolesCannotCross(){assertFalse(inventory(r(Kind.CONTAINER,Slot.INPUT,"LEFT","PLACE_ALL")));assertFalse(inventory(r(Kind.CRAFTING,Slot.CONTAINER,"LEFT","PICKUP_ALL")));assertFalse(inventory(r(Kind.CONTAINER,Slot.RESULT,"LEFT","PICKUP_ALL")));}
+    @Test void shiftNumberKeysOffhandAndSlotDropsStayScoped(){for(var slot:List.of(Slot.STORAGE,Slot.INPUT,Slot.EQUIPMENT)){assertTrue(inventory(r(Kind.CRAFTING,slot,"SHIFT_LEFT","MOVE_TO_OTHER_INVENTORY")));assertTrue(inventory(r(Kind.CRAFTING,slot,"NUMBER_KEY","HOTBAR_SWAP")));assertTrue(inventory(r(Kind.CRAFTING,slot,"SWAP_OFFHAND","HOTBAR_SWAP")));assertTrue(inventory(r(Kind.CRAFTING,slot,"CONTROL_DROP","DROP_ALL_SLOT")));}assertFalse(inventory(new Request(true,true,false,Kind.CONTAINER,Slot.CONTAINER,"NUMBER_KEY","HOTBAR_SWAP",9,true)));}
+    @Test void cursorlessActionsAndEquipmentDoNotBypassTheirConstraints(){assertFalse(inventory(new Request(true,true,false,Kind.CONTAINER,Slot.CONTAINER,"NUMBER_KEY","HOTBAR_SWAP",0,false)));assertFalse(inventory(r(Kind.CRAFTING,Slot.EQUIPMENT,"LEFT","PLACE_ALL")));assertFalse(inventory(r(Kind.CONTAINER,Slot.CONTAINER,"MIDDLE","CLONE_STACK")));assertFalse(inventory(r(Kind.CONTAINER,Slot.CONTAINER,"DOUBLE_CLICK","COLLECT_TO_CURSOR")));}
+    @Test void dragSupportsInputsAndStorageOrAuthorizedContainerButNoResultEquipmentOrOutside(){assertTrue(drag(true,true,false,Kind.CRAFTING,List.of(Slot.STORAGE,Slot.INPUT)));assertTrue(drag(true,true,false,Kind.CONTAINER,List.of(Slot.STORAGE,Slot.CONTAINER)));for(var denied:List.of(Slot.RESULT,Slot.EQUIPMENT,Slot.OUTSIDE,Slot.CONTAINER))assertFalse(drag(true,true,false,Kind.CRAFTING,List.of(Slot.STORAGE,denied)));assertFalse(drag(true,false,false,Kind.CONTAINER,List.of(Slot.STORAGE)));assertFalse(drag(true,true,true,Kind.CONTAINER,List.of(Slot.STORAGE)));assertFalse(drag(true,true,false,Kind.CONTAINER,List.of()));}
+    @Test void onlyBlockOwnedBasicStorageIsSupported(){for(String type:List.of("CHEST","TRAPPED_CHEST","BARREL"))assertTrue(container(type));for(String type:List.of("ENDER_CHEST","SHULKER_BOX","CHEST_MINECART","HOPPER","FURNACE","DISPENSER","PLAYER","CRAFTING_TABLE"))assertFalse(container(type));}
+}

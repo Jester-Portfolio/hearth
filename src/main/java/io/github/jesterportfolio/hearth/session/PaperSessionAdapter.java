@@ -16,7 +16,11 @@ import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.*;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.*;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.flags.Flags;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /** 명시적으로 활성화한 격리 fixture 전용. 실제 계정이 없으면 이벤트 경로는 미검증입니다. */
@@ -36,6 +40,10 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private final Executor owner;
     private final PaperInventoryCodec codec;
     private final Location waiting;
+    private final TemporaryInventory temporary;
+    private record Window(PlayerSessions.Session session,Inventory inventory,UUID world,long generation,InventoryWindowRules.Kind kind){}
+    private final Map<Player,Window> windows=new IdentityHashMap<>();
+
     private final Map<UUID,Link> links=new HashMap<>();
     private final Map<UUID,Entry> entries=new HashMap<>();
     private final Map<UUID,Move> moving=new HashMap<>();
@@ -78,7 +86,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     public CompletionStage<Void> saveRunBoundary(UUID run){main();return sessions.saveRunBoundary(run);}
     public PlayerSessions.Session prepared(Player p){main();var e=entry(p);return baseReady(p)?e.session():null;}
     public PaperSessionAdapter(JavaPlugin plugin,PlayerSessions sessions,Executor owner,PaperInventoryCodec codec,Location waiting) {
-        this.plugin=plugin;this.sessions=sessions;this.owner=owner;this.codec=codec;this.waiting=waiting.clone();
+        this.plugin=plugin;this.sessions=sessions;this.owner=owner;this.codec=codec;this.temporary=new TemporaryInventory(codec);this.waiting=waiting.clone();
         Bukkit.getPluginManager().registerEvents(this,plugin);
     }
     public CompletionStage<Void> reward(PlayerSessions.Session s,io.github.jesterportfolio.hearth.quest.QuestRewards rewards,String quest){main();return rewards.claim(sessions,s,quest);}
@@ -105,9 +113,9 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         if (closed || link==null || !Bukkit.getOnlineMode() || !player.isWhitelisted()) { player.kick(Component.text("준비된 격리 시험 프로필이 필요합니다."));return; }
         var session=sessions.connect(link.context(),link.world(),new PlayerSessions.Port(){
             public boolean connected(){main();return !closed && player.isOnline() && Bukkit.getPlayer(player.getUniqueId())==player;}
-            public InventoryPayload capture(){main();return codec.capture(player.getInventory(),player.getItemOnCursor());}
-            public void settle(){settleCursor(player);}
-            public void apply(InventoryPayload value){main();requireNoCursor(player);codec.apply(player.getInventory(),value);}
+            public InventoryPayload capture(){main();return temporary.capture(temporaryPort(player,player.getOpenInventory().getTopInventory()));}
+            public void settle(){settleBoundary(player);}
+            public void apply(InventoryPayload value){main();requireNoCursor(player);if(Arrays.stream(PaperInventoryWindow.matrix(player.getOpenInventory().getTopInventory())).anyMatch(i->i!=null&&!i.isEmpty()))throw new IllegalStateException("UNSETTLED_CRAFTING_MATRIX");codec.apply(player.getInventory(),value);}
             public CompletionStage<Boolean> move(){
                 long generation=link.world().generation();
                 var result=new CompletableFuture<Boolean>();
@@ -133,14 +141,36 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
             else {try{combat.ready(player,session);}catch(RuntimeException failure){player.kick(Component.text("전투 복귀 준비 보류"));plugin.getLogger().warning("HEARTH_COMBAT_READY_HOLD");return;}player.sendMessage(Component.text("격리 스토리 진행 복원 완료"));player.sendMessage(Component.text("조작 안내: /hearthplay help"));}
         }));
     }
-    private void settleCursor(Player player){
-        main();if(player.getItemOnCursor().isEmpty())return;
-        var snapshot=codec.capture(player.getInventory(),player.getItemOnCursor());
-        codec.apply(player.getInventory(),snapshot);player.setItemOnCursor(null);
+    private TemporaryInventory.Port temporaryPort(Player p,Inventory top){return new TemporaryInventory.Port(){
+        public ItemStack[] slots(){return PaperInventoryWindow.slots(p.getInventory());}public ItemStack cursor(){return p.getItemOnCursor();}public ItemStack[] matrix(){return PaperInventoryWindow.matrix(top);}public void apply(InventoryPayload value){codec.apply(p.getInventory(),value);}public void cursor(ItemStack value){p.setItemOnCursor(value);}public void clearMatrix(){if(top instanceof CraftingInventory c){c.setMatrix(new ItemStack[c.getMatrix().length]);c.setResult(null);}}
+    };}
+    private void settleCursor(Player player){main();temporary.settle(temporaryPort(player,player.getOpenInventory().getTopInventory()));}
+    private void settleBoundary(Player player){
+        settleCursor(player);var top=player.getOpenInventory().getTopInventory();
+        if(top instanceof CraftingInventory&&top.getType()==InventoryType.WORKBENCH||!WorldInventoryAccess.blocks(top).isEmpty())player.closeInventory();
+    }
+    private void temporaryHold(Player p){var e=entry(p);if(e!=null)sessions.inventoryHold(e.session(),"TEMPORARY_RETURN_HOLD");}
+    private boolean nativeAccess(Player p,Location location,boolean container){
+        var e=entry(p);if(e==null||location.getWorld()==null||!location.getWorld().getUID().equals(e.link().world().mapping().physicalId())||location.distanceSquared(p.getLocation())>64||!entryAccess.test(e.link().context(),location)||!gatheringEntry.test(p,location))return false;
+        var platform=WorldGuard.getInstance().getPlatform();var local=WorldGuardPlugin.inst().wrapPlayer(p);
+        var manager=platform.getRegionContainer().get(BukkitAdapter.adapt(location.getWorld()));
+        return platform.getSessionManager().hasBypass(local,BukkitAdapter.adapt(location.getWorld()))||manager!=null&&manager.getApplicableRegions(com.sk89q.worldedit.math.BlockVector3.at(location.getBlockX(),location.getBlockY(),location.getBlockZ())).testState(local,container?Flags.CHEST_ACCESS:Flags.USE,Flags.INTERACT);
+    }
+    private InventoryWindowRules.Kind nativeKind(Player p,Inventory top){
+        if(p.getGameMode()==GameMode.CREATIVE)return InventoryWindowRules.Kind.OTHER;
+        if(top instanceof CraftingInventory&&top.getType()==InventoryType.CRAFTING)return InventoryWindowRules.Kind.CRAFTING;
+        if(top instanceof CraftingInventory&&top.getType()==InventoryType.WORKBENCH){var location=top.getLocation();if(location!=null&&location.getBlock().getType()==Material.CRAFTING_TABLE&&nativeAccess(p,location,false))return InventoryWindowRules.Kind.WORKBENCH;}
+        var e=entry(p);if(e!=null&&WorldInventoryAccess.allowed(e.link().world().mapping().physicalId(),top,location->nativeAccess(p,location,true)))return InventoryWindowRules.Kind.CONTAINER;
+        return InventoryWindowRules.Kind.OTHER;
+    }
+    private InventoryWindowRules.Kind window(Player p,InventoryView view){
+        if(!allowed(p)||!view.getBottomInventory().equals(p.getInventory())||!view.getTopInventory().equals(p.getOpenInventory().getTopInventory()))return InventoryWindowRules.Kind.OTHER;var kind=nativeKind(p,view.getTopInventory());
+        if(kind==InventoryWindowRules.Kind.CRAFTING)return kind;
+        var w=windows.get(p);var e=entry(p);return w!=null&&w.session()==e.session()&&w.inventory().equals(view.getTopInventory())&&w.world().equals(p.getWorld().getUID())&&w.generation()==e.link().world().generation()&&w.kind()==kind?kind:InventoryWindowRules.Kind.OTHER;
     }
     private static void requireNoCursor(Player p){if(!p.getItemOnCursor().isEmpty())throw new IllegalStateException("Unsupported cursor state");}
     @EventHandler public void quit(PlayerQuitEvent e){travelFrozen.remove(linked(e.getPlayer()));
-        interactionHints.remove(e.getPlayer().getUniqueId());
+        interactionHints.remove(e.getPlayer().getUniqueId());windows.remove(e.getPlayer());
         Entry entry=entries.get(e.getPlayer().getUniqueId());
         if(entry==null || entry.player()!=e.getPlayer())return;
         try{combat.leaving(e.getPlayer(),entry.session());}catch(RuntimeException error){plugin.getLogger().warning("HEARTH_COMBAT_QUIT_HOLD");}
@@ -176,44 +206,44 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){
         if(!(e.getPlayer() instanceof Player p))return;
         if(e.getInventory().getType()!=InventoryType.CRAFTING&&e.getInventory().getType()!=InventoryType.PLAYER){
-            if(!allowed(p)||!(developerInventory.test(p,e.getInventory())||travelInventory.test(p,e.getInventory())||craftingInventory.test(p,e.getInventory())||gatheringInventory.test(p,e.getInventory())))e.setCancelled(true);
-            else try{settleCursor(p);}catch(RuntimeException failure){e.setCancelled(true);sessions.refresh(entry(p).session());}
-        }
+            if(!allowed(p)||!(nativeKind(p,e.getInventory())!=InventoryWindowRules.Kind.OTHER||developerInventory.test(p,e.getInventory())||travelInventory.test(p,e.getInventory())||craftingInventory.test(p,e.getInventory())||gatheringInventory.test(p,e.getInventory())))e.setCancelled(true);
+            else if(!e.isCancelled())try{settleCursor(p);}catch(RuntimeException failure){e.setCancelled(true);temporaryHold(p);}
+        }else if(!allowed(p))e.setCancelled(true);
+    }
+    @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void opened(InventoryOpenEvent e){
+        if(!(e.getPlayer() instanceof Player p)||!allowed(p))return;var kind=nativeKind(p,e.getInventory());windows.remove(p);
+        if(kind!=InventoryWindowRules.Kind.OTHER){var source=entry(p);windows.put(p,new Window(source.session(),e.getInventory(),p.getWorld().getUID(),source.link().world().generation(),kind));}
     }
     @EventHandler(priority=EventPriority.MONITOR) public void inventoryClosed(InventoryCloseEvent e){
-        if(e.getPlayer() instanceof Player p){
-            if(allowed(p))try{settleCursor(p);}catch(RuntimeException failure){sessions.refresh(entry(p).session());}
-            sample(p);
+        if(e.getPlayer() instanceof Player p){var previous=windows.get(p);if(previous!=null&&previous.inventory().equals(e.getInventory()))windows.remove(p,previous);
+            if(allowed(p))try{temporary.settle(temporaryPort(p,e.getInventory()));}catch(RuntimeException failure){temporaryHold(p);}sample(p);
         }
     }
     @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){
-        if(!(e.getWhoClicked() instanceof Player p))return;
-        boolean ownView=e.getView().getType()==InventoryType.CRAFTING && p.getGameMode()!=GameMode.CREATIVE;
-        var request=new PlayerInteractionRules.InventoryRequest(allowed(p),ownView,e.getClickedInventory()==p.getInventory(),p.getItemOnCursor().isEmpty(),e.getSlot(),e.getClick().name(),e.getAction().name(),e.getHotbarButton());
-        if(!PlayerInteractionRules.inventory(request)){
-            e.setCancelled(true);if(allowed(p)&&ownView)hint(p);
-        }else if(!e.isCancelled())sample(p);
+        if(!(e.getWhoClicked() instanceof Player p))return;var kind=window(p,e.getView());var request=new InventoryWindowRules.Request(allowed(p),kind!=InventoryWindowRules.Kind.OTHER,p.getGameMode()==GameMode.CREATIVE,kind,PaperInventoryWindow.slot(e.getView(),e.getClickedInventory(),e.getSlot()),e.getClick().name(),e.getAction().name(),e.getHotbarButton(),p.getItemOnCursor().isEmpty());
+        if(!InventoryWindowRules.inventory(request)){e.setCancelled(true);if(allowed(p)&&kind!=InventoryWindowRules.Kind.OTHER)hint(p);return;}
+        if(!e.isCancelled())try{PaperInventoryWindow.preview(codec,p,e);sample(p);}catch(RuntimeException full){e.setCancelled(true);hint(p);}
     }
-    private void hint(Player p){long now=System.nanoTime();Long previous=interactionHints.get(p.getUniqueId());if(previous!=null&&now-previous<5_000_000_000L)return;interactionHints.put(p.getUniqueId(),now);p.sendMessage(Component.text("현재 슬롯이나 화면에서는 이 조작을 지원하지 않습니다. /hearthplay help"));}
+    private void hint(Player p){long now=System.nanoTime();Long previous=interactionHints.get(p.getUniqueId());if(previous!=null&&now-previous<5_000_000_000L)return;interactionHints.put(p.getUniqueId(),now);p.sendMessage(Component.text("현재 화면·권한·보관 공간을 확인하세요. 제작 결과는 한 번씩 받습니다. /hearthplay help"));}
     @EventHandler(priority=EventPriority.HIGHEST) public void drag(InventoryDragEvent e){
-        if(!(e.getWhoClicked() instanceof Player p))return;
-        var slots=new HashSet<Integer>();boolean own=e.getView().getType()==InventoryType.CRAFTING&&p.getGameMode()!=GameMode.CREATIVE;
-        for(int raw:e.getRawSlots()){if(raw<0||raw>=e.getView().countSlots()||e.getView().getInventory(raw)!=p.getInventory()){own=false;break;}slots.add(e.getView().convertSlot(raw));}
-        if(!PlayerInteractionRules.drag(allowed(p),own,slots))e.setCancelled(true);else if(!e.isCancelled())sample(p);
+        if(!(e.getWhoClicked() instanceof Player p))return;var kind=window(p,e.getView());var slots=new ArrayList<InventoryWindowRules.Slot>();
+        for(int raw:e.getRawSlots()){if(raw<0||raw>=e.getView().countSlots()){slots.add(InventoryWindowRules.Slot.OUTSIDE);continue;}slots.add(PaperInventoryWindow.slot(e.getView(),e.getView().getInventory(raw),e.getView().convertSlot(raw)));}
+        if(!InventoryWindowRules.drag(allowed(p),kind!=InventoryWindowRules.Kind.OTHER,p.getGameMode()==GameMode.CREATIVE,kind,slots))e.setCancelled(true);
+        else if(!e.isCancelled())try{PaperInventoryWindow.previewDrag(codec,p,e);sample(p);}catch(RuntimeException full){e.setCancelled(true);hint(p);}
     }
     @EventHandler(priority=EventPriority.HIGHEST) public void interact(PlayerInteractEvent e){
-        if(!allowed(e.getPlayer()) || e.getClickedBlock()!=null && e.getClickedBlock().getType().isInteractable() && !PlayerInteractionRules.facility(e.getClickedBlock().getType().name()) && !craftingFacility.test(e.getPlayer(),e.getClickedBlock()))e.setCancelled(true);
+        if(!allowed(e.getPlayer()) || e.getClickedBlock()!=null && e.getClickedBlock().getType().isInteractable() && !PlayerInteractionRules.facility(e.getClickedBlock().getType().name()) && !(InventoryWindowRules.container(e.getClickedBlock().getType().name())&&nativeAccess(e.getPlayer(),e.getClickedBlock().getLocation(),true)) && !(e.getClickedBlock().getType()==Material.CRAFTING_TABLE&&nativeAccess(e.getPlayer(),e.getClickedBlock().getLocation(),false)) && !craftingFacility.test(e.getPlayer(),e.getClickedBlock()))e.setCancelled(true);
         sample(e.getPlayer());
     }
     @EventHandler(priority=EventPriority.HIGHEST) public void place(BlockPlaceEvent e){if(!allowed(e.getPlayer())||!gatheringChange.test(e.getPlayer(),e.getBlock()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void breakBlock(BlockBreakEvent e){if(!allowed(e.getPlayer())||!gatheringChange.test(e.getPlayer(),e.getBlock()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void drop(PlayerDropItemEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
-    @EventHandler(priority=EventPriority.HIGHEST) public void pickup(EntityPickupItemEvent e){if(e.getEntity() instanceof Player p){if(!allowed(p)||!p.getItemOnCursor().isEmpty())e.setCancelled(true);sample(p);}}
+    @EventHandler(priority=EventPriority.HIGHEST) public void pickup(EntityPickupItemEvent e){if(e.getEntity() instanceof Player p){if(!allowed(p)||!p.getItemOnCursor().isEmpty())e.setCancelled(true);else if(!e.isCancelled())try{codec.withTemporary(PaperInventoryWindow.slots(p.getInventory()),e.getItem().getItemStack(),PaperInventoryWindow.matrix(p.getOpenInventory().getTopInventory()));}catch(RuntimeException full){e.setCancelled(true);}sample(p);}}
     @EventHandler(priority=EventPriority.HIGHEST) public void consume(PlayerItemConsumeEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void swap(PlayerSwapHandItemsEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void damageItem(PlayerItemDamageEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
-    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied&&prepared(e.getPlayer())!=null&&combat.command(e.getPlayer(),e.getMessage()))return;if(!denied && allowed(e.getPlayer())){try{settleCursor(e.getPlayer());}catch(RuntimeException failure){sessions.refresh(entry(e.getPlayer()).session());return;}if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else if(!gatheringCommand.test(e.getPlayer(),e.getMessage()))questCommand.test(e.getPlayer(),e.getMessage());}}
+    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied&&prepared(e.getPlayer())!=null&&combat.command(e.getPlayer(),e.getMessage()))return;if(!denied && allowed(e.getPlayer())){try{settleBoundary(e.getPlayer());}catch(RuntimeException failure){temporaryHold(e.getPlayer());return;}if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else if(!gatheringCommand.test(e.getPlayer(),e.getMessage()))questCommand.test(e.getPlayer(),e.getMessage());}}
     @EventHandler(priority=EventPriority.HIGHEST) public void damage(EntityDamageEvent e){if(e.getEntity() instanceof Player p&&!combat.damage(p,e))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void attack(EntityDamageByEntityEvent e){if(e.getDamager() instanceof Player p&&(!allowed(p)||!fieldAttack.test(p,e.getEntity())&&!combat.attack(p,e.getEntity())))e.setCancelled(true);}
-    @Override public void close(){main();closed=true;for(var move:List.copyOf(combatMoves))move.completeExceptionally(new IllegalStateException("COMBAT_MOVE_CLOSED"));moving.clear();travelFrozen.clear();interactionHints.clear();HandlerList.unregisterAll(this);}
+    @Override public void close(){main();closed=true;for(var move:List.copyOf(combatMoves))move.completeExceptionally(new IllegalStateException("COMBAT_MOVE_CLOSED"));moving.clear();travelFrozen.clear();interactionHints.clear();windows.clear();HandlerList.unregisterAll(this);}
 }

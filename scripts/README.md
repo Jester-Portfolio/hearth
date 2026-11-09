@@ -149,3 +149,5 @@
 [이어 하기·재접속 안내](../docs/course-resume-verification.md)는 기존 `--sessions --quests --story-batch --public-course`와 별도 신규 경로의 `--sessions --quests --story-batch --quest-completion --phone-dialog --completion-navigation`을 같은 JAR로 순차 검사한다. 공개 코스는 첫 도구 제작 뒤 다른 구성원을 남겨 월드를 유지한 채 제어 세션을 재접속하고 목표/추적·전체 인벤토리/세대·새 접속 한 번/이전 표식 거부를 확인한다. 완료 경로는 실제 실패→재시작→PENDING 보상→지급 뒤 목록 제거/이전 선택 거부와 기존 CAS 실패 보존을 확인한다. `/hearthresume`은 플레이어용 읽기 안내이며 실제 클라이언트 시험은 계속 보류한다.
 
 [개인 호위·코스 결과 통합](../docs/s4-gameplay-verification.md)은 새 격리 경로의 `--sessions --quests --story-batch --s4-gameplay`로 실행한다. 이 단독 묶음이 기존 공개 코스·개인 실패/보상 게이트와 기본 비활성 호위 콘텐츠를 함께 설정한다. 순정 Villager/Pathfinder 이동·사망, 개인/진행 격리·체크포인트/제어 재접속·실제 PG CAS 경합 HOLD·원본 보존·1회 보상·최종 결과/기록 객체를 검사한다. 기존 `--completion-navigation`은 별도 새 경로에서 같은 JAR로 순차 검사한다. 시간/CPU/RAM/포트/EULA 경계와 실제 클라이언트 보류는 유지한다.
+
+[임시 제작·월드 보관함](../docs/inventory-workspaces-verification.md)은 새 격리 경로의 `--sessions --inventory-workspaces` 단독 모드다. 기존 `interaction-play`·SQL 실패 보존에 순정 제작 계산/반환·실제 보관 블록/WorldGuard·개인 dirty/CAS 경합을 함께 검사하고, 같은 PG/월드를 두 번째 Paper JVM으로 복원한다. 기존 `--sessions --player-interactions` 한 JVM 선택과 자원/시간/포트/시도 제한은 유지한다. 실제 인증 Player 이벤트는 생성하지 않는다.
