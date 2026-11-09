@@ -94,6 +94,7 @@ public final class BetterHudAdapter implements AutoCloseable,Listener {
         return id;
     }
     public CompletionStage<Void> ready(){return ready;}
+    public boolean packLoaded(Player player){return !closed&&packGate.allowed(player);}
     public boolean show(Player player,PlayerSessions.Session session,List<String> quests,List<List<Integer>> pixels) {
         if(!Bukkit.isPrimaryThread())throw new IllegalStateException("BETTERHUD_MAIN_THREAD");
         if(closed||players.prepared(player)!=session||!ready.isDone()||ready.isCompletedExceptionally()||api.isOnReload()||!packGate.allowed(player)){clear(player);return false;}

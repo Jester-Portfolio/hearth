@@ -71,6 +71,10 @@ public final class HearthPlugin extends JavaPlugin {
         command.setExecutor((sender, ignored, label, args) -> {
             if (!(sender instanceof ConsoleCommandSender) || verification == null) {
                 sender.sendMessage("Only an explicitly gated isolated verification console can run this command.");
+            } else if(lifecycleVerification!=null&&args.length==2&&args[0].equals("client-environment")&&java.util.Set.of("ui","combat").contains(args[1])){
+                try{lifecycleVerification.clientEnvironment(args[1]);}catch(RuntimeException e){sender.sendMessage("격리 시험 환경 변경 불가");}
+            } else if(lifecycleVerification!=null&&args.length==2&&args[0].equals("client-pack")&&args[1].matches("[A-Za-z0-9_]{3,16}")){
+                try{lifecycleVerification.clientPack(args[1]);}catch(RuntimeException e){sender.sendMessage("격리 클라이언트 팩 준비 불가");}
             } else if(lifecycleVerification!=null&&args.length==2&&args[0].equals("gathering-fixture")&&args[1].matches("[A-Za-z0-9_]{3,16}")){
                 try{lifecycleVerification.gatheringFixture(args[1]);}catch(RuntimeException e){sender.sendMessage("채집 fixture 거부: "+e.getMessage());}
             } else if (lifecycleVerification!=null&&((args.length==2&&(args[0].equals("combat-player-start")||args[0].equals("combat-player-release")))||(args.length==3&&args[0].equals("combat-player-revive")))&&args[1].matches("[A-Za-z0-9_]{3,16}")) {

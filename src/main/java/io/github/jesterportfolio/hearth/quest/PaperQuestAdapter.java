@@ -85,7 +85,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         ui.peopleTalk(this::openNpcFromGuidance);ui.completion(this::phoneCompletion,completionFlow);ui.npcNavigation(this::npcNavigation);
         ui.npcSelection((p,npc,quest,revision)->{var s=players.current(p);if(s==null)return;try{var t=dialogues.selection(p.getUniqueId(),s,npc,quest);command(p,dialogues.command(t,"select"),revision);}catch(RuntimeException invalid){unavailable(p,invalid);}});
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
-        ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
+        ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.viewing(p),v));render(p);},this::clearVisual,this::render);
         expiry=Bukkit.getScheduler().runTaskTimer(plugin,()->quests.expire(catalog).exceptionally(error->{plugin.getLogger().warning("HEARTH_QUEST_EXPIRY_HOLD");return null;}),20,20);
         Bukkit.getPluginManager().registerEvents(this,plugin);players.questCommand(this::command);
         for(World w:Bukkit.getWorlds())ensure(w);
@@ -109,7 +109,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         }
     }
     private boolean npcPermitted(Player p,String npc){
-        var session=players.current(p);if(session==null)return false;
+        var session=players.viewing(p);if(session==null)return false;
         return journal.npcAllowed(session.context(),npc);
     }
     private void removeMark(Mark mark){Entity e=Bukkit.getEntity(mark.entity());if(e!=null)e.remove();}
@@ -119,7 +119,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     }
     /** 기존 표시 주기에서 호출하며 DB를 조회하지 않습니다. */
     private boolean render(Player p){
-        var data=projections.get(p.getUniqueId());var session=players.current(p);
+        var data=projections.get(p.getUniqueId());var session=players.viewing(p);
         if(data==null){clearVisual(p);return true;}
         try{if(closed||session==null||session!=data.session())throw new IllegalStateException("STALE_NPC_VIEW");journal.requireView(session.context(),data.view());}
         catch(RuntimeException invalid){clearVisual(p);return false;}
@@ -131,10 +131,11 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
             var marker=visible&&p.getLocation().distanceSquared(npc.getLocation())<=256?NpcQuestView.build(catalog,c.npcId(),data.view().states(),q->journal.questAllowed(session.context(),q.id())).marker():NpcQuestView.Marker.NONE;
             Mark old=own.get(c.npcId());Entity oldEntity=old==null?null:Bukkit.getEntity(old.entity());
             if(old!=null&&(marker!=old.marker()||oldEntity==null||!old.world().equals(p.getWorld().getUID()))){removeMark(old);own.remove(c.npcId());old=null;}
-            if(marker!=NpcQuestView.Marker.NONE&&old==null){var display=markerEntity(p.getWorld(),npc.getLocation().add(0,2.2,0),marker);own.put(c.npcId(),new Mark(p.getWorld().getUID(),display.getUniqueId(),marker));p.showEntity(plugin,display);}
+            if(marker!=NpcQuestView.Marker.NONE&&old==null){var display=markerEntity(p.getWorld(),markerLocation(npc),marker);own.put(c.npcId(),new Mark(p.getWorld().getUID(),display.getUniqueId(),marker));p.showEntity(plugin,display);}
         }
         return true;
     }
+    public static Location markerLocation(Entity npc){return npc.getLocation().add(0,npc.getHeight()+1.0,0);}
     public static TextDisplay markerEntity(World world,Location location,NpcQuestView.Marker marker){
         if(marker==NpcQuestView.Marker.NONE)throw new IllegalArgumentException("Empty NPC marker");
         return world.spawn(location,TextDisplay.class,e->{e.setPersistent(false);e.setVisibleByDefault(false);e.setGravity(false);e.setBillboard(Display.Billboard.CENTER);e.setShadowed(true);e.text(Component.text(marker==NpcQuestView.Marker.REPORT_READY?"!":"?",marker==NpcQuestView.Marker.REPORT_READY?NamedTextColor.GREEN:NamedTextColor.YELLOW));});

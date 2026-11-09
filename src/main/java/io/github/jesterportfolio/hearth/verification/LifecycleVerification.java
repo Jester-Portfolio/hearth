@@ -353,6 +353,8 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
     public void economyFixture(String name,boolean existing){if(sessions==null)throw new IllegalStateException("Sessions not ready");sessions.economyFixture(name,existing);}
     public void fixturePlayer(String name,boolean existing) { if (!sessionMode || sessions==null) throw new IllegalStateException("Session fixture not ready");sessions.fixturePlayer(name,existing); }
     public void playerStatus(String name) { if(!sessionMode || sessions==null)throw new IllegalStateException("Session fixture not ready");sessions.playerStatus(name); }
+    public void clientEnvironment(String mode){if(sessions==null)throw new IllegalStateException("Sessions not ready");sessions.clientEnvironment(mode);}
+    public void clientPack(String profile){if(sessions==null)throw new IllegalStateException("Session fixture not ready");sessions.clientPack(profile);}
     public void gatheringFixture(String profile){if(sessions==null)throw new IllegalStateException("Sessions unavailable");sessions.gatheringFixture(profile);}
     public void combatPlayer(String op,String profile,String condition){if(!sessionMode||sessions==null)throw new IllegalStateException("Session fixture not ready");sessions.combatPlayer(op,profile,condition);}
     private CompletionStage<Void> shutdown() {

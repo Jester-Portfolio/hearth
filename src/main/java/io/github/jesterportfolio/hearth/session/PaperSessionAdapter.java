@@ -89,6 +89,8 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     public void developerInventory(BiPredicate<Player,Inventory> handler){main();developerInventory=handler;}
     public void questCommand(BiPredicate<Player,String> handler){main();questCommand=handler;}
     public PlayerSessions.Session current(Player p){main();Entry e=entry(p);return allowed(p)?e.session():null;}
+    /** 이동 잠금 중에도 허용된 읽기 전용 표시를 유지합니다. 상호작용 권한은 current를 사용합니다. */
+    public PlayerSessions.Session viewing(Player p){main();var e=entry(p);return baseReady(p)&&!featureLoading.contains(e.session())&&combat.actions(p)?e.session():null;}
     public PlayerSessions.Session linked(Player p){main();var e=entry(p);return e==null?null:e.session();}
     private Predicate<Player> travelRestriction=p->true;public void travelRestriction(Predicate<Player> allowed){travelRestriction=allowed;}
     public boolean travelEligible(Player p,PlayerSessions.Session session){main();return prepared(p)==session&&combat.travel(p)&&travelRestriction.test(p);}

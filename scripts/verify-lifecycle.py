@@ -12,6 +12,7 @@ from pathlib import Path
 import shutil
 import time
 import zipfile
+from manual_s4 import ClientPackServer
 
 REPO=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('s45',REPO/'scripts/verify-s4-5.py')
@@ -20,7 +21,7 @@ s42=s45.s42; s44=s45.s44
 
 class Monitor(s45.Monitor):
     def manual_session(self,name):
-        print(name+': 수동 시험 준비 완료. 접속/행동 후 클라이언트를 종료하고 stop을 입력하세요. 시간 한도는 연장하지 않습니다.',flush=True)
+        print(name+': 수동 시험 준비 완료. 접속/행동 후 클라이언트를 종료하고 stop을 입력하세요. '+('이번 시험은 전체 시간 제한이 없습니다.' if getattr(self,'manual_no_time_limit',False) else '기본 시간 한도를 유지합니다.'),flush=True)
         next_status=time.monotonic()
         profile=getattr(self,'manual_profile',None); connected=False
         self.children[name]['manual_position']=len(self.children[name]['lines'])
@@ -36,8 +37,11 @@ class Monitor(s45.Monitor):
                 self.send(name,'hearthverify session-status '+profile)
                 next_status=time.monotonic()+10
             if select.select([sys.stdin],[],[],0)[0]:
-                command=sys.stdin.readline().strip()
-                if command=='stop':
+                line=sys.stdin.readline()
+                if not line:raise RuntimeError("운영자 TTY가 종료돼 시험을 정리합니다")
+                command=line.strip()
+                if command in ('stop','finish'):
+                    if command=='finish':self.manual_finish_all=True
                     return
                 if not permitted_session_command(command):
                     print('허용되지 않은 수동 시험 명령입니다.',flush=True)
@@ -46,7 +50,7 @@ class Monitor(s45.Monitor):
             # 기본 감시가 파일 로그를 보존하고, 운영자에게 실제 행동/저장 판정도 보여 줍니다.
             item=self.children[name]; position=item.get('manual_position',len(item['lines']))
             for line in item['lines'][position:]:
-                if any(token in line for token in ['HEARTH_SESSION_', 'HEARTH_S4_3_', 'HEARTH_LIFE_STATE', 'joined the game', 'left the game']):
+                if any(token in line for token in ['HEARTH_S4_CLIENT_', 'HEARTH_SESSION_', 'HEARTH_S4_3_', 'HEARTH_LIFE_STATE', 'joined the game', 'left the game']):
                     print(name+': '+line,flush=True)
                 if profile and profile+' joined the game' in line:connected=True
                 if profile and connected and profile+' left the game' in line:
@@ -81,6 +85,8 @@ def permitted_session_command(command):
     # 기존 S4-3의 좁은 콘솔 허용 목록과 좌표 제한을 재사용합니다.
     if s42.permitted_manual_command(command):
         return True
+    if re.fullmatch(r'hearthverify client-environment (?:ui|combat)',command):return True
+    if re.fullmatch(r'hearthverify (?:client-pack|gathering-fixture) [A-Za-z0-9_]{3,16}',command) or re.fullmatch(r'hearthrecovery (?:help|list(?: [1-9][0-9]{0,2})?|inspect [0-9a-fA-F-]{36} [0-9a-fA-F-]{36}|compare [0-9a-fA-F-]{36})',command):return True
     if re.fullmatch(r'hearthverify combat-player-(?:start|release) [A-Za-z0-9_]{3,16}',command) or re.fullmatch(r'hearthverify combat-player-revive [A-Za-z0-9_]{3,16} (?:public_rescue|public_path_rescue)',command):
         return True
     return bool(re.fullmatch(r'hearthverify session-(?:fixture|link-existing|status) [A-Za-z0-9_]{3,16}',command))
@@ -152,11 +158,17 @@ def main():
     parser.add_argument('--economy-desk', action='store_true', help='한 JVM에서 다품목 상점·거래 기록·명시적 보류 정리 검사')
     parser.add_argument('--economy', action='store_true', help='경제 전용 월드·거래·두 JVM 복원 검증')
     parser.add_argument('--sessions', action='store_true', help='새 격리 환경에서 최소 세션 어댑터/저장 장벽을 검증합니다')
+    parser.add_argument('--s4-client',action='store_true',help='실제 인증 클라이언트용 최신 S4 기능 전체를 같은 격리 환경에 준비합니다')
+    parser.add_argument('--manual-no-time-limit',action='store_true',help='명시적으로 요청한 실제 수동 시험만 전체 시간 제한 없이 진행합니다')
     parser.add_argument('--manual-finish-on-logout', action='store_true', help='준비된 수동 시험자의 실제 접속 후 연결 종료를 관측하면 정리합니다')
     parser.add_argument('--manual-player', action='store_true', help='인증 클라이언트가 준비된 뒤에만 사용하는 별도 수동 데이터/두 JVM 모드')
     parser.add_argument('--operator-ready', action='store_true', help='프로필·기존 SSH 전달 경로·클라이언트 준비를 운영자가 확인했습니다')
     parser.add_argument('--profile', help='인증 Java Edition 프로필 이름. 비밀번호/토큰은 받지 않습니다')
     args = parser.parse_args()
+    if args.manual_no_time_limit and not (args.s4_client and args.manual_player):parser.error('--manual-no-time-limit는 --s4-client --manual-player 전용입니다')
+    if args.s4_client:
+        allowed={'s4_client','manual_no_time_limit','manual_player','operator_ready','sessions','quests','story_batch','accept_eula'}
+        if not all([args.manual_player,args.sessions,args.quests,args.story_batch]) or not args.betterhud_plugin or any(isinstance(value,bool) and value and key not in allowed for key,value in vars(args).items()):parser.error('--s4-client는 준비된 수동 --sessions --quests --story-batch 및 고정 BetterHud 경로와 단독 실행합니다')
     if args.manual_finish_on_logout and not args.manual_player:
         parser.error('--manual-finish-on-logout는 준비된 수동 모드에서만 사용합니다')
     if args.manual_player and not (args.sessions and args.operator_ready and sys.stdin.isatty() and re.fullmatch(r'[A-Za-z0-9_]{3,16}',args.profile or '')):
@@ -213,7 +225,7 @@ def main():
         parser.error('--gameplay-guide는 --story-batch와 함께 사용하며 --world-effects와 혼용하지 않습니다')
     if args.world_effects and not args.story_batch:
         parser.error('--world-effects는 --sessions --quests --story-batch가 필요합니다')
-    if args.story_batch and (not args.quests or not args.sessions or (args.manual_player and not (args.playthrough or args.combat_players)) or any([args.explore_batch,args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
+    if args.story_batch and (not args.quests or not args.sessions or (args.manual_player and not (args.playthrough or args.combat_players or args.s4_client)) or any([args.explore_batch,args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
         parser.error('--story-batch는 자동 --sessions --quests 단독 공유 진행 검증 모드입니다')
     if args.explore_batch and (not args.quests or not args.sessions or args.manual_player or any([args.quest_batch,args.quest_requires,args.quest_start,args.quest_npc,args.quest_auto,args.quest_info,args.quest_list])):
         parser.error('--explore-batch는 자동 --sessions --quests 단독 탐험 검증 모드에서만 사용합니다')
@@ -285,7 +297,7 @@ def main():
         pin=json.loads((REPO/'verification/betterhud-artifact.json').read_text());data=args.betterhud_plugin.read_bytes()
         assert len(data)==pin['size_bytes'] and hashlib.sha256(data).hexdigest()==pin['sha256'], 'BetterHud 공식 아티팩트 해시 불일치'
         args.combat_players=True
-    elif args.betterhud_plugin:parser.error('--betterhud-plugin은 --betterhud와 함께 사용합니다')
+    elif args.betterhud_plugin and not args.s4_client:parser.error('--betterhud-plugin은 --betterhud와 함께 사용합니다')
     if args.s4_completion:
         allowed={'s4_completion','sessions','quests','story_batch','accept_eula'}
         if not all([args.sessions,args.quests,args.story_batch]) or any(isinstance(value,bool) and value and key not in allowed for key,value in vars(args).items()):parser.error('--s4-completion은 자동 --sessions --quests --story-batch와 단독 실행합니다')
@@ -301,6 +313,11 @@ def main():
         # 검증된 단독 선택만 기존 모듈 게이트로 확장합니다. 일반 모드의 조합 제한은 유지합니다.
         args.combat_players=True;args.dungeon_play=True;args.gathering_crafting=True;args.gathering_facilities=True;args.play_preparation=True;args.phone_dialog=True
     if args.s4_completion:args.fast_travel=True
+    if args.s4_client:
+        pin=json.loads((REPO/'verification/betterhud-artifact.json').read_text());data=args.betterhud_plugin.read_bytes()
+        assert len(data)==pin['size_bytes'] and hashlib.sha256(data).hexdigest()==pin['sha256'],'BetterHud 공식 아티팩트 해시 불일치'
+        args.betterhud=True;args.public_course=True;args.playthrough=True;args.s4_gameplay=True;args.phone_dialog=True
+        args.combat_players=True;args.dungeon_play=True;args.gathering_crafting=True;args.gathering_facilities=True;args.play_preparation=True;args.fast_travel=True
     root = args.workspace.resolve(strict=True)
     assert args.accept_eula and os.getuid()!=0, 'EULA 동의·일반 사용자 실행 필요'
     assert not args.workspace.is_symlink() and root.parent==Path('/tmp') and root.name.startswith('hearth-s4-11.')
@@ -397,7 +414,7 @@ def main():
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('playthrough-content-file: public-course-demo.yml\n')
     if args.s4_gameplay:
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('escort-verification-enabled: true\n')
-    if args.s4_completion:
+    if args.s4_completion or args.s4_client:
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('s4-features-enabled: true\nminimap-overlay-enabled: true\ncombat-content-file: combat-s4-demo.yml\n')
     if args.hud_display or args.recovery_inspection:
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('s4-features-enabled: true\n')
@@ -422,11 +439,16 @@ generator-settings={"layers":[{"block":"minecraft:bedrock","height":1}],"biome":
 pause-when-empty-seconds=-1
 motd=Hearth isolated S4-11 verification
 ''')
+    if args.s4_client:
+        with (plugins/'Hearth/config.yml').open('a') as config:config.write('manual-s4-enabled: true\n')
     monitor=Monitor(root,started,prefix='HEARTH_LIFE',work_seconds=550)
+    monitor.manual_no_time_limit=args.manual_no_time_limit
+    if args.manual_no_time_limit:monitor.deadline=float('inf')
     monitor.manual_profile=args.profile if args.manual_player else None
     monitor.manual_finish_on_logout=args.manual_finish_on_logout
-    outcome='FAIL'; failure=None; cleanup=[]
+    outcome='FAIL'; failure=None; cleanup=[];pack_server=None;pack_downloads=0
     try:
+        if args.s4_client:pack_server=ClientPackServer(root)
         helper=[str(args.java.resolve()),'-Xmx128m','-XX:ActiveProcessorCount=2','-Djava.io.tmpdir='+str(root),
                 '-cp',str(root/'fixture-classes')+':'+str(root/'resolved-jars/*'),
                 'io.github.jesterportfolio.hearth.persistence.S45DatabaseFixture',str(root),'--lifecycle']
@@ -460,7 +482,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.gatheringFacilities=true')
         if args.play_preparation:
             paper.insert(-3,'-Dhearth.verification.preparation=true')
-        if args.s4_completion or args.betterhud or args.hud_display or args.recovery_inspection:paper.insert(-3,'-Dhearth.verification.s4Features=true')
+        if args.s4_completion or args.betterhud or args.hud_display or args.recovery_inspection or args.s4_client:paper.insert(-3,'-Dhearth.verification.s4Features=true')
         if args.s4_gameplay:
             paper.insert(-3,'-Dhearth.verification.escort=true')
         if args.fast_travel:
@@ -469,6 +491,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.quests=true')
         if args.manual_player:
             paper.insert(-3,'-Dhearth.verification.sessionManual=true')
+        if args.s4_client:paper.insert(-3,'-Dhearth.verification.manualS4=true')
         if args.playthrough or args.quest_interactions or args.general_npcs or args.crafting_quests or args.gathering_crafting or args.play_preparation or args.gathering_facilities:
             paper.insert(-3,'-Dhearth.verification.playthrough=true')
         if args.quest_completion or args.branch_progression or args.combat_players:
@@ -481,7 +504,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.dungeonPlay=true')
         if args.combat_players:
             paper.insert(-3,'-Dhearth.verification.combatPlayers=true')
-        for phase in (['prepare','resume'] if args.s4_completion or args.combat_paths else ['prepare'] if args.gathering_crafting or args.crafting_quests or args.crafting or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions and not args.inventory_workspaces or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
+        for phase in (['prepare','resume'] if args.s4_client or args.s4_completion or args.combat_paths else ['prepare'] if args.gathering_crafting or args.crafting_quests or args.crafting or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions and not args.inventory_workspaces or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
             if phase=='resume' and args.gathering:
                 content=plugins/'Hearth/gathering-demo.yml'
@@ -723,6 +746,7 @@ motd=Hearth isolated S4-11 verification
             monitor.action(name,'close')
             monitor.stop(name,'stop')
             s42.port_free()
+            if getattr(monitor,'manual_finish_all',False):break
         monitor.stop('database','finish',10)
         for library in ['postgresql-42.7.14.jar','HikariCP-7.1.0.jar']:
             loaded=list((runtime/'libraries').rglob(library))
@@ -733,16 +757,21 @@ motd=Hearth isolated S4-11 verification
         failure=type(error).__name__+': '+str(error)
         print('시험 실패: '+failure,flush=True)
     finally:
-        cleanup=monitor.finish()
+        pack_cleanup=[]
+        if pack_server is not None:
+            pack_downloads=pack_server.downloads
+            try:pack_server.close();s42.port_free(25587)
+            except Exception as error:pack_cleanup.append(type(error).__name__+': pack server cleanup failed')
+        cleanup=pack_cleanup+monitor.finish()
         if cleanup:
             outcome='FAIL'
         result=dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, workspace=str(root),
-                    duration_seconds=round(time.monotonic()-monitor.started,3), limits=dict(total_seconds=600,work_seconds=550,
-                    paper_starts_max=2 if args.s4_completion else 1 if args.gathering_crafting or args.crafting_quests or args.crafting or args.dungeon_play or args.combat_route or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.npc_pages or args.phone_dialog or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
+                    duration_seconds=round(time.monotonic()-monitor.started,3), limits=dict(total_seconds=None if args.manual_no_time_limit else 600,work_seconds=None if args.manual_no_time_limit else 550,
+                    paper_starts_max=2 if args.s4_client or args.s4_completion else 1 if args.gathering_crafting or args.crafting_quests or args.crafting or args.dungeon_play or args.combat_route or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.npc_pages or args.phone_dialog or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    recovery_inspection_mode=args.recovery_inspection,hud_display_mode=args.hud_display,betterhud_mode=args.betterhud,s4_completion_mode=args.s4_completion,inventory_workspaces_mode=args.inventory_workspaces,s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    pack_downloads=pack_downloads,s4_client_mode=args.s4_client,manual_no_time_limit=args.manual_no_time_limit,recovery_inspection_mode=args.recovery_inspection,hud_display_mode=args.hud_display,betterhud_mode=args.betterhud,s4_completion_mode=args.s4_completion,inventory_workspaces_mode=args.inventory_workspaces,s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

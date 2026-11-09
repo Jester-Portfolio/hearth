@@ -1,0 +1,481 @@
+{
+  "checked_at": "2026-11-09",
+  "baseline_commit": "70175a2",
+  "outcome": "PARTIAL_ACTUAL_ACCEPTANCE_INTERNAL_PASS",
+  "actual_play_stopped_by_user": true,
+  "actual_resume_authorized": false,
+  "whole_s4_complete": false,
+  "evidence_root": "/tmp/hearth-s4-client-evidence.lhr4mg1i",
+  "final_artifact": {
+    "path": "/tmp/hearth-s4-client-evidence.lhr4mg1i/Hearth-final-r2.jar",
+    "sha256": "58c8aa8c00f5f921e68b2e7e7e34690632474ef1ccbe4858737b7b568a384fa8",
+    "bytes": 2246686,
+    "production_deployed": false,
+    "final_NPC_changes_tested_by_actual_client": false
+  },
+  "unit_tests": {
+    "final_related_cases": 204,
+    "failures": 0,
+    "suites": [
+      {
+        "suite": "io.github.jesterportfolio.hearth.administration.RecoveryConsoleTest",
+        "tests": 9
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.administration.RecoveryInspectionTest",
+        "tests": 9
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.combat.CombatHudTest",
+        "tests": 8
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.combat.DungeonPlayTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.AnchoredHudFramesTest",
+        "tests": 6
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.CartographyTest",
+        "tests": 6
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.CutsceneTest",
+        "tests": 7
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.HudDeliveryTest",
+        "tests": 5
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.HudMinimapTest",
+        "tests": 4
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.HudPackGateTest",
+        "tests": 4
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.PersonalStorageTest",
+        "tests": 4
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.RecoveryLedgerTest",
+        "tests": 6
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.SceneProgressTest",
+        "tests": 7
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.gathering.GatheringContentTest",
+        "tests": 6
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.gathering.GatheringDungeonTest",
+        "tests": 16
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.gathering.GatheringEntryTest",
+        "tests": 5
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.gathering.GatheringFacilitiesTest",
+        "tests": 3
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.gathering.GatheringStatusTest",
+        "tests": 3
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.gathering.GatheringVisitTest",
+        "tests": 9
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.AutomaticQuestTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.CourseResumeTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.FacilityObjectivesTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.GameplayGuideTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.GeneralNpcTest",
+        "tests": 6
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.NpcDialogueBookTest",
+        "tests": 8
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.NpcGuidanceTest",
+        "tests": 9
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.NpcPagesTest",
+        "tests": 3
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.NpcQuestViewTest",
+        "tests": 4
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.NpcTopicsTest",
+        "tests": 8
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.NpcVisibilityGatewayTest",
+        "tests": 5
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.PhoneReaderLinksTest",
+        "tests": 3
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.QuestBatchTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.QuestBookViewTest",
+        "tests": 3
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.QuestCatalogTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.QuestDialogueTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.QuestInfoTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.QuestJourneyViewTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.QuestStartTest",
+        "tests": 2
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.quest.StoryProgressViewTest",
+        "tests": 1
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.session.PlayerSessionsTest",
+        "tests": 23
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.verification.ManualClientEnvironmentTest",
+        "tests": 2
+      }
+    ],
+    "raw_results": "/tmp/hearth-s4-client-evidence.lhr4mg1i/unit-results-final",
+    "fixture_only_followup_build_log": "/tmp/hearth-s4-client-evidence.lhr4mg1i/npc-fixture-build.log"
+  },
+  "python_tests": {
+    "cases": 6,
+    "log": "/tmp/hearth-s4-client-evidence.lhr4mg1i/final-python-tests-r2.log"
+  },
+  "invalid_cli_rejections": [
+    {
+      "flags": [
+        "--manual-no-time-limit"
+      ],
+      "rejected_before_workspace_access": true,
+      "returncode": 2
+    },
+    {
+      "flags": [
+        "--s4-client"
+      ],
+      "rejected_before_workspace_access": true,
+      "returncode": 2
+    },
+    {
+      "flags": [
+        "--manual-no-time-limit",
+        "--sessions"
+      ],
+      "rejected_before_workspace_access": true,
+      "returncode": 2
+    },
+    {
+      "flags": [
+        "--s4-client",
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--manual-player",
+        "--operator-ready",
+        "--profile",
+        "TestProfile"
+      ],
+      "rejected_before_workspace_access": true,
+      "returncode": 2
+    }
+  ],
+  "generated_pack_checks": {
+    "cases": 17,
+    "raw_result": "/tmp/hearth-s4-client-evidence.lhr4mg1i/generated-pack-check.json",
+    "actual_client_loaded": true,
+    "actual_rendering_full_acceptance": false
+  },
+  "actual_attempts": [
+    {
+      "workspace": "/tmp/hearth-s4-11.07eh5nax",
+      "scope": "initial setup: query queue overflow; no actual login",
+      "raw_outcome": "FAIL",
+      "duration_seconds": 98.524,
+      "plugin_sha256": "346c3e6f5211fda0deeec9ded4b169b3f805759605c9656b7301d34625702dab",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "raw_all_owned_processes_and_ports_closed": false,
+      "raw_result_sha256": "e57922021f1c66ad69e9a82cf86c152de1c28a77038e91e284f6c9ab20d1b4c9",
+      "paper_starts": 1,
+      "limits": {
+        "total_seconds": null,
+        "work_seconds": null,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      }
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.mywcog2k",
+      "scope": "actual login MOVE_FAILED before gathering gate fix",
+      "raw_outcome": "FAIL",
+      "duration_seconds": 217.343,
+      "plugin_sha256": "f4630bcffe27124edb8d64ebe2ed2b8b9e4a70f9a12364cb8986c16cd18a842b",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "raw_all_owned_processes_and_ports_closed": false,
+      "raw_result_sha256": "3e21848a324c4d3351a51f233aa321a1cd2b77c3194a43b85a2a2499e7e8379e",
+      "paper_starts": 1,
+      "limits": {
+        "total_seconds": null,
+        "work_seconds": null,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      }
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.o83o0_4a",
+      "scope": "partial actual acceptance; user requested environment reset",
+      "raw_outcome": "MANUAL_CLOSED_UNVERIFIED",
+      "duration_seconds": 1688.725,
+      "plugin_sha256": "c49ad85503dd6b6b82630fa17d07c7536cd5d8027efed757ada653eb6851606c",
+      "cleanup_errors": [],
+      "raw_all_owned_processes_and_ports_closed": true,
+      "raw_result_sha256": "f9b6825a8c095ba999be50448ac67202aacb60813be771bebca13bfc00db8c0b",
+      "paper_starts": 1,
+      "limits": {
+        "total_seconds": null,
+        "work_seconds": null,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      }
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.4x344zre",
+      "scope": "actual acceptance after reset; user ended actual play",
+      "raw_outcome": "MANUAL_CLOSED_UNVERIFIED",
+      "duration_seconds": 516.871,
+      "plugin_sha256": "d13d346a7d175e0049211216c247cb7a2db8de45c32853fe8709803a25f31daa",
+      "cleanup_errors": [],
+      "raw_all_owned_processes_and_ports_closed": true,
+      "raw_result_sha256": "04793c87fd2c310cab3c43a30c7bbc966432ea9974127312b32e3249c26dd610",
+      "paper_starts": 1,
+      "limits": {
+        "total_seconds": null,
+        "work_seconds": null,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      }
+    }
+  ],
+  "actual_observations": {
+    "confirmed_actual": [
+      "Authentication/entry after MOVE_FAILED fix",
+      "First smartphone issue and one-item persistence on reconnect",
+      "Resource pack DECLINED keeps connection/movement",
+      "Expected generated pack ACCEPTED/DOWNLOADED/SUCCESSFULLY_LOADED",
+      "Squares disappear; upper-right minimap reacts to camera",
+      "Phone home icons/Korean/menu operated",
+      "Mandatory scene starts; current-scene chat reopen works",
+      "User-approved fresh world reset: safe daylight/no natural mobs/furniture restored confirmed"
+    ],
+    "not_confirmed_actual": [
+      "Tracked quest HUD text/precise layout",
+      "Full scene completion and first-unfinished-scene reconnect recovery",
+      "Quest acceptance/finish/rewards/shared vote full flow",
+      "Containers/ender/crafting/gathering/travel/escort/combat full flow",
+      "Two-JVM real-client restoration",
+      "Two-player co-op (second account unavailable)",
+      "Final marker height and scene NPC display after code fix"
+    ]
+  },
+  "user_reset_environment": {
+    "outcome": "PASS",
+    "user": "복구 환경임",
+    "server": "Actual A/B physical UUIDs: time6000/PEACEFUL/no storm/no natural spawn/no mob griefing, lab10/facilities5 and WorldGuard creeper DENY verified before admission.",
+    "abandoned_console_repair": "User reported no actual restoration; not a PASS; old world/data/logs preserved."
+  },
+  "observed_600_second_override": true,
+  "original_failed_environment_commands_not_counted_as_applied": true,
+  "final_native": {
+    "workspace": "/tmp/hearth-s4-11.52nzsvyl",
+    "outcome": "PASS",
+    "session_assertions": 76,
+    "unique_session_assertions": 56,
+    "duration_seconds": 47.123,
+    "raw_result": "/tmp/hearth-s4-11.52nzsvyl/run-result.json",
+    "raw_sha256": "e17ba3106d8bc81b5d8e666f0d55bc10b40f56cc1541d09526ef819ddee2fd78",
+    "plugin_sha256": "58c8aa8c00f5f921e68b2e7e7e34690632474ef1ccbe4858737b7b568a384fa8",
+    "paper_starts": 1,
+    "all_owned_processes_and_ports_closed": true,
+    "cleanup_errors": [],
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "assertions": [
+      "fixture_prepared_no_login_provisioning",
+      "no_apply_or_admission_before_prepare",
+      "all_sessions_active_after_move",
+      "story_V005_rows_preserved_after_V006",
+      "list_fixture_survey_marker_COMPLETED",
+      "multi_rejected_CONDITIONS_UNMET",
+      "story_P2_blocks_first_stage_ENTRY_CONTENT_OPEN_separate",
+      "list_fixture_survey_marker_COMPLETED",
+      "multi_rejected_STALE_STORY_ACTION",
+      "story_single_initial_CAS_shared_state",
+      "multi_rejected_STALE_STORY_ACTION",
+      "story_completion_history_and_next_stage",
+      "list_fixture_path_marker_COMPLETED",
+      "multi_rejected_CONDITIONS_UNMET",
+      "list_fixture_path_marker_COMPLETED",
+      "list_fixture_route_marker_ACTIVE",
+      "story_online_conditions_public_booleans_only",
+      "story_locked_accepted_quest_and_map_content_hidden",
+      "npc_foreground_waits_existing_query",
+      "npc_foreground_complete_personal_state",
+      "npc_view_restricted_options_hidden",
+      "npc_view_restricted_options_hidden",
+      "npc_marker_above_nameplate_without_moving_NPC_AVAILABLE",
+      "npc_marker_private_nonpersistent_AVAILABLE",
+      "npc_marker_removed_AVAILABLE",
+      "npc_marker_above_nameplate_without_moving_NPC_REPORT_READY",
+      "npc_marker_private_nonpersistent_REPORT_READY",
+      "npc_marker_removed_REPORT_READY",
+      "npc_view_inventory_unchanged",
+      "npc_default_hidden_until_authorized",
+      "npc_no_duplicate_after_projection",
+      "npc_no_duplicate_after_projection",
+      "story_30sec_two_online_targets",
+      "multi_rejected_DUPLICATE_VOTE",
+      "story_tie_timeout_no_automatic_branch",
+      "multi_rejected_STALE_VOTE",
+      "story_OPEN_roster_change_new_vote_id_old_input_rejected",
+      "story_DB_pending_no_branch_or_exploration_apply_main_tick_alive",
+      "story_INPUT_CLOSED_disconnect_keeps_frozen_result",
+      "story_committed_branch_revision2_shared_exploration_open",
+      "story_region_cache_A_unlocked_B_unchanged",
+      "story_P1_P2_same_confirmed_shared_result",
+      "story_no_community_or_diary_personal_notifications",
+      "story_confirmed_branch_shared_diary_chronicle_once",
+      "story_Paper_GUI_41slot_unchanged_quests",
+      "story_Paper_GUI_41slot_unchanged_branches",
+      "story_Paper_GUI_41slot_unchanged_map",
+      "story_Paper_GUI_41slot_unchanged_diary",
+      "story_Paper_GUI_41slot_unchanged_STORY",
+      "story_Paper_GUI_41slot_unchanged_CHRONICLE",
+      "story_Paper_GUI_41slot_unchanged_community",
+      "story_Paper_GUI_41slot_unchanged_story",
+      "story_Paper_GUI_41slot_unchanged_conditions",
+      "story_unlocked_map_and_quest_projection_refresh",
+      "story_shared_open_does_not_complete_personal_quest",
+      "story_run_B_no_shared_changes",
+      "story_idle_unload_saved_barrier_complete",
+      "story_existing_world_UUID_reloaded",
+      "story_reentry_new_JVM_shared_branch_diary_personal_state_restored",
+      "story_completed_stage_history_persisted_no_recreation",
+      "story_shared_exploration_not_personal_visit_or_hub",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count32_r0",
+      "npc_foreground_waits_existing_query",
+      "npc_foreground_complete_personal_state",
+      "npc_view_restricted_options_hidden",
+      "npc_view_restricted_options_hidden",
+      "npc_marker_above_nameplate_without_moving_NPC_AVAILABLE",
+      "npc_marker_private_nonpersistent_AVAILABLE",
+      "npc_marker_removed_AVAILABLE",
+      "npc_marker_above_nameplate_without_moving_NPC_REPORT_READY",
+      "npc_marker_private_nonpersistent_REPORT_READY",
+      "npc_marker_removed_REPORT_READY",
+      "npc_view_inventory_unchanged",
+      "npc_default_hidden_until_authorized",
+      "npc_no_duplicate_after_projection",
+      "npc_no_duplicate_after_projection"
+    ]
+  },
+  "corrected_failures": [
+    {
+      "workspace": "/tmp/hearth-s4-11.1xt6_3lc",
+      "cause": "Native display fixture had not ensured an NPC before looking it up; NoSuchElementException. Added ensure then reran only this integration in a fresh workspace.",
+      "raw_outcome": "FAIL",
+      "raw_cleanup_error": "DB pool close confirmation missing; original failure preserved."
+    },
+    {
+      "logs": [
+        "/tmp/hearth-s4-client-evidence.lhr4mg1i/initial-compile.log",
+        "/tmp/hearth-s4-client-evidence.lhr4mg1i/reset-build.log"
+      ],
+      "cause": "Initial test-fixture material name and later Bukkit-only import in pure-unit test corrected before final checks."
+    }
+  ],
+  "not_executed_actual": [
+    "Tracked quest HUD text/precise layout",
+    "Full scene completion and first-unfinished-scene reconnect recovery",
+    "Quest acceptance/finish/rewards/shared vote full flow",
+    "Containers/ender/crafting/gathering/travel/escort/combat full flow",
+    "Two-JVM real-client restoration",
+    "Two-player co-op (second account unavailable)",
+    "Final marker height and scene NPC display after code fix",
+    "Forced process kill / actual filesystem failure / long-term load / production deployment"
+  ]
+}

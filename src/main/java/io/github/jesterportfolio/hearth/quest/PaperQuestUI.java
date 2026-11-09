@@ -347,7 +347,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         task=Bukkit.getScheduler().runTaskTimer(plugin,()->{for(Player p:Bukkit.getOnlinePlayers()){
             if(dialogueBusy.test(p))continue;
             var s=players.current(p);if(s==null){
-                clearProjection.accept(p);var prepared=players.prepared(p);
+                if(players.viewing(p)==null)clearProjection.accept(p);else if(!projectionTick.test(p))dirty.add(p.getUniqueId());var prepared=players.prepared(p);
                 if(prepared==null){clearHud(p);hudOnly.remove(p.getUniqueId());continue;}
                 if(hudOnly.add(p.getUniqueId()))dirty.add(p.getUniqueId());
                 if(!requests.containsKey(p.getUniqueId())&&(attempted.get(p.getUniqueId())!=prepared||dirty.remove(p.getUniqueId()))){attempted.put(p.getUniqueId(),prepared);readOnlyHud(p,prepared);}
@@ -375,7 +375,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             if(error!=null){clearHud(p);Throwable cause=error;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();
                 if(cause instanceof IllegalStateException&&Set.of("JOURNAL_BUSY","QUEST_LIST_BUSY").contains(Objects.toString(cause.getMessage(),"")))dirty.add(p.getUniqueId());return;
             }
-            try{journal.requireView(session.context(),view);showHud(p,view);}catch(RuntimeException rejected){clearHud(p);dirty.add(p.getUniqueId());}
+            try{journal.requireView(session.context(),view);showHud(p,view);if(players.viewing(p)==session)projection.accept(p,view);}catch(RuntimeException rejected){clearHud(p);dirty.add(p.getUniqueId());}
             if(players.current(p)==session)dirty.add(p.getUniqueId());
         },owner);
     }
