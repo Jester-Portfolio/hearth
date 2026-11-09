@@ -50,6 +50,32 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     private Playthrough playthrough;
     private io.github.jesterportfolio.hearth.story.SharedStory sharedStory;
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory story){playthrough=content;sharedStory=story;}
+    private final Map<UUID,Object> facilityFrames=new HashMap<>();
+    public void facility(Player player,Function<QuestJournal.View,FacilityObjectives.Board> reader,BooleanSupplier current,Runnable back){
+        var session=players.current(player);if(session!=null)facility(player,session,reader,current,back,1,null,null);
+    }
+    private Component facilityButton(Player p,PlayerSessions.Session session,Object frame,BooleanSupplier current,String label,Runnable action){
+        return Component.text(label).clickEvent(net.kyori.adventure.text.event.ClickEvent.callback(audience->{if(audience!=p)return;Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(p)==session&&facilityFrames.get(p.getUniqueId())==frame&&current.getAsBoolean())action.run();},1);},net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build()));
+    }
+    private void facility(Player p,PlayerSessions.Session session,Function<QuestJournal.View,FacilityObjectives.Board> reader,BooleanSupplier current,Runnable back,int number,FacilityObjectives.Board expected,FacilityObjectives.Row selected){
+        if(!current.getAsBoolean())return;if(requests.containsKey(p.getUniqueId())){p.sendMessage(Component.text("기존 조회를 처리 중입니다."));return;}
+        Object frame=new Object();facilityFrames.put(p.getUniqueId(),frame);
+        load(p,session,view->{
+            if(!current.getAsBoolean()||facilityFrames.get(p.getUniqueId())!=frame)return;
+            try{var board=reader.apply(view);if(expected!=null)FacilityObjectives.require(board,expected);var page=board.page(Math.min(number,board.pages()));
+                var returnToGuide=facilityButton(p,session,frame,current,"시설 목표 안내로",()->facility(p,session,reader,current,back,page.number(),null,null));
+                if(selected!=null){FacilityObjectives.require(board,expected,number,selected);acceptedBook(p,session,view,selected.quest(),List.of(returnToGuide));return;}
+                var actions=new ArrayList<Component>();
+                for(var row:page.rows())actions.add(facilityButton(p,session,frame,current,row.title()+" · 상세/보고 안내",()->facility(p,session,reader,current,back,page.number(),board,row)));
+                if(page.number()>1)actions.add(facilityButton(p,session,frame,current,"앞 의뢰",()->facility(p,session,reader,current,back,page.number()-1,board,null)));
+                if(page.number()<page.pages())actions.add(facilityButton(p,session,frame,current,"다음 의뢰",()->facility(p,session,reader,current,back,page.number()+1,board,null)));
+                actions.add(facilityButton(p,session,frame,current,"목표·상태 새로고침",()->facility(p,session,reader,current,back,page.number(),null,null)));
+                if(preparation!=null)actions.add(facilityButton(p,session,frame,current,"시설·재료 준비",()->preparation(p,session,current,List.of(returnToGuide),null,null)));
+                if(playthrough!=null)actions.add(facilityButton(p,session,frame,current,"다음 플레이 안내",()->journey(p,session,null,current,List.of(returnToGuide))));
+                actions.add(facilityButton(p,session,frame,current,"현장/이전 안내로",back));showBook(p,session,page.book(board.title()),actions);
+            }catch(RuntimeException stale){p.sendMessage(Component.text("시설 목표나 공개 범위가 바뀌었습니다. 현장 안내를 다시 열어 주세요."));}
+        });
+    }
     public void journey(Player p,BooleanSupplier current,List<Component> back){var session=players.current(p);if(session!=null)journey(p,session,null,current,back);}
     private void journey(Player p,PlayerSessions.Session session,String talk){journey(p,session,talk,()->true,List.of());}
     private QuestJourneyView.Page journeyView(PlayerSessions.Session session,QuestJournal.View view){return QuestJourneyView.build(playthrough,catalog,view,sharedStory.cached(session.context().storyRunId()),sharedStory.phase(session.context().storyRunId()));}
@@ -274,7 +300,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
             String action=button.action();
             if(action.equals("detail")||action.equals("book"))load(p,s,v->acceptedBook(p,s,v,button.quest()));
             else if(action.equals("npc-select")||action.equals("npc-action")){p.closeInventory();npcSelection.select(p,screen.quest,button.quest(),action.equals("npc-action")?button.revision():null);}
-            else if(Set.of("npc-read","npc-topics-open","npc-topic","npc-menu","npc-close","npc-story","npc-journey","npc-dungeon").contains(action)){p.closeInventory();npcNavigation.open(p,screen.quest,action,button.quest());}
+            else if(Set.of("npc-read","npc-topics-open","npc-topic","npc-menu","npc-close","npc-story","npc-journey","npc-dungeon","npc-dungeon-guide").contains(action)){p.closeInventory();npcNavigation.open(p,screen.quest,action,button.quest());}
             else if(action.equals("journey-guide")){p.closeInventory();journey(p,s,null);}
             else if(action.equals("quest-retry")||action.equals("quest-reward")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-retry")?"retry ":"claim ")+button.quest());}
             else if(action.equals("quest-chapter-play")||action.equals("quest-chapter-skip")){p.closeInventory();questAction.accept(p,"/hearthquest "+(action.equals("quest-chapter-skip")?"chapter-skip ":"chapter-play ")+button.quest());}
@@ -293,6 +319,6 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     @EventHandler(priority=EventPriority.MONITOR) public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Screen)e.setCancelled(true);}
     @EventHandler public void closed(InventoryCloseEvent e){if(e.getInventory().getHolder() instanceof Screen)requests.remove(e.getPlayer().getUniqueId());}
-    @EventHandler public void quit(PlayerQuitEvent e){courseFrames.remove(e.getPlayer().getUniqueId());preparationFrames.remove(e.getPlayer().getUniqueId());clearBars(e.getPlayer());clearProjection.accept(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());hudOnly.remove(e.getPlayer().getUniqueId());}
-    @Override public void close(){courseFrames.clear();preparationFrames.clear();if(closed)return;closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
+    @EventHandler public void quit(PlayerQuitEvent e){facilityFrames.remove(e.getPlayer().getUniqueId());courseFrames.remove(e.getPlayer().getUniqueId());preparationFrames.remove(e.getPlayer().getUniqueId());clearBars(e.getPlayer());clearProjection.accept(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());hudOnly.remove(e.getPlayer().getUniqueId());}
+    @Override public void close(){facilityFrames.clear();courseFrames.clear();preparationFrames.clear();if(closed)return;closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
 }

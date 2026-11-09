@@ -135,3 +135,5 @@
 진행판의 장소·일지·연대기·현재 공유 정보 연결은 위 진행판/준비 안내 경로의 `courseRecordScreens`에서 실제 책·Dialog 객체와 조회 보존을 확인하도록 추가했다. [최종 통합](../docs/pending-batch-review.md)에서 실제 DB 발견 기록의 읽기 경로와 객체 검사를 통과했다. [구현 범위](../docs/course-records-verification.md)와 실제 행동 미검증을 구분한다.
 
 [누적 배치 최종 통합](../docs/pending-batch-review.md)에 Gradle 아티팩트·관련 단위와 세 Paper/DB 모드의 결과·원시 증거를 모았다. 기존 실행 도구의 권한·자원/시도 한도는 변경하지 않는다.
+
+[채집·던전 개인 목표 안내](../docs/facility-objectives-verification.md)는 기존 `--sessions --quests --story-batch --gathering-crafting --gathering-facilities`와 별도 새 경로의 `--sessions --quests --story-batch --combat-players --dungeon-play`를 사용한다. 개인 DB 목표/공개 범위·책/시설 메뉴 객체·조회 불변과 기존 입퇴장/전투/실패 보존을 두 한 JVM 모드에서 묶어 확인하며 실제 클릭/왕복은 검증하지 않는다.

@@ -49,12 +49,15 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         rules=definitions;rewards=rewardService;completionStore=storage;quests.completed((ctx,id)->{if(rules.rule(id).reward()==null)return;var p=Bukkit.getPlayer(ctx.playerId());if(p==null)return;var s=players.current(p);if(s!=null&&s.context().storyRunId().equals(ctx.storyRunId()))claim(p,s,id);});
     }
     private String dungeonNpc,dungeonQuest;private java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> dungeonEntry=(p,v)->{};
-    public void dungeon(String npc,String quest,java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> entry,java.util.function.BiConsumer<Player,String> guide){dungeonNpc=npc;dungeonQuest=quest;dungeonEntry=entry;ui.dungeon(npc,quest);if(phone!=null)phone.dungeon(quest,guide);}
+    private java.util.function.BiFunction<Player,QuestJournal.View,FacilityObjectives.Board> dungeonObjectives;
+    public void dungeonObjectives(java.util.function.BiFunction<Player,QuestJournal.View,FacilityObjectives.Board> reader){dungeonObjectives=reader;}
+    public void dungeon(String npc,String quest,java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> entry,java.util.function.BiConsumer<Player,String> guide){dungeonNpc=npc;dungeonQuest=quest;dungeonEntry=entry;ui.dungeon(npc,quest);if(phone!=null)phone.dungeon(quest,(p,q)->{var session=players.current(p);if(session==null)return;if(dungeonObjectives==null){guide.accept(p,q);return;}ui.facility(p,view->dungeonObjectives.apply(p,view),()->!closed&&players.current(p)==session&&journal.questAllowed(session.context(),q),()->showQuest(p,q));});}
     private final Set<UUID> loadingDialogues=new HashSet<>();
     private boolean closed;
     public void showJourney(Player player){ui.command(player,"/hearthjourney");}
     public void showPreparation(Player player){ui.command(player,"/hearthprepare");}
     public void showQuest(Player player,String quest){if(!quest.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("QUEST_ID");ui.command(player,"/hearthquest manage "+quest);}
+    public void showFacility(Player player,java.util.function.Function<QuestJournal.View,FacilityObjectives.Board> reader,java.util.function.BooleanSupplier current,Runnable back){ui.facility(player,reader,current,back);}
     public void preparation(java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> reader){ui.preparation(reader);if(phone!=null)phone.preparation(reader);}
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){ui.playthrough(content,shared);if(phone!=null)phone.playthrough(content,shared);}
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
@@ -200,6 +203,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         try{
             var scope=dialogues.conversation(p.getUniqueId());if(scope.session()!=session||!scope.npc().equals(npc)||!p.getWorld().getUID().equals(scope.world())||!talkAllowed(p,npc,scope.entity()))throw new IllegalArgumentException("STALE_NPC_MENU");
             if(action.equals("npc-dungeon")){if(!npc.equals(dungeonNpc)||!Objects.equals(topic,dungeonQuest)||!journal.questAllowed(session.context(),dungeonQuest))throw new IllegalArgumentException("UNREGISTERED_DUNGEON");dungeonEntry.accept(p,()->!closed&&players.prepared(p)==session&&dialogues.current(scope)&&p.getWorld().getUID().equals(scope.world())&&near(p,npc,scope.entity())&&regionInteract(p,npc)&&(story==null||story.access().content(session.context().storyRunId(),catalog.npc(npc).x(),catalog.npc(npc).y(),catalog.npc(npc).z())));return;}
+            if(action.equals("npc-dungeon-guide")){if(!npc.equals(dungeonNpc)||!Objects.equals(topic,dungeonQuest)||dungeonObjectives==null||!journal.questAllowed(session.context(),dungeonQuest))throw new IllegalArgumentException("UNREGISTERED_DUNGEON");ui.facility(p,view->dungeonObjectives.apply(p,view),()->!closed&&players.current(p)==session&&dialogues.current(scope)&&talkAllowed(p,npc,scope.entity())&&journal.questAllowed(session.context(),dungeonQuest),()->command(p,dialogues.menuCommand(scope)));return;}
             if(action.equals("npc-close")){dialogues.clear(p.getUniqueId());p.closeInventory();return;}
             if(action.equals("npc-topic")){command(p,dialogues.topicCommand(dialogues.topicSelection(p.getUniqueId(),session,npc,topic)));return;}
             if(action.equals("npc-journey")){ui.journey(p,()->dialogues.current(scope)&&talkAllowed(p,npc,scope.entity()),List.of(Component.text("[NPC 선택창]").clickEvent(ClickEvent.runCommand(dialogues.menuCommand(scope)))));return;}
