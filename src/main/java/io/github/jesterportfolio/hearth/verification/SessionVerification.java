@@ -181,7 +181,7 @@ public final class SessionVerification implements AutoCloseable {
                 sharedStory.effects(blockEffect);
             }
         }
-        if(plugin.getConfig().getBoolean("crafting-verification-enabled")){var cf=new java.io.File(plugin.getDataFolder(),"crafting-demo.yml");if(!cf.exists())plugin.saveResource("crafting-demo.yml",false);crafting=new PaperCrafting(plugin,adapter,worlds,craftContent(cf),codec,(ctx,f)->sharedStory==null||new StoryAccess(sharedStory).content(ctx.storyRunId(),f.x(),f.y(),f.z()),owner);if(plugin.getConfig().getBoolean("crafting-quest-verification-enabled")){if(quests==null||journal==null)throw new IllegalStateException("CRAFT_QUEST_DEPENDENCIES");craftingQuests=new CraftingQuest(quests,catalog,crafting.content,owner,SessionVerification::main);crafting.quests(craftingQuests,journal::questAllowed);crafting.journey(questAdapter::showJourney);}}
+        if(plugin.getConfig().getBoolean("crafting-verification-enabled")){var cf=new java.io.File(plugin.getDataFolder(),"crafting-demo.yml");if(!cf.exists())plugin.saveResource("crafting-demo.yml",false);crafting=new PaperCrafting(plugin,adapter,worlds,craftContent(cf),codec,(ctx,f)->sharedStory==null||new StoryAccess(sharedStory).content(ctx.storyRunId(),f.x(),f.y(),f.z()),owner);if(plugin.getConfig().getBoolean("crafting-quest-verification-enabled")){if(quests==null||journal==null)throw new IllegalStateException("CRAFT_QUEST_DEPENDENCIES");craftingQuests=new CraftingQuest(quests,catalog,crafting.content,owner,SessionVerification::main);crafting.quests(craftingQuests,journal::questAllowed);crafting.journey(questAdapter::showJourney);crafting.orders((player,facility,current)->{var session=Objects.requireNonNull(adapter.current(player));return craftingOrders(session,facility,()->adapter.current(player)==session&&current.getAsBoolean());},questAdapter::showQuest);}}
         if(plugin.getConfig().getBoolean("fast-travel-verification-enabled")){if(journal==null||explorationContent==null)throw new IllegalStateException("Travel exploration required");var tf=new java.io.File(plugin.getDataFolder(),"fast-travel-demo.yml");paperTravel=new io.github.jesterportfolio.hearth.travel.PaperTravel(plugin,adapter,journal,worlds,io.github.jesterportfolio.hearth.travel.TravelContent.parse(YamlConfiguration.loadConfiguration(tf).getValues(false),explorationContent),owner);}
         if(plugin.getConfig().getBoolean("gathering-verification-enabled")){
             var filename=plugin.getConfig().getString("gathering-content-file","gathering-demo.yml");if(!Set.of("gathering-demo.yml","gathering-workshop-demo.yml").contains(filename))throw new IllegalArgumentException("GATHERING_CONTENT_FILE");var file=new java.io.File(plugin.getDataFolder(),filename);if(!file.exists())plugin.saveResource(filename,false);
@@ -1762,6 +1762,37 @@ public final class SessionVerification implements AutoCloseable {
         .thenAccept(value->{bd[0]=value;check(value.dungeon().snapshot().generation()==gen[0]&&codec.equivalent(payload[0],one.capture())&&s1.save().revision()==revision[0],"supply_existing_gather_generation_inventory_revision_restored_without_create");check(Bukkit.getWorld(physical).getBlockAt(6,64,6).getType()==Material.CRAFTING_TABLE,"supply_existing_workbench_preserved");check(GatheringStatus.lines(value.dungeon().snapshot(),0,false,gatheringClock.get()).stream().anyMatch(line->line.contains("다음 입장 전에 초기화")),"supply_empty_reset_status_after_reload");})
         .thenCompose(v->supplyQuestRead(QuestStore.Phase.COMPLETED,5,3)).thenCompose(v->supplyQuestView()).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(ctx(b,1),7,0));
     }
+    private CompletionStage<CraftingOrders.Board> craftingOrders(PlayerSessions.Session session,String facility,BooleanSupplier current){
+        main();if(!coordinator.playable(session)||!current.getAsBoolean())return CompletableFuture.failedFuture(new IllegalStateException("CRAFT_ORDERS_SESSION"));
+        return journal.load(session.context(),session,current).thenApplyAsync(view->{
+            if(!coordinator.playable(session)||!current.getAsBoolean())throw new IllegalStateException("CRAFT_ORDERS_SESSION");journal.requireView(session.context(),view);
+            return CraftingOrders.build(catalog,crafting.content,facility,view);
+        },owner);
+    }
+    private CraftingOrders.Board previousCraftingOrders;
+    private CompletionStage<Void> craftingOrdersCheck(QuestStore.Phase phase,String recipe){
+        var before=one.capture();long inventoryRevision=s1.save().revision();
+        return craftingOrders(s1,"public_workbench",()->coordinator.playable(s1)).thenAccept(board->{
+            var orders=board.orders().stream().filter(row->row.quest().equals("workshop_route")).toList();
+            boolean visible=phase==QuestStore.Phase.ACTIVE||phase==QuestStore.Phase.REPORT_READY;
+            check(visible?orders.size()==1&&orders.getFirst().phase()==phase&&Objects.equals(orders.getFirst().recipe(),recipe):orders.isEmpty(),"orders_current_saved_goal_"+phase+"_"+Objects.toString(recipe,"guidance"));
+            var world=Objects.requireNonNull(Bukkit.getWorld(worlds.get(a).mapping().physicalId()));
+            var panel=PaperCrafting.previewOrders(crafting.content,crafting.content.facilities().get("public_workbench"),crafting.planner,world,board.page(1),before);
+            check(panel.inventory().getSize()==54&&panel.inventory().getItem(6)!=null&&panel.inventory().getItem(45).getType()==Material.ARROW&&panel.inventory().getItem(49).getType()==Material.CLOCK,"orders_native_current_goal_menu_and_return_"+phase);
+            if(recipe!=null)check(panel.recipes().get(0).equals(new CraftingBatch.Selection(recipe,1))&&panel.inventory().getItem(41)!=null&&panel.inventory().getItem(42)!=null,"orders_current_recipe_and_joint_material_preparation");
+            else if(phase==QuestStore.Phase.REPORT_READY)check(panel.recipes().isEmpty()&&panel.inventory().getItem(0).getType()==Material.BOOK,"orders_reporting_guidance_does_not_repeat_craft");
+            if(previousCraftingOrders!=null&&!previousCraftingOrders.equals(board))try{CraftingOrders.require(board,previousCraftingOrders);throw new AssertionError("stale work order accepted");}catch(IllegalStateException expected){check(expected.getMessage().equals("STALE_CRAFT_ORDERS"),"orders_saved_goal_change_rejects_old_selection_"+phase);}
+            previousCraftingOrders=board;
+            check(codec.equivalent(before,one.capture())&&inventoryRevision==s1.save().revision(),"orders_read_and_native_preparation_preserve_inventory_"+phase);
+        });
+    }
+    private CompletionStage<Void> craftingOrdersIsolation(){
+        var live=new java.util.concurrent.atomic.AtomicBoolean(true);
+        return craftingOrders(s2,"public_workbench",()->coordinator.playable(s2)).thenAccept(board->check(board.orders().isEmpty(),"orders_other_player_has_no_borrowed_work_orders"))
+            .thenCompose(v->craftingOrders(s3,"public_workbench",()->coordinator.playable(s3))).thenAccept(board->check(board.orders().isEmpty(),"orders_other_run_has_no_borrowed_work_orders"))
+            .thenCompose(v->{var read=craftingOrders(s1,"public_workbench",live::get);live.set(false);return rejectQuest(read);})
+            .thenRun(()->check(coordinator.playable(s1),"orders_invalidated_async_read_is_rejected_without_empty_success_or_session_hold"));
+    }
     private int craftingQuestSaves;
     private CompletionStage<List<String>> craftingQuestRecipe(String recipe){return craftingQuestRecipe(recipe,1);}
     private CompletionStage<List<String>> craftingQuestRecipe(String recipe,int times){
@@ -1789,23 +1820,23 @@ public final class SessionVerification implements AutoCloseable {
             craftingBatchNativeChecks();one.inventory.setItem(9,new ItemStack(Material.OAK_LOG,10));coordinator.refresh(s1);
         }).thenCompose(v->journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,4,64,6))
         .thenCompose(v->quests.enter(a1,course,s1,()->coordinator.playable(s1),0,64,0,4,64,6)).thenCompose(v->craftingQuestTool())
-        .thenCompose(v->craftingQuestRead(QuestStore.Phase.NOT_ACCEPTED,-1,0)).thenRun(()->check(craftingQuestSaves==0,"workshop_unaccepted_craft_no_quest_write_or_per_craft_flush"))
+        .thenCompose(v->craftingQuestRead(QuestStore.Phase.NOT_ACCEPTED,-1,0)).thenCompose(v->craftingOrdersCheck(QuestStore.Phase.NOT_ACCEPTED,null)).thenRun(()->check(craftingQuestSaves==0,"workshop_unaccepted_craft_no_quest_write_or_per_craft_flush"))
         .thenCompose(v->coordinator.saveBoundary(s1))
         .thenCompose(v->quests.enter(a1,followup,s1,()->coordinator.playable(s1),0,64,0,4,64,6)).thenCompose(v->questRead(a1,"workshop_followup",QuestStore.Phase.NOT_ACCEPTED,-1))
         .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.accept(q,course))
         .thenCompose(v->journal.track(a1,s1,()->coordinator.playable(s1),course.id(),true))
         .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.reach(q,course,4,64,6))
-        .thenCompose(v->craftingQuestRead(QuestStore.Phase.ACTIVE,1,1)).thenCompose(v->craftingQuestView())
+        .thenCompose(v->craftingQuestRead(QuestStore.Phase.ACTIVE,1,1)).thenCompose(v->craftingOrdersCheck(QuestStore.Phase.ACTIVE,"wooden_pickaxe")).thenCompose(v->craftingQuestView())
         .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->rejectQuest(quests.reach(q,course,6,64,6)))
-        .thenCompose(v->craftingQuestRecipe("oak_planks",8)).thenCompose(v->craftingQuestRecipe("stick",4)).thenCompose(v->craftingQuestRecipe("wooden_pickaxe",4)).thenCompose(v->craftingQuestRead(QuestStore.Phase.ACTIVE,2,2))
+        .thenCompose(v->craftingQuestRecipe("oak_planks",8)).thenCompose(v->craftingQuestRecipe("stick",4)).thenCompose(v->craftingQuestRecipe("wooden_pickaxe",4)).thenCompose(v->craftingQuestRead(QuestStore.Phase.ACTIVE,2,2)).thenCompose(v->craftingOrdersCheck(QuestStore.Phase.ACTIVE,null))
         .thenRun(()->check(craftingQuestSaves==1&&craftingCount(one.capture(),Material.WOODEN_PICKAXE)==5,"workshop_batch_four_tools_single_goal_and_source_save"))
         .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.reach(q,course,13,64,13))
-        .thenCompose(v->craftingQuestRead(QuestStore.Phase.REPORT_READY,3,2))
+        .thenCompose(v->craftingQuestRead(QuestStore.Phase.REPORT_READY,3,2)).thenCompose(v->craftingOrdersCheck(QuestStore.Phase.REPORT_READY,null))
         .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.advance(q,QuestStore.Phase.COMPLETED))
         .thenCompose(v->craftingQuestRead(QuestStore.Phase.COMPLETED,4,2))
         .thenCompose(v->quests.enter(a1,followup,s1,()->coordinator.playable(s1),0,64,0,4,64,6)).thenCompose(v->questRead(a1,followup.id(),QuestStore.Phase.ACTIVE,0))
         .thenCompose(v->craftingQuestRecipe("stick")).thenCompose(v->questRead(a1,followup.id(),QuestStore.Phase.COMPLETED,1))
-        .thenCompose(v->journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,4,64,6)).thenCompose(v->craftingQuestView())
+        .thenCompose(v->journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,4,64,6)).thenCompose(v->craftingQuestView()).thenCompose(v->craftingOrdersCheck(QuestStore.Phase.COMPLETED,null)).thenCompose(v->craftingOrdersIsolation())
         .thenCompose(v->questRead(a2,course.id(),QuestStore.Phase.NOT_ACCEPTED,-1)).thenCompose(v->questRead(ctx(b,1),course.id(),QuestStore.Phase.NOT_ACCEPTED,-1))
         .thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->check(view.exploration().places().stream().filter(p->p.key().equals("public_workshop")).noneMatch(ExplorationView.Place::discovered),"workshop_other_player_discovery_unchanged"))
         .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(row->{snapshot[0]=row.payload();savedRevision[0]=row.revision();check(craftingQuestSaves==2&&codec.equivalent(one.capture(),row.payload()),"workshop_inventory_durable_before_both_quest_completions");})
@@ -1813,7 +1844,7 @@ public final class SessionVerification implements AutoCloseable {
         .thenRun(()->check(Bukkit.getWorld(originalWorld)==null&&coordinator.playable(s3),"workshop_idle_unload_and_other_run_active"))
         .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return CompletableFuture.allOf(s1.ready().toCompletableFuture(),s2.ready().toCompletableFuture());})
         .thenRun(()->{var w=Objects.requireNonNull(Bukkit.getWorld(originalWorld));var manager=Objects.requireNonNull(com.sk89q.worldguard.WorldGuard.getInstance().getPlatform().getRegionContainer().get(com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(w)));check(w.getUID().equals(originalWorld)&&w.getBlockAt(6,64,6).getType()==Material.CRAFTING_TABLE&&manager.getRegion("hearth_crafting_public_workbench")!=null,"workshop_existing_world_workbench_and_region_restored");check(codec.equivalent(one.capture(),snapshot[0])&&s1.save().revision()==savedRevision[0],"workshop_existing_inventory_reconnect_revision_preserved");})
-        .thenCompose(v->craftingQuestRead(QuestStore.Phase.COMPLETED,4,2)).thenCompose(v->craftingQuestView())
+        .thenCompose(v->craftingQuestRead(QuestStore.Phase.COMPLETED,4,2)).thenCompose(v->craftingQuestView()).thenCompose(v->craftingOrdersCheck(QuestStore.Phase.COMPLETED,null))
         .thenCompose(v->craftingQuestFailure(false)).thenCompose(v->craftingQuestFailure(true))
         .thenCompose(v->craftingQuestRead(QuestStore.Phase.COMPLETED,4,2)).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(ctx(b,1),7,0));
     }

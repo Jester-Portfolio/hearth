@@ -120,6 +120,8 @@
 
 후속 [제작 준비 순서·공동 재료·조달 장소 안내](../docs/crafting-preparation-verification.md)는 위 제작 모드와 기존 `--play-preparation` 경로에 검사를 추가했다. 같은 최종 통합에서 신규 Paper/PG 검사까지 통과했다.
 
+현장 작업대의 [내 제작 의뢰·공동 준비](../docs/crafting-orders-verification.md)도 아래 제작 의뢰 모드를 재사용한다. 현재 DB 목표→준비/메뉴 객체→제작→다음 목표/보고·재연결과 기존 CAS 실패를 같은 한 JVM에서 검사한다. 실제 Player 클릭은 실행하지 않는다.
+
 탐험·제작 의뢰 통합은 `verify-lifecycle.py --sessions --quests --story-batch --crafting-quests` 단독 한 JVM 모드다. 공개 코스의 발견·제작 후 저장·목표 전이·NPC 보고/후속 해금·개인 격리·실제 DB 충돌·월드 재입장을 함께 검사한다. [검증과 미실행 범위](../docs/workshop-quest-verification.md)를 따르며 실제 클라이언트 시험은 실행하지 않는다.
 
 채집 재료→제작 의뢰 통합은 `verify-lifecycle.py --sessions --quests --story-batch --gathering-crafting` 단독 한 JVM 모드다. 신규 채집 템플릿, 순정 드롭/실제 아이템·제어 인벤토리, 재료 표시·두 도구 제작·보고·초기화/월드 재입장을 함께 검사한다. [실행 범위와 실패 이력](../docs/material-supply-verification.md)을 따르며 실제 Player 채굴/줍기나 운영 배치를 검증하지 않는다.
