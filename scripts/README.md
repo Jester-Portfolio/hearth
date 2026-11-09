@@ -155,3 +155,5 @@
 [S4 개인 기능 통합](../docs/s4-features-verification.md)은 새 격리 경로에서 `--sessions --quests --story-batch --s4-completion` 단독 선택으로 실행한다. 기존 공개 코스·호위와 승인된 컷신·개인 엔더·스마트폰·전투 복귀 경계를 같은 PG/월드의 두 Paper JVM에서 검사한다. 시작·종료 최대 2회와 기존 CPU/RAM/시간/localhost/EULA 한도는 유지한다. 실제 Player·클라이언트 이벤트를 생성하지 않으며 운영 환경에는 적용하지 않는다. 리소스팩의 미니맵 Glyph JSON·PNG·참조는 `python3 scripts/build-phone-pack.py`로 검사하고 로컬 ZIP만 생성한다.
 
 [HUD/선택형 BetterHud](../docs/hud-display-verification.md)는 각각 새 격리 경로의 `--sessions --quests --story-batch --hud-display` 또는 `--sessions --quests --story-batch --betterhud --betterhud-plugin /검증한/BetterHud.jar` 단독 모드로 한 JVM에서 검사한다. BetterHud 아티팩트는 [공식 고정값](../verification/betterhud-artifact.json)과 일치해야 하며 운영 설치는 하지 않는다. 생성 통합 팩은 `check-betterhud-pack.py`의 앵커/폰트·스마트폰 보존·팩 ID 검사로 확인한다. 실제 인증 클라이언트·팩 전송/호스팅은 보류한다.
+
+관리자 복구 진단은 `verify-lifecycle.py --sessions --quests --story-batch --recovery-inspection --accept-eula` 단독 모드로 새 격리 DB/Paper 한 JVM에서 콘솔 등록·검증 연결 제한·단일 SELECT의 동시 41/27슬롯 저장 관측·실제 SQL 실패·CAS 원본 보존·읽기 한도를 검사합니다. 실행 경로/아티팩트/자원 한도는 기존과 같으며 [명령 및 검증 기록](../docs/recovery-inspection-verification.md)을 따릅니다. 진단 명령 자체는 조회만 수행하며 복구/재지급/초기화 명령을 추가하지 않습니다.

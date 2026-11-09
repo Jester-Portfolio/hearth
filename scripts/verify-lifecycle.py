@@ -92,6 +92,7 @@ def main():
     parser.add_argument('--java', required=True, type=Path)
     parser.add_argument('--plugin', required=True, type=Path)
     parser.add_argument('--artifact-source', required=True, type=Path)
+    parser.add_argument('--recovery-inspection',action='store_true',help='콘솔 읽기 전용 복구 진단·PG 경합·원본 보존을 한 JVM에서 검사합니다')
     parser.add_argument('--hud-display',action='store_true',help='외부 HUD 없이 S4 표시 연결을 한 JVM에서 검사합니다')
     parser.add_argument('--betterhud',action='store_true',help='선택형 BetterHud와 표시/관전 경계를 한 JVM에서 검사합니다')
     parser.add_argument('--betterhud-plugin',type=Path)
@@ -270,6 +271,10 @@ def main():
         allowed={'completion_navigation','sessions','quests','story_batch','quest_completion','phone_dialog','accept_eula'}
         if any(isinstance(value,bool) and value and key not in allowed for key,value in vars(args).items()):
             parser.error('--completion-navigation은 다른 실행 모드와 혼합하지 않습니다')
+    if args.recovery_inspection:
+        allowed={'recovery_inspection','sessions','quests','story_batch','accept_eula'}
+        if not all([args.sessions,args.quests,args.story_batch]) or any(isinstance(value,bool) and value and key not in allowed for key,value in vars(args).items()):parser.error('--recovery-inspection은 --sessions --quests --story-batch 단독 선택이 필요합니다')
+        args.combat_players=True
     if args.hud_display:
         allowed={'hud_display','sessions','quests','story_batch','accept_eula'}
         if not all([args.sessions,args.quests,args.story_batch]) or any(isinstance(value,bool) and value and key not in allowed for key,value in vars(args).items()):parser.error('--hud-display는 --sessions --quests --story-batch 단독 선택이 필요합니다')
@@ -394,7 +399,7 @@ def main():
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('escort-verification-enabled: true\n')
     if args.s4_completion:
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('s4-features-enabled: true\nminimap-overlay-enabled: true\ncombat-content-file: combat-s4-demo.yml\n')
-    if args.hud_display:
+    if args.hud_display or args.recovery_inspection:
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('s4-features-enabled: true\n')
     if args.betterhud:
         with (plugins/'Hearth/config.yml').open('a') as config:config.write('s4-features-enabled: true\nbetterhud-enabled: true\n')
@@ -455,7 +460,7 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.gatheringFacilities=true')
         if args.play_preparation:
             paper.insert(-3,'-Dhearth.verification.preparation=true')
-        if args.s4_completion or args.betterhud or args.hud_display:paper.insert(-3,'-Dhearth.verification.s4Features=true')
+        if args.s4_completion or args.betterhud or args.hud_display or args.recovery_inspection:paper.insert(-3,'-Dhearth.verification.s4Features=true')
         if args.s4_gameplay:
             paper.insert(-3,'-Dhearth.verification.escort=true')
         if args.fast_travel:
@@ -506,7 +511,9 @@ motd=Hearth isolated S4-11 verification
                         monitor.wait(name,'HEARTH_SESSION_FIXTURE READY',seconds=20)
                         monitor.manual_session(name)
                     else:
-                        if args.public_course:
+                        if args.recovery_inspection:
+                            monitor.action(name,'recovery-inspection')
+                        elif args.public_course:
                             for action in ['public-course-start','public-course-supply']+(['escort-play'] if args.s4_gameplay else [])+['public-course-vote','public-course-dungeon','public-course-finish']:monitor.action(name,action)
                         elif args.gathering_facilities:
                             monitor.action(name,'gathering-facility-play')
@@ -735,7 +742,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    hud_display_mode=args.hud_display,betterhud_mode=args.betterhud,s4_completion_mode=args.s4_completion,inventory_workspaces_mode=args.inventory_workspaces,s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    recovery_inspection_mode=args.recovery_inspection,hud_display_mode=args.hud_display,betterhud_mode=args.betterhud,s4_completion_mode=args.s4_completion,inventory_workspaces_mode=args.inventory_workspaces,s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

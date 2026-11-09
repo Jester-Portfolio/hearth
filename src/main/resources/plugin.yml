@@ -9,6 +9,10 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth S4 isolated multiworld verification foundation
 commands:
+  hearthrecovery:
+    description: Console-only read-only story recovery inspection
+    usage: /hearthrecovery list [page] | inspect <run> <player> | compare <report>
+    permission: hearth.recovery
   hearthfeatures:
     description: 개인 지도·장면·보관 안내
   hearthscene:
@@ -43,5 +47,7 @@ commands:
     description: Console-only isolated S4 verification
     permission: hearth.verify
 permissions:
+  hearth.recovery:
+    default: op
   hearth.verify:
     default: op

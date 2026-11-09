@@ -104,6 +104,8 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     public void fixture(Link link) {
         main();if (links.putIfAbsent(link.context().playerId(),link)!=null) throw new IllegalStateException("Fixture link already exists");
     }
+    /** 관리 진단은 등록된 서버 발급 문맥만 사용합니다. */
+    public List<ServerProgressAccess.Context> verifiedContexts(){main();return links.values().stream().map(Link::context).toList();}
     /** 현재 서버가 검증한 연결 범위입니다. 저장된 전체 구성원 명단으로 취급하지 않습니다. */
     public List<CommunityBoundary.Ref> community(ServerProgressAccess.Context ctx){
         main();return links.values().stream().filter(l->l.context().storyRunId().equals(ctx.storyRunId())).map(l->{

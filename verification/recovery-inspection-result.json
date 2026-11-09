@@ -1,0 +1,156 @@
+{
+  "checked_at": "2026-11-09",
+  "baseline_commit": "d8e35f5",
+  "outcome": "PASS",
+  "evidence_root": "/tmp/hearth-recovery-inspection.q0d2f9j9",
+  "artifact": {
+    "path": "/tmp/hearth-recovery-inspection.q0d2f9j9/Hearth-final-0.1.0-SNAPSHOT.jar",
+    "sha256": "a0f0dfc2c8166f80654a8aaf3c01406f53e063fcb0221ff33ab11ea971d7d0b3",
+    "bytes": 2230948,
+    "deployed": false
+  },
+  "unit_tests": {
+    "cases": 52,
+    "failures": 0,
+    "suites": [
+      {
+        "suite": "io.github.jesterportfolio.hearth.administration.RecoveryConsoleTest",
+        "tests": 9
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.administration.RecoveryInspectionTest",
+        "tests": 9
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.PersonalStorageTest",
+        "tests": 4
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.features.SceneProgressTest",
+        "tests": 7
+      },
+      {
+        "suite": "io.github.jesterportfolio.hearth.session.PlayerSessionsTest",
+        "tests": 23
+      }
+    ],
+    "raw_results": "/tmp/hearth-recovery-inspection.q0d2f9j9/unit-results",
+    "build_log": "/tmp/hearth-recovery-inspection.q0d2f9j9/final-unit-build.log"
+  },
+  "native": {
+    "workspace": "/tmp/hearth-s4-11.mudh4ask",
+    "raw_result": "/tmp/hearth-s4-11.mudh4ask/run-result.json",
+    "raw_sha256": "3240bbd852cd5b8d2bc4c409c2d3544f40c506ab7eb469ab11e9d9d71b483625",
+    "outcome": "PASS",
+    "session_assertions": 46,
+    "unique_session_assertions": 26,
+    "duration_seconds": 38.999,
+    "paper_starts": 1,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "all_owned_processes_and_ports_closed": true,
+    "cleanup_errors": [],
+    "plugin_sha256": "a0f0dfc2c8166f80654a8aaf3c01406f53e063fcb0221ff33ab11ea971d7d0b3",
+    "assertions": [
+      "fixture_prepared_no_login_provisioning",
+      "no_apply_or_admission_before_prepare",
+      "all_sessions_active_after_move",
+      "inspection_real_console_command_registered",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_active_recovery_restart_policy_visible",
+      "inspection_issuance_record_does_not_infer_phone_absence",
+      "inspection_mandatory_scene_not_completed_by_read",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_baseline_compare_data_unchanged",
+      "inspection_reads_preserve_all_original_rows_and_revisions",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_pending_return_report_does_not_claim_or_move",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_unknown_movement_original_claim_visible",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_wrong_return_world_is_reported_without_reassignment",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_corrupt_ender_envelope_preserved",
+      "inspection_console_only_and_unknown_verified_scope_denied",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_SQL_limits_captured_payload_bytes",
+      "inspection_budget_limited_reports_never_claim_full_equality",
+      "inspection_SQL_limits_feature_rows_and_marks_incomplete",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_single_SELECT_sees_one_atomic_41_27_revision_pair",
+      "inspection_originals_unchanged_after_real_PG_CAS_rollback",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_real_SQL_failure_keeps_previous_receipt_and_no_empty_success",
+      "inspection_console_does_not_publish_private_progress_payload",
+      "inspection_SQL_recovery_preserves_original_payloads_and_revisions",
+      "inspection_foreign_issuer_and_missing_player_fail_without_empty_success",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000001_count32_r0",
+      "restored_00000000-0000-002a-0000-00000000000a_00000000-0000-0031-0000-000000000002_count5_r0",
+      "restored_00000000-0000-002a-0000-00000000000b_00000000-0000-0031-0000-000000000003_count7_r0"
+    ]
+  },
+  "cli_rejections": [
+    {
+      "flags": [
+        "--recovery-inspection"
+      ],
+      "exit_code": 2,
+      "rejected_before_workspace_access": true
+    },
+    {
+      "flags": [
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--recovery-inspection",
+        "--hud-display"
+      ],
+      "exit_code": 2,
+      "rejected_before_workspace_access": true
+    },
+    {
+      "flags": [
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--recovery-inspection",
+        "--betterhud"
+      ],
+      "exit_code": 2,
+      "rejected_before_workspace_access": true
+    }
+  ],
+  "initial_failures": {
+    "logs": [
+      "/tmp/hearth-recovery-inspection.q0d2f9j9/final-unit.log",
+      "/tmp/hearth-recovery-inspection.q0d2f9j9/final-unit-r2.log"
+    ],
+    "cause": "New isolated fixture had an extra closing parenthesis and a nested lambda parameter name conflict; both corrected before final checks."
+  },
+  "not_executed": [
+    "Actual authenticated Minecraft client actions: user explicitly deferred",
+    "Production deployment/restart/repair or HOLD release",
+    "Inventory NBT item decoding or phone absence determination",
+    "Second JVM: storage and restoration contracts unchanged",
+    "TPS/MSPT, long-term load, real filesystem failure or forced process kill"
+  ]
+}

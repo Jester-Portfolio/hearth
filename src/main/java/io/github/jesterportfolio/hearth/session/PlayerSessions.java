@@ -56,6 +56,15 @@ public final class PlayerSessions {
     private final Map<UUID,Session> connections=new HashMap<>();
     private final Map<Key,Session> leases=new HashMap<>();
     private boolean stopping;
+    public record Diagnostic(UUID connection,String state,boolean connected,long revision,boolean dirty,boolean saving,String hold,String error,String restoreStage) {}
+    public Diagnostic diagnostic(ServerProgressAccess.Context context) {
+        check.run();var key=new Key(context.storyRunId(),context.playerId());var session=leases.get(key);
+        if(session==null){var current=connections.get(context.playerId());if(current!=null&&current.key.equals(key))session=current;}
+        if(session==null)return new Diagnostic(null,"NONE",false,-1,false,false,null,null,"none");
+        var saved=session.save;
+        return new Diagnostic(session.request,session.state.name(),session.connected&&connections.get(context.playerId())==session,
+                saved==null?-1:saved.revision(),saved!=null&&saved.dirty(),saved!=null&&saved.saving(),saved==null?null:saved.holdCode(),session.error,session.restoreStage);
+    }
     public PlayerSessions(ProgressStore progress,InventoryStore inventories,Executor owner,Runnable check,Consumer<InventoryPayload> validate,
             Consumer<InventorySaveSession> register,Consumer<InventorySaveSession> unregister,Consumer<String> errors) {
         this(progress,inventories,owner,check,validate,InventoryPayload::equals,register,unregister,errors);
