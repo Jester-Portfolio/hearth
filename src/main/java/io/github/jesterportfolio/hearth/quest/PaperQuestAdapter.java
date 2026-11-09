@@ -48,6 +48,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void completion(QuestRules definitions,QuestRewards rewardService,io.github.jesterportfolio.hearth.persistence.QuestCompletionStore storage){
         rules=definitions;rewards=rewardService;completionStore=storage;quests.completed((ctx,id)->{if(rules.rule(id).reward()==null)return;var p=Bukkit.getPlayer(ctx.playerId());if(p==null)return;var s=players.current(p);if(s!=null&&s.context().storyRunId().equals(ctx.storyRunId()))claim(p,s,id);});
     }
+    private final io.github.jesterportfolio.hearth.phone.CompletionFlow completionFlow=new io.github.jesterportfolio.hearth.phone.CompletionFlow();
     private String dungeonNpc,dungeonQuest;private java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> dungeonEntry=(p,v)->{};
     private java.util.function.BiFunction<Player,QuestJournal.View,FacilityObjectives.Board> dungeonObjectives;
     public void dungeonObjectives(java.util.function.BiFunction<Player,QuestJournal.View,FacilityObjectives.Board> reader){dungeonObjectives=reader;}
@@ -57,6 +58,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void showJourney(Player player){ui.command(player,"/hearthjourney");}
     public void showPreparation(Player player){ui.command(player,"/hearthprepare");}
     public void showQuest(Player player,String quest){if(!quest.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("QUEST_ID");ui.command(player,"/hearthquest manage "+quest);}
+    public void showQuest(Player player,String quest,java.util.function.BooleanSupplier current,Runnable back){ui.contextQuest(player,quest,current,back);}
     public void showFacility(Player player,java.util.function.Function<QuestJournal.View,FacilityObjectives.Board> reader,java.util.function.BooleanSupplier current,Runnable back){ui.facility(player,reader,current,back);}
     public void preparation(java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> reader){ui.preparation(reader);if(phone!=null)phone.preparation(reader);}
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){ui.playthrough(content,shared);if(phone!=null)phone.playthrough(content,shared);}
@@ -68,8 +70,8 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         phone=plugin.getConfig().getBoolean("phone-dialog-enabled",false)?new io.github.jesterportfolio.hearth.phone.PaperPhone(plugin,players,journal,catalog,owner):null;
-        if(phone!=null){phone.contact(this::openNpcFromFact);phone.report(this::openNpcFromQuest);phone.completion(this::phoneCompletion);}
-        ui.npcNavigation(this::npcNavigation);
+        if(phone!=null){phone.contact(this::openNpcFromFact);phone.report(this::openNpcFromQuest);phone.completion(this::phoneCompletion,completionFlow);}
+        ui.completion(this::phoneCompletion,completionFlow);ui.npcNavigation(this::npcNavigation);
         ui.npcSelection((p,npc,quest,revision)->{var s=players.current(p);if(s==null)return;try{var t=dialogues.selection(p.getUniqueId(),s,npc,quest);command(p,dialogues.command(t,"select"),revision);}catch(RuntimeException invalid){unavailable(p,invalid);}});
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
         ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);

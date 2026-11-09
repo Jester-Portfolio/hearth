@@ -16,7 +16,8 @@ public final class CraftingOrders {
             return recipes.stream().map(id->new CraftingBatch.Selection(id,1)).toList();
         }
     }
-    public record Board(String facility,long sharedRevision,List<Order> orders) {
+    public record Board(String facility,long sharedRevision,List<Order> orders,long completionEpoch) {
+        public Board(String facility,long sharedRevision,List<Order> orders){this(facility,sharedRevision,orders,0);}
         public Board {orders=List.copyOf(orders);}
         public int pages(){return Math.max(1,(orders.size()+PAGE_SIZE-1)/PAGE_SIZE);}
         public Page page(int number){
@@ -34,13 +35,13 @@ public final class CraftingOrders {
         var facility=content.facilities().get(facilityId);if(facility==null)throw new IllegalArgumentException("CRAFT_ORDERS_FACILITY");
         var rows=new ArrayList<Order>();
         for(var entry:QuestListView.filtered(catalog,view.states(),view.journal().tracked(),view.exploration().blockedQuests(),QuestListView.Filter.ALL)){
-            if(entry.phase()!=QuestStore.Phase.ACTIVE&&entry.phase()!=QuestStore.Phase.REPORT_READY)continue;
+            if(!QuestFollowups.visible(view,entry.questId()))continue;
             var quest=catalog.quest(entry.questId());if(quest.goals().stream().noneMatch(g->recipe(facility,g.interaction())!=null))continue;
             var state=view.states().get(entry.questId());
             String selected=state.phase()==QuestStore.Phase.ACTIVE?recipe(facility,quest.goal(state).interaction()):null;
             rows.add(new Order(quest.id(),quest.title(),quest.name(),state.phase(),state.revision(),state.objectiveIndex(),selected,quest.detailGuidance(state)));
         }
-        return new Board(facilityId,view.exploration().story().revision(),rows);
+        return new Board(facilityId,view.exploration().story().revision(),rows,view.completion().epoch());
     }
     public static void require(Board fresh,Board shown){if(!fresh.equals(shown))throw new IllegalStateException("STALE_CRAFT_ORDERS");}
     public static void require(Board fresh,Board shown,int number,Order selected){

@@ -353,6 +353,7 @@ public final class SessionVerification implements AutoCloseable {
         case "branch-progression-start" -> branchProgressionStart();
         case "branch-progression-restored" -> branchProgressionRestored();
         case "quest-completion-start" -> completionStart();
+        case "completion-navigation" -> completionNavigation();
         case "quest-completion-restored" -> completionRestored();
         case "general-npcs-start" -> generalNpcsStart();
         case "general-npcs-restored" -> generalNpcsRestored();
@@ -1254,6 +1255,49 @@ public final class SessionVerification implements AutoCloseable {
             return expectQuestCode(quests.fail(current[0],c,"OBJECTIVE"),"QUEST_FAILURE_NOT_ALLOWED");});})
         .thenCompose(v->quests.retry(current[0],c)).thenCompose(v->{CompletionStage<?> work=CompletableFuture.completedFuture(null);for(int index=expected;index<3;index++){int x=5+index*4;work=work.thenCompose(done->quests.reach(current[0],c,x,64,31));}return work;})
         .thenCompose(v->quests.advance(current[0],QuestStore.Phase.COMPLETED)).thenAccept(row->check(row.phase()==QuestStore.Phase.COMPLETED,"completion_retry_flow_"+id));}
+    private CompletionStage<Void> completionNavigation(){
+        var c=catalog.quest("trial_checkpoint");var q=new PersonalQuest.Session[1];var flow=new io.github.jesterportfolio.hearth.phone.CompletionFlow();
+        var retry=new io.github.jesterportfolio.hearth.phone.PhoneCompletion.Choice[1];var claim=new io.github.jesterportfolio.hearth.phone.PhoneCompletion.Choice[1];
+        var requests=new io.github.jesterportfolio.hearth.phone.CompletionFlow.Request[3];var original=new Object[2];
+        return openAll().thenCompose(v->quests.open(a1,c.id(),s1,()->coordinator.playable(s1))).thenCompose(value->{q[0]=value;return quests.accept(value,c);})
+            .thenCompose(v->quests.reach(q[0],c,5,64,31)).thenCompose(v->quests.reach(q[0],c,9,64,31)).thenCompose(v->quests.fail(q[0],c,"OBJECTIVE"))
+            .thenCompose(v->mainResult(store.readQuest(a1,c.id()))).thenAccept(value->original[0]=value)
+            .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(value->original[1]=value)
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{
+                retry[0]=QuestFollowups.choices(catalog,view,c.id()).getFirst();check(retry[0].operation()==io.github.jesterportfolio.hearth.phone.PhoneCompletion.Operation.RETRY,"followup_actual_DB_failed_record_has_retry_confirmation");
+                io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,retry[0]);followupNativeScreens(view,c.id());
+            })
+            .thenCompose(v->mainResult(store.readQuest(a1,c.id()))).thenAccept(value->check(value.equals(original[0])&&flow.current(s1)==null,"followup_confirmation_cancel_has_no_quest_write_or_request"))
+            .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(value->check(value.equals(original[1]),"followup_confirmation_preview_preserves_source_inventory"))
+            .thenRun(()->{requests[0]=flow.begin(s1,retry[0]);try{flow.begin(s1,retry[0]);throw new AssertionError("duplicate followup accepted");}catch(IllegalStateException busy){check(busy.getMessage().equals("COMPLETION_ACTION_BUSY")&&requests[0].phase()==io.github.jesterportfolio.hearth.phone.CompletionFlow.Phase.PENDING,"followup_shared_book_phone_pending_blocks_second_request");}})
+            .thenCompose(v->quests.retry(q[0],c)).thenRun(()->{check(q[0].saved().objectiveIndex()==1&&flow.complete(s1,requests[0],true),"followup_existing_checkpoint_retry_settles_own_request");})
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{try{io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,retry[0]);throw new AssertionError("old retry accepted");}catch(RuntimeException stale){check(QuestFollowups.choices(catalog,view,c.id()).isEmpty(),"followup_current_active_record_rejects_old_retry_confirmation");}})
+            .thenCompose(v->quests.reach(q[0],c,9,64,31)).thenCompose(v->quests.reach(q[0],c,13,64,31)).thenCompose(v->quests.advance(q[0],QuestStore.Phase.COMPLETED))
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{
+                claim[0]=QuestFollowups.choices(catalog,view,c.id()).getFirst();check(claim[0].operation()==io.github.jesterportfolio.hearth.phone.PhoneCompletion.Operation.CLAIM,"followup_actual_DB_pending_reward_has_claim_confirmation");followupNativeScreens(view,c.id());
+                requests[1]=flow.begin(s1,claim[0]);check(!flow.complete(s1,requests[0],false)&&requests[1].phase()==io.github.jesterportfolio.hearth.phone.CompletionFlow.Phase.PENDING,"followup_old_retry_callback_cannot_overwrite_new_reward_request");
+                one.count(20);coordinator.refresh(s1);
+            })
+            .thenCompose(v->questRewards.claim(coordinator,s1,c.id())).thenRun(()->check(flow.complete(s1,requests[1],true)&&craftingCount(one.capture(),Material.STONE)==23,"followup_existing_reward_source_save_settles_success_once"))
+            .thenCompose(v->mainResult(store.readInventory(a1))).thenCompose(before->questRewards.claim(coordinator,s1,c.id()).thenCompose(done->mainResult(store.readInventory(a1))).thenAccept(after->check(before.equals(after)&&codec.equivalent(after.payload(),one.capture()),"followup_repeat_grant_preserves_payload_revision_and_receipt")))
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{check(QuestFollowups.choices(catalog,view,c.id()).isEmpty(),"followup_granted_reward_disappears_from_action_list");try{io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,claim[0]);throw new AssertionError("paid reward accepted");}catch(RuntimeException stale){check(true,"followup_paid_reward_rejects_old_confirmation");}})
+            .thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->check(QuestFollowups.choices(catalog,view,c.id()).isEmpty(),"followup_other_person_does_not_borrow_failed_or_reward_record"))
+            .thenCompose(v->finishCourseQuest(b3,s3,c.id())).thenCompose(v->journal.load(b3,s3,()->coordinator.playable(s3))).thenAccept(view->{requests[2]=flow.begin(s3,QuestFollowups.choices(catalog,view,c.id()).getFirst());})
+            .thenCompose(v->mainResult(store.readInventory(b3))).thenCompose(before->{
+                var probe=new InventorySaveSession(store,b3,before.revision(),before::payload,owner,SessionVerification::main,()->true,code->log("EXPECTED_FOLLOWUP_HOLD "+code));
+                return expect(probe.transaction(saved->store.grantReward(b3,c.id(),"wrong-fingerprint",saved.revision(),saved.payload()),saved->{throw new AssertionError("rejected reward applied");}),"REWARD_POLICY_MISMATCH")
+                    .thenCompose(done->expect(probe.flush(),"REWARD_POLICY_MISMATCH")).thenCompose(done->mainResult(store.readInventory(b3))).thenAccept(after->check(after.equals(before)&&probe.holdCode()!=null&&flow.complete(s3,requests[2],false)&&requests[2].phase()==io.github.jesterportfolio.hearth.phone.CompletionFlow.Phase.FAILED,"followup_real_DB_failure_keeps_source_and_failed_request_result"));
+            })
+            .thenCompose(v->mainResult(store.rewardStatus(b3,c.id()))).thenAccept(status->check(status.equals("PENDING")&&requests[1].phase()==io.github.jesterportfolio.hearth.phone.CompletionFlow.Phase.SUCCEEDED,"followup_B_rejection_preserves_pending_receipt_and_A_success"))
+            .thenRun(()->{flow.forget(s3);check(!flow.complete(s3,requests[2],true),"followup_forgotten_session_discards_late_result");flow.clear();});
+    }
+    private void followupNativeScreens(QuestJournal.View view,String id){
+        var choices=QuestFollowups.choices(catalog,view,id);var choice=choices.getFirst();var book=QuestBookView.accepted(catalog,view.states(),view.exploration().blockedQuests(),id).orElseThrow();
+        var actual=PaperQuestUI.book(book,List.of(Component.text(QuestFollowups.label(choice)),Component.text("취소 · 원래 의뢰로"),Component.text("현재 의뢰로")));
+        var flow=new io.github.jesterportfolio.hearth.phone.CompletionFlow();var request=flow.begin(s1,choice);
+        var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose(request.title(),request.lines().stream().map(line->io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text(line))).toList(),List.of(),List.of(io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("원래 의뢰·안내로")).build()));
+        check(actual.pages().size()>book.pages().size()&&dialog!=null&&request.phase()==io.github.jesterportfolio.hearth.phone.CompletionFlow.Phase.PENDING,"followup_native_book_Dialog_confirmation_and_pending_result_"+choice.operation());
+    }
     private CompletionStage<Void> completionStart(){return openAll()
         .thenCompose(v->expect(quests.skip(a2,s2,()->true,store,questRules.chapters().get("public_review")),"CHAPTER_NOT_PASSED"))
         .thenCompose(v->failAndRetry("trial_checkpoint",1)).thenCompose(v->failAndRetry("trial_keep",2)).thenCompose(v->failAndRetry("trial_beginning",0))

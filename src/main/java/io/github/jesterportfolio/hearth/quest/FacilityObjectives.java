@@ -9,21 +9,22 @@ import java.util.function.Predicate;
 /** 등록된 공개 시설과 본인의 현재 목표를 잇는 읽기 전용 안내입니다. 입장 조건을 추가하지 않습니다. */
 public final class FacilityObjectives {
     public static final int PAGE_SIZE=6;
-    public enum Kind { VISIT,DUNGEON,NEXT,REPORT }
+    public enum Kind { VISIT,DUNGEON,NEXT,REPORT,RETRY,REWARD }
     public record Row(String quest,String title,String npc,QuestStore.Phase phase,long revision,int objective,Kind kind,String guidance) {
-        public String label(){return switch(kind){case VISIT->"채집 구역 방문 목표";case DUNGEON->"현재 던전 목표";case NEXT->"현재 다음 목표";case REPORT->"담당 NPC 보고 대기";};}
+        public String label(){return switch(kind){case VISIT->"채집 구역 방문 목표";case DUNGEON->"현재 던전 목표";case NEXT->"현재 다음 목표";case REPORT->"담당 NPC 보고 대기";case RETRY->"실패 · 재시작 대기";case REWARD->"지급 대기 보상";};}
     }
     public record Page(int number,int pages,List<Row> rows,List<String> lines){
         public Page{rows=List.copyOf(rows);lines=List.copyOf(lines);}
         public QuestBookView book(String title){return new QuestBookView(title,QuestBookView.paginate(lines));}
     }
-    public record Board(String source,String title,long sharedRevision,List<Row> rows,List<String> status){
+    public record Board(String source,String title,long sharedRevision,List<Row> rows,List<String> status,long completionEpoch){
+        public Board(String source,String title,long sharedRevision,List<Row> rows,List<String> status){this(source,title,sharedRevision,rows,status,0);}
         public Board{rows=List.copyOf(rows);status=List.copyOf(status);}
         public int pages(){return Math.max(1,(rows.size()+PAGE_SIZE-1)/PAGE_SIZE);}
         public Page page(int number){
             if(number<1||number>pages())throw new IllegalArgumentException("FACILITY_OBJECTIVES_PAGE");
             int from=(number-1)*PAGE_SIZE;var selected=rows.subList(from,Math.min(rows.size(),from+PAGE_SIZE));var lines=new ArrayList<String>(status);
-            if(rows.isEmpty())lines.add("현재 공개된 진행 중 개인 목표나 보고 대기 의뢰가 없습니다. 담당 NPC와 다음 플레이 안내를 확인하세요.");
+            if(rows.isEmpty())lines.add("현재 공개된 개인 목표·보고·재시작·보상 대기 의뢰가 없습니다. 담당 NPC와 다음 플레이 안내를 확인하세요.");
             for(var row:selected){lines.add(row.title()+" · "+row.label());lines.add(row.guidance());lines.add("담당 NPC: "+row.npc());}
             if(source.startsWith("gathering:"))lines.add("방문 기록은 실제 채집 횟수나 아이템 획득을 뜻하지 않습니다.");lines.add("읽기 전용 안내 · 이동/입장/제작/수락/보고를 실행하지 않습니다.");lines.add(number+" / "+pages()+"쪽");
             return new Page(number,pages(),selected,lines);
@@ -43,16 +44,16 @@ public final class FacilityObjectives {
     private static Board build(QuestCatalog catalog,QuestJournal.View view,String source,String title,Set<String> related,Predicate<QuestContent.Goal> goal,Kind kind,List<String> status){
         var rows=new ArrayList<Row>();
         for(var entry:QuestListView.filtered(catalog,view.states(),view.journal().tracked(),view.exploration().blockedQuests(),QuestListView.Filter.ALL)){
-            if(!related.contains(entry.questId())||entry.phase()!=QuestStore.Phase.ACTIVE&&entry.phase()!=QuestStore.Phase.REPORT_READY)continue;
+            if(!related.contains(entry.questId())||!QuestFollowups.visible(view,entry.questId()))continue;
             var q=catalog.quest(entry.questId());var state=view.states().get(q.id());
-            var current=state.phase()==QuestStore.Phase.REPORT_READY?Kind.REPORT:goal.test(q.goal(state))?kind:Kind.NEXT;
+            var current=state.phase()==QuestStore.Phase.FAILED?Kind.RETRY:state.phase()==QuestStore.Phase.COMPLETED?Kind.REWARD:state.phase()==QuestStore.Phase.REPORT_READY?Kind.REPORT:goal.test(q.goal(state))?kind:Kind.NEXT;
             rows.add(new Row(q.id(),q.title(),q.name(),state.phase(),state.revision(),state.objectiveIndex(),current,q.detailGuidance(state)));
         }
-        return new Board(source,title,view.exploration().story().revision(),rows,status);
+        return new Board(source,title,view.exploration().story().revision(),rows,status,view.completion().epoch());
     }
     /** 초 단위 상태 문구 갱신은 허용하되 목표/공개 범위의 변경은 다시 선택하게 합니다. */
     public static void require(Board fresh,Board shown){
-        if(!fresh.source().equals(shown.source())||fresh.sharedRevision()!=shown.sharedRevision()||!fresh.rows().equals(shown.rows()))throw new IllegalStateException("STALE_FACILITY_OBJECTIVES");
+        if(!fresh.source().equals(shown.source())||fresh.sharedRevision()!=shown.sharedRevision()||!fresh.rows().equals(shown.rows())||fresh.completionEpoch()!=shown.completionEpoch())throw new IllegalStateException("STALE_FACILITY_OBJECTIVES");
     }
     public static void require(Board fresh,Board shown,int number,Row selected){
         require(fresh,shown);if(!shown.page(number).rows().contains(selected))throw new IllegalStateException("STALE_FACILITY_OBJECTIVE");

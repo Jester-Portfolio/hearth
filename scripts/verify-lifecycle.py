@@ -102,6 +102,7 @@ def main():
     parser.add_argument('--combat-state', action='store_true', help='보스 참가/일시정지/관전/부활 제어와 실제 몹 AI를 한 JVM에서 검사합니다')
     parser.add_argument('--field-encounters', action='store_true', help='필드 조우·고정 난이도·진행 격리·정리를 한 JVM에서 검사합니다')
     parser.add_argument('--branch-progression', action='store_true', help='확정 분기·개인 보상/장 화면과 두 JVM 복원을 검사합니다')
+    parser.add_argument('--completion-navigation',action='store_true',help='기존 완료 콘텐츠로 책/스마트폰 후속 동작의 실제 재시작·보상·중복/결과 경계를 한 JVM에서 검사합니다')
     parser.add_argument('--quest-completion', action='store_true', help='실패/재시작·즉시 보상·장 스킵과 두 JVM 복원을 검사합니다')
     parser.add_argument('--general-npcs', action='store_true', help='일반 NPC·일지 대화 연결·연속 조사와 두 JVM 복원을 검사합니다')
     parser.add_argument('--npc-topics', action='store_true', help='조건부 NPC 질문·개인 일지·두 JVM 복원을 검사합니다')
@@ -252,6 +253,12 @@ def main():
         parser.error('--economy-desk는 --sessions --economy가 필요합니다')
     if args.economy and (not args.sessions or args.quests or args.manual_player or args.player_interactions or args.phone_dialog):
         parser.error('--economy는 자동 --sessions 단독 경제 모드입니다')
+    if args.completion_navigation and (not all([args.sessions,args.quests,args.story_batch,args.quest_completion,args.phone_dialog]) or args.manual_player):
+        parser.error('--completion-navigation은 자동 --sessions --quests --story-batch --quest-completion --phone-dialog가 필요합니다')
+    if args.completion_navigation:
+        allowed={'completion_navigation','sessions','quests','story_batch','quest_completion','phone_dialog','accept_eula'}
+        if any(isinstance(value,bool) and value and key not in allowed for key,value in vars(args).items()):
+            parser.error('--completion-navigation은 다른 실행 모드와 혼합하지 않습니다')
     root = args.workspace.resolve(strict=True)
     assert args.accept_eula and os.getuid()!=0, 'EULA 동의·일반 사용자 실행 필요'
     assert not args.workspace.is_symlink() and root.parent==Path('/tmp') and root.name.startswith('hearth-s4-11.')
@@ -471,7 +478,7 @@ motd=Hearth isolated S4-11 verification
                         elif args.branch_progression:
                             monitor.action(name,'branch-progression-start')
                         elif args.quest_completion:
-                            monitor.action(name,'quest-completion-start')
+                            monitor.action(name,'completion-navigation' if args.completion_navigation else 'quest-completion-start')
                         elif args.general_npcs:
                             monitor.action(name,'general-npcs-start')
                         elif args.npc_topics:
@@ -665,7 +672,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

@@ -19,7 +19,7 @@ final class CraftingOrdersTest {
     @Test void onlyAcceptedCurrentOrReportingOrdersAreShown(){
         for(var phase:QuestStore.Phase.values()){
             var result=board(view(phase==QuestStore.Phase.NOT_ACCEPTED?unaccepted():state(phase,3,0),unaccepted()));
-            assertEquals(phase==QuestStore.Phase.ACTIVE||phase==QuestStore.Phase.REPORT_READY?1:0,result.orders().size());
+            assertEquals(phase==QuestStore.Phase.ACTIVE||phase==QuestStore.Phase.REPORT_READY||phase==QuestStore.Phase.FAILED?1:0,result.orders().size());
             if(!result.orders().isEmpty())assertEquals(phase==QuestStore.Phase.ACTIVE?"planks":null,result.orders().getFirst().recipe());
         }
     }

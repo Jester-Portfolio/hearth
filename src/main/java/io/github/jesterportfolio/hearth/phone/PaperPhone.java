@@ -33,8 +33,11 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private final Map<PlayerSessions.Session,PhoneHelp.Selection> helpSelections=new IdentityHashMap<>();
     private CompletionAction completion=(p,s,c)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("COMPLETION_DISABLED"));
     public void completion(CompletionAction handler){completion=handler;}
-    private final Map<PlayerSessions.Session,Boolean> actionResults=new IdentityHashMap<>();
+    public void completion(CompletionAction handler,CompletionFlow flow){completion=handler;completionFlow=flow;}
+    private CompletionFlow completionFlow=new CompletionFlow();
     private final Set<PlayerSessions.Session> pendingActions=Collections.newSetFromMap(new IdentityHashMap<>());
+    private record CompletionReturn(CompletionFlow.Request request,Consumer<Screen> back){}
+    private final Map<PlayerSessions.Session,CompletionReturn> completionReturns=new IdentityHashMap<>();
     private Playthrough playthrough;private io.github.jesterportfolio.hearth.story.SharedStory sharedStory;
     @FunctionalInterface public interface StoryRequest{java.util.concurrent.CompletionStage<?> request(Player player,io.github.jesterportfolio.hearth.story.StoryGuide.Action action,java.util.function.BooleanSupplier current);}
     private StoryRequest storyRequest=(p,a,v)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("STORY_DISABLED"));
@@ -53,7 +56,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         assistant=plugin.getConfig().getString("phone-ai-mode","mock").equals("local")?new LocalAssistant(plugin.getConfig().getString("phone-ai-endpoint","http://127.0.0.1:11435/ask")):LocalAssistant.mock();
         Bukkit.getPluginManager().registerEvents(this,plugin);
     }
-    private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();contextModes.remove(old.session());helpSelections.remove(old.session());actionResults.remove(old.session());references.remove(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner));screens.put(p.getUniqueId(),next);return next;}
+    private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();contextModes.remove(old.session());helpSelections.remove(old.session());completionFlow.forget(old.session());completionReturns.remove(old.session());references.remove(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner));screens.put(p.getUniqueId(),next);return next;}
     private boolean valid(Player p,Screen s){return !closed&&p.isOnline()&&players.current(p)==s.session()&&screens.get(p.getUniqueId())==s;}
     private Screen advance(Player p){var old=screen(p);var s=new Screen(old.session(),new Object(),old.chat());screens.put(p.getUniqueId(),s);return s;}
     private ClickCallback.Options options(){return ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(2)).build();}
@@ -107,7 +110,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 actions.add(button(p,s,"장별 따라잡기",()->completionList(p,advance(p),"chapters",1)));
                 if(preparation!=null)actions.add(button(p,s,"시설·재료·던전 준비",()->preparation(p,advance(p),null,null)));
                 actions.add(button(p,s,"다음 플레이 안내",()->journey(p,advance(p))));
-                if(pendingActions.contains(s.session())||actionResults.containsKey(s.session()))actions.add(button(p,s,"최근 처리 결과",()->completionResult(p,advance(p))));
+                if(pendingActions.contains(s.session())||completionFlow.current(s.session())!=null)actions.add(button(p,s,"최근 처리 결과",()->completionResult(p,advance(p))));
                 actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
             }
             if(section.equals("map"))actions.add(button(p,s,"공개 지역·접근 상태",()->loadLibrary(p,advance(p),"regions",1)));
@@ -132,8 +135,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 if(quest.id().equals(dungeonQuest))actions.add(button(p,s,"던전 진행 안내",()->{information(p,s,view);advance(p);p.closeDialog();dungeonGuide.accept(p,quest.id());}));
                 var reward=view.completion().rewards().get(quest.id());
                 if(reward!=null)actions.add(button(p,s,reward.label(),()->completionList(p,advance(p),"rewards",1)));
-                if(view.states().get(quest.id()).phase()==io.github.jesterportfolio.hearth.persistence.QuestStore.Phase.FAILED)actions.add(button(p,s,"재시작 확인",()->confirm(p,s,view,PhoneCompletion.Operation.RETRY,quest.id())));
-                if(reward!=null&&reward.claimable())actions.add(button(p,s,"지급 대기 보상 받기",()->confirm(p,s,view,PhoneCompletion.Operation.CLAIM,quest.id())));
+                if(view.states().get(quest.id()).phase()==io.github.jesterportfolio.hearth.persistence.QuestStore.Phase.FAILED)actions.add(button(p,s,"재시작 확인",()->confirm(p,s,view,PhoneCompletion.Operation.RETRY,quest.id(),next->returnDetail(p,next,quest.id(),section,listPage,returnSection,origin))));
+                if(reward!=null&&reward.claimable())actions.add(button(p,s,"지급 대기 보상 받기",()->confirm(p,s,view,PhoneCompletion.Operation.CLAIM,quest.id(),next->returnDetail(p,next,quest.id(),section,listPage,returnSection,origin))));
                 if(quest.trackable()||quest.tracked())actions.add(button(p,s,quest.tracked()?"추적 해제":"추적",()->{
                     information(p,s,view);var next=advance(p);
                     journal.track(next.session().context(),next.session(),()->valid(p,next),quest.id(),!quest.tracked()).whenCompleteAsync((saved,error)->{
@@ -159,8 +162,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
             if(section.equals("chapters"))for(var chapter:view.completion().chapters()){labels.add(chapter.title()+(chapter.skipped()?" · 스킵 기록":""));items.add(()->chapter(p,advance(p),view,chapter.id(),1));}
             else for(var q:PhoneQuestLinks.quests(catalog,view)){
                 var state=view.states().get(q.id());var reward=view.completion().rewards().get(q.id());
-                if(section.equals("failed")&&state.phase()==io.github.jesterportfolio.hearth.persistence.QuestStore.Phase.FAILED){labels.add(q.title());items.add(()->confirm(p,s,view,PhoneCompletion.Operation.RETRY,q.id()));}
-                if(section.equals("rewards")&&reward!=null&&reward.claimable()){labels.add(q.title());items.add(()->confirm(p,s,view,PhoneCompletion.Operation.CLAIM,q.id()));}
+                if(section.equals("failed")&&state.phase()==io.github.jesterportfolio.hearth.persistence.QuestStore.Phase.FAILED){labels.add(q.title());items.add(()->confirm(p,s,view,PhoneCompletion.Operation.RETRY,q.id(),next->completionList(p,next,section,page)));}
+                if(section.equals("rewards")&&reward!=null&&reward.claimable()){labels.add(q.title());items.add(()->confirm(p,s,view,PhoneCompletion.Operation.CLAIM,q.id(),next->completionList(p,next,section,page)));}
             }
             int total=Math.max(1,(labels.size()+5)/6),current=Math.min(Math.max(page,1),total);
             for(int n=(current-1)*6;n<Math.min(labels.size(),current*6);n++)actions.add(button(p,s,labels.get(n),items.get(n)));
@@ -179,31 +182,39 @@ public final class PaperPhone implements Listener,AutoCloseable {
             if(page<text.pages().size())actions.add(button(p,s,"다음 내용",()->chapter(p,advance(p),view,id,page+1)));
             actions.add(button(p,s,"전체 플레이 안내",()->journey(p,advance(p))));
             for(var part:chapter.parts())actions.add(button(p,s,"["+part.status()+"] "+part.title(),()->{information(p,s,view);detail(p,advance(p),view,"quests",PhoneQuestLinks.questIndex(catalog,view,part.quest()),1,1);}));
-            if(!chapter.skipped())actions.add(button(p,s,"장 스킵 확인",()->confirm(p,s,view,PhoneCompletion.Operation.SKIP,id)));
+            if(!chapter.skipped())actions.add(button(p,s,"장 스킵 확인",()->confirm(p,s,view,PhoneCompletion.Operation.SKIP,id,next->journal.load(next.session().context(),next.session(),()->valid(p,next)).whenCompleteAsync((fresh,error)->{if(!valid(p,next))return;if(error!=null)info(p,next,"장 상태 조회 실패",List.of("현재 장 목록을 다시 조회하세요."));else chapter(p,next,fresh,id,1);},owner))));
             actions.add(button(p,s,"장 목록",()->completionList(p,advance(p),"chapters",1)));actions.add(button(p,s,"홈",()->home(p)));
             show(p,s,text.title(),List.of(DialogBody.plainMessage(Component.text(text.pages().get(page-1)))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"장 상태 변경",List.of("현재 상태로 다시 조회해 주세요."));}
     }
-    private void confirm(Player p,Screen s,QuestJournal.View view,PhoneCompletion.Operation operation,String id){
+    private void confirm(Player p,Screen s,QuestJournal.View view,PhoneCompletion.Operation operation,String id){confirm(p,s,view,operation,id,next->completionList(p,next,operation==PhoneCompletion.Operation.SKIP?"chapters":operation==PhoneCompletion.Operation.CLAIM?"rewards":"failed",1));}
+    private void confirm(Player p,Screen s,QuestJournal.View view,PhoneCompletion.Operation operation,String id,Consumer<Screen> back){
         information(p,s,view);var choice=PhoneCompletion.choose(catalog,view,operation,id);var next=advance(p);
-        String warning=operation==PhoneCompletion.Operation.SKIP?"해당 장의 메인/필수 길목만 스킵합니다. 실제 완료·보상과 구분하며 공동체 결과는 유지합니다. 스킵 보상 정책은 미정입니다.":operation==PhoneCompletion.Operation.CLAIM?"지급 대기 기록에 대해서만 기존 인벤토리·DB 저장 경로로 요청합니다. 중복 지급하지 않습니다.":"콘텐츠에 지정된 기존 실패/재시작 정책으로 재시작합니다.";
-        show(p,next,choice.title(),List.of(DialogBody.plainMessage(Component.text(warning))),List.of(),List.of(button(p,next,"확인",()->runCompletion(p,next,view,choice)),button(p,next,"취소",()->completionList(p,advance(p),operation==PhoneCompletion.Operation.SKIP?"chapters":operation==PhoneCompletion.Operation.CLAIM?"rewards":"failed",1))));
+        show(p,next,choice.title(),List.of(DialogBody.plainMessage(Component.text(PhoneCompletion.warning(operation)))),List.of(),List.of(button(p,next,"확인",()->runCompletion(p,next,view,choice,back)),button(p,next,"취소 · 원래 안내로",()->back.accept(advance(p)))));
     }
-    private void runCompletion(Player p,Screen s,QuestJournal.View view,PhoneCompletion.Choice choice){
-        information(p,s,view);PhoneCompletion.require(catalog,view,choice);
-        if(!pendingActions.add(s.session()))throw new IllegalStateException("PHONE_ACTION_BUSY");actionResults.remove(s.session());var next=advance(p);
-        show(p,next,"처리 중",List.of(DialogBody.plainMessage(Component.text("기존 저장 작업의 완료를 기다립니다. 아직 성공으로 확정하지 않았습니다."))),List.of(),List.of(button(p,next,"결과 확인",()->completionResult(p,advance(p))),button(p,next,"홈",()->home(p))));
-        final java.util.concurrent.CompletionStage<Void> work;
-        try{work=completion.execute(p,next.session(),choice);}catch(RuntimeException error){pendingActions.remove(next.session());throw error;}
-        work.whenCompleteAsync((v,error)->{
-            pendingActions.remove(next.session());
-            if(!closed&&players.prepared(p)==next.session())actionResults.put(next.session(),error==null);
+    private void returnDetail(Player p,Screen s,String id,String section,int listPage,String returnSection,PhoneReaderLinks.Source origin){
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"의뢰 조회 실패",List.of("현재 상태를 다시 조회하세요."));return;}
+            try{information(p,s,view);detail(p,s,view,section,PhoneQuestLinks.questIndex(catalog,view,id),1,listPage,returnSection,origin);}catch(RuntimeException changed){if(returnSection.equals("course"))course(p,s,listPage,null);else browse(p,s,"quests",1);}
         },owner);
     }
-    private void completionResult(Player p,Screen s){
-        if(pendingActions.contains(s.session())){show(p,s,"처리 중",List.of(DialogBody.plainMessage(Component.text("기존 저장 작업의 완료를 기다립니다. 아직 성공으로 확정하지 않았습니다."))),List.of(),List.of(button(p,s,"결과 확인",()->completionResult(p,advance(p))),button(p,s,"홈",()->home(p))));return;}
-        Boolean success=actionResults.get(s.session());
-        info(p,s,success==null?"처리 기록 없음":success?"처리 완료":"처리 보류/실패",List.of(success==null?"이 접속 세션에서 실행한 스마트폰 처리 결과가 없습니다.":success?"기존 저장 경로의 완료를 확인했습니다. 목록에서 최신 상태를 조회해 주세요.":"성공으로 기록하지 않습니다. 저장/HOLD·인벤토리 공간·최신 진행 상태를 확인해 주세요."));
+    private void runCompletion(Player p,Screen s,QuestJournal.View view,PhoneCompletion.Choice choice,Consumer<Screen> back){
+        information(p,s,view);PhoneCompletion.require(catalog,view,choice);if(pendingActions.contains(s.session()))throw new IllegalStateException("STORY_REQUEST_PENDING");var request=completionFlow.begin(s.session(),choice);completionReturns.put(s.session(),new CompletionReturn(request,back));var next=advance(p);
+        completionResult(p,next,request);final java.util.concurrent.CompletionStage<Void> work;
+        try{work=completion.execute(p,next.session(),choice);}catch(RuntimeException error){completionFlow.complete(next.session(),request,false);completionResult(p,next,request);return;}
+        work.whenCompleteAsync((v,error)->{
+            if(!completionFlow.complete(next.session(),request,error==null))return;
+            if(valid(p,next))completionResult(p,advance(p),request);
+            else if(error!=null&&players.prepared(p)==next.session()&&p.isOnline())p.sendMessage(Component.text("처리 보류/실패 · 성공으로 기록하지 않습니다. 저장 상태를 확인하세요."));
+        },owner);
+    }
+    private void completionResult(Player p,Screen s){var request=completionFlow.current(s.session());if(request==null){info(p,s,"처리 기록 없음",List.of("이 접속 세션의 처리 기록이 없습니다."));return;}completionResult(p,s,request);}
+    private void completionResult(Player p,Screen s,CompletionFlow.Request request){
+        if(!completionFlow.current(s.session(),request)){info(p,s,"처리 기록 변경",List.of("현재 요청의 결과를 다시 조회하세요."));return;}
+        var actions=new ArrayList<ActionButton>();if(request.phase()==CompletionFlow.Phase.PENDING)actions.add(button(p,s,"결과 확인",()->completionResult(p,advance(p),request)));
+        var route=completionReturns.get(s.session());if(route!=null&&route.request()==request)actions.add(button(p,s,"원래 의뢰·안내로",()->route.back().accept(advance(p))));
+        actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
+        show(p,s,request.title(),request.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
     }
     private java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> preparation;
     public void preparation(java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> reader){preparation=reader;}
@@ -240,7 +251,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 switch(link.action()){
                     case DETAIL->detail(p,advance(p),view,"quests",PhoneQuestLinks.questIndex(catalog,view,link.quest()),1,1);
                     case TALK->{advance(p);p.closeDialog();report.accept(p,link.quest());}
-                    case RETRY->confirm(p,waiting,view,PhoneCompletion.Operation.RETRY,link.quest());
+                    case RETRY->confirm(p,waiting,view,PhoneCompletion.Operation.RETRY,link.quest(),next->journey(p,next));
                     case TRACK,UNTRACK->{var next=advance(p);journal.track(next.session().context(),next.session(),()->valid(p,next),link.quest(),link.action()==QuestJourneyView.Action.TRACK).whenCompleteAsync((saved,failure)->{if(!valid(p,next))return;if(failure!=null)info(p,next,"추적 저장 실패",List.of("저장 성공으로 표시하지 않습니다."));else journey(p,next);},owner);}
                     case COURSE->course(p,advance(p),1,null);
                     case SHARED->sharedProgress(p,advance(p));
@@ -307,7 +318,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         },owner);
     }
     private void requestSharedProgress(Player p,Screen s,io.github.jesterportfolio.hearth.story.StoryGuide.Action action){
-        if(!pendingActions.add(s.session()))throw new IllegalStateException("STORY_REQUEST_PENDING");
+        if(completionFlow.current(s.session())!=null&&completionFlow.current(s.session()).phase()==CompletionFlow.Phase.PENDING||!pendingActions.add(s.session()))throw new IllegalStateException("STORY_REQUEST_PENDING");
         var waiting=advance(p);show(p,waiting,"진행 조건 확인 중",List.of(DialogBody.plainMessage(Component.text("접속 대상과 저장 결과를 확인 중입니다. 아직 공유 결과가 확정되지 않았습니다."))),List.of(),List.of(button(p,waiting,"홈",()->home(p))));
         java.util.concurrent.CompletionStage<?> work;
         try{work=storyRequest.request(p,action,()->valid(p,waiting));}catch(RuntimeException error){work=java.util.concurrent.CompletableFuture.failedFuture(error);}
@@ -551,6 +562,6 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private boolean device(ItemStack item){return item!=null&&item.hasItemMeta()&&item.getItemMeta().getPersistentDataContainer().has(device,PersistentDataType.BYTE);}
     @EventHandler(priority=EventPriority.HIGHEST) public void use(PlayerInteractEvent e){if(device(e.getItem())&&e.getAction().isRightClick()){e.setCancelled(true);if(e.getHand()==EquipmentSlot.HAND&&players.current(e.getPlayer())!=null)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(e.getPlayer())!=null&&!closed)home(e.getPlayer());},1);}}
     @EventHandler public void drop(PlayerDropItemEvent e){if(device(e.getItemDrop().getItemStack()))e.setCancelled(true);}
-    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();actionResults.remove(s.session());contextModes.remove(s.session());helpSelections.remove(s.session());references.remove(s.session());}}
-    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->s.chat().close());screens.clear();pendingActions.clear();actionResults.clear();contextModes.clear();helpSelections.clear();references.clear();assistant.close();}
+    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();completionFlow.forget(s.session());completionReturns.remove(s.session());pendingActions.remove(s.session());contextModes.remove(s.session());helpSelections.remove(s.session());references.remove(s.session());}}
+    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->s.chat().close());screens.clear();pendingActions.clear();completionFlow.clear();completionReturns.clear();contextModes.clear();helpSelections.clear();references.clear();assistant.close();}
 }

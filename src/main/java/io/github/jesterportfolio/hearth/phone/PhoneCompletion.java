@@ -9,6 +9,11 @@ public final class PhoneCompletion {
     private PhoneCompletion(){}
     public enum Operation{RETRY,CLAIM,SKIP}
     public record Choice(Operation operation,String id,String title,long revision,long epoch){}
+    public static String warning(Operation operation){return switch(operation){
+        case SKIP->"해당 장의 메인/필수 길목만 스킵합니다. 실제 완료·보상과 구분하며 공동체 결과는 유지합니다. 스킵 보상 정책은 미정입니다.";
+        case CLAIM->"지급 대기 기록에 대해서만 기존 인벤토리·DB 저장 경로로 요청합니다. 중복 지급하지 않습니다.";
+        case RETRY->"콘텐츠에 지정된 기존 실패/재시작 정책으로 재시작합니다.";
+    };}
     public static Choice choose(QuestCatalog catalog,QuestJournal.View view,Operation operation,String id){
         if(id==null||!id.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("INVALID_COMPLETION_ID");
         if(operation==Operation.SKIP){var chapter=view.completion().chapter(id).orElseThrow(()->new IllegalArgumentException("CHAPTER_UNAVAILABLE"));if(!view.completion().registered()||chapter.skipped())throw new IllegalArgumentException("CHAPTER_SKIP_UNAVAILABLE");return new Choice(operation,id,chapter.title(),-1,view.completion().epoch());}

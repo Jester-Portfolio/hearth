@@ -137,3 +137,5 @@
 [누적 배치 최종 통합](../docs/pending-batch-review.md)에 Gradle 아티팩트·관련 단위와 세 Paper/DB 모드의 결과·원시 증거를 모았다. 기존 실행 도구의 권한·자원/시도 한도는 변경하지 않는다.
 
 [채집·던전 개인 목표 안내](../docs/facility-objectives-verification.md)는 기존 `--sessions --quests --story-batch --gathering-crafting --gathering-facilities`와 별도 새 경로의 `--sessions --quests --story-batch --combat-players --dungeon-play`를 사용한다. 개인 DB 목표/공개 범위·책/시설 메뉴 객체·조회 불변과 기존 입퇴장/전투/실패 보존을 두 한 JVM 모드에서 묶어 확인하며 실제 클릭/왕복은 검증하지 않는다.
+
+[실패·보상·결과·복귀 통합](../docs/quest-followup-batch-verification.md)의 `--sessions --quests --story-batch --quest-completion --phone-dialog --completion-navigation`은 기존 완료 콘텐츠·DB/자원 감시를 쓰는 단독 한 JVM 모드다. 재시작/보상 실제 저장·취소 조회 불변·공통 요청 중복/결과·DB 거부 보존과 Book/Dialog 객체를 검사한다. 다른 모드 혼합/필수 플래그 누락을 거부하며 기존 완료/분기 두 JVM 복원 모드를 대체하지 않는다. 같은 최종 JAR의 작업대 의뢰·준비 안내 회귀와 실제 클릭 미검증은 연결 기록을 따른다.

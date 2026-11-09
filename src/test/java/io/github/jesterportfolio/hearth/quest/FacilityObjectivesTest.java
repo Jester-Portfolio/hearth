@@ -26,8 +26,8 @@ final class FacilityObjectivesTest {
         }
     }
     @Test void futureGoalTextNeverAppearsInCurrentVisitGuidance(){var board=gathering(view(row(QuestStore.Phase.ACTIVE,0,0)));assertTrue(board.rows().getFirst().guidance().contains("현재 채집장"));assertFalse(board.toString().contains("나중 제작 목표"));}
-    @Test void unacceptedCompletedFailedSkippedAndBlockedTitlesStayHidden(){
-        for(var phase:List.of(QuestStore.Phase.NOT_ACCEPTED,QuestStore.Phase.COMPLETED,QuestStore.Phase.FAILED,QuestStore.Phase.SKIPPED)){
+    @Test void unacceptedCompletedSkippedAndBlockedTitlesStayHidden(){
+        for(var phase:List.of(QuestStore.Phase.NOT_ACCEPTED,QuestStore.Phase.COMPLETED,QuestStore.Phase.SKIPPED)){
             var result=gathering(view(row(phase,phase==QuestStore.Phase.NOT_ACCEPTED?-1:3,0)));assertTrue(result.rows().isEmpty());assertFalse(result.toString().contains("survey_marker"));assertFalse(result.toString().contains(catalog().quest("survey_marker").title()));
         }
         assertTrue(gathering(blocked(view(row(QuestStore.Phase.ACTIVE,0,0)))).rows().isEmpty());
