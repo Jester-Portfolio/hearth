@@ -179,3 +179,7 @@ PL1의 WG/WE 로딩/종료 부분은 실행했고 MV 조합은 미실행입니�
 공식 [MythicMobs 스포너](https://wiki.mythiccraft.io/mythicmobs/spawners)·[API](https://wiki.mythiccraft.io/mythicmobs/API)는 설정 기반 몹 소환과 연동 API를 제공한다. 복잡한 스킬/보스 제작의 후속 후보로 유지한다. 이번 확인은 문서 수준이며 정확한 Paper 26.2/Java25 배포 호환성·유지보수 보장·메모리·동적 월드 정리는 미검증이다. 버전별 라이선스/재배포·유료 기능 조건도 채택 전에 확인해야 하며 설치·다운로드·외부 코드 재배포는 하지 않았다.
 
 현재의 구역 진입·한 번 소환·스폰 시점 인원/속성 고정은 기존 세션/월드 경계와 [Paper World.spawn](https://jd.papermc.io/paper/26.2/org/bukkit/World.html)·[Attribute](https://jd.papermc.io/paper/26.2/org/bukkit/attribute/Attribute.html)로 좁게 구현한다. 이는 작은 격리 개발 범위의 선택이며 범용 몹/스킬 플랫폼을 직접 재현하거나 MythicMobs를 부적합으로 확정하는 결정이 아니다. 실제 전투 플랫폼 선택·영속 조우/리셋은 별도 후속 범위다. [구현·시험 범위](field-encounters-verification.md)를 따른다.
+
+## 선택형 HUD 엔진 — 2026-11-09
+
+사용자 선택에 따라 [ADR-0017](decisions/0017-optional-betterhud-presentation.md)의 BetterHud 개발 연동을 채택했다. [공식 배포 2.1.0-SNAPSHOT-448](https://hangar.papermc.io/toxicity188/BetterHud/versions/2.1.0-SNAPSHOT-448)은 Paper 26.2를 표시하며 [저장소 라이선스](https://github.com/toxicity188/BetterHud/blob/master/LICENSE)는 MIT다. 기존 Paper API 기본 표시는 설치 의존성을 줄이는 대안으로 보존한다. 자체 core shader/폰트 엔진을 추가 유지하는 대신 BetterHud의 공개 API·생성 팩을 재사용하며, Hearth는 개인 정보·세션·조회/출력·팩 ID 확인을 맡는다. 실제 호환성과 제한은 [표시 검증](hud-display-verification.md)을 따른다. 운영 설치·실제 클라이언트/다른 팩 조합·부하 수용은 별도다.

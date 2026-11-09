@@ -3,6 +3,7 @@ version: '${version}'
 main: io.github.jesterportfolio.hearth.HearthPlugin
 api-version: '26.2'
 depend: [WorldEdit, WorldGuard]
+softdepend: [BetterHud]
 libraries:
   - 'org.postgresql:postgresql:${postgresJdbcVersion}'
   - 'com.zaxxer:HikariCP:${hikariVersion}'

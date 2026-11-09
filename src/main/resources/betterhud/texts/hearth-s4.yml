@@ -1,0 +1,23 @@
+{
+  "hearth_quest_font": {
+    "merge-default-bitmap": true,
+    "use-unifont": true,
+    "include": [
+      "korean",
+      "china"
+    ]
+  },
+  "hearth_pixel_font": {
+    "type": "bitmap",
+    "use-unifont": true,
+    "chars": {
+      "1": {
+        "file": "hearth/minimap_pixel.png",
+        "ascent": 0,
+        "codepoints": [
+          ""
+        ]
+      }
+    }
+  }
+}

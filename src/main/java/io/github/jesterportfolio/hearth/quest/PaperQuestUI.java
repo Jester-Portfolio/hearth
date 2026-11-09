@@ -334,18 +334,21 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     public void storyGuide(Consumer<Player> guide){storyGuide=guide;}
     private void dirtyRun(UUID run){for(Player player:Bukkit.getOnlinePlayers()){var session=players.prepared(player);if(session!=null&&session.context().storyRunId().equals(run))dirty.add(player.getUniqueId());}}
     private final JavaPlugin plugin;private final PaperSessionAdapter players;private final PersonalQuest quests;private final QuestCatalog catalog;private final QuestJournal journal;private final Executor owner;
-    private final Map<UUID,List<BossBar>> bars=new HashMap<>();private final Map<UUID,Object> attempted=new HashMap<>();private final Set<UUID> dirty=new HashSet<>();
+    private final io.github.jesterportfolio.hearth.features.HudDelivery<Player,QuestJournal.View> hudDelivery;
+    public void hudDisplay(BiConsumer<Player,QuestJournal.View> show,Consumer<Player> clear){hudDelivery.replace(show,clear);}
+    private void clearHud(Player p){hudDelivery.clear(p);}
+    private final Map<Player,List<BossBar>> bars=new IdentityHashMap<>();private final Map<UUID,Object> attempted=new HashMap<>();private final Set<UUID> dirty=new HashSet<>();
     private final Set<UUID> hudOnly=new HashSet<>();
     private final Map<UUID,Long> requests=new HashMap<>();private final BukkitTask task;private boolean closed;private long requestId;
     public PaperQuestUI(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner){
-        this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;this.owner=owner;
+        this.plugin=plugin;this.players=players;this.quests=quests;this.catalog=catalog;this.journal=journal;this.owner=owner;hudDelivery=new io.github.jesterportfolio.hearth.features.HudDelivery<>(this::showNativeHud,this::clearBars);
         Bukkit.getPluginManager().registerEvents(this,plugin);players.developerInventory(this::allowed);
         quests.changed(ctx->dirtyRun(ctx.storyRunId()));journal.changed(ctx->dirty.add(ctx.playerId()));journal.sharedChanged(this::dirtyRun);
         task=Bukkit.getScheduler().runTaskTimer(plugin,()->{for(Player p:Bukkit.getOnlinePlayers()){
             if(dialogueBusy.test(p))continue;
             var s=players.current(p);if(s==null){
                 clearProjection.accept(p);var prepared=players.prepared(p);
-                if(prepared==null){clearBars(p);hudOnly.remove(p.getUniqueId());continue;}
+                if(prepared==null){clearHud(p);hudOnly.remove(p.getUniqueId());continue;}
                 if(hudOnly.add(p.getUniqueId()))dirty.add(p.getUniqueId());
                 if(!requests.containsKey(p.getUniqueId())&&(attempted.get(p.getUniqueId())!=prepared||dirty.remove(p.getUniqueId()))){attempted.put(p.getUniqueId(),prepared);readOnlyHud(p,prepared);}
                 continue;
@@ -356,26 +359,27 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         }},20,20);
     }
     public boolean allowed(Player p,Inventory inventory){return inventory.getHolder() instanceof Screen s && s.player.equals(p.getUniqueId()) && players.current(p)==s.session && s.dialogueValid.getAsBoolean() && !closed;}
-    private void clearBars(Player p){var old=bars.remove(p.getUniqueId());if(old!=null)old.forEach(p::hideBossBar);}
+    private void clearBars(Player p){var old=bars.remove(p);if(old!=null)old.forEach(p::hideBossBar);}
     public static List<BossBar> hudBars(List<String> lines){return lines.stream().map(line->BossBar.bossBar(Component.text(line),0,BossBar.Color.WHITE,BossBar.Overlay.PROGRESS)).toList();}
-    private void showHud(Player p,QuestJournal.View view){clearBars(p);var list=hudBars(journal.hudLines(view));list.forEach(p::showBossBar);bars.put(p.getUniqueId(),list);}
+    private void showHud(Player p,QuestJournal.View view){hudDelivery.show(p,view);}
+    private void showNativeHud(Player p,QuestJournal.View view){clearBars(p);var list=hudBars(journal.hudLines(view));list.forEach(p::showBossBar);bars.put(p,list);}
     /** 사망/복귀 중에는 연결 검증을 통과한 표시 조회만 허용합니다. GUI/대화/진행 복원은 호출하지 않습니다. */
     private void readOnlyHud(Player p,PlayerSessions.Session session){
-        clearBars(p);long id=++requestId;requests.put(p.getUniqueId(),id);
+        clearHud(p);long id=++requestId;requests.put(p.getUniqueId(),id);
         quests.barrier(session.context().storyRunId()).thenComposeAsync(v->{
             if(closed||players.prepared(p)!=session)throw new IllegalStateException("STALE_HUD_SESSION");
             return journal.load(session.context(),session,()->players.prepared(p)==session);
         },owner).whenCompleteAsync((view,error)->{
             if(!Objects.equals(requests.get(p.getUniqueId()),id))return;
             requests.remove(p.getUniqueId());if(closed||players.prepared(p)!=session)return;
-            if(error!=null){clearBars(p);Throwable cause=error;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();
+            if(error!=null){clearHud(p);Throwable cause=error;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();
                 if(cause instanceof IllegalStateException&&Set.of("JOURNAL_BUSY","QUEST_LIST_BUSY").contains(Objects.toString(cause.getMessage(),"")))dirty.add(p.getUniqueId());return;
             }
-            try{journal.requireView(session.context(),view);showHud(p,view);}catch(RuntimeException rejected){clearBars(p);dirty.add(p.getUniqueId());}
+            try{journal.requireView(session.context(),view);showHud(p,view);}catch(RuntimeException rejected){clearHud(p);dirty.add(p.getUniqueId());}
             if(players.current(p)==session)dirty.add(p.getUniqueId());
         },owner);
     }
-    private void error(Player p){clearBars(p);clearProjection.accept(p);p.sendMessage(Component.text("개인 퀘스트 정보를 처리할 수 없습니다."));}
+    private void error(Player p){clearHud(p);clearProjection.accept(p);p.sendMessage(Component.text("개인 퀘스트 정보를 처리할 수 없습니다."));}
     private void load(Player p,PlayerSessions.Session session,Consumer<QuestJournal.View> show){request(p,session,journal.load(session.context(),session,()->players.current(p)==session),show);}
     private void request(Player p,PlayerSessions.Session session,CompletionStage<QuestJournal.View> work,Consumer<QuestJournal.View> show){
         long id=++requestId;requests.put(p.getUniqueId(),id);
@@ -456,6 +460,6 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     @EventHandler(priority=EventPriority.MONITOR) public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Screen)e.setCancelled(true);}
     @EventHandler public void closed(InventoryCloseEvent e){if(e.getInventory().getHolder() instanceof Screen)requests.remove(e.getPlayer().getUniqueId());}
-    @EventHandler public void quit(PlayerQuitEvent e){outcomeFrames.remove(e.getPlayer().getUniqueId());resumeFrames.remove(e.getPlayer().getUniqueId());resumeReminder.forget(e.getPlayer().getUniqueId(),reminderOwners.remove(e.getPlayer()));peopleFrames.remove(e.getPlayer().getUniqueId());routeFrames.remove(e.getPlayer().getUniqueId());completionFrames.remove(e.getPlayer().getUniqueId());var quitting=completionOwners.remove(e.getPlayer().getUniqueId());if(quitting!=null)completionFlow.forget(quitting);facilityFrames.remove(e.getPlayer().getUniqueId());courseFrames.remove(e.getPlayer().getUniqueId());preparationFrames.remove(e.getPlayer().getUniqueId());clearBars(e.getPlayer());clearProjection.accept(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());hudOnly.remove(e.getPlayer().getUniqueId());}
-    @Override public void close(){outcomeFrames.clear();resumeFrames.clear();resumeReminder.clear();reminderOwners.clear();peopleFrames.clear();routeFrames.clear();completionOwners.clear();completionFrames.clear();completionFlow.clear();facilityFrames.clear();courseFrames.clear();preparationFrames.clear();if(closed)return;closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
+    @EventHandler public void quit(PlayerQuitEvent e){outcomeFrames.remove(e.getPlayer().getUniqueId());resumeFrames.remove(e.getPlayer().getUniqueId());resumeReminder.forget(e.getPlayer().getUniqueId(),reminderOwners.remove(e.getPlayer()));peopleFrames.remove(e.getPlayer().getUniqueId());routeFrames.remove(e.getPlayer().getUniqueId());completionFrames.remove(e.getPlayer().getUniqueId());var quitting=completionOwners.remove(e.getPlayer().getUniqueId());if(quitting!=null)completionFlow.forget(quitting);facilityFrames.remove(e.getPlayer().getUniqueId());courseFrames.remove(e.getPlayer().getUniqueId());preparationFrames.remove(e.getPlayer().getUniqueId());clearHud(e.getPlayer());clearProjection.accept(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());hudOnly.remove(e.getPlayer().getUniqueId());}
+    @Override public void close(){outcomeFrames.clear();resumeFrames.clear();resumeReminder.clear();reminderOwners.clear();peopleFrames.clear();routeFrames.clear();completionOwners.clear();completionFrames.clear();completionFlow.clear();facilityFrames.clear();courseFrames.clear();preparationFrames.clear();if(closed)return;closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearHud(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
 }

@@ -72,3 +72,6 @@ s4-features-enabled: false
 # 전용 리소스팩의 선택형 원형 HUD. GUI 배율별 실제 배치는 클라이언트 검증 대상입니다.
 minimap-overlay-enabled: false
 minimap-horizontal-offset: 96
+
+# 선택형 고정 HUD. BetterHud 지원 빌드와 별도 리소스팩 준비가 필요합니다.
+betterhud-enabled: false

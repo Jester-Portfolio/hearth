@@ -19,8 +19,8 @@
 | [ADR-0013: 투표/보스/채집 경계](0013-vote-boss-and-gathering-state-boundaries.md) | 승인·C1 온라인 시작 명단 후속 확정 | 입력마감/DB확정·보스일시정지·온라인 시작/자동부활·기존 참가자 복귀·진행별리셋 |
 | [ADR-0014: WorldGuard 기본 보호 엔진](0014-worldguard-protection-engine.md) | 승인 | 양쪽 월드 보호·WorldEdit 의존성 확인·Hearth 전용 문맥/시험 행렬 |
 | [ADR-0015: 경제 엔진·거래·스토리 분리](0015-economy-engine-and-transaction-boundaries.md) | 격리 개발 구조 채택·운영 정책 미정 | Java 순수 계산·경제 전용 스키마·최신 인벤토리/CAS 거래·단계적 운영 판단 |
-
 | [ADR-0016: S4 개인 기능·복귀 정책](0016-s4-personal-features-and-recovery.md) | 승인 | 필수 시청/재시청·무료 시설 이동·개인 엔더·스마트폰 발급·재시작 HOLD/복귀 |
+| [ADR-0017: 선택형 BetterHud 표시](0017-optional-betterhud-presentation.md) | 승인·개발/격리 범위 | 상대 앵커·단일 출력·개인 프레임/팩 응답·기본 표시 보존 |
 
 각 기록에는 다음 내용을 포함합니다.
 

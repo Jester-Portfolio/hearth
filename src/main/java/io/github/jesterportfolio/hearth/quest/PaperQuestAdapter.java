@@ -57,8 +57,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void dungeon(String npc,String quest,java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> entry,java.util.function.BiConsumer<Player,String> guide){dungeonNpc=npc;dungeonQuest=quest;dungeonEntry=entry;ui.dungeon(npc,quest);if(phone!=null)phone.dungeon(quest,(p,q)->{var session=players.current(p);if(session==null)return;if(dungeonObjectives==null){guide.accept(p,q);return;}ui.facility(p,view->dungeonObjectives.apply(p,view),()->!closed&&players.current(p)==session&&journal.questAllowed(session.context(),q),()->showQuest(p,q));});}
     private final Set<UUID> loadingDialogues=new HashSet<>();
     private java.util.function.BiPredicate<Player,String> beforeAccept=(p,q)->false;
-    private java.util.function.BiConsumer<Player,QuestJournal.View> featureProjection=(p,v)->{};
-    public void features(java.util.function.BiPredicate<Player,String> before,java.util.function.BiConsumer<Player,QuestJournal.View> projection){beforeAccept=before;featureProjection=projection;}
+    public void features(java.util.function.BiPredicate<Player,String> before,java.util.function.BiConsumer<Player,QuestJournal.View> projection,java.util.function.Consumer<Player> clear){beforeAccept=before;ui.hudDisplay(projection,clear);}
     private boolean closed;
     private BiPredicate<Player,String> escortCommand=(p,c)->false;
     public void escort(Set<String> quests,BiPredicate<Player,String> command,BiConsumer<Player,String> guide){escortCommand=command;ui.escort(quests,guide);if(phone!=null)phone.escort(quests,guide);}
@@ -86,7 +85,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         ui.peopleTalk(this::openNpcFromGuidance);ui.completion(this::phoneCompletion,completionFlow);ui.npcNavigation(this::npcNavigation);
         ui.npcSelection((p,npc,quest,revision)->{var s=players.current(p);if(s==null)return;try{var t=dialogues.selection(p.getUniqueId(),s,npc,quest);command(p,dialogues.command(t,"select"),revision);}catch(RuntimeException invalid){unavailable(p,invalid);}});
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
-        ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);featureProjection.accept(p,v);},this::clearVisual,this::render);
+        ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
         expiry=Bukkit.getScheduler().runTaskTimer(plugin,()->quests.expire(catalog).exceptionally(error->{plugin.getLogger().warning("HEARTH_QUEST_EXPIRY_HOLD");return null;}),20,20);
         Bukkit.getPluginManager().registerEvents(this,plugin);players.questCommand(this::command);
         for(World w:Bukkit.getWorlds())ensure(w);

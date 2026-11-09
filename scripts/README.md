@@ -153,3 +153,5 @@
 [임시 제작·월드 보관함](../docs/inventory-workspaces-verification.md)은 새 격리 경로의 `--sessions --inventory-workspaces` 단독 모드다. 기존 `interaction-play`·SQL 실패 보존에 순정 제작 계산/반환·실제 보관 블록/WorldGuard·개인 dirty/CAS 경합을 함께 검사하고, 같은 PG/월드를 두 번째 Paper JVM으로 복원한다. 기존 `--sessions --player-interactions` 한 JVM 선택과 자원/시간/포트/시도 제한은 유지한다. 실제 인증 Player 이벤트는 생성하지 않는다.
 
 [S4 개인 기능 통합](../docs/s4-features-verification.md)은 새 격리 경로에서 `--sessions --quests --story-batch --s4-completion` 단독 선택으로 실행한다. 기존 공개 코스·호위와 승인된 컷신·개인 엔더·스마트폰·전투 복귀 경계를 같은 PG/월드의 두 Paper JVM에서 검사한다. 시작·종료 최대 2회와 기존 CPU/RAM/시간/localhost/EULA 한도는 유지한다. 실제 Player·클라이언트 이벤트를 생성하지 않으며 운영 환경에는 적용하지 않는다. 리소스팩의 미니맵 Glyph JSON·PNG·참조는 `python3 scripts/build-phone-pack.py`로 검사하고 로컬 ZIP만 생성한다.
+
+[HUD/선택형 BetterHud](../docs/hud-display-verification.md)는 각각 새 격리 경로의 `--sessions --quests --story-batch --hud-display` 또는 `--sessions --quests --story-batch --betterhud --betterhud-plugin /검증한/BetterHud.jar` 단독 모드로 한 JVM에서 검사한다. BetterHud 아티팩트는 [공식 고정값](../verification/betterhud-artifact.json)과 일치해야 하며 운영 설치는 하지 않는다. 생성 통합 팩은 `check-betterhud-pack.py`의 앵커/폰트·스마트폰 보존·팩 ID 검사로 확인한다. 실제 인증 클라이언트·팩 전송/호스팅은 보류한다.

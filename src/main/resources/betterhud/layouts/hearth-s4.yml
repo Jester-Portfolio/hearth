@@ -1,0 +1,226 @@
+{
+  "hearth_quest_layout": {
+    "texts": {
+      "1": {
+        "name": "hearth_quest_font",
+        "pattern": "[hearth_quest:0]",
+        "x": 0,
+        "y": 0,
+        "scale": 0.5,
+        "align": "left",
+        "line": 2,
+        "line-width": 10,
+        "split-width": 180,
+        "force-split": true
+      },
+      "2": {
+        "name": "hearth_quest_font",
+        "pattern": "[hearth_quest:1]",
+        "x": 0,
+        "y": 22,
+        "scale": 0.5,
+        "align": "left",
+        "line": 2,
+        "line-width": 10,
+        "split-width": 180,
+        "force-split": true
+      },
+      "3": {
+        "name": "hearth_quest_font",
+        "pattern": "[hearth_quest:2]",
+        "x": 0,
+        "y": 44,
+        "scale": 0.5,
+        "align": "left",
+        "line": 2,
+        "line-width": 10,
+        "split-width": 180,
+        "force-split": true
+      },
+      "4": {
+        "name": "hearth_quest_font",
+        "pattern": "[hearth_quest:3]",
+        "x": 0,
+        "y": 66,
+        "scale": 0.5,
+        "align": "left",
+        "line": 2,
+        "line-width": 10,
+        "split-width": 180,
+        "force-split": true
+      },
+      "5": {
+        "name": "hearth_quest_font",
+        "pattern": "[hearth_quest:4]",
+        "x": 0,
+        "y": 88,
+        "scale": 0.5,
+        "align": "left",
+        "line": 2,
+        "line-width": 10,
+        "split-width": 180,
+        "force-split": true
+      },
+      "6": {
+        "name": "hearth_quest_font",
+        "pattern": "[hearth_quest:5]",
+        "x": 0,
+        "y": 110,
+        "scale": 0.5,
+        "align": "left",
+        "line": 2,
+        "line-width": 10,
+        "split-width": 180,
+        "force-split": true
+      }
+    }
+  },
+  "hearth_minimap_layout": {
+    "texts": {
+      "1": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:0]",
+        "x": 0,
+        "y": 0,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "2": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:1]",
+        "x": 0,
+        "y": 4,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "3": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:2]",
+        "x": 0,
+        "y": 8,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "4": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:3]",
+        "x": 0,
+        "y": 12,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "5": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:4]",
+        "x": 0,
+        "y": 16,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "6": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:5]",
+        "x": 0,
+        "y": 20,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "7": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:6]",
+        "x": 0,
+        "y": 24,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "8": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:7]",
+        "x": 0,
+        "y": 28,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "9": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:8]",
+        "x": 0,
+        "y": 32,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "10": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:9]",
+        "x": 0,
+        "y": 36,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "11": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:10]",
+        "x": 0,
+        "y": 40,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "12": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:11]",
+        "x": 0,
+        "y": 44,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "13": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:12]",
+        "x": 0,
+        "y": 48,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "14": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:13]",
+        "x": 0,
+        "y": 52,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "15": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:14]",
+        "x": 0,
+        "y": 56,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      },
+      "16": {
+        "name": "hearth_pixel_font",
+        "pattern": "[hearth_map:15]",
+        "x": 0,
+        "y": 60,
+        "scale": 4,
+        "align": "left",
+        "disable-number-format": true
+      }
+    }
+  }
+}

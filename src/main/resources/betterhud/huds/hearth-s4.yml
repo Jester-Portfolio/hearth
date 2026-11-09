@@ -1,0 +1,36 @@
+{
+  "hearth_quest": {
+    "default": false,
+    "tick": 5,
+    "layouts": {
+      "1": {
+        "name": "hearth_quest_layout",
+        "gui": {
+          "x": 0,
+          "y": 0
+        },
+        "pixel": {
+          "x": 12,
+          "y": 12
+        }
+      }
+    }
+  },
+  "hearth_minimap": {
+    "default": false,
+    "tick": 5,
+    "layouts": {
+      "1": {
+        "name": "hearth_minimap_layout",
+        "gui": {
+          "x": 100,
+          "y": 0
+        },
+        "pixel": {
+          "x": -76,
+          "y": 12
+        }
+      }
+    }
+  }
+}

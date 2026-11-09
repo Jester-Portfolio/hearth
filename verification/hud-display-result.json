@@ -1,0 +1,256 @@
+{
+  "checked_at": "2026-11-09",
+  "baseline_commit": "e2933b1",
+  "outcome": "PASS",
+  "evidence_root": "/tmp/hearth-hud-display.6zd9xp65",
+  "artifact": {
+    "path": "/tmp/hearth-hud-display.6zd9xp65/Hearth-final-0.1.0-SNAPSHOT.jar",
+    "sha256": "0045a58ff63a7cc75879c05465c6ef13afc16f4c08c82ce6dd34de4c3d7820d0",
+    "deployed": false,
+    "betterhud_bundled": false,
+    "bytes": 2180576,
+    "jar_entries_checked_no_betterhud_classes": true
+  },
+  "unit_tests": {
+    "final_unique_cases": 68,
+    "failures": 0,
+    "runs": [
+      {
+        "path": "/tmp/hearth-hud-display.6zd9xp65/unit-results",
+        "tests": 47
+      },
+      {
+        "path": "/tmp/hearth-hud-display.6zd9xp65/final-unit-results",
+        "tests": 15
+      },
+      {
+        "path": "/tmp/hearth-hud-display.6zd9xp65/anchored-unit-results",
+        "tests": 6
+      },
+      {
+        "path": "/tmp/hearth-hud-display.6zd9xp65/pack-gate-unit-results",
+        "tests": 3
+      },
+      {
+        "path": "/tmp/hearth-hud-display.6zd9xp65/final-pack-gate-unit-results",
+        "tests": 4
+      }
+    ]
+  },
+  "native_selected": {
+    "workspace": "/tmp/hearth-s4-11.zux02_ff",
+    "outcome": "PASS",
+    "session_assertions": 99,
+    "duration_seconds": 45.752,
+    "raw_result": "/tmp/hearth-s4-11.zux02_ff/run-result.json",
+    "raw_sha256": "9f4e98955a27278b111713eb01f82d51a169a8686ef1871e5abffa0964e201cb",
+    "plugin_sha256": "0045a58ff63a7cc75879c05465c6ef13afc16f4c08c82ce6dd34de4c3d7820d0",
+    "all_owned_processes_and_ports_closed": true,
+    "actual_paper_starts": 1,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "processes": {
+      "database": {
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 45.124,
+        "shutdown_seconds": 0.208,
+        "max_sampled_rss_kib": 218508,
+        "observed_cpu_seconds": 2.3,
+        "min_sampled_host_available_kib": 11828508,
+        "sample_count": 735
+      },
+      "paper-prepare": {
+        "exit_code": 0,
+        "ready_seconds": 16.053,
+        "duration_seconds": 42.298,
+        "shutdown_seconds": 3.698,
+        "max_sampled_rss_kib": 1466212,
+        "observed_cpu_seconds": 89.85,
+        "min_sampled_host_available_kib": 11828508,
+        "sample_count": 685
+      }
+    },
+    "hud_assertions": [
+      "betterhud_real_API_reload_completed",
+      "betterhud_owned_anchored_definition_hearth_quest",
+      "betterhud_owned_anchored_definition_hearth_minimap",
+      "betterhud_snapshot_placeholders_registered_without_fake_player",
+      "betterhud_combat_bossbar_merge_disabled",
+      "betterhud_content_bound_resource_pack_ID_exported",
+      "hud_optional_backend_matches_configuration",
+      "hud_native_legacy_output_before_custom_registration",
+      "hud_native_custom_output_clears_owned_legacy_BossBar",
+      "hud_native_single_sidebar_without_duplicate_quest_bar",
+      "hud_native_Korean_surrogate_pair_not_split_at_limit",
+      "hud_native_readonly_projection_replaces_stale_goal",
+      "hud_native_clear_preserves_other_person_and_combat_channel",
+      "hud_native_shutdown_clears_all_owned_outputs",
+      "combat_readonly_connected_HUD_load_while_actions_blocked_no_stale_failed_goal"
+    ]
+  },
+  "native_without_betterhud": {
+    "workspace": "/tmp/hearth-s4-11.i574n_f0",
+    "outcome": "PASS",
+    "session_assertions": 93,
+    "duration_seconds": 37.861,
+    "raw_result": "/tmp/hearth-s4-11.i574n_f0/run-result.json",
+    "raw_sha256": "d0f658c9618e140a648d58b4598b0602759a5f6238546427cee45a812033cc4e",
+    "plugin_sha256": "0045a58ff63a7cc75879c05465c6ef13afc16f4c08c82ce6dd34de4c3d7820d0",
+    "all_owned_processes_and_ports_closed": true,
+    "actual_paper_starts": 1,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "processes": {
+      "database": {
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 37.252,
+        "shutdown_seconds": 0.208,
+        "max_sampled_rss_kib": 221228,
+        "observed_cpu_seconds": 2.3,
+        "min_sampled_host_available_kib": 12037508,
+        "sample_count": 639
+      },
+      "paper-prepare": {
+        "exit_code": 0,
+        "ready_seconds": 13.578,
+        "duration_seconds": 34.384,
+        "shutdown_seconds": 3.659,
+        "max_sampled_rss_kib": 1238840,
+        "observed_cpu_seconds": 68.86,
+        "min_sampled_host_available_kib": 12037508,
+        "sample_count": 587
+      }
+    },
+    "hud_assertions": [
+      "hud_optional_backend_matches_configuration",
+      "hud_native_legacy_output_before_custom_registration",
+      "hud_native_custom_output_clears_owned_legacy_BossBar",
+      "hud_native_single_sidebar_without_duplicate_quest_bar",
+      "hud_native_Korean_surrogate_pair_not_split_at_limit",
+      "hud_native_readonly_projection_replaces_stale_goal",
+      "hud_native_clear_preserves_other_person_and_combat_channel",
+      "hud_native_shutdown_clears_all_owned_outputs",
+      "combat_readonly_connected_HUD_load_while_actions_blocked_no_stale_failed_goal"
+    ]
+  },
+  "generated_pack": {
+    "outcome": "PASS",
+    "pack": "/tmp/hearth-s4-11.zux02_ff/server/plugins/BetterHud/build.zip",
+    "sha256": "7c8bb8f3cbe8e9e8ec506c204b9e041fd774b625caf10bf31e85588603834472",
+    "checks": [
+      "exported_pack_ID_matches_all_generated_assets",
+      "smartphone_asset_preserved_font/phone.json",
+      "smartphone_asset_preserved_items/phone.json",
+      "smartphone_asset_preserved_models/item/phone.json",
+      "smartphone_asset_preserved_textures/item/phone.png",
+      "smartphone_asset_preserved_textures/gui/frame.png",
+      "sixteen_4px_pixel_font_rows",
+      "minimap_row_offsets_are_4px",
+      "six_two_line_quest_fonts_include_Hangul",
+      "target_pack_format_88",
+      "target_shader_has_viewport_relative_right_anchor",
+      "quest_top_left_anchor",
+      "minimap_top_right_anchor",
+      "minimap_64px_with_12px_edge_margin",
+      "remove-default-hotbar_disabled",
+      "enable-self-host_disabled",
+      "merge-boss-bar_disabled"
+    ],
+    "pack_id": "4b6ed528-ac9a-3867-a0d0-cc76e4f806ce",
+    "client_rendering_tested": false
+  },
+  "betterhud_artifact_pin": "verification/betterhud-artifact.json",
+  "cli_rejections": [
+    {
+      "options": [
+        "--hud-display"
+      ],
+      "exit_code": 2,
+      "reason": "verify-lifecycle.py: error: --hud-display는 --sessions --quests --story-batch 단독 선택이 필요합니다"
+    },
+    {
+      "options": [
+        "--betterhud"
+      ],
+      "exit_code": 2,
+      "reason": "verify-lifecycle.py: error: --betterhud는 플러그인 경로와 --sessions --quests --story-batch 단독 선택이 필요합니다"
+    },
+    {
+      "options": [
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--hud-display",
+        "--betterhud"
+      ],
+      "exit_code": 2,
+      "reason": "verify-lifecycle.py: error: --hud-display는 --sessions --quests --story-batch 단독 선택이 필요합니다"
+    },
+    {
+      "options": [
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--betterhud-plugin",
+        "/tmp/hearth-hud-display.6zd9xp65/invalid-betterhud.jar"
+      ],
+      "exit_code": 2,
+      "reason": "verify-lifecycle.py: error: --betterhud-plugin은 --betterhud와 함께 사용합니다"
+    },
+    {
+      "options": [
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--betterhud",
+        "--betterhud-plugin",
+        "/tmp/hearth-hud-display.6zd9xp65/invalid-betterhud.jar"
+      ],
+      "exit_code": 1,
+      "reason": "AssertionError: BetterHud 공식 아티팩트 해시 불일치"
+    }
+  ],
+  "development_corrections": [
+    "Gradle Kotlin DSL MessageDigest import 수정",
+    "초기 공개 API 연결의 불필요한 checked IOException 선언 수정",
+    "첫 Paper API 실행은 통과했으나 후속 ZIP 검사에서 스마트폰 자산 병합 누락 발견. plugins 기준 상대 경로 수정 및 준비 완료 조건에 병합 자산 검사 추가"
+  ],
+  "prior_evidence": [
+    {
+      "workspace": "/tmp/hearth-s4-11.16_wf269",
+      "native_outcome": "PASS",
+      "post_pack_check": "FAIL missing smartphone assets"
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.zcb00twu",
+      "native_outcome": "PASS",
+      "post_pack_check": "PASS before pack-load acknowledgement guard"
+    }
+  ],
+  "not_tested": [
+    "실제 인증 Minecraft 클라이언트·팩 로드 응답·GUI 배율/가독성·실제 화면 배치",
+    "실제 코옵/보스전 채널 공존·클릭/상호작용",
+    "다른 HUD/리소스팩 조합·장시간 부하/성능",
+    "운영 설치/재시작·팩 URL 게시/전송·실제 데이터 변경"
+  ],
+  "storage_contract_changed": false,
+  "pack_evidence_overwrite_rejected": true
+}

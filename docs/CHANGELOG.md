@@ -1,5 +1,9 @@
 # Hearth 주요 변경 이력
 
+## 2026-11-09 — 선택형 BetterHud·단일 퀘스트/관전 표시
+
+- 중복 퀘스트 BossBar/sidebar와 관전 중 표시 소실을 보완하고, 승인된 [선택형 BetterHud](decisions/0017-optional-betterhud-presentation.md)의 상대 앵커·개인 프레임/팩 로드 확인·스마트폰 팩 병합을 연결했다. 기본 출력과 다른 전투 채널을 보존한다. [검사·실제 클라이언트 미검증](hud-display-verification.md)을 구분한다.
+
 ## 2026-11-09 — S4 개인 장면·지도·시설·스마트폰·전투 복구 통합
 
 - 승인된 [개인 정책](decisions/0016-s4-personal-features-and-recovery.md)을 기존 공개 코스와 저장 경계에 통합했다. 컷신/읽기 전용 재시청·개인 엔더·가공/설치된 셜커·스마트폰 저장 후 지급/재발급·무료 시설 이동·지형 지도/Glyph 미니맵/sidebar·고리/둔화/밀어내기/연속 공격·재시작 복귀/HOLD를 연결했다. [검증·실제 행동/배치 미검증](s4-features-verification.md)을 구분하며 운영에는 적용하지 않았다.

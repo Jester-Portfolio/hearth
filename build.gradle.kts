@@ -1,4 +1,5 @@
 import java.time.Duration
+import java.security.MessageDigest
 
 plugins { java }
 
@@ -11,7 +12,33 @@ repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://maven.enginehub.org/repo/")
+    exclusiveContent {
+        forRepository {
+            ivy {
+                name = "BetterHudPinned"
+                url = uri("https://hangar.papermc.io/api/v1/projects/")
+                patternLayout { artifact("[organisation]/[module]/versions/[revision]/PAPER/download") }
+                metadataSources { artifact() }
+            }
+        }
+        filter { includeModule("toxicity188", "BetterHud") }
+    }
 }
+
+val betterHudApi by configurations.creating
+dependencies {
+    add(betterHudApi.name, "toxicity188:BetterHud:2.1.0-SNAPSHOT-448")
+    compileOnly(files(betterHudApi))
+}
+val verifyBetterHudApi by tasks.registering {
+    inputs.files(betterHudApi)
+    doLast {
+        val bytes = betterHudApi.singleFile.readBytes()
+        val sha = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+        require(sha == "dc837b15d6cc867ea6fec3fe05ef2390a6e0928c59788c797f2631f139cc818d") { "BetterHud official artifact hash mismatch" }
+    }
+}
+tasks.named("compileJava") { dependsOn(verifyBetterHudApi) }
 
 java { toolchain.languageVersion.set(JavaLanguageVersion.of(25)) }
 
@@ -35,6 +62,13 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.processResources {
     inputs.properties(mapOf("version" to project.version, "postgresJdbcVersion" to postgresJdbcVersion, "hikariVersion" to hikariVersion))
     filesMatching("plugin.yml") { expand(inputs.properties) }
+    from("resourcepack") { into("betterhud/merge") }
+    from("resourcepack/assets/hearth/textures/gui/minimap_pixel.png") { into("betterhud/assets/hearth") }
+    doLast {
+        destinationDir.resolve("betterhud/merge-files.txt").writeText(
+            fileTree("resourcepack").files.map { it.relativeTo(file("resourcepack")).invariantSeparatorsPath }.sorted().joinToString("\n", postfix="\n")
+        )
+    }
 }
 
 tasks.jar {

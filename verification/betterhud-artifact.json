@@ -1,0 +1,11 @@
+{
+  "version": "2.1.0-SNAPSHOT-448",
+  "platform": "PAPER",
+  "size_bytes": 5290364,
+  "sha256": "dc837b15d6cc867ea6fec3fe05ef2390a6e0928c59788c797f2631f139cc818d",
+  "metadata_url": "https://hangar.papermc.io/api/v1/projects/toxicity188/BetterHud/versions/2.1.0-SNAPSHOT-448",
+  "download_url": "https://hangar.papermc.io/api/v1/projects/toxicity188/BetterHud/versions/2.1.0-SNAPSHOT-448/PAPER/download",
+  "source": "https://github.com/toxicity188/BetterHud",
+  "license": "MIT",
+  "deployment": "optional-isolated-verification-only"
+}
