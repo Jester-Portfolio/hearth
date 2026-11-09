@@ -12,6 +12,8 @@ commands:
     description: 현재 NPC 대화의 페이지 이동·닫기
   hearthprepare:
     description: 본인의 공개 시설·재료·던전 준비 안내
+  hearthresume:
+    description: 저장된 개인 의뢰·보고·보상과 현재 코스 이어 하기
   hearthjourney:
     description: 공개 시험 코스의 다음 플레이 안내
   hearthinfo:

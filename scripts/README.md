@@ -145,3 +145,5 @@
 [인물 안내·NPC 공개 경계](../docs/npc-guidance-verification.md)도 기존 `--sessions --quests --story-batch --public-course`에서 함께 검사한다. 본인 시설 기록을 확인한 상태에서 공유 개방 전/후의 NPC 위치 권한·기록 버튼/스마트폰 연결·서버 엔티티 속성·Book/Dialog와 P2 개인 기록 격리/조회 무변경을 확인한 뒤 기존 채집/제작·투표·던전·최종 복원 흐름을 잇는다. 무인 엔티티 속성 검사 동안만 대상 청크에 티켓을 두고 반납하며 실제 Player 표시/클릭으로 판정하지 않는다.
 
 [AI 공개 자료 선택·최신 조회](../docs/phone-grounding-verification.md)도 기존 `--sessions --quests --story-batch --public-course`에서 함께 검사한다. 퀘스트·지도·기록·공유 검색과 단일 자료/결과 없음의 Mock 응답 후 실제 DB 재확인, 실제 개인 목표 갱신 중 늦은 응답 거부·초안 보존, 미존재 DB 행 읽기 실패와 원본 기록/인벤토리 보존을 확인한다. 실제 AI 서버/모델을 실행하지 않으며 자료 포함/제외·전체 본문·복귀의 Dialog 객체 검사를 실제 사용자 조작으로 판정하지 않는다.
+
+[이어 하기·재접속 안내](../docs/course-resume-verification.md)는 기존 `--sessions --quests --story-batch --public-course`와 별도 신규 경로의 `--sessions --quests --story-batch --quest-completion --phone-dialog --completion-navigation`을 같은 JAR로 순차 검사한다. 공개 코스는 첫 도구 제작 뒤 다른 구성원을 남겨 월드를 유지한 채 제어 세션을 재접속하고 목표/추적·전체 인벤토리/세대·새 접속 한 번/이전 표식 거부를 확인한다. 완료 경로는 실제 실패→재시작→PENDING 보상→지급 뒤 목록 제거/이전 선택 거부와 기존 CAS 실패 보존을 확인한다. `/hearthresume`은 플레이어용 읽기 안내이며 실제 클라이언트 시험은 계속 보류한다.

@@ -1272,30 +1272,30 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->quests.advance(current[0],QuestStore.Phase.COMPLETED)).thenAccept(row->check(row.phase()==QuestStore.Phase.COMPLETED,"completion_retry_flow_"+id));}
     private CompletionStage<Void> completionNavigation(){
         var c=catalog.quest("trial_checkpoint");var q=new PersonalQuest.Session[1];var flow=new io.github.jesterportfolio.hearth.phone.CompletionFlow();
-        var retry=new io.github.jesterportfolio.hearth.phone.PhoneCompletion.Choice[1];var claim=new io.github.jesterportfolio.hearth.phone.PhoneCompletion.Choice[1];
+        var resumeBefore=new CourseResume.Board[1];var retry=new io.github.jesterportfolio.hearth.phone.PhoneCompletion.Choice[1];var claim=new io.github.jesterportfolio.hearth.phone.PhoneCompletion.Choice[1];
         var requests=new io.github.jesterportfolio.hearth.phone.CompletionFlow.Request[3];var original=new Object[2];
         return openAll().thenCompose(v->quests.open(a1,c.id(),s1,()->coordinator.playable(s1))).thenCompose(value->{q[0]=value;return quests.accept(value,c);})
             .thenCompose(v->quests.reach(q[0],c,5,64,31)).thenCompose(v->quests.reach(q[0],c,9,64,31)).thenCompose(v->quests.fail(q[0],c,"OBJECTIVE"))
             .thenCompose(v->mainResult(store.readQuest(a1,c.id()))).thenAccept(value->original[0]=value)
             .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(value->original[1]=value)
             .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{
-                retry[0]=QuestFollowups.choices(catalog,view,c.id()).getFirst();check(retry[0].operation()==io.github.jesterportfolio.hearth.phone.PhoneCompletion.Operation.RETRY,"followup_actual_DB_failed_record_has_retry_confirmation");
+                resumeBefore[0]=completionResume(view,c.id(),CourseResume.Kind.FAILED,null);retry[0]=QuestFollowups.choices(catalog,view,c.id()).getFirst();check(retry[0].operation()==io.github.jesterportfolio.hearth.phone.PhoneCompletion.Operation.RETRY,"followup_actual_DB_failed_record_has_retry_confirmation");
                 io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,retry[0]);followupNativeScreens(view,c.id());
             })
             .thenCompose(v->mainResult(store.readQuest(a1,c.id()))).thenAccept(value->check(value.equals(original[0])&&flow.current(s1)==null,"followup_confirmation_cancel_has_no_quest_write_or_request"))
             .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(value->check(value.equals(original[1]),"followup_confirmation_preview_preserves_source_inventory"))
             .thenRun(()->{requests[0]=flow.begin(s1,retry[0]);try{flow.begin(s1,retry[0]);throw new AssertionError("duplicate followup accepted");}catch(IllegalStateException busy){check(busy.getMessage().equals("COMPLETION_ACTION_BUSY")&&requests[0].phase()==io.github.jesterportfolio.hearth.phone.CompletionFlow.Phase.PENDING,"followup_shared_book_phone_pending_blocks_second_request");}})
             .thenCompose(v->quests.retry(q[0],c)).thenRun(()->{check(q[0].saved().objectiveIndex()==1&&flow.complete(s1,requests[0],true),"followup_existing_checkpoint_retry_settles_own_request");})
-            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{try{io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,retry[0]);throw new AssertionError("old retry accepted");}catch(RuntimeException stale){check(QuestFollowups.choices(catalog,view,c.id()).isEmpty(),"followup_current_active_record_rejects_old_retry_confirmation");}})
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{resumeBefore[0]=completionResume(view,c.id(),CourseResume.Kind.ACTIVE,resumeBefore[0]);try{io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,retry[0]);throw new AssertionError("old retry accepted");}catch(RuntimeException stale){check(QuestFollowups.choices(catalog,view,c.id()).isEmpty(),"followup_current_active_record_rejects_old_retry_confirmation");}})
             .thenCompose(v->quests.reach(q[0],c,9,64,31)).thenCompose(v->quests.reach(q[0],c,13,64,31)).thenCompose(v->quests.advance(q[0],QuestStore.Phase.COMPLETED))
             .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{
-                claim[0]=QuestFollowups.choices(catalog,view,c.id()).getFirst();check(claim[0].operation()==io.github.jesterportfolio.hearth.phone.PhoneCompletion.Operation.CLAIM,"followup_actual_DB_pending_reward_has_claim_confirmation");followupNativeScreens(view,c.id());
+                resumeBefore[0]=completionResume(view,c.id(),CourseResume.Kind.REWARD,resumeBefore[0]);claim[0]=QuestFollowups.choices(catalog,view,c.id()).getFirst();check(claim[0].operation()==io.github.jesterportfolio.hearth.phone.PhoneCompletion.Operation.CLAIM,"followup_actual_DB_pending_reward_has_claim_confirmation");followupNativeScreens(view,c.id());
                 requests[1]=flow.begin(s1,claim[0]);check(!flow.complete(s1,requests[0],false)&&requests[1].phase()==io.github.jesterportfolio.hearth.phone.CompletionFlow.Phase.PENDING,"followup_old_retry_callback_cannot_overwrite_new_reward_request");
                 one.count(20);coordinator.refresh(s1);
             })
             .thenCompose(v->questRewards.claim(coordinator,s1,c.id())).thenRun(()->check(flow.complete(s1,requests[1],true)&&craftingCount(one.capture(),Material.STONE)==23,"followup_existing_reward_source_save_settles_success_once"))
             .thenCompose(v->mainResult(store.readInventory(a1))).thenCompose(before->questRewards.claim(coordinator,s1,c.id()).thenCompose(done->mainResult(store.readInventory(a1))).thenAccept(after->check(before.equals(after)&&codec.equivalent(after.payload(),one.capture()),"followup_repeat_grant_preserves_payload_revision_and_receipt")))
-            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{check(QuestFollowups.choices(catalog,view,c.id()).isEmpty(),"followup_granted_reward_disappears_from_action_list");try{io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,claim[0]);throw new AssertionError("paid reward accepted");}catch(RuntimeException stale){check(true,"followup_paid_reward_rejects_old_confirmation");}})
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{resumeBefore[0]=completionResume(view,c.id(),null,resumeBefore[0]);check(QuestFollowups.choices(catalog,view,c.id()).isEmpty(),"followup_granted_reward_disappears_from_action_list");try{io.github.jesterportfolio.hearth.phone.PhoneCompletion.require(catalog,view,claim[0]);throw new AssertionError("paid reward accepted");}catch(RuntimeException stale){check(true,"followup_paid_reward_rejects_old_confirmation");}})
             .thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->check(QuestFollowups.choices(catalog,view,c.id()).isEmpty(),"followup_other_person_does_not_borrow_failed_or_reward_record"))
             .thenCompose(v->finishCourseQuest(b3,s3,c.id())).thenCompose(v->journal.load(b3,s3,()->coordinator.playable(s3))).thenAccept(view->{requests[2]=flow.begin(s3,QuestFollowups.choices(catalog,view,c.id()).getFirst());})
             .thenCompose(v->mainResult(store.readInventory(b3))).thenCompose(before->{
@@ -1502,8 +1502,29 @@ public final class SessionVerification implements AutoCloseable {
             check(book.pages().size()>page.book().pages().size()&&dialog!=null,"public_route_native_book_Dialog_"+Objects.toString(step,"complete"));
             if(previousPublicRoute!=null&&!previousPublicRoute.board().equals(page.board()))try{CourseRoute.require(page,previousPublicRoute);throw new AssertionError("old route accepted");}catch(IllegalStateException stale){check(true,"public_route_saved_transition_rejects_previous_selection");}
             previousPublicRoute=page;check(codec.equivalent(before,one.capture())&&s1.save().revision()==revision,"public_route_reads_preserve_inventory_"+Objects.toString(step,"complete"));
+            var resume=CourseResume.build(playthrough,catalog,view,sharedStory.cached(a),sharedStory.phase(a));resumeNative(resume);check(resume.available()&&resume.course().guide().equals(page.board().guide()),"resume_current_guide_matches_saved_course_"+Objects.toString(step,"complete"));
             return groundingProgress(step,card,view);
         });
+    }
+    private void resumeNative(CourseResume.Board board){
+        var book=PaperQuestUI.book(board.book(1),List.of(Component.text("이어 하기로"),Component.text("다음 행동·담당 NPC")));var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose("이어 하기",List.of(io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text(board.book(1).pages().getFirst()))),List.of(),List.of(io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("이어 하기 새로고침")).build(),io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("현재 코스 동선")).build()));check(book.pages().size()>board.book(1).pages().size()&&dialog!=null,"resume_native_book_Dialog_navigation_objects");
+    }
+    private CompletionStage<Void> resumeReconnect(){
+        var savedInventory=one.capture();long inventoryRevision=s1.save().revision(),generation=worlds.get(a).generation();var old=s1;var reminder=new ResumeReminder();var expected=new CourseResume.Board[1];
+        return journal.load(a1,s1,()->coordinator.playable(s1)).thenAccept(view->{expected[0]=CourseResume.build(playthrough,catalog,view,sharedStory.cached(a),sharedStory.phase(a));var row=expected[0].rows().stream().filter(r->r.quest().equals("gathering_workshop_route")).findFirst().orElseThrow();check(row.kind()==CourseResume.Kind.ACTIVE&&row.revision()==2&&row.objective()==2&&reminder.claim(a1.playerId(),old,true,expected[0]).isPresent()&&reminder.claim(a1.playerId(),old,true,expected[0]).isEmpty(),"resume_active_goal_and_single_hint_before_disconnect");})
+            .thenCompose(v->mainResult(coordinator.disconnect(s1))).thenRun(()->check(coordinator.playable(s2)&&worlds.get(a).generation()==generation,"resume_other_member_keeps_run_loaded_during_disconnect"))
+            .thenCompose(v->{one=new Controlled();s1=connect(a1,one);return mainResult(s1.ready());}).thenRun(this::publicRoster)
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{var board=CourseResume.build(playthrough,catalog,view,sharedStory.cached(a),sharedStory.phase(a));var row=board.rows().stream().filter(r->r.quest().equals("gathering_workshop_route")).findFirst().orElseThrow();
+                check(row.kind()==CourseResume.Kind.ACTIVE&&row.revision()==2&&row.objective()==2&&row.current()&&row.tracked(),"resume_reconnected_current_personal_goal_tracking_revision_restored");
+                check(!coordinator.playable(old)&&reminder.claim(a1.playerId(),s1,true,board).isPresent()&&reminder.claim(a1.playerId(),old,coordinator.playable(old),expected[0]).isEmpty()&&!reminder.current(a1.playerId(),old),"resume_new_session_hint_and_old_session_callback_rejected");reminder.forget(a1.playerId(),old);check(reminder.current(a1.playerId(),s1)&&reminder.claim(a1.playerId(),s1,true,board).isEmpty(),"resume_old_quit_does_not_clear_new_session_hint");
+                check(codec.equivalent(savedInventory,one.capture())&&s1.save().revision()==inventoryRevision&&worlds.get(a).generation()==generation,"resume_reconnect_preserves_full_inventory_revision_and_world_generation");resumeNative(board);
+            }).thenCompose(v->journal.load(a2,s2,()->coordinator.playable(s2))).thenAccept(view->check(CourseResume.build(playthrough,catalog,view,sharedStory.cached(a),sharedStory.phase(a)).rows().stream().noneMatch(r->r.quest().equals("gathering_workshop_route")),"resume_P1_saved_goal_does_not_appear_for_P2"));
+    }
+    private Playthrough completionResumePlan;
+    private CourseResume.Board completionResume(QuestJournal.View view,String id,CourseResume.Kind expected,CourseResume.Board previous){
+        if(completionResumePlan==null){var yaml=YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(Objects.requireNonNull(plugin.getResource("playthrough-demo.yml")),java.nio.charset.StandardCharsets.UTF_8));completionResumePlan=Playthrough.parse(new HashMap<>(yaml.getValues(false)),catalog,sharedStory.content(),explorationContent);}
+        var board=CourseResume.build(completionResumePlan,catalog,view,sharedStory.cached(a),sharedStory.phase(a));var row=board.rows().stream().filter(r->r.quest().equals(id)).findFirst();check(board.available()&&(expected==null?row.isEmpty():row.isPresent()&&row.get().kind()==expected),"resume_actual_DB_followup_kind_"+Objects.toString(expected,"none"));resumeNative(board);
+        if(previous!=null)try{CourseResume.require(board,previous,1,null);throw new AssertionError("old resume accepted");}catch(IllegalStateException stale){check(true,"resume_actual_DB_transition_rejects_previous_selection");}return board;
     }
     private io.github.jesterportfolio.hearth.phone.PhoneChat groundingPending;
     private CompletableFuture<String> groundingAnswer;private CompletionStage<Void> groundingWork;private boolean groundingValidated;
@@ -1932,6 +1953,7 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->coordinator.saveBoundary(s1)).thenCompose(v->bd[0].dungeon().leave(actor[0]))
         .thenCompose(v->publicCourse?journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,6,64,6).thenAccept(view->{}):CompletableFuture.completedFuture(null))
         .thenCompose(v->craftingQuestTool()).thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,2,2)).thenCompose(v->publicCourse?publicRouteCheck("tools","material_site"):CompletableFuture.completedFuture(null))
+        .thenCompose(v->publicCourse?resumeReconnect().thenRun(()->actor[0]=new GatheringActor(s1)):CompletableFuture.completedFuture(null))
         .thenRun(()->{supplyMaterials(true,false);check(craftingQuestSaves==1,"supply_wood_tool_goal_after_confirmed_source_save");gen[0]=bd[0].dungeon().snapshot().generation();})
         .thenCompose(v->bd[0].dungeon().enter(actor[0]))
         .thenRun(()->{check(bd[0].dungeon().snapshot().generation()==gen[0]+1&&!bd[0].dungeon().canGather(actor[0],gen[0]),"supply_reentry_reset_old_generation_rejected");supplyMaterials(true,false);check(Bukkit.getWorld(worlds.get(b).mapping().physicalId()).getBlockAt(33,64,1).getType()==Material.OAK_LOG&&bd[1].dungeon().snapshot().generation()==1,"supply_other_run_resources_generation_unchanged");})

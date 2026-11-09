@@ -49,6 +49,29 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     private Playthrough playthrough;
     private io.github.jesterportfolio.hearth.story.SharedStory sharedStory;
+    private final Map<UUID,Object> resumeFrames=new HashMap<>();
+    private final ResumeReminder resumeReminder=new ResumeReminder();
+    private final Map<Player,Object> reminderOwners=new IdentityHashMap<>();
+    private CourseResume.Board resumeView(PlayerSessions.Session session,QuestJournal.View view){var run=session.context().storyRunId();return CourseResume.build(playthrough,catalog,view,sharedStory.cached(run),sharedStory.phase(run));}
+    private Component resumeButton(Player p,PlayerSessions.Session session,Object frame,BooleanSupplier current,String label,Runnable action){return Component.text(label).clickEvent(net.kyori.adventure.text.event.ClickEvent.callback(audience->{if(audience==p)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(p)==session&&resumeFrames.get(p.getUniqueId())==frame&&current.getAsBoolean())action.run();},1);},net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build()));}
+    private void resume(Player p,PlayerSessions.Session session,BooleanSupplier current,List<Component> back,int number,CourseResume.Board expected,CourseResume.Row selected){
+        if(playthrough==null||sharedStory==null){p.sendMessage(Component.text("현재 콘텐츠에 이어 하기 안내가 등록되지 않았습니다."));return;}if(!current.getAsBoolean())return;if(requests.containsKey(p.getUniqueId())){p.sendMessage(Component.text("기존 조회를 처리 중입니다."));return;}
+        Object frame=new Object();resumeFrames.put(p.getUniqueId(),frame);load(p,session,view->{if(!current.getAsBoolean()||resumeFrames.get(p.getUniqueId())!=frame)return;try{
+            var board=resumeView(session,view);if(expected!=null)CourseResume.require(board,expected,number,selected);int at=Math.min(number,board.pages());var actions=new ArrayList<Component>();
+            var returnToResume=resumeButton(p,session,frame,current,"이어 하기로",()->resume(p,session,current,back,at,null,null));
+            if(selected!=null){acceptedBook(p,session,view,selected.quest(),List.of(returnToResume),current);return;}
+            if(board.available()){
+                for(var row:board.page(at))actions.add(resumeButton(p,session,frame,current,row.title()+" · "+row.label(),()->resume(p,session,current,back,at,board,row)));
+                if(at>1)actions.add(resumeButton(p,session,frame,current,"앞 의뢰",()->resume(p,session,current,back,at-1,board,null)));if(at<board.pages())actions.add(resumeButton(p,session,frame,current,"다음 의뢰",()->resume(p,session,current,back,at+1,board,null)));
+                actions.add(resumeButton(p,session,frame,current,"다음 행동·담당 NPC",()->journey(p,session,null,current,List.of(returnToResume))));if(courseRoute!=null)actions.add(resumeButton(p,session,frame,current,"현재 코스 동선",()->route(p,session,current,List.of(returnToResume),null,false)));
+                actions.add(resumeButton(p,session,frame,current,"현재 항목의 진행판",()->course(p,session,current,List.of(returnToResume),board.coursePage(),null)));
+            }
+            actions.add(resumeButton(p,session,frame,current,"이어 하기 새로고침",()->resume(p,session,current,back,at,null,null)));actions.addAll(back);showBook(p,session,board.book(at),actions);
+        }catch(RuntimeException stale){p.sendMessage(Component.text("개인 의뢰나 공동체 상태가 바뀌었습니다. 이어 하기를 다시 조회하세요."));}});
+    }
+    private void remind(Player p,PlayerSessions.Session session,QuestJournal.View view){
+        if(playthrough==null||sharedStory==null)return;resumeReminder.claim(p.getUniqueId(),session,players.current(p)==session,resumeView(session,view)).ifPresent(text->{reminderOwners.put(p,session);p.sendMessage(Component.text(text+" ").append(Component.text("[이어 하기]").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthresume"))));});
+    }
     private final Map<UUID,Object> peopleFrames=new HashMap<>();
     private BiConsumer<Player,String> peopleTalk=(p,npc)->{};
     public void peopleTalk(BiConsumer<Player,String> handler){peopleTalk=handler;}
@@ -80,6 +103,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
                 var selected=page.board().rows().stream().filter(PlaythroughOverview.Row::current).findFirst().orElse(null);
                 if(detail){if(selected==null||selected.quest()==null)throw new IllegalStateException("STALE_COURSE_ROUTE");acceptedBook(p,session,view,selected.quest(),List.of(returnToRoute),current);return;}
                 var actions=new ArrayList<Component>();
+                actions.add(routeButton(p,session,frame,current,"이어 하기",()->resume(p,session,current,List.of(returnToRoute),1,null,null)));
                 actions.add(routeButton(p,session,frame,current,"관련 인물 안내",()->people(p,session,current,List.of(returnToRoute),1,null,null,false)));
                 if(selected!=null&&selected.quest()!=null)actions.add(routeButton(p,session,frame,current,"현재 의뢰 상세·후속 처리",()->route(p,session,current,back,page,true)));
                 if(page.preparation()!=null)actions.add(routeButton(p,session,frame,current,"현재 시설 준비 안내",()->{
@@ -133,6 +157,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
                     load(p,session,fresh->{if(!current.getAsBoolean())return;QuestJourneyView.require(journeyView(session,fresh),page,link);journeyAction(p,session,fresh,link,current,back);});
                 },1);
             },net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build())));
+            actions.add(Component.text("이어 하기").clickEvent(net.kyori.adventure.text.event.ClickEvent.callback(audience->{if(audience==p)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(p)==session&&current.getAsBoolean())resume(p,session,current,back,1,null,null);},1);},net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build())));
             actions.add(Component.text("관련 인물 안내").clickEvent(net.kyori.adventure.text.event.ClickEvent.callback(audience->{if(audience==p)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(p)==session&&current.getAsBoolean())people(p,session,current,back,1,null,null,false);},1);},net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build())));
             if(courseRoute!=null)actions.add(Component.text("현재 코스 동선").clickEvent(net.kyori.adventure.text.event.ClickEvent.callback(audience->{if(audience==p)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(p)==session&&current.getAsBoolean())route(p,session,current,back,null,false);},1);},net.kyori.adventure.text.event.ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(2)).build())));
             if(preparation!=null)actions.add(Component.text("시설·재료·던전 준비").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthprepare")));
@@ -340,7 +365,7 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
         work.whenCompleteAsync((view,failure)->{
             if(!Objects.equals(requests.get(p.getUniqueId()),id))return;
             requests.remove(p.getUniqueId());if(closed)return;if(dialogueBusy.test(p)){dirty.add(p.getUniqueId());return;}if(players.current(p)!=session){if(players.prepared(p)==session)dirty.add(p.getUniqueId());return;}if(failure!=null){Throwable cause=failure;while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();if(cause instanceof IllegalStateException&&Set.of("JOURNAL_BUSY","QUEST_LIST_BUSY").contains(Objects.toString(cause.getMessage(),""))){dirty.add(p.getUniqueId());return;}error(p);return;}
-            try{journal.requireView(session.context(),view);showHud(p,view);projection.accept(p,view);show.accept(view);}catch(RuntimeException e){error(p);}
+            try{journal.requireView(session.context(),view);showHud(p,view);projection.accept(p,view);remind(p,session,view);show.accept(view);}catch(RuntimeException e){error(p);}
         },owner);
     }
     private void open(Player p,PlayerSessions.Session s,QuestJournal.View view,String page,String quest,int offset){
@@ -355,6 +380,8 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     public boolean command(Player p,String command){
         var s=players.current(p);if(s==null)return false;
+        if(command.equals("/hearthresume")){resume(p,s,()->true,List.of(Component.text("다음 플레이 안내").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney"))),1,null,null);return true;}
+        if(command.startsWith("/hearthresume ")){p.sendMessage(Component.text("사용법: /hearthresume"));return true;}
         if(command.equals("/hearthprepare")){preparation(p,s,()->true,List.of(Component.text("다음 플레이 안내").clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/hearthjourney"))),null,null);return true;}
         if(command.startsWith("/hearthprepare ")){p.sendMessage(Component.text("사용법: /hearthprepare"));return true;}
         if(command.equals("/hearthjourney")){journey(p,s,null);return true;}
@@ -410,6 +437,6 @@ public final class PaperQuestUI implements Listener,AutoCloseable {
     }
     @EventHandler(priority=EventPriority.MONITOR) public void drag(InventoryDragEvent e){if(e.getView().getTopInventory().getHolder() instanceof Screen)e.setCancelled(true);}
     @EventHandler public void closed(InventoryCloseEvent e){if(e.getInventory().getHolder() instanceof Screen)requests.remove(e.getPlayer().getUniqueId());}
-    @EventHandler public void quit(PlayerQuitEvent e){peopleFrames.remove(e.getPlayer().getUniqueId());routeFrames.remove(e.getPlayer().getUniqueId());completionFrames.remove(e.getPlayer().getUniqueId());var quitting=completionOwners.remove(e.getPlayer().getUniqueId());if(quitting!=null)completionFlow.forget(quitting);facilityFrames.remove(e.getPlayer().getUniqueId());courseFrames.remove(e.getPlayer().getUniqueId());preparationFrames.remove(e.getPlayer().getUniqueId());clearBars(e.getPlayer());clearProjection.accept(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());hudOnly.remove(e.getPlayer().getUniqueId());}
-    @Override public void close(){peopleFrames.clear();routeFrames.clear();completionOwners.clear();completionFrames.clear();completionFlow.clear();facilityFrames.clear();courseFrames.clear();preparationFrames.clear();if(closed)return;closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
+    @EventHandler public void quit(PlayerQuitEvent e){resumeFrames.remove(e.getPlayer().getUniqueId());resumeReminder.forget(e.getPlayer().getUniqueId(),reminderOwners.remove(e.getPlayer()));peopleFrames.remove(e.getPlayer().getUniqueId());routeFrames.remove(e.getPlayer().getUniqueId());completionFrames.remove(e.getPlayer().getUniqueId());var quitting=completionOwners.remove(e.getPlayer().getUniqueId());if(quitting!=null)completionFlow.forget(quitting);facilityFrames.remove(e.getPlayer().getUniqueId());courseFrames.remove(e.getPlayer().getUniqueId());preparationFrames.remove(e.getPlayer().getUniqueId());clearBars(e.getPlayer());clearProjection.accept(e.getPlayer());requests.remove(e.getPlayer().getUniqueId());attempted.remove(e.getPlayer().getUniqueId());dirty.remove(e.getPlayer().getUniqueId());hudOnly.remove(e.getPlayer().getUniqueId());}
+    @Override public void close(){resumeFrames.clear();resumeReminder.clear();reminderOwners.clear();peopleFrames.clear();routeFrames.clear();completionOwners.clear();completionFrames.clear();completionFlow.clear();facilityFrames.clear();courseFrames.clear();preparationFrames.clear();if(closed)return;closed=true;task.cancel();HandlerList.unregisterAll(this);players.developerInventory((p,i)->false);quests.changed(c->{});journal.changed(c->{});journal.sharedChanged(r->{});for(Player p:Bukkit.getOnlinePlayers()){clearBars(p);clearProjection.accept(p);if(p.getOpenInventory().getTopInventory().getHolder() instanceof Screen)p.closeInventory();}requests.clear();attempted.clear();dirty.clear();hudOnly.clear();}
 }
