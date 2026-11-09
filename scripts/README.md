@@ -147,3 +147,5 @@
 [AI 공개 자료 선택·최신 조회](../docs/phone-grounding-verification.md)도 기존 `--sessions --quests --story-batch --public-course`에서 함께 검사한다. 퀘스트·지도·기록·공유 검색과 단일 자료/결과 없음의 Mock 응답 후 실제 DB 재확인, 실제 개인 목표 갱신 중 늦은 응답 거부·초안 보존, 미존재 DB 행 읽기 실패와 원본 기록/인벤토리 보존을 확인한다. 실제 AI 서버/모델을 실행하지 않으며 자료 포함/제외·전체 본문·복귀의 Dialog 객체 검사를 실제 사용자 조작으로 판정하지 않는다.
 
 [이어 하기·재접속 안내](../docs/course-resume-verification.md)는 기존 `--sessions --quests --story-batch --public-course`와 별도 신규 경로의 `--sessions --quests --story-batch --quest-completion --phone-dialog --completion-navigation`을 같은 JAR로 순차 검사한다. 공개 코스는 첫 도구 제작 뒤 다른 구성원을 남겨 월드를 유지한 채 제어 세션을 재접속하고 목표/추적·전체 인벤토리/세대·새 접속 한 번/이전 표식 거부를 확인한다. 완료 경로는 실제 실패→재시작→PENDING 보상→지급 뒤 목록 제거/이전 선택 거부와 기존 CAS 실패 보존을 확인한다. `/hearthresume`은 플레이어용 읽기 안내이며 실제 클라이언트 시험은 계속 보류한다.
+
+[개인 호위·코스 결과 통합](../docs/s4-gameplay-verification.md)은 새 격리 경로의 `--sessions --quests --story-batch --s4-gameplay`로 실행한다. 이 단독 묶음이 기존 공개 코스·개인 실패/보상 게이트와 기본 비활성 호위 콘텐츠를 함께 설정한다. 순정 Villager/Pathfinder 이동·사망, 개인/진행 격리·체크포인트/제어 재접속·실제 PG CAS 경합 HOLD·원본 보존·1회 보상·최종 결과/기록 객체를 검사한다. 기존 `--completion-navigation`은 별도 새 경로에서 같은 JAR로 순차 검사한다. 시간/CPU/RAM/포트/EULA 경계와 실제 클라이언트 보류는 유지한다.

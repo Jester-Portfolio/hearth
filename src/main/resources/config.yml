@@ -62,3 +62,6 @@ play-preparation-verification-enabled: false
 
 # 현장 채집 입퇴장 시설. 일반 서버에서는 비활성입니다.
 gathering-facility-verification-enabled: false
+
+# 기존 개인 실패/재시작 규칙을 사용하는 새 격리 호위 콘텐츠.
+escort-verification-enabled: false

@@ -44,6 +44,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory story){playthrough=content;sharedStory=story;}
     private final Map<UUID,Screen> screens=new HashMap<>();private final JavaPlugin plugin;private final PaperSessionAdapter players;
     private final QuestJournal journal;private final QuestCatalog catalog;
+    private Set<String> escortQuests=Set.of();private java.util.function.BiConsumer<Player,String> escortGuide=(p,q)->{};
+    public void escort(Set<String> quests,java.util.function.BiConsumer<Player,String> guide){escortQuests=Set.copyOf(quests);escortGuide=guide;}
     private String dungeonQuest;private java.util.function.BiConsumer<Player,String> dungeonGuide=(p,q)->{};
     public void dungeon(String quest,java.util.function.BiConsumer<Player,String> guide){dungeonQuest=quest;dungeonGuide=guide;}
     private java.util.function.BiConsumer<Player,String> report=(p,id)->{};
@@ -75,6 +77,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         var s=advance(p);var body=new ArrayList<DialogBody>();body.add(DialogBody.plainMessage(Component.text("\ue000").font(Key.key("hearth:phone"))));
         var actions=new ArrayList<ActionButton>();String[] labels={"AI 어시스턴트","퀘스트","연구","지도","기록","설정"};
         for(int i=0;i<labels.length;i++){final int app=i;Runnable open=()->app(p,app);body.add(DialogBody.plainMessage(icon(p,s,i,labels[i],open)));actions.add(button(p,s,labels[i],open));}
+        if(playthrough!=null&&sharedStory!=null)actions.add(button(p,s,"코스 결과·기록",()->outcome(p,advance(p),1,null,null)));
         if(playthrough!=null&&sharedStory!=null)actions.add(button(p,s,"이어 하기",()->resume(p,advance(p),1,null,null)));
         actions.add(button(p,s,"종료",()->{screens.put(p.getUniqueId(),new Screen(s.session(),new Object(),s.chat()));p.closeDialog();}));
         show(p,s,"HEARTH OS",body,List.of(),actions);
@@ -134,6 +137,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
             if(origin!=null)actions.add(button(p,s,"이전 정보",()->reader(p,advance(p),origin,1)));
             if(section.equals("quests")){
                 var quest=PhoneQuestLinks.quests(catalog,view).get(index);
+                if(escortQuests.contains(quest.id()))actions.add(button(p,s,"호위 현장 안내",()->{information(p,s,view);advance(p);p.closeDialog();escortGuide.accept(p,quest.id());}));
                 if(quest.id().equals(dungeonQuest))actions.add(button(p,s,"던전 진행 안내",()->{information(p,s,view);advance(p);p.closeDialog();dungeonGuide.accept(p,quest.id());}));
                 var reward=view.completion().rewards().get(quest.id());
                 if(reward!=null)actions.add(button(p,s,reward.label(),()->completionList(p,advance(p),"rewards",1)));
@@ -142,13 +146,13 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 if(quest.trackable()||quest.tracked())actions.add(button(p,s,quest.tracked()?"추적 해제":"추적",()->{
                     information(p,s,view);var next=advance(p);
                     journal.track(next.session().context(),next.session(),()->valid(p,next),quest.id(),!quest.tracked()).whenCompleteAsync((saved,error)->{
-                        if(!valid(p,next))return;if(error!=null)info(p,next,"추적 저장 실패",List.of("변경 성공으로 표시하지 않습니다. 다시 조회해 주세요."));else try{if(returnSection.equals("course")||returnSection.equals("course_route")||returnSection.equals("ai_references")||returnSection.equals("resume"))detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,listPage,returnSection,origin);else detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,1);}catch(RuntimeException unavailable){info(p,next,"퀘스트 상태 변경",List.of("현재 목록으로 다시 조회해 주세요."));}
+                        if(!valid(p,next))return;if(error!=null)info(p,next,"추적 저장 실패",List.of("변경 성공으로 표시하지 않습니다. 다시 조회해 주세요."));else try{if(returnSection.equals("course")||returnSection.equals("course_route")||returnSection.equals("ai_references")||returnSection.equals("resume")||returnSection.equals("outcome"))detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,listPage,returnSection,origin);else detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,1);}catch(RuntimeException unavailable){info(p,next,"퀘스트 상태 변경",List.of("현재 목록으로 다시 조회해 주세요."));}
                     },owner);
                 }));
                 if(quest.reporting())actions.add(button(p,s,"가까운 NPC와 보고 대화",()->{information(p,s,view);advance(p);p.closeDialog();report.accept(p,quest.id());}));
                 actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
             }
-            actions.add(button(p,s,returnSection.equals("resume")?"이어 하기로":returnSection.equals("ai_references")?"AI 참고자료로":returnSection.equals("course_route")?"현재 코스 동선으로":returnSection.equals("course")?"코스 진행판으로":"목록",()->{var next=advance(p);if(returnSection.equals("resume"))resume(p,next,listPage,null,null);else if(returnSection.equals("ai_references"))referenceList(p,next);else if(returnSection.equals("course_route"))route(p,next,null,false);else if(returnSection.equals("course"))course(p,next,listPage,null);else if(returnSection.equals(section))browseSnapshot(p,next,view,section,listPage);else librarySnapshot(p,next,view,returnSection,listPage);}));actions.add(button(p,s,"홈",()->home(p)));
+            actions.add(button(p,s,returnSection.equals("outcome")?"코스 결과로":returnSection.equals("resume")?"이어 하기로":returnSection.equals("ai_references")?"AI 참고자료로":returnSection.equals("course_route")?"현재 코스 동선으로":returnSection.equals("course")?"코스 진행판으로":"목록",()->{var next=advance(p);if(returnSection.equals("outcome"))outcome(p,next,listPage,null,null);else if(returnSection.equals("resume"))resume(p,next,listPage,null,null);else if(returnSection.equals("ai_references"))referenceList(p,next);else if(returnSection.equals("course_route"))route(p,next,null,false);else if(returnSection.equals("course"))course(p,next,listPage,null);else if(returnSection.equals(section))browseSnapshot(p,next,view,section,listPage);else librarySnapshot(p,next,view,returnSection,listPage);}));actions.add(button(p,s,"홈",()->home(p)));
             show(p,s,detail.title(),List.of(DialogBody.plainMessage(Component.text(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1)))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("현재 정보로 다시 조회해 주세요."));}
     }
@@ -197,7 +201,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private void returnDetail(Player p,Screen s,String id,String section,int listPage,String returnSection,PhoneReaderLinks.Source origin){
         journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
             if(!valid(p,s))return;if(error!=null){info(p,s,"의뢰 조회 실패",List.of("현재 상태를 다시 조회하세요."));return;}
-            try{information(p,s,view);detail(p,s,view,section,PhoneQuestLinks.questIndex(catalog,view,id),1,listPage,returnSection,origin);}catch(RuntimeException changed){if(returnSection.equals("resume"))resume(p,s,listPage,null,null);else if(returnSection.equals("ai_references"))referenceList(p,s);else if(returnSection.equals("course_route"))route(p,s,null,false);else if(returnSection.equals("course"))course(p,s,listPage,null);else browse(p,s,"quests",1);}
+            try{information(p,s,view);detail(p,s,view,section,PhoneQuestLinks.questIndex(catalog,view,id),1,listPage,returnSection,origin);}catch(RuntimeException changed){if(returnSection.equals("outcome"))outcome(p,s,listPage,null,null);else if(returnSection.equals("resume"))resume(p,s,listPage,null,null);else if(returnSection.equals("ai_references"))referenceList(p,s);else if(returnSection.equals("course_route"))route(p,s,null,false);else if(returnSection.equals("course"))course(p,s,listPage,null);else browse(p,s,"quests",1);}
         },owner);
     }
     private void runCompletion(Player p,Screen s,QuestJournal.View view,PhoneCompletion.Choice choice,Consumer<Screen> back){
@@ -270,6 +274,16 @@ public final class PaperPhone implements Listener,AutoCloseable {
         },owner);
     }
     private java.util.function.BiFunction<Player,QuestJournal.View,CourseRoute.Page> courseRoute;
+    private CourseOutcome.Board outcomeView(Screen s,QuestJournal.View view){var run=s.session().context().storyRunId();return CourseOutcome.build(playthrough,catalog,view,sharedStory.cached(run),sharedStory.phase(run));}
+    private void outcome(Player p,Screen s,int number,CourseOutcome.Board expected,CourseOutcome.Item selected){
+        if(playthrough==null||sharedStory==null){info(p,s,"코스 결과 미등록",List.of("현재 콘텐츠의 개인 기록을 확인하세요."));return;}
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{if(!valid(p,s))return;if(error!=null){info(p,s,"결과 조회 실패",List.of("저장·공유 상태를 확인한 뒤 다시 조회하세요."));return;}try{
+            information(p,s,view);var board=outcomeView(s,view);if(expected!=null)CourseOutcome.require(board,expected,number,selected);int at=Math.min(number,board.pages());
+            if(selected!=null){if(selected.source().quest()!=null)detail(p,advance(p),view,"quests",PhoneQuestLinks.questIndex(catalog,view,selected.source().quest()),1,at,"outcome");else{var row=selected.source();courseRecord(p,(waiting,fresh)->{var latest=outcomeView(waiting,fresh);CourseOutcome.require(latest,board,at,selected);return CourseRecordView.open(playthrough,catalog,fresh,journal.placeFacts(waiting.session().context(),fresh),latest.course(),board.course(),row,board.course().rows().indexOf(row)/PlaythroughOverview.PAGE_SIZE+1);},back->outcome(p,back,at,null,null));}return;}
+            var actions=new ArrayList<ActionButton>();if(board.available()){for(var item:board.page(at))if(item.readable())actions.add(button(p,s,item.source().title()+" · 결과/관련 기록",()->outcome(p,advance(p),at,board,item)));if(at>1)actions.add(button(p,s,"앞 결과",()->outcome(p,advance(p),at-1,board,null)));if(at<board.pages())actions.add(button(p,s,"다음 결과",()->outcome(p,advance(p),at+1,board,null)));actions.add(button(p,s,"이어 하기",()->resume(p,advance(p),1,null,null)));actions.add(button(p,s,"다음 행동",()->journey(p,advance(p))));}
+            actions.add(button(p,s,"결과 새로고침",()->outcome(p,advance(p),at,null,null)));actions.add(button(p,s,"홈",()->home(p)));show(p,s,"코스 결과·기록 · "+at+" / "+board.pages(),board.book(at).pages().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
+        }catch(RuntimeException stale){info(p,s,"결과 상태 변경",List.of("개인 결과나 공개 범위가 바뀌었습니다. 결과를 다시 조회하세요."));}},owner);
+    }
     private CourseResume.Board resumeView(Screen s,QuestJournal.View view){var run=s.session().context().storyRunId();return CourseResume.build(playthrough,catalog,view,sharedStory.cached(run),sharedStory.phase(run));}
     private void resume(Player p,Screen s,int number,CourseResume.Board expected,CourseResume.Row selected){
         if(playthrough==null||sharedStory==null){info(p,s,"이어 하기 미등록",List.of("현재 콘텐츠의 퀘스트·기록을 확인하세요."));return;}
@@ -281,6 +295,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 if(board.available()){
                     for(var row:board.page(at))actions.add(button(p,s,row.title()+" · "+row.label(),()->resume(p,advance(p),at,board,row)));
                     if(at>1)actions.add(button(p,s,"앞 의뢰",()->resume(p,advance(p),at-1,board,null)));if(at<board.pages())actions.add(button(p,s,"다음 의뢰",()->resume(p,advance(p),at+1,board,null)));
+                    actions.add(button(p,s,"코스 결과·기록",()->outcome(p,advance(p),1,null,null)));
                     actions.add(button(p,s,"다음 행동·담당 NPC",()->journey(p,advance(p))));if(courseRoute!=null)actions.add(button(p,s,"현재 코스 동선",()->route(p,advance(p),null,false)));actions.add(button(p,s,"현재 항목의 진행판",()->course(p,advance(p),board.coursePage(),null)));
                 }
                 actions.add(button(p,s,"이어 하기 새로고침",()->resume(p,advance(p),at,null,null)));actions.add(button(p,s,"홈",()->home(p)));var book=board.book(at);
@@ -344,22 +359,24 @@ public final class PaperPhone implements Listener,AutoCloseable {
             catch(RuntimeException stale){info(p,waiting,"코스 기록 변경",List.of("선택한 기록을 현재 상태로 다시 조회해 주세요."));}
         },owner);
     }
-    private void courseRecord(Player p,java.util.function.BiFunction<Screen,QuestJournal.View,CourseRecordView.Screen> build){
+    private void courseRecord(Player p,java.util.function.BiFunction<Screen,QuestJournal.View,CourseRecordView.Screen> build){courseRecord(p,build,null);}
+    private void courseRecord(Player p,java.util.function.BiFunction<Screen,QuestJournal.View,CourseRecordView.Screen> build,Consumer<Screen> resultBack){
         var waiting=advance(p);journal.load(waiting.session().context(),waiting.session(),()->valid(p,waiting)).whenCompleteAsync((view,error)->{
             if(!valid(p,waiting))return;if(error!=null){courseRecordError(p,waiting);return;}
             try{information(p,waiting,view);var screen=build.apply(waiting,view);var page=screen.page();var actions=new ArrayList<ActionButton>();
-                for(var link:page.links())actions.add(button(p,waiting,link.label(),()->courseRecordAction(p,screen,CourseRecordView.Action.RELATED,link)));
-                if(page.number()>1)actions.add(button(p,waiting,"앞 내용",()->courseRecordAction(p,screen,CourseRecordView.Action.PREVIOUS,null)));
-                if(page.number()<page.pages())actions.add(button(p,waiting,"다음 내용",()->courseRecordAction(p,screen,CourseRecordView.Action.NEXT,null)));
-                if(screen.path().size()>1)actions.add(button(p,waiting,"이전 정보",()->courseRecordAction(p,screen,CourseRecordView.Action.BACK,null)));
-                actions.add(button(p,waiting,"기록 새로고침",()->courseRecordAction(p,screen,CourseRecordView.Action.REFRESH,null)));
+                for(var link:page.links())actions.add(button(p,waiting,link.label(),()->courseRecordAction(p,screen,CourseRecordView.Action.RELATED,link,resultBack)));
+                if(page.number()>1)actions.add(button(p,waiting,"앞 내용",()->courseRecordAction(p,screen,CourseRecordView.Action.PREVIOUS,null,resultBack)));
+                if(page.number()<page.pages())actions.add(button(p,waiting,"다음 내용",()->courseRecordAction(p,screen,CourseRecordView.Action.NEXT,null,resultBack)));
+                if(screen.path().size()>1)actions.add(button(p,waiting,"이전 정보",()->courseRecordAction(p,screen,CourseRecordView.Action.BACK,null,resultBack)));
+                actions.add(button(p,waiting,"기록 새로고침",()->courseRecordAction(p,screen,CourseRecordView.Action.REFRESH,null,resultBack)));
+                if(resultBack!=null)actions.add(button(p,waiting,"코스 결과로",()->resultBack.accept(advance(p))));
                 actions.add(button(p,waiting,"코스 진행판으로",()->course(p,advance(p),screen.coursePage(),null)));actions.add(button(p,waiting,"홈",()->home(p)));
                 show(p,waiting,screen.record().title(),page.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
             }catch(RuntimeException stale){courseRecordError(p,waiting);}
         },owner);
     }
-    private void courseRecordAction(Player p,CourseRecordView.Screen shown,CourseRecordView.Action action,CourseRecordView.Link selected){
-        courseRecord(p,(waiting,view)->CourseRecordView.navigate(playthrough,catalog,view,journal.placeFacts(waiting.session().context(),view),courseView(waiting,view),shown,action,selected));
+    private void courseRecordAction(Player p,CourseRecordView.Screen shown,CourseRecordView.Action action,CourseRecordView.Link selected,Consumer<Screen> resultBack){
+        courseRecord(p,(waiting,view)->CourseRecordView.navigate(playthrough,catalog,view,journal.placeFacts(waiting.session().context(),view),courseView(waiting,view),shown,action,selected),resultBack);
     }
     private void courseRecordError(Player p,Screen s){
         show(p,s,"관련 기록 확인 필요",List.of(DialogBody.plainMessage(Component.text("관련 기록이나 공개 범위를 확인하지 못했습니다. 현재 상태로 다시 조회해 주세요."))),List.of(),List.of(button(p,s,"코스 진행판으로",()->course(p,advance(p),1,null)),button(p,s,"홈",()->home(p))));

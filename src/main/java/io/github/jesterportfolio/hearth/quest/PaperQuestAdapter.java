@@ -10,6 +10,8 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import io.github.jesterportfolio.hearth.persistence.QuestStore;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.BiPredicate;
+import java.util.function.BiConsumer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -55,6 +57,8 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void dungeon(String npc,String quest,java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> entry,java.util.function.BiConsumer<Player,String> guide){dungeonNpc=npc;dungeonQuest=quest;dungeonEntry=entry;ui.dungeon(npc,quest);if(phone!=null)phone.dungeon(quest,(p,q)->{var session=players.current(p);if(session==null)return;if(dungeonObjectives==null){guide.accept(p,q);return;}ui.facility(p,view->dungeonObjectives.apply(p,view),()->!closed&&players.current(p)==session&&journal.questAllowed(session.context(),q),()->showQuest(p,q));});}
     private final Set<UUID> loadingDialogues=new HashSet<>();
     private boolean closed;
+    private BiPredicate<Player,String> escortCommand=(p,c)->false;
+    public void escort(Set<String> quests,BiPredicate<Player,String> command,BiConsumer<Player,String> guide){escortCommand=command;ui.escort(quests,guide);if(phone!=null)phone.escort(quests,guide);}
     public void showJourney(Player player){ui.command(player,"/hearthjourney");}
     public void showPreparation(Player player){ui.command(player,"/hearthprepare");}
     public void showQuest(Player player,String quest){if(!quest.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("QUEST_ID");ui.command(player,"/hearthquest manage "+quest);}
@@ -69,6 +73,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if((!plugin.getConfig().getBoolean("crafting-quest-verification-enabled")||!plugin.getConfig().getBoolean("crafting-verification-enabled"))&&catalog.all().stream().anyMatch(q->q.goals().stream().anyMatch(g->g.interaction()!=null&&g.interaction().startsWith("craft:"))))throw new IllegalArgumentException("CRAFT_BINDING_REQUIRED");
         if(!plugin.getConfig().getBoolean("dungeon-play-verification-enabled")&&catalog.all().stream().anyMatch(q->q.goals().stream().anyMatch(g->g.interaction()!=null&&g.interaction().startsWith("dungeon:"))))throw new IllegalArgumentException("DUNGEON_BINDING_REQUIRED");
         this.owner=owner;this.worldIds=Set.copyOf(worldIds);tag=new NamespacedKey(plugin,"quest_demo_npc");
+        if(!plugin.getConfig().getBoolean("escort-verification-enabled")&&catalog.all().stream().anyMatch(q->q.goals().stream().anyMatch(g->g.interaction()!=null&&g.interaction().startsWith("escort:"))))throw new IllegalArgumentException("ESCORT_BINDING_REQUIRED");
         ui=new PaperQuestUI(plugin,players,quests,catalog,journal,owner);
         phone=plugin.getConfig().getBoolean("phone-dialog-enabled",false)?new io.github.jesterportfolio.hearth.phone.PaperPhone(plugin,players,journal,catalog,owner):null;
         if(phone!=null){phone.peopleTalk(this::openNpcFromGuidance);phone.contact(this::openNpcFromFact);phone.report(this::openNpcFromQuest);phone.completion(this::phoneCompletion,completionFlow);}
@@ -379,6 +384,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         if(story!=null&&story.command(p,command))return true;
         if(phone!=null&&players.current(p)!=null&&phone.command(p,command))return true;
         if(command.equals("/hearthphone legacy"))return ui.command(p,"/hearthphone");
+        if(escortCommand.test(p,command))return true;
         if(ui.command(p,command))return true;
         if(!command.startsWith("/hearthquest"))return false;
         var session=players.current(p);if(session==null)return true;

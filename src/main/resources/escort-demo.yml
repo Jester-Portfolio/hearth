@@ -1,0 +1,54 @@
+# 새 격리 공개 호위 콘텐츠입니다. 실제 서사·보상 밸런스나 기존 월드를 이관하지 않습니다.
+format: 1
+quests:
+  - id: public_courier
+    title: 공개 전달자 호위
+    npc-id: survey_guide
+    requires-rules: true
+    objectives:
+      - description: 첫 출발 지점에서 호위를 시작하고 전달자와 함께 첫 도착 지점까지 이동하세요.
+        interaction: escort:public_courier
+        location: {kind: EXACT, x: 3.5, y: 64, z: 8.5}
+        min-x: 0
+        max-x: 12
+        min-y: 63
+        max-y: 67
+        min-z: 4
+        max-z: 12
+      - description: 체크포인트 출발 지점에서 호위를 시작하고 전달자와 마지막 지점에 함께 도착하세요.
+        interaction: escort:public_courier
+        location: {kind: EXACT, x: 9.5, y: 64, z: 8.5}
+        min-x: 8
+        max-x: 18
+        min-y: 63
+        max-y: 67
+        min-z: 4
+        max-z: 12
+    text:
+      offer: 개인 전달자를 두 구간에 걸쳐 호위하고 본인의 결과를 보고하세요. 다른 사람의 호위는 대신 완료하지 않습니다.
+      accept: 첫 출발 지점에서 개인 호위 현장 안내를 열어 시작하세요.
+      active: 현재 호위 대상과 지정 경로를 함께 확인하세요.
+      report-ready: 호위 목표를 마쳤습니다. 안내원에게 개인 결과를 보고하세요.
+      report: 본인의 전달자 호위 결과를 확인했습니다.
+      completed: 개인 호위 보고를 마쳤습니다. 지급 대기는 기존 보상 안내에서 확인하세요.
+      failure: 전달자가 쓰러졌거나 지정 구역을 벗어났습니다. 기존 체크포인트 재시작 확인을 이용하세요.
+quest-rules:
+  quests:
+    - id: public_courier
+      restart: CHECKPOINT
+      failures: [OBJECTIVE]
+      checkpoints: [1]
+      timeout-seconds: 0
+      reward: {items: [{material: BREAD, amount: 1}]}
+  chapters: []
+escorts:
+  - id: public_courier
+    quest: public_courier
+    name: 개인 전달자
+    speed: 0.8
+    follow-distance: 12
+    legs:
+      - objective: 0
+        path: [[3.5, 64, 8.5], [6.5, 64, 8.5], [9.5, 64, 8.5]]
+      - objective: 1
+        path: [[9.5, 64, 8.5], [12.5, 64, 8.5], [15.5, 64, 8.5]]
