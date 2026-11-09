@@ -8,16 +8,24 @@ import io.github.jesterportfolio.hearth.persistence.*;
 import java.util.*;
 
 /** 기존 공개 DTO와 본인 재료/상태로 읽기 전용 준비 안내를 만듭니다. 입장·저장·제작을 실행하지 않습니다. */
-public record PreparationGuide(List<Entry> entries,Map<String,String> materialNames){
+public record PreparationGuide(List<Entry> entries,Map<String,String> materialNames,Map<String,Source> materialSources){
+    public record Source(String place,String hint){}
     public enum Kind{CRAFTING,GATHERING,DUNGEON}
     public record Entry(String id,String title,Kind kind,String reference,String place,String quest,List<String> recipes,String hint){public Entry{recipes=List.copyOf(recipes);}}
-    public record Facts(Map<String,List<CraftingMaterials.Need>> materials,List<String> gathering,List<String> dungeon,boolean atEntry,boolean dirty,boolean saving){public Facts{var copy=new HashMap<String,List<CraftingMaterials.Need>>();materials.forEach((k,v)->copy.put(k,List.copyOf(v)));materials=Map.copyOf(copy);gathering=List.copyOf(gathering);dungeon=List.copyOf(dungeon);}}
+    public record Facts(Map<String,List<CraftingMaterials.Need>> materials,List<String> gathering,List<String> dungeon,boolean atEntry,boolean dirty,boolean saving,Map<String,CraftingPreparation.Plan> plans){
+        public Facts(Map<String,List<CraftingMaterials.Need>> materials,List<String> gathering,List<String> dungeon,boolean atEntry,boolean dirty,boolean saving){this(materials,gathering,dungeon,atEntry,dirty,saving,Map.of());}
+        public Facts{plans=Map.copyOf(plans);var copy=new HashMap<String,List<CraftingMaterials.Need>>();materials.forEach((k,v)->copy.put(k,List.copyOf(v)));materials=Map.copyOf(copy);gathering=List.copyOf(gathering);dungeon=List.copyOf(dungeon);}}
     public record Card(String id,String title,List<String> lines,String quest,long revision){public Card{lines=List.copyOf(lines);}}
     public record Page(List<Card> cards){public Page{cards=List.copyOf(cards);}public Card card(String id){return cards.stream().filter(c->c.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("PREPARATION_UNAVAILABLE"));}}
-    public PreparationGuide{entries=List.copyOf(entries);materialNames=Map.copyOf(materialNames);}
+    public PreparationGuide{entries=List.copyOf(entries);materialNames=Map.copyOf(materialNames);materialSources=Map.copyOf(materialSources);}
     public static PreparationGuide parse(Map<?,?> root,QuestCatalog quests,CraftContent crafting,ExplorationContent exploration,GatheringContent gathering,DungeonPlay.Definition dungeon){
         if(!(root.get("format") instanceof Number n)||n.doubleValue()!=1||!Boolean.TRUE.equals(root.get("public-prototype"))||!(root.get("entries") instanceof List<?> rows)||rows.isEmpty()||rows.size()>12||!(root.get("material-names") instanceof Map<?,?> labels))throw new IllegalArgumentException("PREPARATION_FORMAT");
         var names=new HashMap<String,String>();for(var label:labels.entrySet()){if(!(label.getKey() instanceof String key)||!key.matches("[A-Z_]+")||!(label.getValue() instanceof String value)||value.isBlank()||value.length()>60)throw new IllegalArgumentException("PREPARATION_LABEL");names.put(key,value);}
+        var sources=new HashMap<String,Source>();Object sourceRows=root.get("material-sources");
+        if(sourceRows!=null){if(!(sourceRows instanceof Map<?,?> map))throw new IllegalArgumentException("PREPARATION_SOURCE");for(var row:map.entrySet()){
+            if(!(row.getKey() instanceof String material)||!names.containsKey(material)||!(row.getValue() instanceof Map<?,?> data))throw new IllegalArgumentException("PREPARATION_SOURCE");
+            String place=key(data,"place");if(!exploration.places().containsKey(place))throw new IllegalArgumentException("PREPARATION_SOURCE_PLACE");sources.put(material,new Source(place,text(data,"hint",400)));
+        }}
         var ids=new HashSet<String>();var entries=new ArrayList<Entry>();
         for(var value:rows){if(!(value instanceof Map<?,?> r))throw new IllegalArgumentException("PREPARATION_ENTRY");String id=key(r,"id"),ref=key(r,"reference");if(!ids.add(id))throw new IllegalArgumentException("PREPARATION_DUPLICATE");var kind=Kind.valueOf(text(r,"kind",20));String place=kind==Kind.DUNGEON?null:key(r,"place");String quest=kind==Kind.DUNGEON?key(r,"quest"):null;var recipes=new ArrayList<String>();
             if(kind!=Kind.DUNGEON&&!exploration.places().containsKey(place))throw new IllegalArgumentException("PREPARATION_PLACE");
@@ -25,13 +33,13 @@ public record PreparationGuide(List<Entry> entries,Map<String,String> materialNa
             if(kind==Kind.GATHERING&&(!gathering.id().equals(ref)||!exploration.places().get(place).bounds().contains(gathering.spawn().x(),gathering.spawn().y(),gathering.spawn().z())))throw new IllegalArgumentException("PREPARATION_GATHERING");
             if(kind==Kind.DUNGEON&&(!dungeon.id().equals(ref)||!dungeon.quest().equals(quest)||!quests.questIds().contains(quest)||!quests.quest(quest).npcId().equals(dungeon.npc())||quests.quest(quest).goals().stream().noneMatch(g->dungeon.reference().equals(g.interaction()))))throw new IllegalArgumentException("PREPARATION_DUNGEON");
             entries.add(new Entry(id,text(r,"title",80),kind,ref,place,quest,recipes,text(r,"hint",400)));
-        }return new PreparationGuide(entries,names);
+        }return new PreparationGuide(entries,names,sources);
     }
     public Page build(QuestCatalog catalog,CraftContent crafting,QuestJournal.View view,Facts facts){
         QuestListView.entries(catalog,view.states());var cards=new ArrayList<Card>();
         for(var e:entries){var lines=new ArrayList<String>();String quest=null;long revision=-1;
             if(e.kind()!=Kind.DUNGEON){var place=view.exploration().place(e.place());if(place.isEmpty())continue;lines.add("장소: "+place.get().name());lines.add(place.get().location());lines.add(e.hint());
-                if(e.kind()==Kind.GATHERING)lines.addAll(facts.gathering());else for(String id:e.recipes()){var recipe=crafting.recipes().get(id);var needs=facts.materials().get(id);if(recipe==null||needs==null||!needs.stream().map(n->n.material()+":"+n.required()).toList().equals(CraftingMaterials.view(recipe,Map.of()).stream().map(n->n.material()+":"+n.required()).toList()))throw new IllegalStateException("PREPARATION_MATERIALS_UNAVAILABLE");lines.add("제작: "+recipe.title());for(var need:needs)lines.add(materialNames.get(need.material())+" · 필요 "+need.required()+" / 보유 "+need.available()+" / 부족 "+need.missing());} }
+                if(e.kind()==Kind.GATHERING)lines.addAll(facts.gathering());else for(String id:e.recipes()){var recipe=crafting.recipes().get(id);var needs=facts.materials().get(id);if(recipe==null||needs==null||!needs.stream().map(n->n.material()+":"+n.required()).toList().equals(CraftingMaterials.view(recipe,Map.of()).stream().map(n->n.material()+":"+n.required()).toList()))throw new IllegalStateException("PREPARATION_MATERIALS_UNAVAILABLE");lines.add("제작: "+recipe.title());for(var need:needs)lines.add(materialNames.get(need.material())+" · 필요 "+need.required()+" / 보유 "+need.available()+" / 부족 "+need.missing());} if(e.kind()==Kind.CRAFTING)appendPlan(lines,e,crafting,view,facts); }
             else{var c=catalog.quest(e.quest());if(view.exploration().blockedQuests().contains(c.id())||!QuestListView.available(c,view.states()))continue;var row=view.states().get(c.id());lines.add(e.hint());
                 if(row.phase()==QuestStore.Phase.NOT_ACCEPTED)lines.add("아직 개인 던전 의뢰를 수락하지 않았습니다. 현장 안내원과 대화하세요.");
                 else{quest=c.id();revision=row.revision();lines.add("본인 의뢰: "+c.title()+" · "+QuestListView.status(row.phase()));lines.add("담당 NPC: "+c.name());
@@ -43,6 +51,19 @@ public record PreparationGuide(List<Entry> entries,Map<String,String> materialNa
             lines.add(facts.saving()?"본인의 인벤토리 저장 처리 중입니다.":facts.dirty()?"본인의 최근 변경은 저장 대기 중입니다.":"현재 처리 중인 저장은 없습니다. 입장 전에는 다시 확인합니다.");
             lines.add("읽기 전용 안내 · 이 화면에서 이동/제작/던전 입장을 실행하지 않습니다.");cards.add(new Card(e.id(),e.title(),lines,quest,revision));
         }return new Page(cards);
+    }
+    private void appendPlan(List<String> lines,Entry entry,CraftContent crafting,QuestJournal.View view,Facts facts){
+        var plan=facts.plans().get(entry.id());if(plan==null)return;
+        if(!plan.goals().stream().map(CraftingPreparation.Step::recipe).toList().equals(entry.recipes())||plan.goals().stream().anyMatch(g->g.times()!=1||!g.title().equals(crafting.recipes().get(g.recipe()).title())))throw new IllegalStateException("PREPARATION_PLAN_UNAVAILABLE");
+        var materials=new HashSet<String>();plan.steps().forEach(step->materials.add(step.output()));materials.addAll(plan.additional().keySet());materials.addAll(plan.ownedUsed().keySet());materials.addAll(plan.surplus().keySet());
+        // 이전 콘텐츠에 새 재료 이름이 없으면 기존 직접 재료 안내를 보존합니다.
+        if(!materialNames.keySet().containsAll(materials))return;
+        lines.add("함께 준비하기");lines.addAll(plan.lines(materialNames));
+        for(String material:plan.additional().keySet()){
+            var source=materialSources.get(material);var place=source==null?Optional.<io.github.jesterportfolio.hearth.exploration.ExplorationView.Place>empty():view.exploration().place(source.place());
+            if(place.isEmpty()){lines.add(materialNames.get(material)+" · 현재 공개된 조달 장소 안내가 없습니다.");continue;}
+            lines.add(materialNames.get(material)+" 조달: "+place.get().name());lines.add(place.get().location());lines.add(source.hint());
+        }
     }
     public static void require(Page fresh,Page shown,String id){if(!fresh.equals(shown)||!shown.cards().contains(fresh.card(id)))throw new IllegalStateException("STALE_PREPARATION");}
     private static String text(Map<?,?> r,String k,int max){if(!(r.get(k) instanceof String s)||s.isBlank()||s.length()>max)throw new IllegalArgumentException("PREPARATION_TEXT");return s;}

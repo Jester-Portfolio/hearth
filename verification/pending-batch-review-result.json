@@ -1,0 +1,128 @@
+{
+  "checked_at": "2026-11-09",
+  "baseline_commit": "7dd0750",
+  "status": "REVIEW_JAR_AND_UNIT_PASS_RUNTIME_AND_GIT_BLOCKED",
+  "workspace": "/tmp/hearth-batch-review.9_vn0n5t",
+  "pending_feature_records": [
+    "verification/crafting-batch-result.json",
+    "verification/crafting-preparation-result.json",
+    "verification/playthrough-overview-result.json",
+    "verification/course-records-result.json"
+  ],
+  "artifact": {
+    "source_counts": {
+      "main": 138,
+      "test": 90,
+      "fixture": 3
+    },
+    "artifact": "/tmp/hearth-batch-review.9_vn0n5t/Hearth-review-7dd0750-worktree.jar",
+    "sha256": "1ad56e2b08f82317aa89490592302128144b947f57a1bb7d7ce73e9841ef0f70",
+    "bytes": 1763009,
+    "class_entries": 542,
+    "resource_entries": 39,
+    "metadata": {
+      "version": "0.1.0-SNAPSHOT",
+      "postgresJdbcVersion": "42.7.14",
+      "hikariVersion": "7.1.0"
+    },
+    "entry_bytes_match_fresh_stage": true,
+    "unique_sorted_entries": true,
+    "fixed_entry_timestamps": true,
+    "gradle_task_graph_executed": false,
+    "deployed": false
+  },
+  "build": {
+    "method": "direct JDK 25 javac --release 25 -g; resources copied and plugin.yml placeholders expanded from current build.gradle.kts; JDK jar tool",
+    "script": "/tmp/hearth-batch-review.9_vn0n5t/build-review.py",
+    "classpath": "/tmp/hearth-batch-review.9_vn0n5t/classpath.txt",
+    "logs": [
+      "/tmp/hearth-batch-review.9_vn0n5t/compile-main.log",
+      "/tmp/hearth-batch-review.9_vn0n5t/compile-test.log",
+      "/tmp/hearth-batch-review.9_vn0n5t/compile-fixture.log",
+      "/tmp/hearth-batch-review.9_vn0n5t/package-review-jar.log"
+    ],
+    "gradle_executed": false
+  },
+  "artifact_contract": {
+    "status": "PASS",
+    "class_provenance": "six primary feature types loaded from review JAR; main output directory absent from runtime classpath",
+    "checks": [
+      "all archive entry bytes match fresh stage",
+      "ZIP CRC, unique sorted entries and fixed timestamps",
+      "manifest/plugin API and library metadata",
+      "20 default activation gates false",
+      "packaged material source references",
+      "test classes excluded"
+    ],
+    "log": "/tmp/hearth-batch-review.9_vn0n5t/artifact-contract.log",
+    "checker": "/tmp/hearth-batch-review.9_vn0n5t/ReviewArtifactCheck.java"
+  },
+  "unit_tests": {
+    "found": 171,
+    "passed": 171,
+    "failed": 0,
+    "scope": [
+      "package:crafting",
+      "quest.CraftingQuestTest",
+      "quest.PreparationGuideTest",
+      "inventory.InventorySaveTest",
+      "session.PlayerInteractionRulesTest",
+      "session.PlayerSessionsTest",
+      "quest.PlaythroughOverviewTest",
+      "quest.PlaythroughTest",
+      "quest.QuestJourneyViewTest",
+      "quest.QuestBookViewTest",
+      "quest.QuestListViewTest",
+      "quest.PhoneQuestLinksTest",
+      "quest.PhoneReaderLinksTest",
+      "quest.PhoneCompletionTest",
+      "phone.PhonePagesTest",
+      "quest.CourseRecordViewTest",
+      "quest.PhoneLibraryTest"
+    ],
+    "runner": "/tmp/hearth-batch-review.9_vn0n5t/ReviewTests.java",
+    "log": "/tmp/hearth-batch-review.9_vn0n5t/artifact-unit-tests.log",
+    "runtime_main_source": "/tmp/hearth-batch-review.9_vn0n5t/Hearth-review-7dd0750-worktree.jar",
+    "source_resource_directory_on_runtime_classpath": false
+  },
+  "paper_postgres": {
+    "status": "NOT_RUN_PREFLIGHT_BLOCKED",
+    "preflight": "scripts/verify-s4-2.py port_free() at turn start",
+    "error": "PermissionError(1, Operation not permitted)",
+    "owned_processes_started": 0,
+    "integration_fixture_compiled_only": 3
+  },
+  "git": {
+    "fetch": "FAILED",
+    "error": "cannot open '.git/FETCH_HEAD': Read-only file system",
+    "remote_freshness_verified": false,
+    "staged": false,
+    "committed": false,
+    "pushed": false,
+    "hooks_bypassed": false,
+    "push_attempted": false,
+    "remote_auth_or_write_permission_error_observed": false,
+    "read_only_mount": {
+      "path": "/home/server/projects/hearth/.git",
+      "mount_option": "ro",
+      "filesystem": "xfs",
+      "effective_uid": 1000,
+      "owner_uid": 1000,
+      "directory_mode": "0755",
+      "index_mode": "0644",
+      "effective_write_access": false
+    }
+  },
+  "not_executed": [
+    "Gradle task graph",
+    "Required Paper/Postgres native gameplay and persistence integration",
+    "Authenticated Minecraft client interactions",
+    "Deployment"
+  ],
+  "preserved": [
+    "Existing source changes and feature evidence",
+    "Existing build/libs JAR",
+    "Existing worlds and DBs",
+    "Environment security boundaries and Git hooks"
+  ]
+}

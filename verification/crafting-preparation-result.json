@@ -1,0 +1,80 @@
+{
+  "checked_at": "2026-11-09",
+  "baseline_commit": "7dd0750",
+  "status": "IMPLEMENTED_UNIT_PASS_RUNTIME_INTEGRATION_BLOCKED",
+  "workspace": "/tmp/hearth-preparation-plan.yqa895ob",
+  "prior_pending_batch": "verification/crafting-batch-result.json",
+  "compilation": {
+    "method": "existing JDK 25 javac --release 25, existing cached dependencies",
+    "main_sources": 136,
+    "test_sources": 88,
+    "main": "PASS",
+    "test": "PASS",
+    "logs": [
+      "/tmp/hearth-preparation-plan.yqa895ob/main-compile-final.log",
+      "/tmp/hearth-preparation-plan.yqa895ob/test-compile-final.log",
+      "/tmp/hearth-preparation-plan.yqa895ob/main-ui-final.log"
+    ],
+    "classpath": "/tmp/hearth-preparation-plan.yqa895ob/classpath.txt"
+  },
+  "unit_tests": {
+    "found": 96,
+    "passed": 96,
+    "failed": 0,
+    "scope": [
+      "crafting package",
+      "quest.CraftingQuestTest",
+      "quest.PreparationGuideTest",
+      "inventory.InventorySaveTest",
+      "session.PlayerInteractionRulesTest",
+      "session.PlayerSessionsTest"
+    ],
+    "log": "/tmp/hearth-preparation-plan.yqa895ob/related-tests.log",
+    "runner": "/tmp/hearth-preparation-plan.yqa895ob/RelatedTests.java",
+    "material_balance_owned_combinations": 216,
+    "owned_combinations_are_cases_within_one_test": true
+  },
+  "paper_postgres": {
+    "status": "NOT_RUN_PREFLIGHT_BLOCKED",
+    "check": "scripts/verify-s4-2.py port_free() at turn start",
+    "error": "PermissionError(1, Operation not permitted)",
+    "owned_processes_started": 0,
+    "pending_modes": [
+      "--sessions --crafting",
+      "--sessions --quests --story-batch --crafting-quests",
+      "--sessions --quests --story-batch --combat-players --dungeon-play --play-preparation"
+    ]
+  },
+  "gradle": {
+    "status": "NOT_RETRIED_UNCHANGED_SOCKET_RESTRICTION",
+    "prior_failure_log": "/tmp/hearth-crafting-batch-build.log",
+    "replacement": "direct javac and JUnit launcher; no Gradle task/JAR success claimed"
+  },
+  "git": {
+    "fetch": "FAILED",
+    "error": "cannot open '.git/FETCH_HEAD': Read-only file system",
+    "remote_freshness_verified": false,
+    "staged": false,
+    "committed": false,
+    "pushed": false
+  },
+  "not_executed": [
+    "New native Paper preparation graph and GUI checks",
+    "Paper/Postgres preparation read invariance and personal/run isolation integration",
+    "Prior batch required crafting persistence/conflict integration",
+    "Authenticated Minecraft client actions",
+    "Deployment"
+  ],
+  "preserved": [
+    "Prior uncommitted batch and verification evidence",
+    "Existing worlds and DBs",
+    "V001-V009 and persistence format",
+    "Existing asynchronous save and crafting confirmation behavior",
+    "Git hooks and environment security boundaries"
+  ],
+  "configuration_check": {
+    "status": "PASS",
+    "scope": "SnakeYAML syntax, raw material source references and labels",
+    "log": "/tmp/hearth-preparation-plan.yqa895ob/config-check.log"
+  }
+}

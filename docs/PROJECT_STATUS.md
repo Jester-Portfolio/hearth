@@ -39,7 +39,7 @@ Hearth는 현대 과학·기술 지식을 마법 없는 중세 세계에서 활�
 
 ## 다음 배치에서 해소할 연결 공백
 
-- `PaperSessionAdapter`는 활성 세션에서 커서 없는 숫자키/Shift/보조 손/슬롯 버리기와 비컨테이너 시설을 허용한다. 보관 슬롯 클릭·드래그와 커서 포함 41슬롯 저장을 [연결](inventory-cursor-verification.md)했다. 등록된 작업대의 제작 목록·순정 재료/결과·잔여물과 기존 dirty 저장을 [연결](crafting-verification.md)했다. [공개 실습 연결](workshop-quest-verification.md)에 이어 [재료 공급 실습](material-supply-verification.md)에서 순정 원목·조약돌 공급, 제작 재료 보유/부족 표시·갱신, 두 도구 제작·개인 보고와 초기화 보존을 연결했다. [시설·재료·던전 준비 안내](play-preparation-verification.md)를 다음 안내 책·스마트폰과 연결했다. 읽기 전용이며 입장 조건을 추가하지 않는다. [현장 채집 시설](gathering-facility-verification.md)에서 상태→입퇴장 확인→기존 저장/이동·퇴장 정리도 연결했다. 실제 플레이어 조작은 미검증이다. 순정 임시 제작칸·컨테이너·일반 피해/공격은 계속 제한한다. 저장 기반 구현을 일반 플레이의 인벤토리/제작/전투 완성으로 해석하지 않는다. 다음 배치에서는 필요한 상호작용만 기존 41슬롯·저장 경계 안에서 선정하며 제한을 일괄 해제하지 않는다.
+- `PaperSessionAdapter`는 활성 세션에서 커서 없는 숫자키/Shift/보조 손/슬롯 버리기와 비컨테이너 시설을 허용한다. 보관 슬롯 클릭·드래그와 커서 포함 41슬롯 저장을 [연결](inventory-cursor-verification.md)했다. 등록된 작업대의 제작 목록·순정 재료/결과·잔여물과 기존 dirty 저장을 [연결](crafting-verification.md)했다. [공개 실습 연결](workshop-quest-verification.md)에 이어 [재료 공급 실습](material-supply-verification.md)에서 순정 원목·조약돌 공급, 제작 재료 보유/부족 표시·갱신, 두 도구 제작·개인 보고와 초기화 보존을 연결했다. [시설·재료·던전 준비 안내](play-preparation-verification.md)를 다음 안내 책·스마트폰과 연결했다. 읽기 전용이며 입장 조건을 추가하지 않는다. [현장 채집 시설](gathering-facility-verification.md)에서 상태→입퇴장 확인→기존 저장/이동·퇴장 정리도 연결했다. [작업대 일괄 제작·부족 재료 제작법·의뢰 안내](crafting-batch-verification.md)와 [제작 준비 순서·공동 재료·조달 장소 안내](crafting-preparation-verification.md)를 작업대·기존 스마트폰/책에 연결했다. 누적 배치의 [최종 통합](pending-batch-review.md)에서 같은 Gradle JAR로 관련 단위와 필수 Paper/격리 DB 저장·경합·실패 보존 검사를 통과했다. 실제 플레이어 조작은 미검증이다. 순정 임시 제작칸·컨테이너·일반 피해/공격은 계속 제한한다. 저장 기반 구현을 일반 플레이의 인벤토리/제작/전투 완성으로 해석하지 않는다. 다음 배치에서는 필요한 상호작용만 기존 41슬롯·저장 경계 안에서 선정하며 제한을 일괄 해제하지 않는다.
 - `PaperQuestAdapter`는 NPC 기본 숨김과 유효한 세션/지역 권한에 따른 노출, 개인 퀘스트 표식을 구현했다. [검증](npc-views-verification.md): 관련31개·한 JVM/PG 서버 속성/표시 데이터 PASS. 실제 플레이어별 화면·표식·클릭은 미검증이며 비밀 콘텐츠 배포 전 실제 정보 공개 경계를 확인해야 한다.
 - 공유 진행은 등록된 NPC의 아이템창/책과 스마트폰 Dialog의 공동 조사 안내에서 조건 확인·공유 단계 진행/채팅 투표 시작으로 연결된다. 실제 분기 선택·집계는 채팅에서만 진행하며, 개인 퀘스트는 기존 NPC/이동 경계를 사용한다. 전체 실제 게임플레이 완성 및 운영 승인은 별도로 판단한다.
 
@@ -51,7 +51,7 @@ Hearth는 현대 과학·기술 지식을 마법 없는 중세 세계에서 활�
 
 퀘스트 목록 필터·상세/추적/알림 연결과 가까운 NPC 보고 대화 열기를 통합했다. [검증](quest-navigation-verification.md): 관련25개·한 JVM/PG 수락→보고→완료/추적 정리 PASS. 실제 GUI/NPC·WorldGuard 사용자 권한 동작은 미검증이다.
 
-콘텐츠 기반 `/hearthjourney`를 NPC 아이템창·책·스마트폰의 다음 플레이 안내로 연결했다. 현재 목표 상세·추적·담당 NPC 보고·실패 후 재시작·지급 대기 보상 조회와 지도/일지/알림으로 이어지며, 실행 전 최신 목표·revision·추적/공유 상태를 재검사한다. [최신 검증](quest-journey-verification.md): 관련52개·한 JVM/PG PASS. 기존 도보 코스/저장 구조는 보존하며 실제 코스·책/GUI 조작은 미검증이다.
+콘텐츠 기반 `/hearthjourney`를 NPC 아이템창·책·스마트폰의 다음 플레이 안내로 연결했다. 현재 목표 상세·추적·담당 NPC 보고·실패 후 재시작·지급 대기 보상 조회와 지도/일지/알림으로 이어지며, 실행 전 최신 목표·revision·추적/공유 상태를 재검사한다. [최신 검증](quest-journey-verification.md): 관련52개·한 JVM/PG PASS. 기존 도보 코스/저장 구조는 보존하며 실제 코스·책/GUI 조작은 미검증이다. 후속 [공개 코스 진행판](playthrough-overview-verification.md)에 개인·공유·탐험 기록과 상세/준비 안내 왕복·쪽 나누기를, [장소·일지·연대기·공유 정보 연결](course-records-verification.md)에 기록 읽기·이전 정보·진행판 복귀를 연결했다. [누적 배치 최종 통합](pending-batch-review.md)에서 관련 단위·실제 책/Dialog 객체·개인 DB 발견 기록/조회 불변을 통과했다. 실제 클릭·코스 플레이와 운영 배포는 미검증이다.
 
 개인 목표에 단계별 정형 위치 공개(정확/탐색 구역/비공개)를 연결했다. [검증](quest-locations-verification.md): 관련22개·한 JVM/PG 표시/진행 경계 PASS. 기존 저장 계약은 유지하며 실제 화면·목표 마커는 미검증이다.
 

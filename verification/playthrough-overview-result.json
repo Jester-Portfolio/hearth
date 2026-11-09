@@ -1,0 +1,95 @@
+{
+  "checked_at": "2026-11-09",
+  "baseline_commit": "7dd0750",
+  "status": "IMPLEMENTED_UNIT_PASS_RUNTIME_INTEGRATION_BLOCKED",
+  "workspace": "/tmp/hearth-course-overview.v6qxov9v",
+  "prior_pending_batches": [
+    "verification/crafting-batch-result.json",
+    "verification/crafting-preparation-result.json"
+  ],
+  "compilation": {
+    "method": "existing JDK 25 javac --release 25 with existing dependency cache",
+    "main_sources": 137,
+    "test_sources": 89,
+    "main": "PASS",
+    "test": "PASS",
+    "logs": [
+      "/tmp/hearth-course-overview.v6qxov9v/main-compile.log",
+      "/tmp/hearth-course-overview.v6qxov9v/test-compile.log",
+      "/tmp/hearth-course-overview.v6qxov9v/verification-compile-final.log",
+      "/tmp/hearth-course-overview.v6qxov9v/overview-compile-final.log"
+    ],
+    "classpath": "/tmp/hearth-course-overview.v6qxov9v/classpath.txt"
+  },
+  "unit_tests": {
+    "found": 69,
+    "passed": 69,
+    "failed": 0,
+    "scope": [
+      "quest.PlaythroughOverviewTest",
+      "quest.PlaythroughTest",
+      "quest.QuestJourneyViewTest",
+      "quest.QuestBookViewTest",
+      "quest.QuestListViewTest",
+      "quest.PhoneQuestLinksTest",
+      "quest.PhoneReaderLinksTest",
+      "quest.PreparationGuideTest",
+      "quest.PhoneCompletionTest",
+      "phone.PhonePagesTest"
+    ],
+    "runner": "/tmp/hearth-course-overview.v6qxov9v/CourseTests.java",
+    "log": "/tmp/hearth-course-overview.v6qxov9v/related-tests.log",
+    "pagination_case": {
+      "visible_items": 64,
+      "pages": 11,
+      "page_size": 6
+    },
+    "affected_recheck": {
+      "reason": "remove duplicate quest-list validation already performed by Playthrough.guide",
+      "passed": 12,
+      "failed": 0,
+      "log": "/tmp/hearth-course-overview.v6qxov9v/overview-tests-final.log"
+    }
+  },
+  "paper_postgres": {
+    "status": "NOT_RUN_PREFLIGHT_BLOCKED",
+    "preflight": "scripts/verify-s4-2.py port_free() at turn start",
+    "error": "PermissionError(1, Operation not permitted)",
+    "owned_processes_started": 0,
+    "combined_required_modes": [
+      "--sessions --crafting",
+      "--sessions --quests --story-batch --crafting-quests",
+      "--sessions --quests --story-batch --combat-players --dungeon-play --play-preparation"
+    ],
+    "overview_checks_also_in_preparation_mode": true,
+    "independent_overview_mode": "--sessions --quests --story-batch --quest-navigation --phone-dialog",
+    "existing_resource_and_attempt_limits_unchanged": true
+  },
+  "gradle": {
+    "status": "NOT_RETRIED_UNCHANGED_SOCKET_RESTRICTION",
+    "prior_failure_log": "/tmp/hearth-crafting-batch-build.log",
+    "replacement": "direct javac and JUnit launcher; no Gradle task/JAR success claimed"
+  },
+  "git": {
+    "fetch": "FAILED",
+    "error": "cannot open '.git/FETCH_HEAD': Read-only file system",
+    "remote_freshness_verified": false,
+    "staged": false,
+    "committed": false,
+    "pushed": false
+  },
+  "not_executed": [
+    "New Paper book and Dialog overview checks",
+    "Paper/Postgres overview snapshot, HOLD and inventory invariance integration",
+    "Prior batches required crafting/preparation integration",
+    "Authenticated Minecraft client interactions",
+    "Deployment"
+  ],
+  "preserved": [
+    "Prior uncommitted batches and evidence",
+    "Existing worlds, inventories and DBs",
+    "Persistence format and migrations",
+    "Existing NPC/quest/shared progress ownership and mutation paths",
+    "Git hooks and environment security boundaries"
+  ]
+}

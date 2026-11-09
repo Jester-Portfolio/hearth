@@ -116,6 +116,10 @@
 
 작업대 제작 통합은 `verify-lifecycle.py --sessions --crafting` 단독 한 JVM 모드다. 새 경로에서 순정 레시피·잔여물·41슬롯 보존·실제 DB 저장/실패와 제어 세션 재연결을 검사한다. [검증 범위](../docs/crafting-verification.md)를 따르며 실제 Player 클릭이나 새 JVM 복원 시험은 포함하지 않는다.
 
+일괄 제작·재료 제작법 연결은 같은 `--sessions --crafting` 및 별도 새 경로의 `--sessions --quests --story-batch --crafting-quests`에 검사를 추가했다. 두 모드는 [누적 배치 최종 통합](../docs/pending-batch-review.md)에서 같은 최종 Gradle JAR로 통과했다.
+
+후속 [제작 준비 순서·공동 재료·조달 장소 안내](../docs/crafting-preparation-verification.md)는 위 제작 모드와 기존 `--play-preparation` 경로에 검사를 추가했다. 같은 최종 통합에서 신규 Paper/PG 검사까지 통과했다.
+
 탐험·제작 의뢰 통합은 `verify-lifecycle.py --sessions --quests --story-batch --crafting-quests` 단독 한 JVM 모드다. 공개 코스의 발견·제작 후 저장·목표 전이·NPC 보고/후속 해금·개인 격리·실제 DB 충돌·월드 재입장을 함께 검사한다. [검증과 미실행 범위](../docs/workshop-quest-verification.md)를 따르며 실제 클라이언트 시험은 실행하지 않는다.
 
 채집 재료→제작 의뢰 통합은 `verify-lifecycle.py --sessions --quests --story-batch --gathering-crafting` 단독 한 JVM 모드다. 신규 채집 템플릿, 순정 드롭/실제 아이템·제어 인벤토리, 재료 표시·두 도구 제작·보고·초기화/월드 재입장을 함께 검사한다. [실행 범위와 실패 이력](../docs/material-supply-verification.md)을 따르며 실제 Player 채굴/줍기나 운영 배치를 검증하지 않는다.
@@ -123,3 +127,9 @@
 공개 시설·재료·던전 준비 조회는 `verify-lifecycle.py --sessions --quests --story-batch --combat-players --dungeon-play --play-preparation` 단독 한 JVM 모드다. 기존 모듈을 함께 준비하되 새 안내의 정보 비노출·조회 불변·제어 세션 경계만 검사하며 채집/전투 전체를 반복하지 않는다. [검증과 미실행 범위](../docs/play-preparation-verification.md)를 따른다.
 
 현장 채집 시설은 `verify-lifecycle.py --sessions --quests --story-batch --gathering-crafting --gathering-facilities` 한 JVM 모드다. 신규 격리 fixture의 버튼·구역·메뉴 객체와 저장 지연/중복/DB 충돌·월드 재입장을 함께 확인한다. [실행 범위와 실제 행동 미검증](../docs/gathering-facility-verification.md)을 구분하며 운영 월드나 기존 시험 자료를 덮어쓰지 않는다.
+
+공개 코스 진행판은 기존 `--sessions --quests --story-batch --quest-navigation --phone-dialog`의 객체 검사와 `--play-preparation` 경로에 연결했다. 앞선 제작·준비 배치와 함께 검사할 때는 기존 준비 안내 경로를 재사용한다. [최종 통합](../docs/pending-batch-review.md)에서 준비 안내 경로로 신규 Paper 객체 검사를 함께 통과했다. 실제 클릭/왕복 성공과 구분한다.
+
+진행판의 장소·일지·연대기·현재 공유 정보 연결은 위 진행판/준비 안내 경로의 `courseRecordScreens`에서 실제 책·Dialog 객체와 조회 보존을 확인하도록 추가했다. [최종 통합](../docs/pending-batch-review.md)에서 실제 DB 발견 기록의 읽기 경로와 객체 검사를 통과했다. [구현 범위](../docs/course-records-verification.md)와 실제 행동 미검증을 구분한다.
+
+[누적 배치 최종 통합](../docs/pending-batch-review.md)에 Gradle 아티팩트·관련 단위와 세 Paper/DB 모드의 결과·원시 증거를 모았다. 기존 실행 도구의 권한·자원/시도 한도는 변경하지 않는다.

@@ -2,9 +2,20 @@
 format: 1
 public-prototype: true
 material-names:
+  OAK_LOG: 참나무 원목
   OAK_PLANKS: 참나무 판자
   STICK: 막대기
   COBBLESTONE: 조약돌
+  CRAFTING_TABLE: 작업대
+  WOODEN_PICKAXE: 나무 곡괭이
+  STONE_PICKAXE: 돌 곡괭이
+material-sources:
+  OAK_LOG:
+    place: public_material_site
+    hint: 공개 채집 구역의 원목을 직접 채집하세요. 현장 입구·출구 시설에서 입퇴장합니다.
+  COBBLESTONE:
+    place: public_material_site
+    hint: 나무 곡괭이 등 순정 채굴 조건을 갖춘 뒤 돌을 캐서 조약돌을 준비하세요.
 entries:
   - id: material_site
     title: 채집 구역 이용 안내

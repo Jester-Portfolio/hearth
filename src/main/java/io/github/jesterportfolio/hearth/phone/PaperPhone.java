@@ -137,13 +137,13 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 if(quest.trackable()||quest.tracked())actions.add(button(p,s,quest.tracked()?"추적 해제":"추적",()->{
                     information(p,s,view);var next=advance(p);
                     journal.track(next.session().context(),next.session(),()->valid(p,next),quest.id(),!quest.tracked()).whenCompleteAsync((saved,error)->{
-                        if(!valid(p,next))return;if(error!=null)info(p,next,"추적 저장 실패",List.of("변경 성공으로 표시하지 않습니다. 다시 조회해 주세요."));else try{detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,1);}catch(RuntimeException unavailable){info(p,next,"퀘스트 상태 변경",List.of("현재 목록으로 다시 조회해 주세요."));}
+                        if(!valid(p,next))return;if(error!=null)info(p,next,"추적 저장 실패",List.of("변경 성공으로 표시하지 않습니다. 다시 조회해 주세요."));else try{if(returnSection.equals("course"))detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,listPage,returnSection,origin);else detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,1);}catch(RuntimeException unavailable){info(p,next,"퀘스트 상태 변경",List.of("현재 목록으로 다시 조회해 주세요."));}
                     },owner);
                 }));
                 if(quest.reporting())actions.add(button(p,s,"가까운 NPC와 보고 대화",()->{information(p,s,view);advance(p);p.closeDialog();report.accept(p,quest.id());}));
                 actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
             }
-            actions.add(button(p,s,"목록",()->{var next=advance(p);if(returnSection.equals(section))browseSnapshot(p,next,view,section,listPage);else librarySnapshot(p,next,view,returnSection,listPage);}));actions.add(button(p,s,"홈",()->home(p)));
+            actions.add(button(p,s,returnSection.equals("course")?"코스 진행판으로":"목록",()->{var next=advance(p);if(returnSection.equals("course"))course(p,next,listPage,null);else if(returnSection.equals(section))browseSnapshot(p,next,view,section,listPage);else librarySnapshot(p,next,view,returnSection,listPage);}));actions.add(button(p,s,"홈",()->home(p)));
             show(p,s,detail.title(),List.of(DialogBody.plainMessage(Component.text(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1)))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("현재 정보로 다시 조회해 주세요."));}
     }
@@ -207,14 +207,15 @@ public final class PaperPhone implements Listener,AutoCloseable {
     }
     private java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> preparation;
     public void preparation(java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> reader){preparation=reader;}
-    private void preparation(Player p,Screen s,String selected,PreparationGuide.Page expected){
+    private void preparation(Player p,Screen s,String selected,PreparationGuide.Page expected){preparation(p,s,selected,expected,null);}
+    private void preparation(Player p,Screen s,String selected,PreparationGuide.Page expected,Integer coursePage){
         if(preparation==null){info(p,s,"준비 안내 미등록",List.of("현재 콘텐츠에 준비 안내가 등록되지 않았습니다."));return;}
         journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
             if(!valid(p,s))return;if(error!=null){info(p,s,"준비 안내 조회 실패",List.of("오류를 빈 목록이나 준비 완료로 처리하지 않습니다. 최신 상태로 다시 조회해 주세요."));return;}
             try{information(p,s,view);var page=preparation.apply(p,view);if(expected!=null)PreparationGuide.require(page,expected,selected);var actions=new ArrayList<ActionButton>();List<String> lines;
-                if(selected==null){lines=page.cards().isEmpty()?List.of("현재 공개된 준비 안내가 없습니다."):page.cards().stream().map(PreparationGuide.Card::title).toList();for(var card:page.cards())actions.add(button(p,s,card.title(),()->preparation(p,advance(p),card.id(),page)));}
-                else{lines=page.card(selected).lines();actions.add(button(p,s,"준비 안내 목록",()->preparation(p,advance(p),null,null)));}
-                actions.add(button(p,s,"준비 상태 새로고침",()->preparation(p,advance(p),selected,null)));actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
+                if(selected==null){lines=page.cards().isEmpty()?List.of("현재 공개된 준비 안내가 없습니다."):page.cards().stream().map(PreparationGuide.Card::title).toList();for(var card:page.cards())actions.add(button(p,s,card.title(),()->preparation(p,advance(p),card.id(),page,coursePage)));}
+                else{lines=page.card(selected).lines();actions.add(button(p,s,"준비 안내 목록",()->preparation(p,advance(p),null,null,coursePage)));}
+                actions.add(button(p,s,"준비 상태 새로고침",()->preparation(p,advance(p),selected,null,coursePage)));if(coursePage!=null)actions.add(button(p,s,"코스 진행판으로",()->course(p,advance(p),coursePage,null)));actions.add(button(p,s,"퀘스트 목록",()->browse(p,advance(p),"quests",1)));actions.add(button(p,s,"홈",()->home(p)));
                 show(p,s,selected==null?"시설·재료·던전 준비":page.card(selected).title(),lines.stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
             }catch(RuntimeException stale){info(p,s,"준비 안내 상태 변경",List.of("현재 공개 정보·재료·진행 상태를 다시 조회해 주세요."));}
         },owner);
@@ -241,6 +242,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
                     case TALK->{advance(p);p.closeDialog();report.accept(p,link.quest());}
                     case RETRY->confirm(p,waiting,view,PhoneCompletion.Operation.RETRY,link.quest());
                     case TRACK,UNTRACK->{var next=advance(p);journal.track(next.session().context(),next.session(),()->valid(p,next),link.quest(),link.action()==QuestJourneyView.Action.TRACK).whenCompleteAsync((saved,failure)->{if(!valid(p,next))return;if(failure!=null)info(p,next,"추적 저장 실패",List.of("저장 성공으로 표시하지 않습니다."));else journey(p,next);},owner);}
+                    case COURSE->course(p,advance(p),1,null);
                     case SHARED->sharedProgress(p,advance(p));
                     case MAP->browse(p,advance(p),"map",1);
                     case DIARY->libraryMenu(p,advance(p),"diary");
@@ -249,6 +251,49 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 }
             }catch(RuntimeException stale){info(p,waiting,"안내 상태 변경",List.of("목표·추적·공유 진행이 달라졌습니다. 현재 상태로 다시 조회해 주세요."));}
         },owner);
+    }
+    private PlaythroughOverview.Board courseView(Screen s,QuestJournal.View view){var run=s.session().context().storyRunId();return PlaythroughOverview.build(playthrough,catalog,view,sharedStory.cached(run),sharedStory.phase(run));}
+    private void course(Player p,Screen s,int number,PlaythroughOverview.Board expected){
+        if(playthrough==null||sharedStory==null){info(p,s,"코스 미등록",List.of("현재 콘텐츠에 공개 코스가 등록되지 않았습니다."));return;}
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"진행판 조회 실패",List.of("완료나 빈 기록으로 표시하지 않습니다. 현재 상태로 다시 조회해 주세요."));return;}
+            try{information(p,s,view);var board=courseView(s,view);if(expected!=null)PlaythroughOverview.require(board,expected);var page=board.page(Math.min(number,board.pages()));var actions=new ArrayList<ActionButton>();
+                for(var row:page.rows())if(row.quest()!=null)actions.add(button(p,s,row.title()+" · 상세",()->courseDetail(p,s,board,row,page.number())));
+                for(var row:page.rows())if(CourseRecordView.readable(row))actions.add(button(p,s,row.title()+" · "+CourseRecordView.label(row),()->courseRecord(p,(waiting,fresh)->CourseRecordView.open(playthrough,catalog,fresh,journal.placeFacts(waiting.session().context(),fresh),courseView(waiting,fresh),board,row,page.number()))));
+                if(page.number()>1)actions.add(button(p,s,"앞 항목",()->course(p,advance(p),page.number()-1,board)));
+                if(page.number()<page.pages())actions.add(button(p,s,"다음 항목",()->course(p,advance(p),page.number()+1,board)));
+                actions.add(button(p,s,"다음 행동 안내",()->journey(p,advance(p))));actions.add(button(p,s,"진행판 새로고침",()->course(p,advance(p),page.number(),null)));
+                if(preparation!=null)actions.add(button(p,s,"시설·재료·던전 준비",()->preparation(p,advance(p),null,null,page.number())));
+                actions.add(button(p,s,"홈",()->home(p)));show(p,s,"공개 코스 진행판",page.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
+            }catch(RuntimeException stale){info(p,s,"코스 기록 변경",List.of("현재 공개 정보와 개인·공유 진행을 다시 조회해 주세요."));}
+        },owner);
+    }
+    private void courseDetail(Player p,Screen s,PlaythroughOverview.Board shown,PlaythroughOverview.Row selected,int number){
+        var waiting=advance(p);journal.load(waiting.session().context(),waiting.session(),()->valid(p,waiting)).whenCompleteAsync((view,error)->{
+            if(!valid(p,waiting))return;if(error!=null){info(p,waiting,"진행판 조회 실패",List.of("현재 상태로 다시 조회해 주세요."));return;}
+            try{information(p,waiting,view);PlaythroughOverview.require(courseView(waiting,view),shown,selected);detail(p,advance(p),view,"quests",PhoneQuestLinks.questIndex(catalog,view,selected.quest()),1,number,"course");}
+            catch(RuntimeException stale){info(p,waiting,"코스 기록 변경",List.of("선택한 기록을 현재 상태로 다시 조회해 주세요."));}
+        },owner);
+    }
+    private void courseRecord(Player p,java.util.function.BiFunction<Screen,QuestJournal.View,CourseRecordView.Screen> build){
+        var waiting=advance(p);journal.load(waiting.session().context(),waiting.session(),()->valid(p,waiting)).whenCompleteAsync((view,error)->{
+            if(!valid(p,waiting))return;if(error!=null){courseRecordError(p,waiting);return;}
+            try{information(p,waiting,view);var screen=build.apply(waiting,view);var page=screen.page();var actions=new ArrayList<ActionButton>();
+                for(var link:page.links())actions.add(button(p,waiting,link.label(),()->courseRecordAction(p,screen,CourseRecordView.Action.RELATED,link)));
+                if(page.number()>1)actions.add(button(p,waiting,"앞 내용",()->courseRecordAction(p,screen,CourseRecordView.Action.PREVIOUS,null)));
+                if(page.number()<page.pages())actions.add(button(p,waiting,"다음 내용",()->courseRecordAction(p,screen,CourseRecordView.Action.NEXT,null)));
+                if(screen.path().size()>1)actions.add(button(p,waiting,"이전 정보",()->courseRecordAction(p,screen,CourseRecordView.Action.BACK,null)));
+                actions.add(button(p,waiting,"기록 새로고침",()->courseRecordAction(p,screen,CourseRecordView.Action.REFRESH,null)));
+                actions.add(button(p,waiting,"코스 진행판으로",()->course(p,advance(p),screen.coursePage(),null)));actions.add(button(p,waiting,"홈",()->home(p)));
+                show(p,waiting,screen.record().title(),page.lines().stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
+            }catch(RuntimeException stale){courseRecordError(p,waiting);}
+        },owner);
+    }
+    private void courseRecordAction(Player p,CourseRecordView.Screen shown,CourseRecordView.Action action,CourseRecordView.Link selected){
+        courseRecord(p,(waiting,view)->CourseRecordView.navigate(playthrough,catalog,view,journal.placeFacts(waiting.session().context(),view),courseView(waiting,view),shown,action,selected));
+    }
+    private void courseRecordError(Player p,Screen s){
+        show(p,s,"관련 기록 확인 필요",List.of(DialogBody.plainMessage(Component.text("관련 기록이나 공개 범위를 확인하지 못했습니다. 현재 상태로 다시 조회해 주세요."))),List.of(),List.of(button(p,s,"코스 진행판으로",()->course(p,advance(p),1,null)),button(p,s,"홈",()->home(p))));
     }
     private void sharedProgress(Player p,Screen s){
         if(sharedStory==null){info(p,s,"공동 조사 안내",List.of("공유 진행 엔진이 연결되지 않았습니다."));return;}

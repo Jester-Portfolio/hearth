@@ -1,0 +1,71 @@
+{
+  "checked_at": "2026-11-09",
+  "baseline_commit": "7dd0750",
+  "status": "IMPLEMENTED_UNIT_PASS_REQUIRED_INTEGRATION_BLOCKED",
+  "workspace": "/tmp/hearth-crafting-batch.smbfoi26",
+  "compilation": {
+    "main_sources": 135,
+    "test_sources": 87,
+    "method": "JDK 25 javac --release 25 with existing cached dependencies",
+    "main": "PASS",
+    "test": "PASS",
+    "main_log": "/tmp/hearth-crafting-batch.smbfoi26/compile-main-last.log",
+    "test_log": "/tmp/hearth-crafting-batch.smbfoi26/compile-test.log",
+    "classpath": "/tmp/hearth-crafting-batch.smbfoi26/classpath.txt"
+  },
+  "unit_tests": {
+    "found": 78,
+    "passed": 78,
+    "failed": 0,
+    "method": "JUnit Platform LauncherFactory, existing JUnit Jupiter engine",
+    "scope": [
+      "crafting package",
+      "quest.CraftingQuestTest",
+      "quest.PreparationGuideTest",
+      "inventory.InventorySaveTest",
+      "session.PlayerInteractionRulesTest",
+      "session.PlayerSessionsTest"
+    ],
+    "runner": "/tmp/hearth-crafting-batch.smbfoi26/RelatedTests.java",
+    "log": "/tmp/hearth-crafting-batch.smbfoi26/related-tests-last.log",
+    "initial_discovery_error_log": "/tmp/hearth-crafting-batch.smbfoi26/related-tests.log"
+  },
+  "gradle": {
+    "status": "BLOCKED_BEFORE_BUILD",
+    "command": "gradle --no-daemon --offline --console=plain test [related selectors] jar",
+    "reason": "FileLockContentionHandler: Could not determine a usable wildcard IP for this machine",
+    "log": "/tmp/hearth-crafting-batch-build.log"
+  },
+  "paper_postgres": {
+    "status": "NOT_RUN_PREFLIGHT_BLOCKED",
+    "preflight": "scripts/verify-s4-2.py port_free()",
+    "error": "PermissionError: [Errno 1] Operation not permitted",
+    "preflight_result": "/tmp/hearth-crafting-batch.smbfoi26/paper-preflight.json",
+    "owned_processes_started": 0,
+    "pending_modes": [
+      "--sessions --crafting",
+      "--sessions --quests --story-batch --crafting-quests"
+    ]
+  },
+  "git": {
+    "fetch": "FAILED",
+    "reason": "cannot open '.git/FETCH_HEAD': Read-only file system",
+    "remote_freshness_verified": false,
+    "staged": false,
+    "committed": false,
+    "pushed": false
+  },
+  "not_executed": [
+    "Gradle test/jar task graph",
+    "New Paper native recipe/UI checks",
+    "New batch crafting Postgres save/conflict/quest integration",
+    "Authenticated Minecraft client actions",
+    "Deployment"
+  ],
+  "preserved": [
+    "Existing worlds and databases",
+    "Prior verification evidence",
+    "V001-V009 and inventory persistence format",
+    "Git hooks and security boundaries"
+  ]
+}

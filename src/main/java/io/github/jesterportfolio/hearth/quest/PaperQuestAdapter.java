@@ -53,6 +53,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     private final Set<UUID> loadingDialogues=new HashSet<>();
     private boolean closed;
     public void showJourney(Player player){ui.command(player,"/hearthjourney");}
+    public void showPreparation(Player player){ui.command(player,"/hearthprepare");}
     public void preparation(java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> reader){ui.preparation(reader);if(phone!=null)phone.preparation(reader);}
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){ui.playthrough(content,shared);if(phone!=null)phone.playthrough(content,shared);}
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {

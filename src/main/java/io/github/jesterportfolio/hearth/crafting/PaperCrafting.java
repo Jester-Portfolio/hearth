@@ -32,13 +32,30 @@ public final class PaperCrafting implements Listener,AutoCloseable {
     public void quests(CraftingQuest binding,BiPredicate<ServerProgressAccess.Context,String> allowed){main();if(questBinding!=null)throw new IllegalStateException("CRAFT_BINDING_DUPLICATE");questBinding=binding;questAllowed=allowed;}
     private final BiPredicate<ServerProgressAccess.Context,CraftContent.Facility> access;
     public final CraftContent content;public final PaperCraftingPlan planner;public final CraftingAction actions;
+    private Consumer<Player> journey;
+    public void journey(Consumer<Player> reader){main();journey=Objects.requireNonNull(reader);}
+    private Consumer<Player> preparationGuide;
+    public void preparationGuide(Consumer<Player> reader){main();preparationGuide=Objects.requireNonNull(reader);}
     private final Map<UUID,Screen> screens=new HashMap<>();private final Set<UUID> opening=new HashSet<>();private boolean closed;
     private final class Screen implements InventoryHolder {
         final Player player;final PlayerSessions.Session session;final CraftContent.Facility facility;final long generation;
-        final Inventory inventory;final Map<Integer,String> choices=new HashMap<>();final String recipe;CraftingAction.Ticket ticket;CraftingQuest.Prepared prepared;boolean used,frozen;
-        Screen(Player p,PlayerSessions.Session s,CraftContent.Facility f,String recipe){player=p;session=s;facility=f;generation=worlds.get(s.context().storyRunId()).generation();this.recipe=recipe;inventory=Bukkit.createInventory(this,54,Component.text("작업대 · 격리 제작"));
+        final Inventory inventory;final Map<Integer,String> choices=new HashMap<>();final String recipe;final CraftingBatch.Selection goal;final int times;final boolean preparing;CraftingAction.Ticket ticket;CraftingQuest.Prepared prepared;boolean used,frozen;
+        Screen(Player p,PlayerSessions.Session s,CraftContent.Facility f,String recipe,int times,CraftingBatch.Selection goal,boolean preparing){player=p;this.preparing=preparing;this.times=CraftingBatch.require(times);this.goal=goal;session=s;facility=f;generation=worlds.get(s.context().storyRunId()).generation();this.recipe=recipe;inventory=Bukkit.createInventory(this,54,Component.text("작업대 · 격리 제작"));
             if(recipe==null){inventory.setContents(previewRecipes(content,f,planner,p.getWorld()).getContents());int slot=0;for(String id:f.recipes())choices.put(slot++,id);}
-            else{var r=content.recipes().get(recipe);inventory.setItem(22,item(planner.result(p.getWorld(),r).getResult(),r.title(),PaperCraftingPlan.ingredients(r)));inventory.setItem(45,item(new ItemStack(Material.ARROW),"제작 목록으로",List.of()));var panel=previewMaterials(planner.materials(r,codec.capture(p.getInventory())));for(int slot=9;slot<18;slot++)inventory.setItem(slot,panel.getItem(slot));inventory.setItem(49,item(new ItemStack(Material.CLOCK),"재료 다시 확인",List.of("현재 보관 슬롯의 수량을 다시 확인합니다")));}
+            else if(preparing){
+                var plan=planner.preparation(p.getWorld(),content,f,List.of(new CraftingBatch.Selection(recipe,times)),codec.capture(p.getInventory()));
+                inventory.setContents(previewPreparation(plan).getContents());int slot=0;for(var step:plan.steps())choices.put(slot++,step.recipe());
+            }
+            else{
+                var r=content.recipes().get(recipe);var needs=planner.materials(r,codec.capture(p.getInventory()),times);
+                inventory.setContents(previewDetail(planner,p.getWorld(),r,needs,times).getContents());
+                var links=planner.materialRecipes(p.getWorld(),content,f,recipe,needs);int slot=9;
+                for(var need:needs){String target=links.get(need.material());if(target!=null){choices.put(slot,target);var icon=inventory.getItem(slot);var lore=new ArrayList<>(need.lines());lore.add("재료 제작법: "+content.recipes().get(target).title());lore.add("왼쪽 클릭으로 제작법 확인");icon.editMeta(m->m.lore(lore.stream().map(Component::text).toList()));}slot++;}
+                inventory.setItem(48,item(new ItemStack(Material.PAPER),"전체 준비 순서",List.of("보유 재료와 중간 제작법을 반영합니다","추가 원재료와 제작 후 남는 재료를 확인합니다")));
+                if(goal!=null)inventory.setItem(46,item(new ItemStack(Material.COMPASS),"목표 제작으로 돌아가기",List.of(content.recipes().get(goal.recipe()).title())));
+            }
+            if(journey!=null)inventory.setItem(50,item(new ItemStack(Material.WRITABLE_BOOK),"다음 의뢰와 보고 안내",List.of("현재 개인 목표와 담당 NPC를 확인합니다")));
+            if(preparationGuide!=null)inventory.setItem(51,item(new ItemStack(Material.MAP),"조달 장소·전체 준비 안내",List.of("현재 공개된 시설과 개인 준비 상태를 확인합니다")));
         }
         public Inventory getInventory(){return inventory;}
     }
@@ -54,6 +71,30 @@ public final class PaperCrafting implements Listener,AutoCloseable {
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("CRAFT_MAIN_THREAD");}
     public static Inventory previewRecipes(CraftContent content,CraftContent.Facility facility,PaperCraftingPlan planner,World world){
         var inventory=Bukkit.createInventory(null,54,Component.text("작업대 · 격리 제작"));int slot=0;for(String id:facility.recipes()){var recipe=content.recipes().get(id);inventory.setItem(slot++,item(planner.result(world,recipe).getResult(),recipe.title(),PaperCraftingPlan.ingredients(recipe)));}return inventory;
+    }
+    public static Inventory previewDetail(PaperCraftingPlan planner,World world,CraftContent.Recipe recipe,List<CraftingMaterials.Need> needs,int times){
+        CraftingBatch.require(times);var inventory=previewMaterials(needs);var output=planner.result(world,recipe).getResult();
+        var summary=new ArrayList<String>();summary.add("제작 횟수: "+times+"회");summary.add("총 결과 수량: "+output.getAmount()*times);summary.add("순정 잔여물도 보관 슬롯에 반환합니다");
+        inventory.setItem(22,item(output,recipe.title(),summary));
+        int slot=27;for(int count:CraftingBatch.CHOICES)inventory.setItem(slot++,item(new ItemStack(count==times?Material.LIME_DYE:Material.GRAY_DYE),count+"회 제작 선택",List.of("총 재료와 결과를 다시 확인합니다",count==times?"현재 선택":"클릭하여 선택")));
+        inventory.setItem(45,item(new ItemStack(Material.ARROW),"제작 목록으로",List.of()));
+        inventory.setItem(49,item(new ItemStack(Material.CLOCK),"재료 다시 확인",List.of("현재 보관 슬롯의 수량을 다시 확인합니다")));
+        return inventory;
+    }
+    public static Inventory previewPreparation(CraftingPreparation.Plan plan){
+        var inventory=Bukkit.createInventory(null,54,Component.text("재료와 제작 준비 순서"));int slot=0;
+        for(var step:plan.steps())inventory.setItem(slot++,item(new ItemStack(Objects.requireNonNull(Material.matchMaterial(step.output()))),step.title()+" · "+step.times()+"회",List.of("결과 수량: "+step.produced(),"왼쪽 클릭으로 제작법 확인")));
+        inventory.setItem(40,preparationMaterials(Material.CHEST,"사용할 보유 재료",plan.ownedUsed()));
+        inventory.setItem(41,preparationMaterials(Material.HOPPER,"추가 원재료",plan.additional()));
+        inventory.setItem(42,preparationMaterials(Material.BUNDLE,"제작 후 남는 재료",plan.surplus()));
+        String status=switch(plan.status()){case READY->"보유 재료로 준비할 수 있습니다";case NEEDS_MATERIALS->"추가 원재료를 준비해 주세요";case UNAVAILABLE->"준비 순서를 확인하지 못했습니다";};
+        inventory.setItem(44,item(new ItemStack(plan.status()==CraftingPreparation.Status.UNAVAILABLE?Material.BARRIER:Material.BOOK),status,List.of("등록 순서에 따른 준비 예시입니다","보관 공간은 실제 제작 시 다시 검사합니다","횟수가 선택 버튼에 없으면 1회씩 나누어 제작하세요")));
+        inventory.setItem(45,item(new ItemStack(Material.ARROW),"목표 제작으로",List.of()));inventory.setItem(49,item(new ItemStack(Material.CLOCK),"준비 순서 새로고침",List.of("현재 보유 재료로 다시 계산합니다")));return inventory;
+    }
+    private static ItemStack preparationMaterials(Material icon,String title,Map<String,Integer> counts){
+        var result=item(new ItemStack(icon),title,List.of());var lore=new ArrayList<Component>();
+        if(counts.isEmpty())lore.add(Component.text("없음"));else counts.forEach((material,count)->lore.add(Component.translatable(Objects.requireNonNull(Material.matchMaterial(material)).translationKey()).append(Component.text(" × "+count))));
+        result.editMeta(m->m.lore(lore));return result;
     }
     public static Inventory previewMaterials(List<CraftingMaterials.Need> needs){var inventory=Bukkit.createInventory(null,54,Component.text("제작 재료 확인"));int slot=9;for(var need:needs){var icon=new ItemStack(Objects.requireNonNull(Material.matchMaterial(need.material())));icon.editMeta(m->m.lore(need.lines().stream().map(Component::text).toList()));inventory.setItem(slot++,icon);}return inventory;}
     private static ItemStack item(ItemStack source,String title,List<String> lore){var i=source.clone();i.editMeta(m->{m.displayName(Component.text(title));m.lore(lore.stream().map(Component::text).toList());});return i;}
@@ -74,20 +115,34 @@ public final class PaperCrafting implements Listener,AutoCloseable {
         else if(!old.getMinimumPoint().equals(point)||!old.getMaximumPoint().equals(point)||old.getPriority()!=30||old.getFlag(Flags.INTERACT)!=StateFlag.State.ALLOW||old.getFlag(Flags.PASSTHROUGH)!=StateFlag.State.ALLOW)throw new IllegalStateException("CRAFT_REGION_CONFLICT");
     }}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void interact(PlayerInteractEvent e){if(e.getAction()!=Action.RIGHT_CLICK_BLOCK||e.getClickedBlock()==null||!registered(e.getPlayer(),e.getClickedBlock()))return;e.setCancelled(true);if(e.getHand()!=EquipmentSlot.HAND)return;var p=e.getPlayer();if(!opening.add(p.getUniqueId()))return;var session=sessions.current(p);var f=find(e.getClickedBlock());long gen=worlds.get(session.context().storyRunId()).generation();Bukkit.getScheduler().runTaskLater(plugin,()->{opening.remove(p.getUniqueId());if(!eligible(p,session,f,gen))return;show(p,session,f,null);},1);}
-    private void show(Player p,PlayerSessions.Session s,CraftContent.Facility f,String recipe){
-        try{var screen=new Screen(p,s,f,recipe);screens.put(p.getUniqueId(),screen);
+    private void show(Player p,PlayerSessions.Session s,CraftContent.Facility f,String recipe){show(p,s,f,recipe,1,null);}
+    private void show(Player p,PlayerSessions.Session s,CraftContent.Facility f,String recipe,int times,CraftingBatch.Selection goal){show(p,s,f,recipe,times,goal,false);}
+    private void show(Player p,PlayerSessions.Session s,CraftContent.Facility f,String recipe,int times,CraftingBatch.Selection goal,boolean preparing){
+        try{var screen=new Screen(p,s,f,recipe,times,goal,preparing);screens.put(p.getUniqueId(),screen);
             p.openInventory(screen.inventory);if(p.getOpenInventory().getTopInventory()!=screen.inventory){screens.remove(p.getUniqueId(),screen);return;}
-            if(recipe!=null){try{screen.ticket=actions.preview(port(screen));screen.inventory.setItem(31,item(new ItemStack(Material.LIME_DYE),"한 번 제작하기",List.of("재료와 공간을 다시 검사한 뒤 적용합니다","기존 비동기 인벤토리 저장 사용")));}catch(RuntimeException error){screen.inventory.setItem(31,item(new ItemStack(Material.BARRIER),"CURSOR_STORAGE_FULL".equals(error.getMessage())?"보관 공간이 부족합니다":"재료 또는 제작 상태를 확인해 주세요",List.of("위 재료 아이템에서 필요·보유·부족 수량을 확인하세요")));}}
+            if(recipe!=null&&!preparing){try{screen.ticket=actions.preview(port(screen));screen.inventory.setItem(31,item(new ItemStack(Material.LIME_DYE),times+"회 제작 확정",List.of("총 재료와 공간을 다시 검사한 뒤 한 번 적용합니다","모두 제작할 수 없으면 원본을 보존합니다")));}catch(RuntimeException error){screen.inventory.setItem(31,item(new ItemStack(Material.BARRIER),"CURSOR_STORAGE_FULL".equals(error.getMessage())?"보관 공간이 부족합니다":"재료 또는 제작 상태를 확인해 주세요",List.of("위 재료 아이템에서 필요·보유·부족 수량을 확인하세요")));}}
         }catch(RuntimeException error){p.sendMessage(Component.text("제작 정보를 확인하지 못했습니다. 원본 인벤토리를 보존했습니다."));}
     }
     private CraftingAction.Port port(Screen s){return new CraftingAction.Port(){
         public UUID run(){return s.session.context().storyRunId();}public UUID player(){return s.player.getUniqueId();}public String source(){return "craft:"+s.facility.id()+":"+s.recipe;}public boolean valid(){return PaperCrafting.this.valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory&&(s.prepared==null||questBinding.valid(s.prepared));}
-        public InventoryPayload capture(){return codec.capture(s.player.getInventory());}public InventoryPayload plan(InventoryPayload before){if(!s.facility.recipes().contains(s.recipe))throw new IllegalStateException("CRAFT_REFERENCE");return planner.plan(s.player.getWorld(),content.recipes().get(s.recipe),before);}
+        public InventoryPayload capture(){return codec.capture(s.player.getInventory());}public InventoryPayload plan(InventoryPayload before){if(!s.facility.recipes().contains(s.recipe))throw new IllegalStateException("CRAFT_REFERENCE");return planner.plan(s.player.getWorld(),content.recipes().get(s.recipe),before,s.times);}
         public void apply(InventoryPayload after){codec.apply(s.player.getInventory(),after);}public void changed(){sessions.crafted(s.player,s.session);}public void hold(){sessions.craftingHold(s.session);}
     };}
     @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){if(!(e.getView().getTopInventory().getHolder() instanceof Screen s))return;e.setCancelled(true);if(e.getWhoClicked()!=s.player||!valid(s)||s.used||e.getClickedInventory()!=s.inventory||e.getClick()!=ClickType.LEFT)return;
         if(s.recipe!=null&&e.getSlot()==31&&s.ticket!=null){s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->confirm(s),1);return;}
-        String choice=s.choices.get(e.getSlot());if(choice==null&&!(s.recipe!=null&&(e.getSlot()==45||e.getSlot()==49)))return;if(e.getSlot()==49)choice=s.recipe;String selected=choice;s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)show(s.player,s.session,s.facility,selected);},1);
+        if(e.getSlot()==50&&journey!=null){s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)journey.accept(s.player);},1);return;}
+        if(e.getSlot()==51&&preparationGuide!=null){s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)preparationGuide.accept(s.player);},1);return;}
+        if(s.recipe!=null&&(e.getSlot()==48&&!s.preparing||s.preparing&&(e.getSlot()==45||e.getSlot()==49))){
+            boolean preparing=e.getSlot()!=45;s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)show(s.player,s.session,s.facility,s.recipe,s.times,s.goal,preparing);},1);return;
+        }
+        String choice=s.choices.get(e.getSlot());int times=s.times;var goal=s.goal;
+        if(choice!=null){times=choice.equals(s.recipe)?s.times:1;goal=s.goal==null&&s.recipe!=null&&!choice.equals(s.recipe)?new CraftingBatch.Selection(s.recipe,s.times):s.goal;}
+        else if(s.recipe!=null&&!s.preparing&&e.getSlot()>=27&&e.getSlot()<27+CraftingBatch.CHOICES.size()){choice=s.recipe;times=CraftingBatch.CHOICES.get(e.getSlot()-27);}
+        else if(s.recipe!=null&&e.getSlot()==45){times=1;goal=null;}
+        else if(s.recipe!=null&&!s.preparing&&e.getSlot()==46&&s.goal!=null){choice=s.goal.recipe();times=s.goal.times();goal=null;}
+        else if(s.recipe!=null&&e.getSlot()==49)choice=s.recipe;
+        else return;
+        String selected=choice;var target=goal;int count=times;s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)show(s.player,s.session,s.facility,selected,count,target);},1);
     }
     private boolean connected(Screen s){var w=worlds.get(s.session.context().storyRunId());return !closed&&sessions.prepared(s.player)==s.session&&w.generation()==s.generation&&s.player.getWorld().getUID().equals(w.mapping().physicalId());}
     private void confirm(Screen s){
@@ -100,8 +155,8 @@ public final class PaperCrafting implements Listener,AutoCloseable {
                 if(s.frozen){sessions.freezeTravel(s.player,s.session,false);s.frozen=false;}
                 if(error!=null&&questBinding!=null&&questBinding.held(s.session.context())){sessions.craftingHold(s.session);plugin.getLogger().warning("HEARTH_CRAFT_QUEST_HOLD");if(s.player.isOnline()&&sessions.linked(s.player)==s.session)s.player.sendMessage(Component.text("제작 이후 저장 정리가 보류됐습니다. 기존 데이터와 현재 인벤토리를 보존했으며 관리자 확인이 필요합니다."));}
                 if(!connected(s))return;
-                s.player.sendMessage(Component.text(error==null?"제작 완료":"제작 또는 퀘스트 반영을 마치지 못했습니다. 상태를 확인해 주세요."));
-                if(error==null)for(String message:messages)s.player.sendMessage(Component.text(message));if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)show(s.player,s.session,s.facility,s.recipe);
+                s.player.sendMessage(Component.text(error==null?s.times+"회 제작 완료":"제작 또는 퀘스트 반영을 마치지 못했습니다. 상태를 확인해 주세요."));
+                if(error==null)for(String message:messages)s.player.sendMessage(Component.text(message));if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)show(s.player,s.session,s.facility,s.recipe,s.times,s.goal);
             },owner);
     }
     public boolean settled(UUID run){return actions.settled(run)&&(questBinding==null||questBinding.settled(run));}
