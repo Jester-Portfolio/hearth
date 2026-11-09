@@ -1494,7 +1494,7 @@ public final class SessionVerification implements AutoCloseable {
     private void publicRoster(){storyTestRoster=new HashMap<>();if(s1!=null&&coordinator.playable(s1))storyTestRoster.put(a1.playerId(),s1);if(s2!=null&&coordinator.playable(s2))storyTestRoster.put(a2.playerId(),s2);sharedStory.rosterChanged(a1);}
     private CompletionStage<Void> verifyPublicDungeonSource(InventoryPayload expected,long revision){return mainResult(store.readInventory(a1)).thenAccept(row->check(row.revision()==revision&&codec.equivalent(row.payload(),expected)&&codec.equivalent(one.capture(),expected),"public_course_dungeon_preserves_existing_tools_and_source_payload"));}
     private CompletionStage<Void> publicRouteCheck(String step,String card){
-        var before=one.capture();long revision=s1.save().revision();return journal.load(a1,s1,()->coordinator.playable(s1)).thenAccept(view->{
+        var before=one.capture();long revision=s1.save().revision();return journal.load(a1,s1,()->coordinator.playable(s1)).thenCompose(view->{
             var page=courseRouteView(s1,view,before,false,List.of("현재 채집 상태는 현장에서 확인하세요."),dungeonPlay.play.lines(new DungeonActor(s1)));
             var current=page.board().rows().stream().filter(PlaythroughOverview.Row::current).findFirst().orElse(null);
             check(step==null?page.board().guide().complete():current!=null&&current.key().equals(step),"public_route_current_"+Objects.toString(step,"complete"));check(Objects.equals(page.preparation(),card),"public_route_facility_"+Objects.toString(card,"none"));
@@ -1502,7 +1502,41 @@ public final class SessionVerification implements AutoCloseable {
             check(book.pages().size()>page.book().pages().size()&&dialog!=null,"public_route_native_book_Dialog_"+Objects.toString(step,"complete"));
             if(previousPublicRoute!=null&&!previousPublicRoute.board().equals(page.board()))try{CourseRoute.require(page,previousPublicRoute);throw new AssertionError("old route accepted");}catch(IllegalStateException stale){check(true,"public_route_saved_transition_rejects_previous_selection");}
             previousPublicRoute=page;check(codec.equivalent(before,one.capture())&&s1.save().revision()==revision,"public_route_reads_preserve_inventory_"+Objects.toString(step,"complete"));
+            return groundingProgress(step,card,view);
         });
+    }
+    private io.github.jesterportfolio.hearth.phone.PhoneChat groundingPending;
+    private CompletableFuture<String> groundingAnswer;private CompletionStage<Void> groundingWork;private boolean groundingValidated;
+    private CompletionStage<Void> groundingProgress(String step,String card,QuestJournal.View view){
+        if(!"tools".equals(step))return CompletableFuture.completedFuture(null);var saved=view.states().get("gathering_workshop_route");
+        if(saved.objectiveIndex()==0&&"material_site".equals(card)&&groundingPending==null){
+            var data=journal.projectInformation(a1,view,()->coordinator.playable(s1));var plan=io.github.jesterportfolio.hearth.phone.PhoneGrounding.search(catalog,view,data,"quests",catalog.quest("gathering_workshop_route").title());
+            check(plan.materials().stream().anyMatch(m->m.item().key().equals("gathering_workshop_route")),"grounding_inflight_source_is_actual_active_personal_goal");
+            for(var m:plan.materials())if(!m.item().key().equals("gathering_workshop_route"))plan=plan.toggle(m.item().key());var expected=plan.sent();groundingAnswer=new CompletableFuture<>();groundingPending=new io.github.jesterportfolio.hearth.phone.PhoneChat(text->groundingAnswer,owner);groundingValidated=false;
+            groundingWork=groundingPending.submit(expected.question(),expected.result().context(),expected.mode(),()->coordinator.playable(s1),()->journal.load(a1,s1,()->coordinator.playable(s1)).thenApplyAsync(latest->{groundingValidated=true;io.github.jesterportfolio.hearth.phone.PhoneGrounding.refresh(catalog,latest,journal.projectInformation(a1,latest,()->coordinator.playable(s1)),expected);return true;},owner),expected.scope());
+            check(groundingPending.busy()&&groundingPending.history().isEmpty(),"grounding_waiting_answer_before_real_PG_goal_change");
+        }else if(saved.objectiveIndex()==1&&"workbench".equals(card)&&groundingPending!=null){
+            groundingAnswer.complete("이전 목표 자료로 만든 늦은 응답");return rejectQuest(groundingWork).thenRun(()->{check(groundingValidated&&groundingPending.history().isEmpty()&&!groundingPending.draft().isBlank(),"grounding_real_PG_goal_change_rejects_late_answer_keeps_question");groundingPending.close();groundingPending=null;});
+        }
+        return CompletableFuture.completedFuture(null);
+    }
+    private CompletionStage<Void> groundingIntegration(){
+        var inventory=one.capture();long revision=s1.save().revision();return mainResult(store.readExploration(a1)).thenCompose(before->mainResult(store.readJournal(a1)).thenCompose(journalBefore->{
+            CompletionStage<Void> work=CompletableFuture.completedFuture(null);
+            for(String choice:List.of("quests","map","diary","story","single","no_match")){String mode=choice.equals("single")||choice.equals("no_match")?"diary":choice;work=work.thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenCompose(view->{
+                var data=journal.projectInformation(a1,view,()->coordinator.playable(s1));var plan=choice.equals("single")?io.github.jesterportfolio.hearth.phone.PhoneGrounding.single(catalog,view,data,"개인 기록 도움",io.github.jesterportfolio.hearth.phone.PhoneHelp.select(catalog,view,data,"diary",0)):io.github.jesterportfolio.hearth.phone.PhoneGrounding.search(catalog,view,data,mode,choice.equals("no_match")?"일치없는검색단어":"공개 공유 조사 시설");
+                if(plan.materials().size()>1)plan=plan.toggle(plan.materials().getLast().item().key());var expected=plan.sent();check(expected.result().sources().size()==expected.materials().size()&&(choice.equals("no_match")?expected.materials().isEmpty():!expected.materials().isEmpty()),"grounding_selected_public_materials_"+choice);
+                var refs=new io.github.jesterportfolio.hearth.phone.PhoneReferences();var request=refs.begin(s1,expected);var prompt=new String[1];var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(text->{prompt[0]=text;return io.github.jesterportfolio.hearth.phone.LocalAssistant.mock().ask(text);},owner);var checked=new boolean[1];
+                var response=chat.submit(expected.question(),expected.result().context(),expected.mode(),()->coordinator.playable(s1),()->journal.load(a1,s1,()->coordinator.playable(s1)).thenApplyAsync(latest->{var current=io.github.jesterportfolio.hearth.phone.PhoneGrounding.refresh(catalog,latest,journal.projectInformation(a1,latest,()->coordinator.playable(s1)),expected);check(refs.update(request,current),"grounding_same_request_reference_update_"+choice);checked[0]=true;return true;},owner),expected.scope());
+                check(chat.busy()&&chat.history().isEmpty(),"grounding_answer_waits_fresh_DB_validation_"+choice);
+                return response.thenRun(()->{check(checked[0]&&chat.history().size()==1&&chat.history().getFirst().answer().contains("Mock AI"),"grounding_Mock_answer_after_DB_validation_"+choice);check(prompt[0]!=null&&!prompt[0].contains(a.toString())&&!prompt[0].contains(a1.playerId().toString())&&expected.materials().stream().noneMatch(m->prompt[0].contains(m.item().key())),"grounding_prompt_has_no_owner_or_internal_material_keys_"+choice);
+                    var body=io.github.jesterportfolio.hearth.phone.PhonePages.text("전송 자료",List.of(expected.result().context()));var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose("공개 자료 확인",List.of(io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text(body.pages().getFirst()))),List.of(),List.of(io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("선택 자료로 질문")).build(),io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("전송 취소")).build()));check(dialog!=null&&expected.materials().stream().allMatch(m->!io.github.jesterportfolio.hearth.phone.PhoneGrounding.detail(m).pages().isEmpty()),"grounding_native_preview_reference_details_and_cancel_"+choice);chat.close();
+                });
+            });}
+            return work.thenCompose(v->{var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(io.github.jesterportfolio.hearth.phone.LocalAssistant.mock(),owner);var request=chat.submit("조회 실패 보존","공개 자료","diary",()->coordinator.playable(s1),()->mainResult(store.readInventory(ctx(b,999))).thenApply(row->true));return rejectQuest(request).thenRun(()->{check(chat.history().isEmpty()&&chat.canRetry()&&!chat.draft().isBlank(),"grounding_actual_PG_missing_row_read_failure_rejects_answer_keeps_question");chat.close();});})
+                .thenCompose(v->mainResult(store.readExploration(a1))).thenAccept(after->check(after.equals(before),"grounding_reads_preserve_places_facts_events_and_story"))
+                .thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(after->check(after.equals(journalBefore)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"grounding_reads_preserve_notifications_tracking_preferences_inventory_revision"));
+        }));
     }
     private NpcGuidance.Page previousPublicContacts;
     private CompletionStage<Void> publicContacts(boolean open){
@@ -1540,7 +1574,7 @@ public final class SessionVerification implements AutoCloseable {
             .thenRun(()->check(!Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen()),"public_course_one_vote_does_not_open_exploration"))
             .thenCompose(v->sharedStory.cast(a2,s2,()->true,storyVote.id(),"route_one"))
             .thenRun(()->check(Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen())&&!Boolean.TRUE.equals(sharedStory.cached(b).story().explorationOpen()),"public_course_shared_branch_opens_only_own_run"))
-            .thenCompose(v->publicRouteCheck("dungeon",null)).thenCompose(v->publicContacts(true));
+            .thenCompose(v->publicRouteCheck("dungeon",null)).thenCompose(v->publicContacts(true)).thenCompose(v->groundingIntegration());
     }
     private CompletionStage<Void> publicCourseFinish(){
         publicRoster();var place=explorationContent.places().get("survey_place");var area=place.bounds();double x=(area.minX()+area.maxX())/2,y=(area.minY()+area.maxY())/2,z=(area.minZ()+area.maxZ())/2;

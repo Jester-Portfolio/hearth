@@ -27,8 +27,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class PaperPhone implements Listener,AutoCloseable {
     private record Screen(PlayerSessions.Session session,Object nonce,PhoneChat chat){}
     @FunctionalInterface public interface CompletionAction{java.util.concurrent.CompletionStage<Void> execute(Player player,PlayerSessions.Session session,PhoneCompletion.Choice choice);}
-    private record References(QuestJournal.View view,PhoneRetrieval.Result result){}
-    private final Map<PlayerSessions.Session,References> references=new IdentityHashMap<>();
+    private final PhoneReferences references=new PhoneReferences();
     private final Map<PlayerSessions.Session,String> contextModes=new IdentityHashMap<>();
     private final Map<PlayerSessions.Session,PhoneHelp.Selection> helpSelections=new IdentityHashMap<>();
     private CompletionAction completion=(p,s,c)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("COMPLETION_DISABLED"));
@@ -142,13 +141,13 @@ public final class PaperPhone implements Listener,AutoCloseable {
                 if(quest.trackable()||quest.tracked())actions.add(button(p,s,quest.tracked()?"추적 해제":"추적",()->{
                     information(p,s,view);var next=advance(p);
                     journal.track(next.session().context(),next.session(),()->valid(p,next),quest.id(),!quest.tracked()).whenCompleteAsync((saved,error)->{
-                        if(!valid(p,next))return;if(error!=null)info(p,next,"추적 저장 실패",List.of("변경 성공으로 표시하지 않습니다. 다시 조회해 주세요."));else try{if(returnSection.equals("course")||returnSection.equals("course_route"))detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,listPage,returnSection,origin);else detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,1);}catch(RuntimeException unavailable){info(p,next,"퀘스트 상태 변경",List.of("현재 목록으로 다시 조회해 주세요."));}
+                        if(!valid(p,next))return;if(error!=null)info(p,next,"추적 저장 실패",List.of("변경 성공으로 표시하지 않습니다. 다시 조회해 주세요."));else try{if(returnSection.equals("course")||returnSection.equals("course_route")||returnSection.equals("ai_references"))detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,listPage,returnSection,origin);else detail(p,next,saved,section,PhoneQuestLinks.questIndex(catalog,saved,quest.id()),1,1);}catch(RuntimeException unavailable){info(p,next,"퀘스트 상태 변경",List.of("현재 목록으로 다시 조회해 주세요."));}
                     },owner);
                 }));
                 if(quest.reporting())actions.add(button(p,s,"가까운 NPC와 보고 대화",()->{information(p,s,view);advance(p);p.closeDialog();report.accept(p,quest.id());}));
                 actions.add(button(p,s,"개인 알림",()->notices(p,advance(p),1)));
             }
-            actions.add(button(p,s,returnSection.equals("course_route")?"현재 코스 동선으로":returnSection.equals("course")?"코스 진행판으로":"목록",()->{var next=advance(p);if(returnSection.equals("course_route"))route(p,next,null,false);else if(returnSection.equals("course"))course(p,next,listPage,null);else if(returnSection.equals(section))browseSnapshot(p,next,view,section,listPage);else librarySnapshot(p,next,view,returnSection,listPage);}));actions.add(button(p,s,"홈",()->home(p)));
+            actions.add(button(p,s,returnSection.equals("ai_references")?"AI 참고자료로":returnSection.equals("course_route")?"현재 코스 동선으로":returnSection.equals("course")?"코스 진행판으로":"목록",()->{var next=advance(p);if(returnSection.equals("ai_references"))referenceList(p,next);else if(returnSection.equals("course_route"))route(p,next,null,false);else if(returnSection.equals("course"))course(p,next,listPage,null);else if(returnSection.equals(section))browseSnapshot(p,next,view,section,listPage);else librarySnapshot(p,next,view,returnSection,listPage);}));actions.add(button(p,s,"홈",()->home(p)));
             show(p,s,detail.title(),List.of(DialogBody.plainMessage(Component.text(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1)))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"조회 상태 변경",List.of("현재 정보로 다시 조회해 주세요."));}
     }
@@ -197,7 +196,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private void returnDetail(Player p,Screen s,String id,String section,int listPage,String returnSection,PhoneReaderLinks.Source origin){
         journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
             if(!valid(p,s))return;if(error!=null){info(p,s,"의뢰 조회 실패",List.of("현재 상태를 다시 조회하세요."));return;}
-            try{information(p,s,view);detail(p,s,view,section,PhoneQuestLinks.questIndex(catalog,view,id),1,listPage,returnSection,origin);}catch(RuntimeException changed){if(returnSection.equals("course_route"))route(p,s,null,false);else if(returnSection.equals("course"))course(p,s,listPage,null);else browse(p,s,"quests",1);}
+            try{information(p,s,view);detail(p,s,view,section,PhoneQuestLinks.questIndex(catalog,view,id),1,listPage,returnSection,origin);}catch(RuntimeException changed){if(returnSection.equals("ai_references"))referenceList(p,s);else if(returnSection.equals("course_route"))route(p,s,null,false);else if(returnSection.equals("course"))course(p,s,listPage,null);else browse(p,s,"quests",1);}
         },owner);
     }
     private void runCompletion(Player p,Screen s,QuestJournal.View view,PhoneCompletion.Choice choice,Consumer<Screen> back){
@@ -372,6 +371,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         for(String section:sections)actions.add(button(p,s,PhoneLibrary.title(section),()->loadLibrary(p,advance(p),section,1)));
         if(menu.equals("diary"))actions.add(button(p,s,"인물 안내",()->people(p,advance(p),1,null,null,false,back->libraryMenu(p,back,"diary"))));
         if(menu.equals("diary"))actions.add(button(p,s,"공동체 정보",()->libraryMenu(p,advance(p),"community")));
+        if(references.containsKey(s.session()))actions.add(button(p,s,"최근 AI 참고자료",()->referenceList(p,advance(p))));
         actions.add(button(p,s,"홈",()->home(p)));
         show(p,s,menu.equals("diary")?"기록":"공동체",List.of(DialogBody.plainMessage(Component.text(menu.equals("diary")?"개인 기록과 공동체 공유 기록을 구분합니다.":"구성원·스토리 진행·진행 조건만 확인합니다. 가입/초대/탈퇴/권한 관리 기능은 없습니다."))),List.of(),actions);
     }
@@ -541,49 +541,69 @@ public final class PaperPhone implements Listener,AutoCloseable {
             if(!valid(p,next))return;
             if(error!=null){info(p,next,"AI 정보 조회 실패",List.of("빈 정보로 대체해 전송하지 않습니다. 저장 상태를 확인한 뒤 다시 시도해 주세요."));return;}
             try{
-                var data=information(p,next,view);var selected=helpSelections.get(next.session());PhoneRetrieval.Result result;
-                if(selected==null)result=PhoneRetrieval.find(data,mode,question);else{var current=PhoneHelp.refresh(catalog,view,data,selected);helpSelections.put(next.session(),current);result=PhoneHelp.result(current);}
-                previewContext(p,next,view,mode,question,result,1);
+                var data=information(p,next,view);var selected=helpSelections.get(next.session());
+                var plan=selected==null?PhoneGrounding.search(catalog,view,data,mode,question):PhoneGrounding.single(catalog,view,data,question,selected);
+                previewContext(p,next,view,plan,1);
             }catch(RuntimeException invalid){info(p,next,"AI 정보 상태 변경",List.of("현재 공개 정보로 다시 요청해 주세요."));}
         },owner);
     }
-    private void previewContext(Player p,Screen s,QuestJournal.View view,String mode,String question,PhoneRetrieval.Result result,int page){
+    private void previewContext(Player p,Screen s,QuestJournal.View view,PhoneGrounding.Plan plan,int page){
         if(!valid(p,s))return;
-        try{
-            information(p,s,view);var pages=PhonePages.text("전송할 공개 자료",List.of("질문: "+question,result.context()));var actions=new ArrayList<ActionButton>();
-            if(page>1)actions.add(button(p,s,"앞 자료",()->previewContext(p,advance(p),view,mode,question,result,page-1)));
-            if(page<pages.pages().size())actions.add(button(p,s,"다음 자료",()->previewContext(p,advance(p),view,mode,question,result,page+1)));
-            actions.add(button(p,s,"이 자료로 질문",()->{
-                var selected=helpSelections.get(s.session());if(selected!=null){submitSelected(p,s,question,selected);return;}
-                information(p,s,view);var next=advance(p);references.put(next.session(),new References(view,result));
-                java.util.function.BooleanSupplier approved=()->{if(closed||players.current(p)!=next.session())return false;try{journal.projectInformation(next.session().context(),view,()->players.current(p)==next.session());return true;}catch(RuntimeException stale){return false;}};
-                next.chat().submit(question,result.context(),mode,approved).exceptionally(error->null);chat(p);
-            }));
+        try{information(p,s,view);var text=plan.sendable()?plan.result().context():"전송할 자료를 한 개 이상 선택하세요.";var pages=PhonePages.text("전송할 공개 자료",List.of("질문: "+plan.question(),"아래 발췌 자료만 AI에 전달합니다. 전체 자료는 따로 읽을 수 있습니다.",text));var actions=new ArrayList<ActionButton>();
+            if(page>1)actions.add(button(p,s,"앞 자료",()->previewContext(p,advance(p),view,plan,page-1)));
+            if(page<pages.pages().size())actions.add(button(p,s,"다음 자료",()->previewContext(p,advance(p),view,plan,page+1)));
+            for(var material:plan.materials()){
+                var item=material.item();if(!plan.single())actions.add(button(p,s,(plan.included().contains(item.key())?"[포함] ":"[제외] ")+item.source().title(),()->previewContext(p,advance(p),view,plan.toggle(item.key()),1)));
+                actions.add(button(p,s,item.source().title()+" · 전체 자료",()->previewMaterial(p,advance(p),view,plan,material,1)));
+            }
+            if(plan.sendable())actions.add(button(p,s,"선택 자료로 질문",()->submitGrounded(p,s,plan)));
             actions.add(button(p,s,"전송 취소",()->chat(p)));
-            show(p,s,"공개 자료 확인 · "+result.sources().size()+"개",List.of(DialogBody.plainMessage(Component.text(page+" / "+pages.pages().size()+"\n\n"+pages.pages().get(page-1)))),List.of(),actions);
+            show(p,s,"공개 자료 확인 · "+plan.selected().size()+"개 선택",List.of(DialogBody.plainMessage(Component.text(page+" / "+pages.pages().size()+"\n\n"+pages.pages().get(page-1)))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"참고자료 상태 변경",List.of("현재 공개 정보로 다시 요청해 주세요."));}
     }
-    private void submitSelected(Player p,Screen s,String question,PhoneHelp.Selection expected){
-        var next=advance(p);journal.load(next.session().context(),next.session(),()->valid(p,next)).whenCompleteAsync((view,error)->{
-            if(!valid(p,next))return;if(error!=null){info(p,next,"전송 자료 확인 실패",List.of("최신 자료를 확인하지 못해 전송하지 않았습니다. 질문 초안은 유지합니다."));return;}
-            try{if(!PhoneHelp.same(helpSelections.get(next.session()),expected))throw new IllegalStateException("STALE_HELP_SELECTION");var current=PhoneHelp.refresh(catalog,view,information(p,next,view),expected);helpSelections.put(next.session(),current);var result=PhoneHelp.result(current);references.put(next.session(),new References(view,result));
-                long[] stamp={-1};java.util.function.BooleanSupplier sessionCurrent=()->!closed&&players.current(p)==next.session()&&PhoneHelp.same(helpSelections.get(next.session()),current);java.util.function.BooleanSupplier approved=()->{if(!sessionCurrent.getAsBoolean())return false;try{journal.projectInformation(next.session().context(),view,sessionCurrent);return stamp[0]<0||stamp[0]==journal.informationStamp(next.session().context());}catch(RuntimeException stale){return false;}};
-                next.chat().submit(question,result.context(),current.section(),approved,()->journal.load(next.session().context(),next.session(),sessionCurrent).thenApplyAsync(latest->{PhoneHelp.refresh(catalog,latest,journal.projectInformation(next.session().context(),latest,sessionCurrent),current);stamp[0]=journal.informationStamp(next.session().context());return true;},owner)).exceptionally(failure->null);chat(p);
-            }catch(RuntimeException stale){info(p,next,"선택 자료 변경",List.of("현재 자료로 다시 선택해 주세요. 이전 자료로 전송하지 않았으며 질문 초안은 유지합니다."));}
+    private void previewMaterial(Player p,Screen s,QuestJournal.View view,PhoneGrounding.Plan plan,PhoneGrounding.Material material,int page){
+        if(!valid(p,s))return;try{information(p,s,view);if(!plan.materials().contains(material))throw new IllegalStateException("STALE_AI_MATERIAL");var detail=PhoneGrounding.detail(material);var actions=new ArrayList<ActionButton>();
+            if(page>1)actions.add(button(p,s,"앞 내용",()->previewMaterial(p,advance(p),view,plan,material,page-1)));if(page<detail.pages().size())actions.add(button(p,s,"다음 내용",()->previewMaterial(p,advance(p),view,plan,material,page+1)));
+            if(!plan.single())actions.add(button(p,s,plan.included().contains(material.item().key())?"이 자료 제외":"이 자료 포함",()->previewContext(p,advance(p),view,plan.toggle(material.item().key()),1)));
+            actions.add(button(p,s,"자료 선택으로",()->previewContext(p,advance(p),view,plan,1)));actions.add(button(p,s,"전송 취소",()->chat(p)));
+            show(p,s,detail.title(),List.of(DialogBody.plainMessage(Component.text(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1)))),List.of(),actions);
+        }catch(RuntimeException stale){info(p,s,"자료 상태 변경",List.of("현재 자료로 다시 선택하세요."));}
+    }
+    private void submitGrounded(Player p,Screen s,PhoneGrounding.Plan expected){
+        var next=advance(p);
+        java.util.function.BooleanSupplier sessionCurrent=()->!closed&&players.current(p)==next.session()&&contextModes.getOrDefault(next.session(),"none").equals(expected.mode())&&(expected.single()?PhoneHelp.same(helpSelections.get(next.session()),expected.materials().getFirst().item()):helpSelections.get(next.session())==null);
+        journal.load(next.session().context(),next.session(),()->valid(p,next)&&sessionCurrent.getAsBoolean()).whenCompleteAsync((view,error)->{
+            if(!valid(p,next)||!sessionCurrent.getAsBoolean())return;if(error!=null){info(p,next,"전송 자료 확인 실패",List.of("최신 자료를 확인하지 못해 전송하지 않았습니다. 질문 초안은 유지합니다."));return;}
+            try{var plan=PhoneGrounding.refresh(catalog,view,information(p,next,view),expected.sent());var refs=references.begin(next.session(),plan);
+                long[] stamp={-1};java.util.function.BooleanSupplier approved=()->{if(!sessionCurrent.getAsBoolean())return false;try{journal.projectInformation(next.session().context(),view,sessionCurrent);return stamp[0]<0||stamp[0]==journal.informationStamp(next.session().context());}catch(RuntimeException stale){return false;}};
+                next.chat().submit(plan.question(),plan.result().context(),plan.mode(),approved,()->journal.load(next.session().context(),next.session(),sessionCurrent).thenApplyAsync(latest->{
+                    var current=PhoneGrounding.refresh(catalog,latest,journal.projectInformation(next.session().context(),latest,sessionCurrent),plan);stamp[0]=journal.informationStamp(next.session().context());references.update(refs,current);return true;
+                },owner),plan.scope()).exceptionally(failure->null);chat(p);
+            }catch(RuntimeException stale){info(p,next,"선택 자료 변경",List.of("자료가 변경됐거나 공개 상태를 확인할 수 없습니다. 현재 자료로 다시 선택해 주세요. 질문 초안은 유지합니다."));}
         },owner);
     }
-    private void referenceList(Player p,Screen s){
-        var refs=references.get(s.session());
-        if(refs==null){info(p,s,"참고자료 없음",List.of("이 세션에서 전송한 게임 도움 자료가 없습니다."));return;}
-        try{
-            information(p,s,refs.view());var actions=new ArrayList<ActionButton>();
-            for(var source:refs.result().sources())actions.add(button(p,s,source.title(),()->{
-                information(p,s,refs.view());var next=advance(p);
-                if(source.section().equals("story"))info(p,next,source.title(),List.of(source.text()));else detail(p,next,refs.view(),source.section(),source.index(),1,1);
-            }));
-            actions.add(button(p,s,"AI 대화",()->chat(p)));actions.add(button(p,s,"홈",()->home(p)));
-            show(p,s,"최근 게임 도움 참고자료",List.of(DialogBody.plainMessage(Component.text(refs.result().sources().isEmpty()?"현재 공개 정보에서 키워드 일치 자료가 없었습니다.":"이 목록은 AI 요청에 제공한 자료입니다. AI 답변의 정확성을 보증하지 않으며 자료에 없는 내용은 별도로 확인해야 합니다."))),List.of(),actions);
-        }catch(RuntimeException stale){references.remove(s.session());info(p,s,"참고자료 갱신 필요",List.of("이전 자료는 더 이상 현재 상태로 확인할 수 없습니다. 최신 정보로 다시 질문해 주세요."));}
+    private void referenceList(Player p,Screen s){reference(p,s,null,1);}
+    private void reference(Player p,Screen s,String key,int page){
+        var expected=references.get(s.session());if(expected==null){info(p,s,"참고자료 없음",List.of("이 세션에서 전송한 게임 도움 자료가 없습니다."));return;}
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"참고자료 조회 실패",List.of("현재 자료를 확인하지 못했습니다. 최신 정보로 다시 조회하세요."));return;}
+            try{if(!references.current(expected))throw new IllegalStateException("STALE_AI_REFERENCE");var plan=PhoneGrounding.refresh(catalog,view,information(p,s,view),expected.plan());references.update(expected,plan);var actions=new ArrayList<ActionButton>();List<String> lines;String title;
+                if(key==null){title="최근 게임 도움 참고자료";lines=List.of(plan.materials().isEmpty()?"현재 공개 정보에서 일치하는 자료가 없었던 요청입니다.":"AI에 전송한 공개 자료입니다. 현재 공개 상태를 다시 확인했습니다.");for(var material:plan.materials())actions.add(button(p,s,material.item().source().title(),()->reference(p,advance(p),material.item().key(),1)));}
+                else{var material=plan.materials().stream().filter(m->m.item().key().equals(key)).findFirst().orElseThrow(()->new IllegalStateException("STALE_AI_REFERENCE"));var detail=PhoneGrounding.detail(material);title=detail.title();lines=List.of(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1));
+                    if(page>1)actions.add(button(p,s,"앞 내용",()->reference(p,advance(p),key,page-1)));if(page<detail.pages().size())actions.add(button(p,s,"다음 내용",()->reference(p,advance(p),key,page+1)));
+                    actions.add(button(p,s,"원래 정보",()->openReference(p,advance(p),plan,key)));
+                    if(!material.item().section().equals("story")&&!s.chat().busy())actions.add(button(p,s,"이 자료 AI 도움",()->help(p,s,material.item())));
+                    actions.add(button(p,s,"참고자료 목록",()->referenceList(p,advance(p))));
+                }
+                actions.add(button(p,s,"AI 대화",()->chat(p)));actions.add(button(p,s,"홈",()->home(p)));show(p,s,title,lines.stream().map(line->DialogBody.plainMessage(Component.text(line))).toList(),List.of(),actions);
+            }catch(RuntimeException stale){references.remove(expected);info(p,s,"참고자료 갱신 필요",List.of("자료가 변경됐거나 더 이상 공개되지 않습니다. 최신 정보로 다시 질문해 주세요."));}
+        },owner);
+    }
+    private void openReference(Player p,Screen s,PhoneGrounding.Plan expected,String key){
+        journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
+            if(!valid(p,s))return;if(error!=null){info(p,s,"원래 정보 조회 실패",List.of("현재 공개 상태로 다시 조회하세요."));return;}
+            try{var plan=PhoneGrounding.refresh(catalog,view,information(p,s,view),expected);var item=plan.materials().stream().filter(m->m.item().key().equals(key)).findFirst().orElseThrow().item();if(item.section().equals("story"))libraryMenu(p,s,"community");else detail(p,s,view,item.section(),item.source().index(),1,1,"ai_references");}catch(RuntimeException stale){info(p,s,"원래 정보 변경",List.of("자료가 변경됐거나 더 이상 공개되지 않습니다. 앱에서 다시 선택하세요."));}
+        },owner);
     }
     private void clearConfirm(Player p){
         var s=advance(p);show(p,s,"대화 정리 확인",List.of(DialogBody.plainMessage(Component.text("현재 접속 세션의 AI 대화 기록만 지웁니다. 퀘스트·일지·인벤토리는 변경하지 않습니다."))),List.of(),List.of(button(p,s,"기록 지우기",()->{if(!s.chat().busy()){s.chat().clear();references.remove(s.session());}chat(p);}),button(p,s,"취소",()->chat(p))));

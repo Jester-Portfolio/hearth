@@ -143,3 +143,5 @@
 [공개 코스·현재 시설 동선](../docs/public-course-integration-verification.md)은 `verify-lifecycle.py --sessions --quests --story-batch --public-course` 단독 한 JVM 모드다. 조사·공유 준비→채집/두 도구 제작·보고→공유 투표→던전 승리·보고→개인 탐험/공유 정리를 같은 격리 환경에서 잇는다. 등록 콘텐츠와 목표별 준비 안내·Book/Dialog, 개인/진행 격리·DB 실패 보존·최종 월드 재연결 후 제작 도구/인벤토리 보존을 확인한다. 나머지 모드/수동 옵션은 섞지 않으며 기존 자원·시도 상한을 유지한다. 필드 조우의 언로드 후 임의 재소환 금지를 지키기 위해 월드 재연결은 던전 뒤에 수행한다. 실제 클라이언트 행동과 운영 활성화는 검증하지 않는다.
 
 [인물 안내·NPC 공개 경계](../docs/npc-guidance-verification.md)도 기존 `--sessions --quests --story-batch --public-course`에서 함께 검사한다. 본인 시설 기록을 확인한 상태에서 공유 개방 전/후의 NPC 위치 권한·기록 버튼/스마트폰 연결·서버 엔티티 속성·Book/Dialog와 P2 개인 기록 격리/조회 무변경을 확인한 뒤 기존 채집/제작·투표·던전·최종 복원 흐름을 잇는다. 무인 엔티티 속성 검사 동안만 대상 청크에 티켓을 두고 반납하며 실제 Player 표시/클릭으로 판정하지 않는다.
+
+[AI 공개 자료 선택·최신 조회](../docs/phone-grounding-verification.md)도 기존 `--sessions --quests --story-batch --public-course`에서 함께 검사한다. 퀘스트·지도·기록·공유 검색과 단일 자료/결과 없음의 Mock 응답 후 실제 DB 재확인, 실제 개인 목표 갱신 중 늦은 응답 거부·초안 보존, 미존재 DB 행 읽기 실패와 원본 기록/인벤토리 보존을 확인한다. 실제 AI 서버/모델을 실행하지 않으며 자료 포함/제외·전체 본문·복귀의 Dialog 객체 검사를 실제 사용자 조작으로 판정하지 않는다.

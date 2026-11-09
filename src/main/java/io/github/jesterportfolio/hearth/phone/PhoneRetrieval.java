@@ -27,6 +27,11 @@ public final class PhoneRetrieval {
         for(var source:candidates){String title=source.title().toLowerCase(Locale.ROOT),text=source.text().toLowerCase(Locale.ROOT);int score=0;for(String token:tokens){if(title.contains(token))score+=3;if(text.contains(token))score++;}if(score>0)ranked.add(new Ranked(source,score));}
         ranked.sort(Comparator.comparingInt(Ranked::score).reversed().thenComparingInt(r->r.source().index()));
         var sources=ranked.stream().limit(4).map(r->new Source(mode,r.source().index(),AssistantRequest.limit(r.source().title(),64),AssistantRequest.limit(r.source().text(),400))).toList();
+        return present(sources);
+    }
+    public static Result present(List<Source> chosen){
+        if(chosen.size()>4)throw new IllegalArgumentException("AI_SOURCE_LIMIT");
+        var sources=chosen.stream().map(s->new Source(s.section(),s.index(),AssistantRequest.limit(s.title(),64),AssistantRequest.limit(s.text(),400))).toList();
         if(sources.isEmpty())return new Result(List.of(),"선택한 범위의 현재 공개 정보에서 질문과 일치하는 자료를 찾지 못했습니다. 미공개 스토리나 임의의 진행 사실을 추측하지 마세요.");
         var context=new StringBuilder("선택한 범위에서 현재 공개된 키워드 일치 자료입니다. 자료에 없는 스토리/진행 사실은 알 수 없다고 답하세요.\n");
         for(int i=0;i<sources.size();i++)context.append("[자료 ").append(i+1).append("] ").append(sources.get(i).title()).append('\n').append(sources.get(i).text()).append('\n');

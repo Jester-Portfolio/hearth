@@ -47,7 +47,7 @@ Hearth는 현대 과학·기술 지식을 마법 없는 중세 세계에서 활�
 
 슬롯 조작·비컨테이너 시설·조작 도움말을 기존 세션/저장에 연결했다. [검증](player-interactions-verification.md): 관련25개·한 JVM/PG 내부 슬롯 저장/재접속 PASS. 실제 키 입력·시설 이벤트는 미검증. 후속 [커서·드래그 저장 경계](inventory-cursor-verification.md)는 관련29개·한 JVM/PG 통합 PASS이며 실제 클라이언트 시험은 보류한다.
 
-본인 공개 게임 정보 조회(`/hearthinfo`)와 외부 모듈용 비동기 조회 경계를 연결했다. [검증](game-information-verification.md): 관련24개·한 JVM/PG 조회/DB 불변 PASS. 스마트폰의 선택형 공개 정보/대화 전달·Mock 응답·취소와 상태 변경 후 응답 거부까지 [연결](phone-ai-context-verification.md)했다. 실제 모델 및 정식 S5 검색·캐시·응답 품질은 미검증/미구현이다.
+본인 공개 게임 정보 조회(`/hearthinfo`)와 외부 모듈용 비동기 조회 경계를 연결했다. [검증](game-information-verification.md): 관련24개·한 JVM/PG 조회/DB 불변 PASS. 스마트폰의 선택형 공개 정보/대화 전달·Mock 응답·취소와 상태 변경 후 응답 거부까지 [연결](phone-ai-context-verification.md)했다. 실제 모델 및 정식 S5 검색·캐시·응답 품질은 미검증/미구현이다. 후속 [공개 자료 선택·최신 조회·참고자료 복귀](phone-grounding-verification.md)에서 검색 자료 포함/제외·전체 본문, 네 범위/단일 항목의 전송 전후 DB 확인, 식별/전체 본문/버전 기반 이력 격리와 요청별 참고자료·원래 정보 왕복을 통합했다. 실제 모델과 클라이언트 조작은 미검증이다.
 
 퀘스트 목록 필터·상세/추적/알림 연결과 가까운 NPC 보고 대화 열기를 통합했다. [검증](quest-navigation-verification.md): 관련25개·한 JVM/PG 수락→보고→완료/추적 정리 PASS. 실제 GUI/NPC·WorldGuard 사용자 권한 동작은 미검증이다.
 
