@@ -1,0 +1,19 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "hearth:gui/minimap_pixel.png",
+      "ascent": -22,
+      "height": 4,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "": -1
+      }
+    }
+  ]
+}

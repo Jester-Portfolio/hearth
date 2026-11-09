@@ -56,9 +56,15 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void dungeonObjectives(java.util.function.BiFunction<Player,QuestJournal.View,FacilityObjectives.Board> reader){dungeonObjectives=reader;}
     public void dungeon(String npc,String quest,java.util.function.BiConsumer<Player,java.util.function.BooleanSupplier> entry,java.util.function.BiConsumer<Player,String> guide){dungeonNpc=npc;dungeonQuest=quest;dungeonEntry=entry;ui.dungeon(npc,quest);if(phone!=null)phone.dungeon(quest,(p,q)->{var session=players.current(p);if(session==null)return;if(dungeonObjectives==null){guide.accept(p,q);return;}ui.facility(p,view->dungeonObjectives.apply(p,view),()->!closed&&players.current(p)==session&&journal.questAllowed(session.context(),q),()->showQuest(p,q));});}
     private final Set<UUID> loadingDialogues=new HashSet<>();
+    private java.util.function.BiPredicate<Player,String> beforeAccept=(p,q)->false;
+    private java.util.function.BiConsumer<Player,QuestJournal.View> featureProjection=(p,v)->{};
+    public void features(java.util.function.BiPredicate<Player,String> before,java.util.function.BiConsumer<Player,QuestJournal.View> projection){beforeAccept=before;featureProjection=projection;}
     private boolean closed;
     private BiPredicate<Player,String> escortCommand=(p,c)->false;
     public void escort(Set<String> quests,BiPredicate<Player,String> command,BiConsumer<Player,String> guide){escortCommand=command;ui.escort(quests,guide);if(phone!=null)phone.escort(quests,guide);}
+    public void featureMenu(java.util.function.Consumer<Player> menu,java.util.function.Consumer<Player> issue){if(phone!=null){phone.featuresMenu(menu);phone.deviceIssuer(issue);}}
+    public void showPhone(Player p){if(phone!=null)phone.home(p);else ui.command(p,"/hearthphone");}
+    public void showNpcQuest(Player p,String id){var s=players.current(p);if(s==null||!journal.questAllowed(s.context(),id))return;var c=catalog.quest(id);var npc=entity(p.getWorld(),c.npcId());if(npc!=null&&talkAllowed(p,c.npcId(),npc.getUniqueId()))conversation(p,c.npcId(),npc.getUniqueId(),false,"npc");}
     public void showJourney(Player player){ui.command(player,"/hearthjourney");}
     public void showPreparation(Player player){ui.command(player,"/hearthprepare");}
     public void showQuest(Player player,String quest){if(!quest.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("QUEST_ID");ui.command(player,"/hearthquest manage "+quest);}
@@ -80,7 +86,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
         ui.peopleTalk(this::openNpcFromGuidance);ui.completion(this::phoneCompletion,completionFlow);ui.npcNavigation(this::npcNavigation);
         ui.npcSelection((p,npc,quest,revision)->{var s=players.current(p);if(s==null)return;try{var t=dialogues.selection(p.getUniqueId(),s,npc,quest);command(p,dialogues.command(t,"select"),revision);}catch(RuntimeException invalid){unavailable(p,invalid);}});
         ui.questAction((p,c)->command(p,c));ui.npcDialogue(this::openNpcFromQuest);ui.npcContact(this::openNpcFromFact);
-        ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);},this::clearVisual,this::render);
+        ui.dialogueBusy(p->loadingDialogues.contains(p.getUniqueId()));ui.projection((p,v)->{var s=players.current(p);if(s!=null)quests.restore(s.context(),s,()->players.current(p)==s,v.states()).exceptionally(error->null);projections.put(p.getUniqueId(),new Projection(players.current(p),v));render(p);featureProjection.accept(p,v);},this::clearVisual,this::render);
         expiry=Bukkit.getScheduler().runTaskTimer(plugin,()->quests.expire(catalog).exceptionally(error->{plugin.getLogger().warning("HEARTH_QUEST_EXPIRY_HOLD");return null;}),20,20);
         Bukkit.getPluginManager().registerEvents(this,plugin);players.questCommand(this::command);
         for(World w:Bukkit.getWorlds())ensure(w);
@@ -437,7 +443,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
                 }
                 catch(RuntimeException invalid){unavailable(p);}
             },owner);
-        } else quests.open(session.context(),content.id(),session,()->players.current(p)==session)
+        } else {if(request.action().equals("accept")&&beforeAccept.test(p,content.id()))return true;quests.open(session.context(),content.id(),session,()->players.current(p)==session)
             .thenComposeAsync(q->{if(!current(p,session,ticket)||!journal.questAllowed(session.context(),content.id()))throw new IllegalStateException("STALE_DIALOGUE");return request.action().equals("accept")?quests.accept(q,content):quests.advance(q,QuestStore.Phase.COMPLETED);},owner)
             .whenCompleteAsync((saved,error)->{
                 if(!current(p,session,ticket))return;
@@ -446,7 +452,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
                 p.sendMessage(Component.text("[퀘스트 목록]").clickEvent(ClickEvent.runCommand("/hearthquest list")).append(Component.text(" [스마트폰]").clickEvent(ClickEvent.runCommand("/hearthphone"))));
                 if(story!=null&&saved.phase()==QuestStore.Phase.COMPLETED)story.guide(p,ticket.npc());
                 conversation(p,ticket.npc(),ticket.entity(),false,"npc");
-            },owner);
+            },owner);}
         return true;
     }
     public static List<Component> listMessages(QuestCatalog catalog,Map<String,QuestStore.Saved> states) {

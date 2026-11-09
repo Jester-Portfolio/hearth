@@ -8,7 +8,7 @@ import java.util.*;
 
 /** V001을 보존하는 순차 트랜잭션 마이그레이션. 미상 버전·기존 테이블의 자동 재설정은 금지합니다. */
 final class SchemaMigration {
-    private static final List<String> FILES=List.of("V001__progress.sql","V002__story_inventory.sql","V003__personal_quest.sql","V004__quest_steps_and_journal.sql","V005__exploration_diary_and_markers.sql","V006__shared_story_requests_and_branches.sql","V007__quest_failures_rewards_and_chapters.sql","V008__dungeon_checkpoint.sql","V009__gathering_instance.sql");
+    private static final List<String> FILES=List.of("V001__progress.sql","V002__story_inventory.sql","V003__personal_quest.sql","V004__quest_steps_and_journal.sql","V005__exploration_diary_and_markers.sql","V006__shared_story_requests_and_branches.sql","V007__quest_failures_rewards_and_chapters.sql","V008__dungeon_checkpoint.sql","V009__gathering_instance.sql","V010__personal_features.sql");
     private static void validateTables(Connection c,int version) throws SQLException {
         try (var st=c.createStatement()) {
             st.executeQuery("SELECT story_run_id,state_value,revision FROM hearth_progress.story_run LIMIT 0").close();
@@ -35,6 +35,7 @@ final class SchemaMigration {
             if(version>=7){st.executeQuery("SELECT deadline_millis FROM hearth_progress.personal_quest LIMIT 0").close();st.executeQuery("SELECT reward_hash,status,inventory_revision FROM hearth_progress.quest_reward LIMIT 0").close();st.executeQuery("SELECT chapter_id,content_hash,revision FROM hearth_progress.chapter_skip LIMIT 0").close();}
             if(version>=8)st.executeQuery("SELECT story_run_id,dungeon_id,quest_id,checkpoint_id,request_id,complete FROM hearth_progress.dungeon_checkpoint LIMIT 0").close();
             if(version>=9)st.executeQuery("SELECT story_run_id,dungeon_id,world_uuid,revision,generation,area_hash,template_version,template_hash,phase,request_id,empty_reset,next_reset FROM hearth_progress.gathering_instance LIMIT 0").close();
+            if(version>=10)st.executeQuery("SELECT story_run_id,player_uuid,feature,feature_key,payload,revision FROM hearth_progress.personal_feature LIMIT 0").close();
             if (version>=2) st.executeQuery("SELECT story_run_id,player_uuid,payload,revision FROM hearth_progress.story_inventory LIMIT 0").close();
         }
     }

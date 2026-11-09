@@ -1,6 +1,7 @@
 package io.github.jesterportfolio.hearth.verification;
 
 import io.github.jesterportfolio.hearth.inventory.*;
+import io.github.jesterportfolio.hearth.features.*;
 import io.github.jesterportfolio.hearth.crafting.*;
 import io.github.jesterportfolio.hearth.gathering.*;
 import io.github.jesterportfolio.hearth.lifecycle.*;
@@ -25,6 +26,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /** 기존 lifecycle/DB fixture를 재사용하는 제어 포트 시험. Player를 만들거나 인증을 흉내 내지 않습니다. */
 public final class SessionVerification implements AutoCloseable {
+    private FeatureStore featureStore;private PersonalStorage personalStorage;private S4Features features;
     private final JavaPlugin plugin;
     private final PostgresProgressStore store;
     private final ServerProgressAccess access;
@@ -123,12 +125,14 @@ public final class SessionVerification implements AutoCloseable {
         autosave=new PaperInventoryAutosave(plugin,List.of(),this::refresh,() -> {
             if (!cycle) {cycle=true;log("AUTOSAVE elapsed_ms="+(System.nanoTime()-started)/1_000_000);}
         });
-        coordinator=new PlayerSessions(store,plugin.getConfig().getBoolean("crafting-verification-enabled")?craftingStore():store,owner,SessionVerification::main,p -> codec.decode(p),codec::equivalent,autosave::add,autosave::remove,c -> log("ERROR "+c));
+        InventoryStore inventoryBackend=plugin.getConfig().getBoolean("crafting-verification-enabled")?craftingStore():store;
+        if(plugin.getConfig().getBoolean("s4-features-enabled")){if(!Boolean.getBoolean("hearth.verification.s4Features"))throw new IllegalStateException("S4_FEATURE_GATE");featureStore=new FeatureStore(store,access);personalStorage=new PersonalStorage(inventoryBackend,featureStore,owner,SessionVerification::main,codec::equivalent);inventoryBackend=personalStorage;}
+        coordinator=new PlayerSessions(store,inventoryBackend,owner,SessionVerification::main,p -> codec.decode(p),codec::equivalent,autosave::add,autosave::remove,c -> log("ERROR "+c));
         World waiting=Bukkit.getWorlds().getFirst();
         for (int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)waiting.getBlockAt(x,63,z).setType(Material.STONE,false);
         adapter=new PaperSessionAdapter(plugin,coordinator,owner,codec,new Location(waiting,0.5,64,0.5));
         if(plugin.getConfig().getBoolean("combat-state-verification-enabled")){
-            var filename=plugin.getConfig().getString("combat-content-file","combat-demo.yml");if(!Set.of("combat-demo.yml","combat-path-demo.yml","combat-route-demo.yml","dungeon-play-combat.yml","combat-pattern-demo.yml","combat-area-demo.yml").contains(filename))throw new IllegalArgumentException("Unsupported combat fixture file");var file=new java.io.File(plugin.getDataFolder(),filename);if(!file.exists())plugin.saveResource(filename,false);
+            var filename=plugin.getConfig().getString("combat-content-file","combat-demo.yml");if(!Set.of("combat-demo.yml","combat-path-demo.yml","combat-route-demo.yml","dungeon-play-combat.yml","combat-pattern-demo.yml","combat-area-demo.yml","combat-s4-demo.yml").contains(filename))throw new IllegalArgumentException("Unsupported combat fixture file");var file=new java.io.File(plugin.getDataFolder(),filename);if(!file.exists())plugin.saveResource(filename,false);
             var yaml=YamlConfiguration.loadConfiguration(file);var definition=combatMap(yaml);
             combatContent=CombatContent.parse(definition);combatTrials=new PaperCombatTrials(plugin,combatContent,owner,plugin.getConfig().getBoolean("combat-player-verification-enabled")?()->System.nanoTime()/1_000_000:combatClock::get);
         }
@@ -213,6 +217,7 @@ public final class SessionVerification implements AutoCloseable {
         if(plugin.getConfig().getBoolean("escort-verification-enabled")){
             if(!Boolean.getBoolean("hearth.verification.escort")||questRules==null||questRewards==null||questAdapter==null)throw new IllegalStateException("ESCORT_DEPENDENCIES");var file=new java.io.File(plugin.getDataFolder(),"escort-demo.yml");if(!file.exists())plugin.saveResource("escort-demo.yml",false);var definitions=io.github.jesterportfolio.hearth.escort.EscortContent.parse(YamlConfiguration.loadConfiguration(file).getValues(false),catalog,questRules);escort=new io.github.jesterportfolio.hearth.escort.PaperEscort(plugin,adapter,journal,quests,catalog,this.worlds,definitions,owner);questAdapter.escort(definitions.quests().keySet(),escort::command,escort::show);
         }
+        if(featureStore!=null){if(journal==null||explorationContent==null||questAdapter==null)throw new IllegalStateException("S4_FEATURE_DEPENDENCIES");features=new S4Features(plugin,adapter,coordinator,featureStore,personalStorage,codec,journal,quests,catalog,explorationContent,questAdapter,combatPlayers,access,owner);adapter.travelRestriction(p->{var session=adapter.prepared(p);return session!=null&&(fieldEncounters==null||fieldEncounters.entities(session.context().storyRunId()).stream().filter(e->e instanceof org.bukkit.entity.Mob).map(e->(org.bukkit.entity.Mob)e).noneMatch(e->e.getTarget()==p));});}
     }
     private CourseRoute.Page courseRouteView(PlayerSessions.Session session,QuestJournal.View view,InventoryPayload inventory,boolean atEntry,List<String> gatheringInfo,List<String> dungeonInfo){
         var prepared=preparationView(session,view,inventory,atEntry,gatheringInfo,dungeonInfo);
@@ -372,6 +377,7 @@ public final class SessionVerification implements AutoCloseable {
         case "quest-completion-start" -> completionStart();
         case "completion-navigation" -> completionNavigation();
         case "escort-play" -> escortPlay();
+        case "s4-features-restored" -> openAll().thenRun(()->check(fieldEncounters.restartHeld()&&fieldEncounters.count(a)==0&&fieldEncounters.count(b)==0,"s4_new_JVM_field_original_marker_HOLD_no_respawn")).thenCompose(v->featureVerification().restored(a1,a2)).thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(row->check(codec.equivalent(row.payload(),one.capture())&&craftingCount(row.payload(),Material.WOODEN_PICKAXE)==1&&craftingCount(row.payload(),Material.STONE_PICKAXE)==1,"s4_new_JVM_public_course_tools_preserved"));
         case "public-course-start" -> publicCourseStart();
         case "public-course-supply" -> gatheringCraftingPlay(true);
         case "public-course-vote" -> publicCourseVote();
@@ -1634,12 +1640,18 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->mainResult(store.readInventory(isolated))).thenCompose(before->probe.start(subject,"public_courier").thenCompose(value->{attempt[0]=value;return mainResult(store.advanceQuest(isolated,"public_courier",new QuestStore.Saved(QuestStore.Phase.ACTIVE,0,0),QuestStore.Phase.ACTIVE,1,0));}).thenCompose(updated->{actor.point=def.legs().getFirst().end();ticker[0]=Bukkit.getScheduler().runTaskTimer(plugin,probe::tick,1,5);return until(()->attempt[0].phase()==EscortPlay.Phase.HOLD);}).thenCompose(v->escortRead(isolated,QuestStore.Phase.ACTIVE,1,1)).thenCompose(v->rejectQuest(probe.start(subject,"public_courier"))).thenCompose(v->mainResult(store.readInventory(isolated))).thenAccept(after->check(before.equals(after)&&attempt[0].error()!=null,"escort_real_PG_CAS_failure_keeps_source_and_HOLD_without_restart")))
             .thenCompose(v->escortRead(b3,QuestStore.Phase.ACTIVE,0,0)).whenCompleteAsync((v,error)->{if(ticker[0]!=null)ticker[0].cancel();probe.close();},owner);
     }
+    private FeaturesVerification featureVerification(){return new FeaturesVerification(store,features,codec,owner,this::check,n->ctx(a,n),()->Bukkit.getWorld(worlds.get(a).mapping().physicalId()));}
+    private CompletionStage<Void> featuresPost(){
+        return journal.load(a1,s1,()->coordinator.playable(s1)).thenAccept(view->{var w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());int chunks=w.getLoadedChunks().length;var pixels=features.maps.raster(w,0,0,true,view.exploration());check(pixels.length==16384&&w.getLoadedChunks().length==chunks,"s4_native_personal_terrain_renderer_does_not_load_chunks");check(PaperCartography.zones(explorationContent,view.exploration()).stream().noneMatch(z->explorationContent.places().get(z.id()).location().kind().equals("NONE")),"s4_native_map_excludes_unpublished_coordinates");})
+            .thenCompose(v->{var w=Bukkit.getWorld(worlds.get(a).mapping().physicalId());for(var station:paperTravel.content.stations().values()){var p=station.facility();var block=w.getBlockAt((int)p.x(),(int)p.y(),(int)p.z());if(!block.isEmpty()&&block.getType()!=Material.CHISELED_STONE_BRICKS)throw new IllegalStateException("TRAVEL_FIXTURE_NOT_EMPTY");block.setType(Material.CHISELED_STONE_BRICKS,false);}return journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,2,64,1.5);})
+            .thenCompose(v->journal.enterPlaces(a1,s1,()->coordinator.playable(s1),2,64,1.5,11.5,64,10.5)).thenCompose(v->mainResult(store.readInventory(a1))).thenCompose(before->{var p=new TravelPort(s1,one);var t=paperTravel.travel;UUID request=UUID.randomUUID();var first=t.start(p,"village_station","outpost_station",request);check(first==t.start(p,"village_station","outpost_station",request),"s4_travel_duplicate_joins_same_request");return mainResult(first).thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(after->check(p.moves==1&&!p.frozen&&codec.equivalent(before.payload(),after.payload())&&craftingCount(after.payload(),Material.WOODEN_PICKAXE)==1,"s4_travel_approved_free_instant_controlled_port_preserves_tools"));});
+    }
     private CompletionStage<Void> publicCourseStart(){
         if(!publicCourse||courseRoute==null)throw new IllegalStateException("PUBLIC_COURSE_REQUIRED");
         check(playthrough.steps().size()==(escort==null?10:11)&&courseRoute.bindings().size()==7,"public_course_packaged_plan_and_facility_links_validated");
         var defaults=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(Objects.requireNonNull(plugin.getResource("config.yml")),java.nio.charset.StandardCharsets.UTF_8));
         check("playthrough-demo.yml".equals(defaults.getString("playthrough-content-file"))&&defaults.getKeys(false).stream().filter(key->key.endsWith("-enabled")).allMatch(key->!defaults.getBoolean(key)),"public_course_default_activation_gates_remain_disabled");
-        return openAll().thenRun(()->{publicRoster();facilityBlocks(a,true);facilityBlocks(b,true);})
+        return openAll().thenCompose(v->features==null?CompletableFuture.completedFuture(null):quests.open(a1,"survey_marker",s1,()->coordinator.playable(s1)).thenCompose(q->expectQuestCode(quests.accept(q,catalog.quest("survey_marker")),"CUTSCENE_REQUIRED")).thenCompose(x->featureVerification().prepare(a1,s1,a2,s2))).thenRun(()->{publicRoster();facilityBlocks(a,true);facilityBlocks(b,true);})
             .thenCompose(v->publicRouteCheck("survey",null)).thenCompose(v->finishCourseQuest(a1,s1,"survey_marker"))
             .thenCompose(v->expectQuestCode(sharedStory.advance(a1,s1,()->true),"CONDITIONS_UNMET"))
             .thenCompose(v->finishCourseQuest(a2,s2,"survey_marker")).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true))
@@ -1663,7 +1675,7 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->courseGuide(a2,new Object())).thenAccept(guide->check(!guide.complete(),"public_course_P1_completion_does_not_complete_P2_itinerary"))
             .thenCompose(v->questRead(b3,"survey_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
             .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(row->check(codec.equivalent(row.payload(),one.capture())&&craftingCount(one.capture(),Material.WOODEN_PICKAXE)==1&&craftingCount(one.capture(),Material.STONE_PICKAXE)==1,"public_course_crafted_tools_survive_dungeon_and_world_reconnect"))
-            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->check(view.exploration().place("public_material_site").filter(p->p.discovered()).isPresent()&&view.exploration().place("public_workshop").filter(p->p.discovered()).isPresent()&&view.exploration().facts().stream().anyMatch(f->f.id().equals("gathering_workshop_report")),"public_course_personal_visits_and_report_diary_preserved")).thenCompose(v->escort==null?CompletableFuture.completedFuture(null):courseOutcomeCheck());
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->check(view.exploration().place("public_material_site").filter(p->p.discovered()).isPresent()&&view.exploration().place("public_workshop").filter(p->p.discovered()).isPresent()&&view.exploration().facts().stream().anyMatch(f->f.id().equals("gathering_workshop_report")),"public_course_personal_visits_and_report_diary_preserved")).thenCompose(v->escort==null?CompletableFuture.completedFuture(null):courseOutcomeCheck()).thenCompose(v->features==null?CompletableFuture.completedFuture(null):featuresPost());
     }
     private CompletionStage<Void> courseOutcomeCheck(){
         var inventory=one.capture();long revision=s1.save().revision();
@@ -2944,7 +2956,7 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->rejectQuest(probe.barrier(a))))
             .thenCompose(v->matrix());
     }
-    public CompletionStage<Void> barrier(UUID run){return (crafting==null?CompletableFuture.<Void>completedFuture(null):crafting.barrier(run)).thenComposeAsync(v->escort==null?CompletableFuture.completedFuture(null):escort.barrier(run),owner).thenComposeAsync(v->dungeonPlay==null?CompletableFuture.completedFuture(null):dungeonPlay.barrier(run),owner).thenComposeAsync(v->gathering==null?CompletableFuture.completedFuture(null):gathering.drain(run),owner).thenComposeAsync(v->paperTravel==null?CompletableFuture.completedFuture(null):paperTravel.barrier(run),owner).thenComposeAsync(v->coordinator.barrier(run),owner).thenComposeAsync(v->combatPlayers==null?CompletableFuture.completedFuture(null):combatPlayers.barrier(run),owner).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)).thenCompose(v2->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run)),owner);}
+    public CompletionStage<Void> barrier(UUID run){return (features==null?CompletableFuture.<Void>completedFuture(null):features.barrier(run)).thenComposeAsync(v->crafting==null?CompletableFuture.<Void>completedFuture(null):crafting.barrier(run),owner).thenComposeAsync(v->escort==null?CompletableFuture.completedFuture(null):escort.barrier(run),owner).thenComposeAsync(v->dungeonPlay==null?CompletableFuture.completedFuture(null):dungeonPlay.barrier(run),owner).thenComposeAsync(v->gathering==null?CompletableFuture.completedFuture(null):gathering.drain(run),owner).thenComposeAsync(v->paperTravel==null?CompletableFuture.completedFuture(null):paperTravel.barrier(run),owner).thenComposeAsync(v->coordinator.barrier(run),owner).thenComposeAsync(v->combatPlayers==null?CompletableFuture.completedFuture(null):combatPlayers.barrier(run),owner).thenComposeAsync(v->quests==null ? CompletableFuture.completedFuture(null):quests.barrier(run).thenCompose(v2->journal.barrier(run)).thenCompose(v2->sharedStory==null?CompletableFuture.completedFuture(null):sharedStory.barrier(run)),owner);}
     public boolean canUnload(UUID run){return (crafting==null||crafting.settled(run))&&(gathering==null||gathering.settled(run))&&(paperTravel==null||paperTravel.settled(run))&&coordinator.canUnload(run) && (quests==null || quests.settled(run) && journal.settled(run) && (sharedStory==null||sharedStory.settled(run)));}
     public CompletionStage<Void> restoreStoryWorld(UUID run){if(gathering!=null)gathering.ensureFacilities(run);if(paperTravel!=null)paperTravel.ensureRegions(run);if(blockEffect==null)return CompletableFuture.completedFuture(null);blockEffect.prepared(run);var context=ctx(run,1);return sharedStory.load(context).thenComposeAsync(s->sharedStory.reconcile(context),owner).thenAccept(ok->{});}
     public void releaseQuests(UUID run){if(dungeonPlay!=null)dungeonPlay.unloaded(run);if(gathering!=null)gathering.unloaded(run);if(quests!=null)quests.release(run);if(blockEffect!=null){blockEffect.unloaded(run);sharedStory.worldUnloaded(run);}}
@@ -2987,6 +2999,6 @@ public final class SessionVerification implements AutoCloseable {
             .exceptionally(error->{log("MANUAL_DB HOLD "+LifecycleFailure.code(error));return null;});
     }
     @Override public void close(){if(crafting!=null)crafting.close();if(paperTravel!=null)paperTravel.close();
-        io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(escort,dungeonPlay,gathering,economy,combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
+        io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(features,escort,dungeonPlay,gathering,economy,combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
     }
 }

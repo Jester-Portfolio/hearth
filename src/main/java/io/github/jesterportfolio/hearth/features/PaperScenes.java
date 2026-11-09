@@ -1,0 +1,39 @@
+package io.github.jesterportfolio.hearth.features;
+
+import io.github.jesterportfolio.hearth.quest.*;
+import io.github.jesterportfolio.hearth.session.*;
+import java.util.*;
+import java.util.concurrent.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.*;
+import org.bukkit.*;
+import org.bukkit.entity.Player;
+import org.bukkit.event.*;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.java.JavaPlugin;
+
+/** 필수 장면은 해당 개인만 정지합니다. 접속 종료는 완료가 아니며 재시청은 DB를 쓰지 않습니다. */
+public final class PaperScenes implements Listener,AutoCloseable {
+    private final JavaPlugin plugin;private final PaperSessionAdapter players;private final QuestJournal journal;private final SceneContent content;public final SceneProgress progress;private final Executor owner;private final Map<Player,Object> frames=new IdentityHashMap<>();private final Map<Player,PlayerSessions.Session> locks=new IdentityHashMap<>();private final Map<Player,Runnable> after=new IdentityHashMap<>();private boolean closed;
+    public PaperScenes(JavaPlugin plugin,PaperSessionAdapter players,QuestJournal journal,SceneContent content,FeatureStore store,Executor owner){this.plugin=plugin;this.players=players;this.journal=journal;this.content=content;this.owner=owner;progress=new SceneProgress(store,owner,()->{if(!Bukkit.isPrimaryThread())throw new IllegalStateException("SCENE_THREAD");});Bukkit.getPluginManager().registerEvents(this,plugin);}
+    public boolean accepted(io.github.jesterportfolio.hearth.persistence.ServerProgressAccess.Context c,String quest){return content.scenes().values().stream().filter(s->s.quest().equals(quest)).allMatch(s->progress.completed(c,s.id()));}
+    public boolean command(Player p,String line){if(!line.equals("/hearthscene")&&!line.startsWith("/hearthscene "))return false;String[] args=line.split(" ",-1);if(args.length==1){p.sendMessage(Component.text("장면: "+String.join(", ",content.scenes().keySet())+" · /hearthscene <장면> [replay]"));return true;}if(args.length>3||!content.scenes().containsKey(args[1])||args.length==3&&!args[2].equals("replay")){p.sendMessage(Component.text("현재 공개 장면을 다시 선택하세요."));return true;}open(p,args[1],args.length==3);return true;}
+    public void forQuest(Player p,String quest,Runnable resume){after.put(p,resume);content.scenes().values().stream().filter(s->s.quest().equals(quest)).findFirst().ifPresent(scene->open(p,scene.id(),false));}
+    private void open(Player p,String id,boolean replay){var session=players.current(p);if(closed||session==null)return;var scene=content.scenes().get(id);Object frame=new Object();frames.put(p,frame);var current=(java.util.function.BooleanSupplier)()->!closed&&frames.get(p)==frame&&players.prepared(p)==session&&p.isOnline();
+        journal.load(session.context(),session,current).thenComposeAsync(view->{journal.requireView(session.context(),view);if(!journal.questAllowed(session.context(),scene.quest()))throw new IllegalStateException("SCENE_HIDDEN");return progress.open(session.context(),session,scene,current);},owner).whenCompleteAsync((state,error)->{if(!current.getAsBoolean())return;if(error!=null){failure(p);return;}if(!replay&&after.containsKey(p)&&state.state().completed()){after.remove(p).run();return;}if(replay){if(!state.state().completed()){p.sendMessage(Component.text("첫 시청을 끝까지 마친 뒤 다시 볼 수 있습니다."));return;}show(p,state,frame,0,true);return;}
+            if(Cutscene.choiceRequired(state.state())){var actions=List.of(button(p,state,frame,"계속 시청",()->begin(p,state,frame,Cutscene.Choice.WATCH)),button(p,state,frame,"이번부터 건너뛰기",()->begin(p,state,frame,Cutscene.Choice.SKIP)));p.openBook(PaperQuestUI.book(new QuestBookView("장면 선택",List.of("최초 시청 완료 기록이 있습니다. 계속 시청하거나 이후 재도전의 장면을 건너뛸 수 있습니다.")),actions));}else begin(p,state,frame,state.state().skipFuture()?Cutscene.Choice.SKIP:Cutscene.Choice.WATCH);
+        },owner);
+    }
+    public void ready(Player p,PlayerSessions.Session session){for(var scene:content.scenes().values())progress.open(session.context(),session,scene,()->!closed&&players.prepared(p)==session).whenCompleteAsync((state,error)->{if(error==null&&players.current(p)==session&&!state.state().completed()&&state.state().attempts()>0)open(p,scene.id(),false);},owner);}
+    private void begin(Player p,SceneProgress.Session s,Object frame,Cutscene.Choice choice){if(!valid(p,s,frame))return;progress.start(s,UUID.randomUUID(),choice).whenCompleteAsync((state,error)->{if(!valid(p,s,frame))return;if(error!=null){failure(p);return;}if(state.skipFuture()){p.sendMessage(Component.text("장면 건너뛰기 기록을 저장했습니다. 개인 의뢰 안내로 진행하세요."));return;}try{players.freezeTravel(p,(PlayerSessions.Session)s.token,true);locks.put(p,(PlayerSessions.Session)s.token);show(p,s,frame,0,false);}catch(RuntimeException stale){failure(p);}},owner);}
+    private boolean valid(Player p,SceneProgress.Session s,Object frame){return !closed&&frames.get(p)==frame&&players.prepared(p)==s.token&&p.isOnline()&&journal.questAllowed(s.context,s.scene.quest());}
+    private Component button(Player p,SceneProgress.Session s,Object frame,String label,Runnable action){return Component.text(label).clickEvent(ClickEvent.callback(audience->{if(audience==p)Bukkit.getScheduler().runTask(plugin,()->{if(valid(p,s,frame))try{action.run();}catch(RuntimeException stale){failure(p);}});},ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofMinutes(5)).build()));}
+    private void show(Player p,SceneProgress.Session s,Object frame,int index,boolean replay){if(!valid(p,s,frame))return;if(index>=s.scene.frames().size()){release(p);var resume=after.remove(p);if(resume!=null)resume.run();p.sendMessage(Component.text(replay?"장면 재시청을 마쳤습니다. 진행/보상을 다시 적용하지 않습니다.":"최초 시청/현재 장면 완료를 저장했습니다. 안내원에게 개인 의뢰를 확인하세요."));return;}
+        var text=new QuestBookView(s.scene.title(),io.github.jesterportfolio.hearth.phone.PhonePages.text(s.scene.title(),List.of((index+1)+" / "+s.scene.frames().size(),s.scene.frames().get(index))).pages());var actions=List.of(button(p,s,frame,index+1==s.scene.frames().size()?"장면 마치기":"다음 장면",()->{if(replay){show(p,s,frame,index+1,true);return;}progress.advance(s,s.state().request(),index).whenCompleteAsync((saved,error)->{if(!valid(p,s,frame))return;if(error!=null)failure(p);else show(p,s,frame,index+1,false);},owner);}),button(p,s,frame,"현재 장면 다시 열기",()->show(p,s,frame,index,replay)));
+        p.openBook(PaperQuestUI.book(text,actions));p.sendMessage(button(p,s,frame,"[현재 장면 다시 열기]",()->show(p,s,frame,replay?index:s.state().frame(),replay)));
+    }
+    private void failure(Player p){release(p);p.sendMessage(Component.text("장면 저장 상태를 확인하지 못했습니다. 완료로 처리하지 않고 원본 기록을 보존합니다."));}
+    private void release(Player p){var s=locks.remove(p);if(s!=null)players.freezeTravel(p,s,false);}
+    @EventHandler(priority=EventPriority.LOWEST) public void quit(PlayerQuitEvent e){release(e.getPlayer());frames.remove(e.getPlayer());after.remove(e.getPlayer());}
+    public void close(){closed=true;for(var p:List.copyOf(locks.keySet()))release(p);frames.clear();after.clear();HandlerList.unregisterAll(this);}
+}

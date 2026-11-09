@@ -8,6 +8,16 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth S4 isolated multiworld verification foundation
 commands:
+  hearthfeatures:
+    description: 개인 지도·장면·보관 안내
+  hearthscene:
+    description: 개인 필수 장면·선택·기록 재시청
+  hearthmap:
+    description: 개인 발견 지형 지도와 원형 미니맵
+  hearthender:
+    description: 시설의 진행별 개인 엔더 보관함
+  hearthhud:
+    description: 현재 목표 고정 HUD 표시 설정
   hearthtalk:
     description: 현재 NPC 대화의 페이지 이동·닫기
   hearthprepare:

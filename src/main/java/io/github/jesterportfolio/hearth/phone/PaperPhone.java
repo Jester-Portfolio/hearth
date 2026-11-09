@@ -73,10 +73,13 @@ public final class PaperPhone implements Listener,AutoCloseable {
     public static Dialog compose(String title,List<? extends DialogBody> body,List<? extends DialogInput> inputs,List<ActionButton> actions){
         return Dialog.create(b->b.empty().base(DialogBase.builder(Component.text(title)).canCloseWithEscape(true).pause(false).body(body).inputs(inputs).build()).type(DialogType.multiAction(actions).columns(2).build()));
     }
+    private Consumer<Player> featuresMenu;private Consumer<Player> deviceIssuer;
+    public void featuresMenu(Consumer<Player> menu){featuresMenu=menu;}public void deviceIssuer(Consumer<Player> issue){deviceIssuer=issue;}
     public void home(Player p){
         var s=advance(p);var body=new ArrayList<DialogBody>();body.add(DialogBody.plainMessage(Component.text("\ue000").font(Key.key("hearth:phone"))));
         var actions=new ArrayList<ActionButton>();String[] labels={"AI 어시스턴트","퀘스트","연구","지도","기록","설정"};
         for(int i=0;i<labels.length;i++){final int app=i;Runnable open=()->app(p,app);body.add(DialogBody.plainMessage(icon(p,s,i,labels[i],open)));actions.add(button(p,s,labels[i],open));}
+        if(featuresMenu!=null)actions.add(button(p,s,"지도·장면·개인 보관",()->{advance(p);p.closeDialog();featuresMenu.accept(p);}));
         if(playthrough!=null&&sharedStory!=null)actions.add(button(p,s,"코스 결과·기록",()->outcome(p,advance(p),1,null,null)));
         if(playthrough!=null&&sharedStory!=null)actions.add(button(p,s,"이어 하기",()->resume(p,advance(p),1,null,null)));
         actions.add(button(p,s,"종료",()->{screens.put(p.getUniqueId(),new Screen(s.session(),new Object(),s.chat()));p.closeDialog();}));
@@ -650,6 +653,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         if(command.equals("/hearthphone")){home(p);return true;}
         if(command.equals("/hearthphone notices")){notices(p,advance(p),1);return true;}
         if(command.equals("/hearthphone device")){
+            if(deviceIssuer!=null){deviceIssuer.accept(p);return true;}
             if(!p.hasPermission("hearth.verify"))return true;
             if(!p.getItemOnCursor().isEmpty()||p.getInventory().firstEmpty()<0){p.sendMessage(Component.text("빈 인벤토리 슬롯이 필요합니다."));return true;}
             var item=new ItemStack(Material.PAPER);var meta=item.getItemMeta();meta.displayName(Component.text("HEARTH OS 개발 스마트폰"));meta.setItemModel(new NamespacedKey("hearth","phone"));meta.getPersistentDataContainer().set(device,PersistentDataType.BYTE,(byte)1);item.setItemMeta(meta);p.getInventory().addItem(item);return true;
@@ -657,7 +661,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
         return false;
     }
     private boolean device(ItemStack item){return item!=null&&item.hasItemMeta()&&item.getItemMeta().getPersistentDataContainer().has(device,PersistentDataType.BYTE);}
-    @EventHandler(priority=EventPriority.HIGHEST) public void use(PlayerInteractEvent e){if(device(e.getItem())&&e.getAction().isRightClick()){e.setCancelled(true);if(e.getHand()==EquipmentSlot.HAND&&players.current(e.getPlayer())!=null)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(e.getPlayer())!=null&&!closed)home(e.getPlayer());},1);}}
+    private boolean deviceAllowed(Player p,ItemStack item){var s=players.current(p);if(s==null)return false;var data=item.getItemMeta().getPersistentDataContainer();String owner=data.get(new NamespacedKey(plugin,"phone_owner"),PersistentDataType.STRING);return owner==null?!plugin.getConfig().getBoolean("s4-features-enabled")&&p.hasPermission("hearth.verify"):p.getUniqueId().toString().equals(owner)&&s.context().storyRunId().toString().equals(data.get(new NamespacedKey(plugin,"phone_run"),PersistentDataType.STRING));}
+    @EventHandler(priority=EventPriority.HIGHEST) public void use(PlayerInteractEvent e){if(device(e.getItem())&&e.getAction().isRightClick()){e.setCancelled(true);if(e.getHand()==EquipmentSlot.HAND&&deviceAllowed(e.getPlayer(),e.getItem())&&players.current(e.getPlayer())!=null)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(e.getPlayer())!=null&&!closed)home(e.getPlayer());},1);}}
     @EventHandler public void drop(PlayerDropItemEvent e){if(device(e.getItemDrop().getItemStack()))e.setCancelled(true);}
     @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();completionFlow.forget(s.session());completionReturns.remove(s.session());pendingActions.remove(s.session());contextModes.remove(s.session());helpSelections.remove(s.session());references.remove(s.session());}}
     @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->s.chat().close());screens.clear();pendingActions.clear();completionFlow.clear();completionReturns.clear();contextModes.clear();helpSelections.clear();references.clear();assistant.close();}

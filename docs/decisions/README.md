@@ -20,6 +20,8 @@
 | [ADR-0014: WorldGuard 기본 보호 엔진](0014-worldguard-protection-engine.md) | 승인 | 양쪽 월드 보호·WorldEdit 의존성 확인·Hearth 전용 문맥/시험 행렬 |
 | [ADR-0015: 경제 엔진·거래·스토리 분리](0015-economy-engine-and-transaction-boundaries.md) | 격리 개발 구조 채택·운영 정책 미정 | Java 순수 계산·경제 전용 스키마·최신 인벤토리/CAS 거래·단계적 운영 판단 |
 
+| [ADR-0016: S4 개인 기능·복귀 정책](0016-s4-personal-features-and-recovery.md) | 승인 | 필수 시청/재시청·무료 시설 이동·개인 엔더·스마트폰 발급·재시작 HOLD/복귀 |
+
 각 기록에는 다음 내용을 포함합니다.
 
 - 제목과 작성일

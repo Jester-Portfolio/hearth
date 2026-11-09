@@ -1,0 +1,269 @@
+{
+  "checked_at": "2026-11-09",
+  "baseline_commit": "d65ccac",
+  "outcome": "PASS",
+  "evidence_root": "/tmp/hearth-s4-completion.bqexz4fy",
+  "artifact": {
+    "path": "/tmp/hearth-s4-completion.bqexz4fy/Hearth-0.1.0-SNAPSHOT.jar",
+    "sha256": "106de9383406092e71a905d76c257dce01332ea1dc6c5a0f3e5e962fa838c72a",
+    "bytes": 2136069,
+    "deployed": false,
+    "same_final_jar_both_modes": true
+  },
+  "unit_tests": {
+    "final_unique_tests": 861,
+    "final_failures": 0,
+    "runs": {
+      "unit-initial-results": {
+        "tests": 857,
+        "failures": 1,
+        "path": "/tmp/hearth-s4-completion.bqexz4fy/unit-initial-results"
+      },
+      "unit-corrected-results": {
+        "tests": 15,
+        "failures": 0,
+        "path": "/tmp/hearth-s4-completion.bqexz4fy/unit-corrected-results"
+      },
+      "unit-session-results": {
+        "tests": 38,
+        "failures": 0,
+        "path": "/tmp/hearth-s4-completion.bqexz4fy/unit-session-results"
+      }
+    },
+    "method": "전체 857개 실행 후 실패한 범위/새 HUD 15개와 세션 관련 영향 검사만 재실행; testcase 식별자로 최신 결과 결합"
+  },
+  "native": {
+    "completion": {
+      "workspace": "/tmp/hearth-s4-11.9k751rvw",
+      "options": "--sessions --quests --story-batch --s4-completion --accept-eula",
+      "outcome": "PASS",
+      "duration_seconds": 144.349,
+      "assertions": 432,
+      "raw_result": "/tmp/hearth-s4-11.9k751rvw/run-result.json",
+      "raw_sha256": "945b5b1fed51e7c10c142fb67983472618b5006f6cc381408a01412a606bd81f",
+      "plugin_sha256": "106de9383406092e71a905d76c257dce01332ea1dc6c5a0f3e5e962fa838c72a",
+      "all_owned_processes_and_ports_closed": true,
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 143.634,
+          "shutdown_seconds": 0.208,
+          "max_sampled_rss_kib": 219436,
+          "observed_cpu_seconds": 2.28,
+          "min_sampled_host_available_kib": 12143800,
+          "sample_count": 2037
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "ready_seconds": 13.951,
+          "duration_seconds": 124.109,
+          "shutdown_seconds": 0.612,
+          "max_sampled_rss_kib": 1180256,
+          "observed_cpu_seconds": 120.2,
+          "min_sampled_host_available_kib": 12143800,
+          "sample_count": 1687
+        },
+        "paper-resume": {
+          "exit_code": 0,
+          "ready_seconds": 8.897,
+          "duration_seconds": 16.524,
+          "shutdown_seconds": 3.53,
+          "max_sampled_rss_kib": 983328,
+          "observed_cpu_seconds": 32.21,
+          "min_sampled_host_available_kib": 12361732,
+          "sample_count": 297
+        }
+      },
+      "s4_checks": [
+        "s4_scene_first_mandatory_00000000-0000-0031-0000-000000000001",
+        "s4_scene_interrupted_persisted_still_mandatory",
+        "s4_scene_confirmed_last_frame_and_choice",
+        "s4_scene_second_watch_keeps_next_choice",
+        "s4_scene_readonly_replay_keeps_revision_and_state",
+        "s4_scene_first_mandatory_00000000-0000-0031-0000-000000000002",
+        "s4_scene_interrupted_persisted_still_mandatory",
+        "s4_scene_confirmed_last_frame_and_choice",
+        "s4_scene_readonly_replay_keeps_revision_and_state",
+        "s4_ender_observe_marks_existing_inventory_dirty",
+        "s4_ender_and_41_slots_confirmed_atomically",
+        "s4_ender_real_PG_concurrent_CAS_one_winner",
+        "s4_ender_conflict_rolls_back_41_slots",
+        "s4_ender_conflict_preserves_27_slot_original",
+        "s4_ender_stale_account_HOLD_no_retry",
+        "s4_phone_plan_idempotent_and_original_metadata_kept",
+        "s4_phone_one_owner_run_bound_item",
+        "s4_phone_duplicate_issuance_rolls_back_inventory",
+        "s4_phone_saved_issue_flag_requires_explicit_replacement",
+        "s4_phone_explicit_single_reissue_atomic",
+        "s4_scene_real_PG_CAS_HOLD_original_preserved",
+        "s4_recovery_confirmed_boundary_RETURN_PENDING",
+        "s4_recovery_confirmed_boundary_ACTIVE",
+        "s4_recovery_confirmed_boundary_RETURNING",
+        "s4_native_27_slots_metadata_serialization",
+        "s4_native_map_locked_no_shared_vanilla_terrain",
+        "s4_native_minimap_glyph_Component_without_Player_claim",
+        "s4_native_container_FURNACE",
+        "s4_native_container_HOPPER",
+        "s4_native_container_BLUE_SHULKER_BOX",
+        "s4_native_container_BREWING_STAND",
+        "s4_native_entity_slow_effect",
+        "s4_native_entity_repel_effect",
+        "s4_native_personal_terrain_renderer_does_not_load_chunks",
+        "s4_native_map_excludes_unpublished_coordinates",
+        "s4_travel_duplicate_joins_same_request",
+        "s4_travel_approved_free_instant_controlled_port_preserves_tools",
+        "s4_new_JVM_field_original_marker_HOLD_no_respawn",
+        "s4_new_JVM_scene_personal_complete_choice_restored",
+        "s4_new_JVM_scene_personal_complete_choice_restored",
+        "s4_new_JVM_41_slots_original_after_rollback",
+        "s4_new_JVM_personal_27_slots_restored",
+        "s4_new_JVM_single_bound_phone_restored",
+        "s4_new_JVM_pending_return_resumable",
+        "s4_new_JVM_claimed_unknown_movement_HOLD",
+        "s4_new_JVM_confirmed_done_no_second_return",
+        "s4_new_JVM_active_battle_HOLD_no_respawn",
+        "s4_new_JVM_unknown_movement_HOLD_no_teleport",
+        "s4_new_JVM_world_container_preserved_FURNACE",
+        "s4_new_JVM_world_container_preserved_HOPPER",
+        "s4_new_JVM_world_container_preserved_BLUE_SHULKER_BOX",
+        "s4_new_JVM_world_container_preserved_BREWING_STAND",
+        "s4_new_JVM_public_course_tools_preserved"
+      ]
+    },
+    "inventory_regression": {
+      "workspace": "/tmp/hearth-s4-11.dyn0flyf",
+      "options": "--sessions --inventory-workspaces --accept-eula",
+      "outcome": "PASS",
+      "duration_seconds": 48.857,
+      "assertions": 56,
+      "raw_result": "/tmp/hearth-s4-11.dyn0flyf/run-result.json",
+      "raw_sha256": "9cae31839808a94235ef16f36932e98ba488eeae7ce1429202ffb56f06c6b039",
+      "plugin_sha256": "106de9383406092e71a905d76c257dce01332ea1dc6c5a0f3e5e962fa838c72a",
+      "all_owned_processes_and_ports_closed": true,
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 48.144,
+          "shutdown_seconds": 0.408,
+          "max_sampled_rss_kib": 221472,
+          "observed_cpu_seconds": 2.29,
+          "min_sampled_host_available_kib": 12090100,
+          "sample_count": 842
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "ready_seconds": 13.48,
+          "duration_seconds": 29.842,
+          "shutdown_seconds": 3.666,
+          "max_sampled_rss_kib": 1218624,
+          "observed_cpu_seconds": 60.6,
+          "min_sampled_host_available_kib": 12090100,
+          "sample_count": 512
+        },
+        "paper-resume": {
+          "exit_code": 0,
+          "ready_seconds": 8.882,
+          "duration_seconds": 15.103,
+          "shutdown_seconds": 3.524,
+          "max_sampled_rss_kib": 925836,
+          "observed_cpu_seconds": 29.36,
+          "min_sampled_host_available_kib": 12398768,
+          "sample_count": 275
+        }
+      },
+      "s4_checks": []
+    }
+  },
+  "development_failures": [
+    {
+      "workspace": "/tmp/hearth-s4-11.6dkuvrfi",
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "correction": "합성 전투 효과 fixture의 SPHERE 높이/단발 간격 오류 수정"
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.0ezvo1_p",
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-resume",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "correction": "기존 전투 재시작 표식과 승인 복구 경로 충돌 수정; 구 표식 보존 및 필드 HOLD 유지"
+    },
+    {
+      "workspace": "/tmp/hearth-s4-11.xluq1edj",
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-resume",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "correction": "새 복원 action의 LifecycleVerification 등록 누락 수정"
+    }
+  ],
+  "resource_pack": {
+    "path": "/tmp/hearth-s4-completion.bqexz4fy/hearth-phone-pack.zip",
+    "sha1": "29c6e5337c87c69270d331939822611043d22bb8",
+    "json_png_fonts_shift_validation": "PASS",
+    "published": false
+  },
+  "cli_rejection_checks": [
+    {
+      "options": [
+        "--s4-completion"
+      ],
+      "exit_code": 2,
+      "error": "verify-lifecycle.py: error: --s4-completion은 자동 --sessions --quests --story-batch와 단독 실행합니다"
+    },
+    {
+      "options": [
+        "--s4-completion",
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--manual-player"
+      ],
+      "exit_code": 2,
+      "error": "verify-lifecycle.py: error: 수동 모드는 --sessions --operator-ready --profile 이름과 운영자 TTY/준비된 인증 클라이언트가 필요합니다"
+    },
+    {
+      "options": [
+        "--s4-completion",
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--inventory-workspaces"
+      ],
+      "exit_code": 2,
+      "error": "verify-lifecycle.py: error: --inventory-workspaces는 자동 --sessions와 단독 실행합니다"
+    }
+  ],
+  "not_tested": [
+    "실제 인증 Player 클릭/드래그·아이템 지급/회수·시설 이동",
+    "실제 전투/관전/부활·컷신 입력/시선·프로세스 장애 중 Player 복귀",
+    "리소스팩 클라이언트 로드·정확한 좌상단/우상단 HUD·GUI 배율/가독성",
+    "실제 코옵/자동 가공·호퍼 전달 경합·부하/장기 안정성",
+    "PG 프로세스 재시작·운영 복구·배포·S5 실제 AI 모델"
+  ]
+}

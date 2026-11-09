@@ -23,13 +23,14 @@ import static io.github.jesterportfolio.hearth.combat.FieldEncounters.*;
 public final class PaperFieldEncounters implements Listener,AutoCloseable {
     private record MobRef(Binding binding,String zone,LivingEntity entity) {}
     private final JavaPlugin plugin;private final PaperSessionAdapter sessions;private final Map<UUID,WorldLifecycle> worlds;
-    private final FieldContent content;
+    private final FieldContent content;private final boolean restartHeld;
     private final Map<UUID,MobRef> mobs=new HashMap<>();private final Set<UUID> reported=new HashSet<>();private final FieldEncounters engine;private boolean closed;
     public PaperFieldEncounters(JavaPlugin plugin,PaperSessionAdapter sessions,Map<UUID,WorldLifecycle> worlds,FieldContent content){
         main();if(!plugin.getConfig().getBoolean("field-encounter-verification-enabled")||!Boolean.getBoolean("hearth.verification.field"))throw new IllegalStateException("Field gate missing");
         this.content=content;this.plugin=plugin;this.sessions=sessions;this.worlds=Map.copyOf(worlds);
         // 조우의 프로세스 간 복원/리셋 정책을 발명하지 않습니다. 이전 실행의 표식은 보존하고 자동 재소환을 거부합니다.
-        try{Files.createFile(plugin.getDataFolder().toPath().resolve("field-encounters.started"));}catch(IOException e){throw new IllegalStateException("FIELD_RESTART_REVIEW_REQUIRED",e);}
+        boolean review=false;var marker=plugin.getDataFolder().toPath().resolve("field-encounters.started");
+        try{Files.createFile(marker);}catch(java.nio.file.FileAlreadyExistsException e){if(!plugin.getConfig().getBoolean("s4-features-enabled")||!Boolean.getBoolean("hearth.verification.s4Features")||!Files.isRegularFile(marker,java.nio.file.LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException("FIELD_RESTART_REVIEW_REQUIRED",e);review=true;}catch(IOException e){throw new IllegalStateException("FIELD_RESTART_REVIEW_REQUIRED",e);}restartHeld=review;if(review)plugin.getLogger().warning("HEARTH_FIELD_RESTART_HOLD original marker preserved; no automatic respawn");
         engine=new FieldEncounters(content,new Port(){
             public UUID spawn(Binding b,Zone zone,Tier tier){main();var world=Bukkit.getWorld(b.world());if(world==null||!live(b))throw new IllegalStateException("FIELD_WORLD_NOT_READY");
                 if(!world.isChunkLoaded(((int)Math.floor(zone.spawn().x()))>>4,((int)Math.floor(zone.spawn().z()))>>4))throw new IllegalStateException("FIELD_CHUNK_NOT_READY");
@@ -47,8 +48,9 @@ public final class PaperFieldEncounters implements Listener,AutoCloseable {
     }
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("Not main thread");}
     public FieldEncounters engine(){main();return engine;}
-    private boolean live(Binding b){var lifecycle=worlds.get(b.run());return !closed&&lifecycle!=null&&lifecycle.generation()==b.generation()&&lifecycle.mapping().physicalId().equals(b.world())&&lifecycle.state()==WorldLifecycle.State.ACTIVE&&Bukkit.getWorld(b.world())!=null;}
-    public Binding binding(UUID run){main();var w=Objects.requireNonNull(worlds.get(run));var b=new Binding(run,w.mapping().physicalId(),w.generation());if(!live(b))throw new IllegalStateException("FIELD_WORLD_NOT_READY");engine.bind(b);return b;}
+    public boolean restartHeld(){return restartHeld;}
+    private boolean live(Binding b){var lifecycle=worlds.get(b.run());return !closed&&!restartHeld&&lifecycle!=null&&lifecycle.generation()==b.generation()&&lifecycle.mapping().physicalId().equals(b.world())&&lifecycle.state()==WorldLifecycle.State.ACTIVE&&Bukkit.getWorld(b.world())!=null;}
+    public Binding binding(UUID run){main();if(restartHeld)throw new IllegalStateException("FIELD_RESTART_REVIEW_REQUIRED");var w=Objects.requireNonNull(worlds.get(run));var b=new Binding(run,w.mapping().physicalId(),w.generation());if(!live(b))throw new IllegalStateException("FIELD_WORLD_NOT_READY");engine.bind(b);return b;}
     public List<String> enter(Binding b,UUID player,Point from,Point to,List<Presence> online){main();if(!live(b))throw new IllegalStateException("FIELD_STALE_GENERATION");return engine.enter(b,player,from,to,online);}
     public void validateReset(FieldReset plan){main();plan.selected(content);}
     public FieldReset resetPolicy(){main();return content.reset();}

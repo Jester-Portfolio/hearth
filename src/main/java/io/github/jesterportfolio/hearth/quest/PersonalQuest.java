@@ -90,6 +90,8 @@ public final class PersonalQuest {
     private void require(Session s){check.run();if(!current(s))throw new IllegalStateException("STALE_QUEST");}
     private static <T> CompletionStage<T> rejected(String code){return CompletableFuture.failedFuture(new IllegalStateException(code));}
     public CompletionStage<QuestStore.Saved> advance(Session s,QuestStore.Phase target) { return advance(s,target,false); }
+    private java.util.function.BiPredicate<ServerProgressAccess.Context,String> acceptPolicy=(c,q)->true;
+    public void acceptPolicy(java.util.function.BiPredicate<ServerProgressAccess.Context,String> policy){check.run();acceptPolicy=Objects.requireNonNull(policy);}
     public CompletionStage<QuestStore.Saved> accept(Session s,QuestContent c){
         check.run();if(!s.key.quest().equals(c.id()) || c.startMode()!=QuestContent.StartMode.NPC)return rejected("QUEST_START_MODE");return begin(s,c);
     }
@@ -101,6 +103,7 @@ public final class PersonalQuest {
     }
     /** 선행 조회부터 시작 INSERT까지 같은 세션의 busy/저장 장벽을 유지합니다. */
     private CompletionStage<QuestStore.Saved> begin(Session s,QuestContent c){
+        if(!acceptPolicy.test(s.context,c.id()))return rejected("CUTSCENE_REQUIRED");
         if(requiredRules.contains(c.id())&&!rules.rules().containsKey(c.id()))return rejected("QUEST_RULES_NOT_READY");
         check.run();if(!current(s))return rejected("STALE_QUEST");
         if(chapterBusy(s.context)||s.busy || s.hold || s.saved==null)return rejected("QUEST_BUSY_OR_HOLD");

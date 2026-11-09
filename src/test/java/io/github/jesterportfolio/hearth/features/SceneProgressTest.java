@@ -1,0 +1,24 @@
+package io.github.jesterportfolio.hearth.features;
+import io.github.jesterportfolio.hearth.persistence.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+final class SceneProgressTest {
+    final SceneContent.Scene scene=new SceneContent.Scene("intro","quest","공개 시작",List.of("첫 화면","마지막 화면"));
+    final ServerProgressAccess access=new ServerProgressAccess();
+    final ServerProgressAccess.Context context=access.forVerifiedServerLink(UUID.randomUUID(),UUID.randomUUID());
+    final ArrayDeque<Runnable> queue=new ArrayDeque<>(),commits=new ArrayDeque<>();final AtomicBoolean live=new AtomicBoolean(true);FeatureStore.Saved saved;CompletableFuture<FeatureStore.Saved> writing;
+    final SceneProgress.Repository repo=new SceneProgress.Repository(){public CompletionStage<Optional<FeatureStore.Saved>> read(ServerProgressAccess.Context c,String id){return CompletableFuture.completedFuture(Optional.ofNullable(saved));}public CompletionStage<FeatureStore.Saved> write(ServerProgressAccess.Context c,String id,long revision,byte[] payload){writing=new CompletableFuture<>();var pending=writing;commits.add(()->{if((saved==null?-1:saved.revision())!=revision){pending.completeExceptionally(new StorageFailure("scene","CAS_CONFLICT"));return;}saved=new FeatureStore.Saved(payload,revision+1);pending.complete(saved);});return pending;}};
+    final SceneProgress progress=new SceneProgress(repo,queue::add,()->{});
+    void pump(){while(!queue.isEmpty())queue.remove().run();}void commit(){commits.remove().run();pump();}
+    SceneProgress.Session open(){var result=progress.open(context,new Object(),scene,live::get);pump();return result.toCompletableFuture().join();}
+    @Test void frameAndAttemptOnlyChangeAfterStorageConfirms(){var s=open();var id=UUID.randomUUID();var result=progress.start(s,id,Cutscene.Choice.WATCH);assertEquals(0,s.state().attempts());assertTrue(s.busy());assertThrows(IllegalStateException.class,()->progress.start(s,id,Cutscene.Choice.WATCH));commit();assertEquals(1,result.toCompletableFuture().join().attempts());assertEquals(0,s.revision());progress.advance(s,id,0);assertEquals(0,s.state().frame());commit();assertEquals(1,s.state().frame());assertFalse(s.state().completed());progress.advance(s,id,1);commit();assertTrue(s.state().completed());assertTrue(progress.completed(context,scene.id()));}
+    @Test void unknownCommitHoldsOriginalAndCannotReopenToDiscardFailure(){var s=open();progress.start(s,UUID.randomUUID(),Cutscene.Choice.WATCH);writing.completeExceptionally(new StorageFailure("scene","COMMIT_UNKNOWN"));pump();assertTrue(s.held());assertEquals(0,s.state().attempts());assertNull(saved);assertTrue(progress.open(context,new Object(),scene,()->true).toCompletableFuture().isCompletedExceptionally());}
+    @Test void lateCommitAfterDisconnectPreservesDurableRowButDoesNotApplyLocally(){var s=open();var work=progress.start(s,UUID.randomUUID(),Cutscene.Choice.WATCH);live.set(false);commit();assertTrue(work.toCompletableFuture().isCompletedExceptionally());assertTrue(s.held());assertEquals(0,s.state().attempts());assertEquals(1,SceneProgress.decode(scene,saved.payload()).attempts());}
+    @Test void externalRevisionConflictDoesNotOverwriteWinner(){var s=open();progress.start(s,UUID.randomUUID(),Cutscene.Choice.WATCH);saved=new FeatureStore.Saved(SceneProgress.encode(scene,Cutscene.State.empty()),0);var winner=saved;commit();assertTrue(s.held());assertSame(winner,saved);assertEquals(0,s.state().attempts());}
+    @Test void incompleteStoredFirstViewingRestartsFromBeginningAndCannotSkip(){var id=UUID.randomUUID();var state=Cutscene.advance(Cutscene.start(Cutscene.State.empty(),id,Cutscene.Choice.WATCH),id,0,2);saved=new FeatureStore.Saved(SceneProgress.encode(scene,state),1);var s=open();assertFalse(s.state().completed());assertThrows(IllegalStateException.class,()->progress.start(s,UUID.randomUUID(),Cutscene.Choice.SKIP));progress.start(s,UUID.randomUUID(),Cutscene.Choice.WATCH);commit();assertEquals(0,s.state().frame());assertEquals(2,s.state().attempts());}
+    @Test void malformedOrChangedContentCannotBecomeAnEmptyNewScene(){saved=new FeatureStore.Saved(new byte[]{1,2},0);var read=progress.open(context,new Object(),scene,live::get);pump();assertTrue(read.toCompletableFuture().isCompletedExceptionally());assertEquals(0,saved.revision());}
+    @Test void newUiScopeCanReadSameTokenAfterOldScopeEnded(){var token=new Object();var first=new AtomicBoolean(true);var a=progress.open(context,token,scene,first::get);pump();first.set(false);var b=progress.open(context,token,scene,live::get);pump();assertNotSame(a.toCompletableFuture().join(),b.toCompletableFuture().join());}
+}

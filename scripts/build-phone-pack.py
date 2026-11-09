@@ -11,6 +11,14 @@ for provider in font['providers']:
     texture=pack/'assets/hearth/textures'/provider['file'].split(':')[1]
     data=texture.read_bytes();assert data.startswith(b'\x89PNG\r\n\x1a\n');w,h=struct.unpack('>II',data[16:24]);assert w>0 and h>0 and provider['ascent']<=provider['height']
 assert len({glyph for p in font['providers'] for row in p['chars'] for glyph in row})==7
+for row in range(16):
+    providers=json.loads((pack/f'assets/hearth/font/minimap_row_{row}.json').read_text())['providers']
+    bitmap=next(p for p in providers if p['type']=='bitmap')
+    assert bitmap['ascent']==-2-row*4 and bitmap['height']==4 and bitmap['chars']==['\ue100']
+    texture=pack/'assets/hearth/textures'/bitmap['file'].split(':')[1]
+    assert struct.unpack('>II',texture.read_bytes()[16:24])==(1,1)
+shift=json.loads((pack/'assets/hearth/font/minimap_shift.json').read_text())['providers'][0]['advances']
+assert all(shift[chr(0xe200+i)]==1<<i and shift[chr(0xe210+i)]==-(1<<i) for i in range(10))
 for p in pack.rglob('*.png'):assert p.read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
 output=root/'build/hearth-phone-pack.zip';output.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as z:

@@ -17,5 +17,5 @@ public final class InventoryWindowRules {
         return switch(r.click){case "SHIFT_LEFT","SHIFT_RIGHT"->r.action.equals("MOVE_TO_OTHER_INVENTORY");case "NUMBER_KEY"->r.hotbar>=0&&r.hotbar<9&&Set.of("HOTBAR_SWAP","HOTBAR_MOVE_AND_READD").contains(r.action);case "SWAP_OFFHAND"->r.action.equals("HOTBAR_SWAP");case "DROP"->r.action.equals("DROP_ONE_SLOT");case "CONTROL_DROP"->r.action.equals("DROP_ALL_SLOT");default->false;};
     }
     public static boolean drag(boolean active,boolean authorized,boolean creative,Kind kind,Collection<Slot> slots){return active&&authorized&&!creative&&kind!=Kind.OTHER&&!slots.isEmpty()&&slots.stream().allMatch(s->s==Slot.STORAGE||s==Slot.INPUT&&kind!=Kind.CONTAINER||s==Slot.CONTAINER&&kind==Kind.CONTAINER);}
-    public static boolean container(String material){return Set.of("CHEST","TRAPPED_CHEST","BARREL").contains(material);}
+    public static boolean container(String material){return Set.of("CHEST","TRAPPED_CHEST","BARREL","FURNACE","BLAST_FURNACE","SMOKER","HOPPER","DROPPER","DISPENSER","BREWING_STAND","SHULKER_BOX").contains(material)||material.endsWith("_SHULKER_BOX");}
 }

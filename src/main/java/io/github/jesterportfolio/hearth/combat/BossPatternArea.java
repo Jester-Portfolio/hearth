@@ -15,7 +15,7 @@ public final class BossPatternArea {
             if(warning==null||!warning.world().equals(live.world()))throw new IllegalStateException("BOSS_AREA_ANCHOR_MISSING_OR_STALE");return warning;
         }
     }
-    public static double extent(Pattern p){return switch(p.shape()){case SPHERE->p.range();case CONE->Math.max(p.range(),p.height()/2);case LINE->Math.max(Math.hypot(p.range(),p.width()/2),p.height()/2);};}
+    public static double extent(Pattern p){return switch(p.shape()){case SPHERE->p.range();case RING->Math.max(p.range(),p.height()/2);case CONE->Math.max(p.range(),p.height()/2);case LINE->Math.max(Math.hypot(p.range(),p.width()/2),p.height()/2);};}
     public static boolean contains(Pattern p,Pose origin,Pose target){
         if(!origin.world().equals(target.world()))return false;
         double x=target.x()-origin.x(),y=target.y()-origin.y(),z=target.z()-origin.z(),epsilon=1e-8;
@@ -23,6 +23,7 @@ public final class BossPatternArea {
         if(Math.abs(y)>p.height()/2+epsilon)return false;
         double yaw=Math.toRadians(origin.yaw()),forward=-Math.sin(yaw)*x+Math.cos(yaw)*z,side=Math.cos(yaw)*x+Math.sin(yaw)*z;
         return switch(p.shape()){
+            case RING->x*x+z*z>=p.width()*p.width()-epsilon&&x*x+z*z<=p.range()*p.range()+epsilon;
             case CONE->x*x+z*z<=p.range()*p.range()+epsilon&&forward+epsilon>=Math.hypot(x,z)*Math.cos(Math.toRadians(p.angle()/2));
             case LINE->forward>=-epsilon&&forward<=p.range()+epsilon&&Math.abs(side)<=p.width()/2+epsilon;
             case SPHERE->throw new AssertionError();
@@ -33,6 +34,7 @@ public final class BossPatternArea {
         var points=new ArrayList<Pose>();
         switch(p.shape()){
             case SPHERE->{for(int i=0;i<24;i++){double angle=Math.PI*2*i/24;points.add(point(origin,p.range()*Math.cos(angle),p.range()*Math.sin(angle)));}}
+            case RING->{for(int i=0;i<12;i++)for(double r:new double[]{p.width(),p.range()}){double a=Math.PI*2*i/12;points.add(point(origin,r*Math.cos(a),r*Math.sin(a)));}}
             case CONE->{points.add(origin);for(int i=0;i<=12;i++){double angle=Math.toRadians(-p.angle()/2+p.angle()*i/12);points.add(point(origin,p.range()*Math.cos(angle),p.range()*Math.sin(angle)));}for(int i=1;i<=2;i++)for(int sign:new int[]{-1,1}){double angle=Math.toRadians(p.angle()/2);points.add(point(origin,p.range()*i/3*Math.cos(angle),sign*p.range()*i/3*Math.sin(angle)));}}
             case LINE->{for(int i=0;i<=5;i++)for(int sign:new int[]{-1,1})points.add(point(origin,p.range()*i/5,sign*p.width()/2));}
         }

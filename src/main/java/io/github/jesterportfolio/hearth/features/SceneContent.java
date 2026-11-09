@@ -1,0 +1,9 @@
+package io.github.jesterportfolio.hearth.features;
+
+import io.github.jesterportfolio.hearth.quest.QuestCatalog;
+import java.util.*;
+public record SceneContent(Map<String,Scene> scenes){
+    public record Scene(String id,String quest,String title,List<String> frames){public Scene{frames=List.copyOf(frames);}public byte[] fingerprint(){try{var out=new java.io.ByteArrayOutputStream();var data=new java.io.DataOutputStream(out);data.writeUTF(id);data.writeUTF(quest);data.writeUTF(title);for(var frame:frames)data.writeUTF(frame);return java.security.MessageDigest.getInstance("SHA-256").digest(out.toByteArray());}catch(Exception e){throw new IllegalStateException(e);}}}
+    public SceneContent{scenes=Map.copyOf(scenes);}
+    public static SceneContent parse(Map<?,?> root,QuestCatalog catalog){if(!(root.get("format") instanceof Number n)||n.doubleValue()!=1||!(root.get("scenes") instanceof List<?> rows)||rows.isEmpty()||rows.size()>32)throw new IllegalArgumentException("SCENE_CONTENT");var scenes=new HashMap<String,Scene>();var quests=new HashSet<String>();for(var raw:rows){if(!(raw instanceof Map<?,?> r)||!(r.get("id") instanceof String id)||!id.matches("[a-z][a-z0-9_]{0,63}")||!(r.get("quest") instanceof String quest)||!catalog.questIds().contains(quest)||!quests.add(quest)||!(r.get("title") instanceof String title)||title.isBlank()||title.length()>80||!(r.get("frames") instanceof List<?> frames)||frames.isEmpty()||frames.size()>128)throw new IllegalArgumentException("SCENE_CONTENT");var text=new ArrayList<String>();for(var frame:frames){if(!(frame instanceof String s)||s.isBlank()||s.length()>1200)throw new IllegalArgumentException("SCENE_FRAME");text.add(s);}if(scenes.putIfAbsent(id,new Scene(id,quest,title,text))!=null)throw new IllegalArgumentException("SCENE_DUPLICATE");}return new SceneContent(scenes);}
+}

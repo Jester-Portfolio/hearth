@@ -1,6 +1,6 @@
-# 공개 합성 시설. 운영 요금/소요 시간/교통 수단의 승인이 아닙니다.
+# 승인 정책: 직접 방문한 두 거점의 시설 간 무료·즉시 이동, 전투 중 금지. 공개 합성 장소.
 format: 1
-isolated-unpriced-prototype: true
+policy: FREE_INSTANT_NON_COMBAT
 extra-places:
   - id: public_outpost
     marker-key: marker_outpost
