@@ -41,7 +41,7 @@ public final class SessionVerification implements AutoCloseable {
     private PlayerSessions.Session s1,s2,s3,oldSession,newSession;
     private CompletionStage<Void> oldClosing,barrier;
     private boolean cycle,expectedHold;
-    private PaperCrafting crafting;private CraftingQuest craftingQuests;private PreparationGuide preparation;private GatheringFacilities gatheringFacilities;private Set<String> gatheringObjectiveQuests=Set.of();
+    private PaperCrafting crafting;private CraftingQuest craftingQuests;private PreparationGuide preparation;private CourseRoute courseRoute;private boolean publicCourse;private GatheringFacilities gatheringFacilities;private Set<String> gatheringObjectiveQuests=Set.of();
     private boolean craftingDelay,craftingCaptured;
     private CompletableFuture<Void> craftingGate;
     private InventoryStore craftingStore(){return new InventoryStore(){
@@ -168,8 +168,8 @@ public final class SessionVerification implements AutoCloseable {
             if(sharedStory!=null){paperStory=new PaperStoryAdapter(plugin,adapter,sharedStory,owner);questAdapter.story(paperStory);}
             if(plugin.getConfig().getBoolean("playthrough-verification-enabled")){
                 if(sharedStory==null||!Boolean.getBoolean("hearth.verification.playthrough"))throw new IllegalStateException("Playthrough gate missing");
-                var planFile=new java.io.File(plugin.getDataFolder(),"playthrough-demo.yml");if(!planFile.exists())plugin.saveResource("playthrough-demo.yml",false);
-                var plan=new HashMap<String,Object>(YamlConfiguration.loadConfiguration(planFile).getValues(false));if(plugin.getConfig().getBoolean("crafting-quest-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"crafting-quest-demo.yml"));var steps=new ArrayList<Object>(Objects.requireNonNull(extra.getList("steps")));steps.addAll((List<?>)plan.get("steps"));plan.put("steps",steps);}if(plugin.getConfig().getBoolean("gathering-workshop-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"gathering-workshop-course.yml"));var steps=new ArrayList<Object>(Objects.requireNonNull(extra.getList("steps")));steps.addAll((List<?>)plan.get("steps"));plan.put("steps",steps);}playthrough=Playthrough.parse(plan,catalog,sharedStory.content(),explorationContent);questAdapter.playthrough(playthrough,sharedStory);
+                var filename=plugin.getConfig().getString("playthrough-content-file","playthrough-demo.yml");if(!Set.of("playthrough-demo.yml","public-course-demo.yml").contains(filename))throw new IllegalArgumentException("PLAYTHROUGH_CONTENT_FILE");publicCourse=filename.equals("public-course-demo.yml");if(publicCourse&&List.of("gathering-workshop-verification-enabled","gathering-facility-verification-enabled","dungeon-play-verification-enabled","crafting-quest-verification-enabled","play-preparation-verification-enabled").stream().anyMatch(key->!plugin.getConfig().getBoolean(key)))throw new IllegalStateException("PUBLIC_COURSE_DEPENDENCIES");var planFile=new java.io.File(plugin.getDataFolder(),filename);if(!planFile.exists())plugin.saveResource(filename,false);
+                var plan=new HashMap<String,Object>(YamlConfiguration.loadConfiguration(planFile).getValues(false));if(!publicCourse&&plugin.getConfig().getBoolean("crafting-quest-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"crafting-quest-demo.yml"));var steps=new ArrayList<Object>(Objects.requireNonNull(extra.getList("steps")));steps.addAll((List<?>)plan.get("steps"));plan.put("steps",steps);}if(!publicCourse&&plugin.getConfig().getBoolean("gathering-workshop-verification-enabled")){var extra=YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"gathering-workshop-course.yml"));var steps=new ArrayList<Object>(Objects.requireNonNull(extra.getList("steps")));steps.addAll((List<?>)plan.get("steps"));plan.put("steps",steps);}playthrough=Playthrough.parse(plan,catalog,sharedStory.content(),explorationContent);questAdapter.playthrough(playthrough,sharedStory);
             }
             if(plugin.getConfig().getBoolean("world-effect-verification-enabled")){
                 if(sharedStory==null||!Boolean.getBoolean("hearth.verification.worldEffect"))throw new IllegalStateException("World effect gate missing");
@@ -203,8 +203,13 @@ public final class SessionVerification implements AutoCloseable {
             var file=new java.io.File(plugin.getDataFolder(),"play-preparation-demo.yml");if(!file.exists())plugin.saveResource("play-preparation-demo.yml",false);
             preparation=PreparationGuide.parse(combatMap(YamlConfiguration.loadConfiguration(file)),catalog,crafting.content,explorationContent,gathering.content,dungeonDefinition);
             crafting.preparationGuide(questAdapter::showPreparation);
+            if(publicCourse){var root=combatMap(YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(),"public-course-demo.yml")));courseRoute=CourseRoute.parse(root,playthrough,catalog,preparation,explorationContent);questAdapter.courseRoute((player,view)->{var session=Objects.requireNonNull(adapter.current(player));var page=courseRouteView(session,view,codec.capture(player.getInventory()),dungeonDefinition.entry().contains(player.getX(),player.getY(),player.getZ()),gathering.information(player),dungeonPlay.information(player));if(adapter.current(player)!=session)throw new IllegalStateException("STALE_COURSE_ROUTE_SESSION");return page;});}
             questAdapter.preparation((player,view)->{var session=Objects.requireNonNull(adapter.current(player),"PREPARATION_SESSION_REQUIRED");var result=preparationView(session,view,codec.capture(player.getInventory()),dungeonDefinition.entry().contains(player.getX(),player.getY(),player.getZ()),gathering.information(player),dungeonPlay.information(player));if(adapter.current(player)!=session)throw new IllegalStateException("STALE_PREPARATION");return result;});
         }
+    }
+    private CourseRoute.Page courseRouteView(PlayerSessions.Session session,QuestJournal.View view,InventoryPayload inventory,boolean atEntry,List<String> gatheringInfo,List<String> dungeonInfo){
+        var prepared=preparationView(session,view,inventory,atEntry,gatheringInfo,dungeonInfo);
+        return courseRoute.build(playthrough,catalog,view,sharedStory.cached(session.context().storyRunId()),sharedStory.phase(session.context().storyRunId()),prepared);
     }
     private FacilityObjectives.Board facilityGatheringObjectives(PlayerSessions.Session session,QuestJournal.View view,List<String> status){
         main();if(!coordinator.playable(session))throw new IllegalStateException("FACILITY_SESSION_REQUIRED");journal.requireView(session.context(),view);
@@ -354,6 +359,11 @@ public final class SessionVerification implements AutoCloseable {
         case "branch-progression-restored" -> branchProgressionRestored();
         case "quest-completion-start" -> completionStart();
         case "completion-navigation" -> completionNavigation();
+        case "public-course-start" -> publicCourseStart();
+        case "public-course-supply" -> gatheringCraftingPlay(true);
+        case "public-course-vote" -> publicCourseVote();
+        case "public-course-dungeon" -> dungeonPlayState(true);
+        case "public-course-finish" -> publicCourseFinish();
         case "quest-completion-restored" -> completionRestored();
         case "general-npcs-start" -> generalNpcsStart();
         case "general-npcs-restored" -> generalNpcsRestored();
@@ -469,9 +479,10 @@ public final class SessionVerification implements AutoCloseable {
         DungeonActor(PlayerSessions.Session s){session=s;world=worlds.get(s.context().storyRunId());generation=world.generation();}
         public ServerProgressAccess.Context context(){return session.context();}public Object token(){return session;}public UUID world(){return world.mapping().physicalId();}public long generation(){return generation;}public boolean current(){return coordinator.playable(session)&&world.generation()==generation;}public boolean atEntry(){return current();}public void freeze(boolean value){frozen=value;}
     }
-    private CompletionStage<Void> dungeonPlayState(){
-        var attempts=new CombatAttempt[2];var bridges=new CombatPlayers[2];var actors=new CombatBody[3];var entryActors=new DungeonActor[4];var controller=new DungeonPlay[1];var route=new CombatRoute[1];var visited=new HashSet<String>();var world=worlds.get(a);var def=dungeonDefinition;var quest=catalog.quest(def.quest());var fourthContext=ctx(a,4);var fourth=new Controlled();var fourthSession=new PlayerSessions.Session[1];
-        return openAll().thenCompose(v->prepareCombatChunks()).thenCompose(v->prepareRetryFields())
+    private CompletionStage<Void> dungeonPlayState(){return dungeonPlayState(false);}
+    private CompletionStage<Void> dungeonPlayState(boolean joined){
+        var expectedSource=new InventoryPayload[1];var expectedRevision=new long[1];var attempts=new CombatAttempt[2];var bridges=new CombatPlayers[2];var actors=new CombatBody[3];var entryActors=new DungeonActor[4];var controller=new DungeonPlay[1];var route=new CombatRoute[1];var visited=new HashSet<String>();var world=worlds.get(a);var def=dungeonDefinition;var quest=catalog.quest(def.quest());var fourthContext=ctx(a,4);var fourth=new Controlled();var fourthSession=new PlayerSessions.Session[1];
+        return (joined?CompletableFuture.<Void>completedFuture(null):openAll()).thenCompose(v->prepareCombatChunks()).thenCompose(v->prepareRetryFields())
             .thenCompose(v->mainResult(store.createPlayer(fourthContext,"dungeon-unaccepted"))).thenCompose(v->mainResult(store.createInventory(fourthContext,fixture.apply(3)))).thenCompose(v->{fourthSession[0]=connect(fourthContext,fourth);return mainResult(fourthSession[0].ready());})
             .thenRun(()->{entryActors[0]=new DungeonActor(s1);entryActors[1]=new DungeonActor(s2);entryActors[2]=new DungeonActor(s3);entryActors[3]=new DungeonActor(fourthSession[0]);actors[0]=new CombatBody(s1,new CombatContent.Pose(world.mapping().physicalId(),3.5,64,3.5,0,0));actors[1]=new CombatBody(s2,actors[0].position);var wb=worlds.get(b);actors[2]=new CombatBody(s3,new CombatContent.Pose(wb.mapping().physicalId(),3.5,64,3.5,0,0));
                 controller[0]=new DungeonPlay(def,quest,quests,new DungeonPlay.Boundary(){public List<DungeonPlay.Actor> nearby(UUID run){return List.of(entryActors[0],entryActors[1],entryActors[3]);}public boolean available(UUID run){return attempts[0]==null;}public boolean allowed(DungeonPlay.Actor actor){return journal.questAllowed(actor.context(),def.quest());}public CompletionStage<Void> save(UUID run){return coordinator.saveRunBoundary(run).thenComposeAsync(x->quests.barrier(run),owner);}public CombatAttempt start(List<DungeonPlay.Actor> selected){check(selected.size()==2&&selected.stream().noneMatch(p->p.context().playerId().equals(fourthContext.playerId()))&&!s1.save().dirty(),"dungeon_exact_active_quest_roster_after_inventory_save");bridges[0]=new CombatPlayers(a,world.mapping().physicalId(),world.generation(),world::generation,owner,SessionVerification::main);attempts[0]=combatTrials.startPath(world,selected.stream().map(p->new CombatAttempt.Entrant(p.context(),p.token(),actors[p.context().playerId().equals(a1.playerId())?0:1].position)).toList(),bridges[0]);bridges[0].attach(attempts[0],List.of(actors[0],actors[1]));return attempts[0];}},owner,SessionVerification::main);
@@ -481,16 +492,18 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->quests.open(a1,def.quest(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.accept(q,quest)).thenCompose(v->quests.open(a2,def.quest(),s2,()->coordinator.playable(s2))).thenCompose(q->quests.accept(q,quest))
             .thenCompose(v->quests.open(b3,def.quest(),s3,()->coordinator.playable(s3))).thenCompose(q->quests.accept(q,quest))
             .thenCompose(v->quests.open(a1,def.quest(),s1,()->coordinator.playable(s1))).thenCompose(q->rejectQuest(quests.reach(q,quest,3,64,3)).thenCompose(x->rejectQuest(quests.interact(q,quest,"npc:"+def.npc()))))
-            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{check(QuestScreens.npcDungeon(List.of(),catalog,view.states(),def.npc(),def.npc(),def.quest()).stream().anyMatch(button->button.action().equals("npc-dungeon")),"dungeon_accepted_NPC_entry_button_and_personal_quest_view");one.count(31);coordinator.refresh(s1);})
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{check(QuestScreens.npcDungeon(List.of(),catalog,view.states(),def.npc(),def.npc(),def.quest()).stream().anyMatch(button->button.action().equals("npc-dungeon")),"dungeon_accepted_NPC_entry_button_and_personal_quest_view");if(joined)check(one.inventory.addItem(new ItemStack(Material.STONE,1)).isEmpty(),"public_course_source_save_keeps_existing_slots");else one.count(31);coordinator.refresh(s1);expectedSource[0]=one.capture();expectedRevision[0]=s1.save().revision()+1;})
             .thenCompose(v->facilityObjectivesCheck(true,FacilityObjectives.Kind.DUNGEON,controller[0].lines(entryActors[0])))
+            .thenCompose(v->publicCourse?publicRouteCheck("dungeon","dungeon_entry"):CompletableFuture.completedFuture(null))
             .thenCompose(v->controller[0].enter(entryActors[0],def.npc(),()->true)).thenRun(()->{check(!entryActors[0].frozen&&!entryActors[1].frozen&&attempts[0].snapshot().difficultyPlayers()==2,"dungeon_admission_releases_owned_locks_and_excludes_unaccepted_player");var wb=worlds.get(b);bridges[1]=new CombatPlayers(b,wb.mapping().physicalId(),wb.generation(),wb::generation,owner,SessionVerification::main);attempts[1]=combatTrials.start(wb,List.of(new CombatAttempt.Entrant(b3,s3,actors[2].position)),bridges[1]);bridges[1].attach(attempts[1],List.of(actors[2]));route[0]=new CombatRoute(attempts[0],combatContent.path().route(),false,owner,SessionVerification::main,()->entryActors[0].current()&&entryActors[1].current());})
-            .thenCompose(v->verify(a1,31,1)).thenCompose(v->{CompletionStage<Void> flow=CompletableFuture.completedFuture(null);for(var section:combatContent.path().route().sections()){var cp=combatContent.path().checkpoints().stream().filter(p->p.id().equals(section.checkpoint())).findFirst().orElseThrow();flow=flow.thenCompose(x->routeCheckpoint(attempts[0],actors,cp,visited)).thenCompose(x->{for(var p:List.of(actors[0],actors[1]))p.position=new CombatContent.Pose(world.mapping().physicalId(),(section.gathering().minX()+section.gathering().maxX())/2,64,(section.gathering().minZ()+section.gathering().maxZ())/2,0,0);return route[0].advance(section.id(),UUID.randomUUID(),List.of(actors[0],actors[1]),()->coordinator.saveRunBoundary(a),()->visited.contains(section.checkpoint()));});}return flow;})
+            .thenCompose(v->joined?verifyPublicDungeonSource(expectedSource[0],expectedRevision[0]):verify(a1,31,1)).thenCompose(v->{CompletionStage<Void> flow=CompletableFuture.completedFuture(null);for(var section:combatContent.path().route().sections()){var cp=combatContent.path().checkpoints().stream().filter(p->p.id().equals(section.checkpoint())).findFirst().orElseThrow();flow=flow.thenCompose(x->routeCheckpoint(attempts[0],actors,cp,visited)).thenCompose(x->{for(var p:List.of(actors[0],actors[1]))p.position=new CombatContent.Pose(world.mapping().physicalId(),(section.gathering().minX()+section.gathering().maxX())/2,64,(section.gathering().minZ()+section.gathering().maxZ())/2,0,0);return route[0].advance(section.id(),UUID.randomUUID(),List.of(actors[0],actors[1]),()->coordinator.saveRunBoundary(a),()->visited.contains(section.checkpoint()));});}return flow;})
             .thenCompose(v->{check(route[0].atBoss(),"dungeon_both_sections_reach_terminal_gate");var source=attempts[0];return retryEnterBoss(attempts,bridges,actors).thenRun(()->controller[0].changed(source,attempts[0],false));})
             .thenRun(()->combatTrials.mob(a).setHealth(0)).thenCompose(v->until(()->attempts[0].snapshot().outcome()==CombatAttempt.Outcome.VICTORY))
             .thenCompose(v->{var result=controller[0].victory(attempts[0],List.of(entryActors[0],entryActors[1]));check(result==controller[0].victory(attempts[0],List.of(entryActors[0],entryActors[1])),"dungeon_actual_entity_death_and_duplicate_victory_coalesced");return result;})
             .thenCompose(v->mainResult(store.readQuest(a1,def.quest()))).thenAccept(row->check(row.phase()==QuestStore.Phase.REPORT_READY&&row.revision()==1,"dungeon_victory_real_PG_REPORT_READY_revision1"))
-            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{var item=io.github.jesterportfolio.hearth.phone.PhoneQuestLinks.quests(catalog,view).stream().filter(q->q.id().equals(def.quest())).findFirst().orElseThrow();check(item.reporting()&&QuestBookView.accepted(catalog,view.states(),view.exploration().blockedQuests(),def.quest()).orElseThrow().pages().stream().anyMatch(p->p.contains("보고")),"dungeon_phone_and_book_reflect_saved_reporting_state");var screen=new PaperQuestUI.Screen(a1.playerId(),s1,QuestScreens.screen(catalog,view,"detail",def.quest(),0),"detail",def.quest(),0);check(screen.getInventory().getSize()==54&&one.inventory.getItem(0).getAmount()==31,"dungeon_native_GUI_uses_existing_inventory_protection_data");})
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->{var item=io.github.jesterportfolio.hearth.phone.PhoneQuestLinks.quests(catalog,view).stream().filter(q->q.id().equals(def.quest())).findFirst().orElseThrow();check(item.reporting()&&QuestBookView.accepted(catalog,view.states(),view.exploration().blockedQuests(),def.quest()).orElseThrow().pages().stream().anyMatch(p->p.contains("보고")),"dungeon_phone_and_book_reflect_saved_reporting_state");var screen=new PaperQuestUI.Screen(a1.playerId(),s1,QuestScreens.screen(catalog,view,"detail",def.quest(),0),"detail",def.quest(),0);check(screen.getInventory().getSize()==54&&(joined?codec.equivalent(one.capture(),expectedSource[0]):one.inventory.getItem(0).getAmount()==31),"dungeon_native_GUI_uses_existing_inventory_protection_data");})
             .thenCompose(v->facilityObjectivesCheck(true,FacilityObjectives.Kind.REPORT,controller[0].lines(entryActors[0])))
+            .thenCompose(v->publicCourse?publicRouteCheck("dungeon",null):CompletableFuture.completedFuture(null))
             .thenCompose(v->quests.open(a1,def.quest(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.advance(q,QuestStore.Phase.COMPLETED))
             .thenCompose(v->facilityObjectivesCheck(true,null,controller[0].lines(entryActors[0])))
             .thenCompose(v->facilityObjectivesIsolation(true,s2,false)).thenCompose(v->facilityObjectivesIsolation(true,s3,false))
@@ -501,7 +514,7 @@ public final class SessionVerification implements AutoCloseable {
             .thenCompose(v->mainResult(coordinator.disconnect(s1))).thenCompose(v->mainResult(coordinator.disconnect(s2))).thenCompose(v->mainResult(coordinator.disconnect(fourthSession[0]))).thenCompose(v->until(()->world.state()==WorldLifecycle.State.OFFLINE)).thenRun(()->{controller[0].unloaded(a);check(!controller[0].registered(attempts[0]),"dungeon_unloaded_releases_completed_actor_and_old_battle_references");}).thenCompose(v->{one=new Controlled();s1=connect(a1,one);return mainResult(s1.ready());})
             .thenCompose(v->quests.open(a1,def.quest(),s1,()->coordinator.playable(s1))).thenAccept(q->check(q.saved().phase()==QuestStore.Phase.COMPLETED&&q.saved().revision()==2,"dungeon_controlled_reconnect_restores_personal_report_completion"))
             .thenCompose(v->facilityObjectivesCheck(true,null,controller[0].lines(new DungeonActor(s1))))
-            .thenCompose(v->verify(a1,31,1)).thenCompose(v->controller[0].barrier(a)).whenCompleteAsync((v,error)->{if(controller[0]!=null)controller[0].close();for(var bridge:bridges)if(bridge!=null)bridge.close();for(UUID run:List.of(a,b)){combatTrials.stop(run);var w=Bukkit.getWorld(worlds.get(run).mapping().physicalId());if(w!=null&&entryActors[run.equals(a)?0:2]!=null&&worlds.get(run).generation()==entryActors[run.equals(a)?0:2].generation())for(int[] c:new int[][]{{0,0},{1,1},{2,1}})w.removePluginChunkTicket(c[0],c[1],plugin);}},owner);
+            .thenCompose(v->joined?verifyPublicDungeonSource(expectedSource[0],expectedRevision[0]):verify(a1,31,1)).thenCompose(v->controller[0].barrier(a)).whenCompleteAsync((v,error)->{if(controller[0]!=null)controller[0].close();for(var bridge:bridges)if(bridge!=null)bridge.close();for(UUID run:List.of(a,b)){combatTrials.stop(run);var w=Bukkit.getWorld(worlds.get(run).mapping().physicalId());if(w!=null&&entryActors[run.equals(a)?0:2]!=null&&worlds.get(run).generation()==entryActors[run.equals(a)?0:2].generation())for(int[] c:new int[][]{{0,0},{1,1},{2,1}})w.removePluginChunkTicket(c[0],c[1],plugin);}},owner);
     }
     private CompletionStage<Void> dungeonCreditFailure(DungeonActor actor,CombatAttempt other){
         var def=dungeonDefinition;var quest=catalog.quest(def.quest());QuestStore failing=new QuestStore(){public CompletionStage<Saved> readQuest(ServerProgressAccess.Context c,String id){return store.readQuest(c,id);}public CompletionStage<Saved> advanceQuest(ServerProgressAccess.Context c,String id,Saved expected,Phase next){return store.advanceQuest(c,id,new Saved(expected.phase(),expected.revision()+1,expected.objectiveIndex()),next);}};var progress=new PersonalQuest(failing,Set.of(def.quest()),owner,SessionVerification::main);
@@ -1475,6 +1488,49 @@ public final class SessionVerification implements AutoCloseable {
         }).thenAccept(row->check(row.phase()==QuestStore.Phase.COMPLETED,"course_quest_completed_"+id));
     }
     private CompletionStage<Playthrough.Guide> courseGuide(ServerProgressAccess.Context ctx,Object token){return journal.load(ctx,token,()->true).thenApply(view->playthrough.guide(catalog,view,sharedStory.cached(ctx.storyRunId()),sharedStory.phase(ctx.storyRunId())));}
+    private CourseRoute.Page previousPublicRoute;private long publicGatheringGeneration;
+    private void publicRoster(){storyTestRoster=new HashMap<>();if(s1!=null&&coordinator.playable(s1))storyTestRoster.put(a1.playerId(),s1);if(s2!=null&&coordinator.playable(s2))storyTestRoster.put(a2.playerId(),s2);sharedStory.rosterChanged(a1);}
+    private CompletionStage<Void> verifyPublicDungeonSource(InventoryPayload expected,long revision){return mainResult(store.readInventory(a1)).thenAccept(row->check(row.revision()==revision&&codec.equivalent(row.payload(),expected)&&codec.equivalent(one.capture(),expected),"public_course_dungeon_preserves_existing_tools_and_source_payload"));}
+    private CompletionStage<Void> publicRouteCheck(String step,String card){
+        var before=one.capture();long revision=s1.save().revision();return journal.load(a1,s1,()->coordinator.playable(s1)).thenAccept(view->{
+            var page=courseRouteView(s1,view,before,false,List.of("현재 채집 상태는 현장에서 확인하세요."),dungeonPlay.play.lines(new DungeonActor(s1)));
+            var current=page.board().rows().stream().filter(PlaythroughOverview.Row::current).findFirst().orElse(null);
+            check(step==null?page.board().guide().complete():current!=null&&current.key().equals(step),"public_route_current_"+Objects.toString(step,"complete"));check(Objects.equals(page.preparation(),card),"public_route_facility_"+Objects.toString(card,"none"));
+            var book=PaperQuestUI.book(page.book(),List.of(Component.text("현재 시설 준비 안내"),Component.text("현재 코스 동선으로")));var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose("현재 코스 동선",page.lines().stream().map(line->io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text(line))).toList(),List.of(),List.of(io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("현재 의뢰 상세")).build()));
+            check(book.pages().size()>page.book().pages().size()&&dialog!=null,"public_route_native_book_Dialog_"+Objects.toString(step,"complete"));
+            if(previousPublicRoute!=null&&!previousPublicRoute.board().equals(page.board()))try{CourseRoute.require(page,previousPublicRoute);throw new AssertionError("old route accepted");}catch(IllegalStateException stale){check(true,"public_route_saved_transition_rejects_previous_selection");}
+            previousPublicRoute=page;check(codec.equivalent(before,one.capture())&&s1.save().revision()==revision,"public_route_reads_preserve_inventory_"+Objects.toString(step,"complete"));
+        });
+    }
+    private CompletionStage<Void> publicCourseStart(){
+        if(!publicCourse||courseRoute==null)throw new IllegalStateException("PUBLIC_COURSE_REQUIRED");
+        check(playthrough.steps().size()==10&&courseRoute.bindings().size()==7,"public_course_packaged_plan_and_facility_links_validated");
+        var defaults=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(Objects.requireNonNull(plugin.getResource("config.yml")),java.nio.charset.StandardCharsets.UTF_8));
+        check("playthrough-demo.yml".equals(defaults.getString("playthrough-content-file"))&&defaults.getKeys(false).stream().filter(key->key.endsWith("-enabled")).allMatch(key->!defaults.getBoolean(key)),"public_course_default_activation_gates_remain_disabled");
+        return openAll().thenRun(()->{publicRoster();facilityBlocks(a,true);facilityBlocks(b,true);})
+            .thenCompose(v->publicRouteCheck("survey",null)).thenCompose(v->finishCourseQuest(a1,s1,"survey_marker"))
+            .thenCompose(v->expectQuestCode(sharedStory.advance(a1,s1,()->true),"CONDITIONS_UNMET"))
+            .thenCompose(v->finishCourseQuest(a2,s2,"survey_marker")).thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->sharedStory.advance(a1,s1,()->true))
+            .thenCompose(v->publicRouteCheck("materials","material_site"));
+    }
+    private CompletionStage<Void> publicCourseVote(){
+        publicRoster();return publicRouteCheck("path",null).thenCompose(v->finishCourseQuest(a1,s1,"path_marker"))
+            .thenCompose(v->publicRouteCheck("shared_open",null)).thenCompose(v->finishCourseQuest(a2,s2,"path_marker"))
+            .thenCompose(v->sharedStory.openVote(a1,s1,()->true)).thenCompose(vote->{storyVote=vote;return sharedStory.cast(a1,s1,()->true,vote.id(),"route_one");})
+            .thenRun(()->check(!Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen()),"public_course_one_vote_does_not_open_exploration"))
+            .thenCompose(v->sharedStory.cast(a2,s2,()->true,storyVote.id(),"route_one"))
+            .thenRun(()->check(Boolean.TRUE.equals(sharedStory.cached(a).story().explorationOpen())&&!Boolean.TRUE.equals(sharedStory.cached(b).story().explorationOpen()),"public_course_shared_branch_opens_only_own_run"))
+            .thenCompose(v->publicRouteCheck("dungeon",null));
+    }
+    private CompletionStage<Void> publicCourseFinish(){
+        publicRoster();var place=explorationContent.places().get("survey_place");var area=place.bounds();double x=(area.minX()+area.maxX())/2,y=(area.minY()+area.maxY())/2,z=(area.minZ()+area.maxZ())/2;
+        return gathering.bind(a1,false,gatheringPeople(a)).thenAccept(binding->check(binding.dungeon().snapshot().generation()==publicGatheringGeneration&&Bukkit.getWorld(worlds.get(a).mapping().physicalId()).getBlockAt(6,64,6).getType()==Material.CRAFTING_TABLE&&GatheringStatus.lines(binding.dungeon().snapshot(),0,false,gatheringClock.get()).stream().anyMatch(line->line.contains("다음 입장 전에 초기화")),"public_course_gathering_generation_reset_status_and_workbench_survive_final_reload")).thenCompose(v->journal.enterPlaces(a1,s1,()->coordinator.playable(s1),area.minX()-1,y,z,x,y,z))
+            .thenCompose(v->sharedStory.advance(a1,s1,()->true)).thenCompose(v->publicRouteCheck(null,null))
+            .thenCompose(v->courseGuide(a2,new Object())).thenAccept(guide->check(!guide.complete(),"public_course_P1_completion_does_not_complete_P2_itinerary"))
+            .thenCompose(v->questRead(b3,"survey_marker",QuestStore.Phase.NOT_ACCEPTED,-1))
+            .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(row->check(codec.equivalent(row.payload(),one.capture())&&craftingCount(one.capture(),Material.WOODEN_PICKAXE)==1&&craftingCount(one.capture(),Material.STONE_PICKAXE)==1,"public_course_crafted_tools_survive_dungeon_and_world_reconnect"))
+            .thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenAccept(view->check(view.exploration().place("public_material_site").filter(p->p.discovered()).isPresent()&&view.exploration().place("public_workshop").filter(p->p.discovered()).isPresent()&&view.exploration().facts().stream().anyMatch(f->f.id().equals("gathering_workshop_report")),"public_course_personal_visits_and_report_diary_preserved"));
+    }
     private CompletionStage<Void> playthroughRun(){
         return openAll().thenRun(()->{prepareCourse(a);prepareCourse(b);storyTestRoster=new HashMap<>(Map.of(a1.playerId(),s1,a2.playerId(),s2));sharedStory.rosterChanged(a1);})
             .thenCompose(v->courseGuide(a1,s1)).thenAccept(guide->check("survey_marker".equals(guide.talkQuest()),"course_first_personal_task"))
@@ -1799,9 +1855,10 @@ public final class SessionVerification implements AutoCloseable {
             var restored=preparationView(s1,view,one.capture(),false,List.of("채집 구역 미준비"),dungeonPlay.play.lines(new DungeonActor(s1)));check(restored.card("dungeon_entry").revision()==0,"preparation_current_session_restores_accepted_revision");
         });
     }
-    private CompletionStage<Void> gatheringCraftingPlay(){
+    private CompletionStage<Void> gatheringCraftingPlay(){return gatheringCraftingPlay(false);}
+    private CompletionStage<Void> gatheringCraftingPlay(boolean joined){
         var bd=new PaperGathering.Binding[2];var actor=new GatheringActor[3];var payload=new InventoryPayload[1];var revision=new long[1];var gen=new long[1];var physical=worlds.get(a).mapping().physicalId();var course=catalog.quest("gathering_workshop_route");
-        return openAll().thenRun(()->{
+        return (joined?CompletableFuture.<Void>completedFuture(null):openAll()).thenRun(()->{
             for(UUID run:List.of(a,b)){var w=Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId()));if(!w.getBlockAt(6,64,6).getType().isAir())throw new IllegalStateException("SUPPLY_WORKBENCH_CONFLICT");w.getBlockAt(6,64,6).setType(Material.CRAFTING_TABLE,false);crafting.ensureRegions(run);}
             craftingBatchNativeChecks();supplyMaterials(false,false);check(craftingCount(one.capture(),Material.OAK_LOG)==0&&craftingCount(one.capture(),Material.COBBLESTONE)==0,"supply_no_free_raw_material_fixture");
         }).thenCompose(v->gathering.bind(a1,true,gatheringPeople(a))).thenAccept(value->bd[0]=value)
@@ -1812,25 +1869,27 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.accept(q,course))
         .thenCompose(v->journal.track(a1,s1,()->coordinator.playable(s1),course.id(),true))
         .thenCompose(v->journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,32.5,64,.5))
+        .thenCompose(v->publicCourse?publicRouteCheck("tools","material_site"):CompletableFuture.completedFuture(null))
         .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.reach(q,course,32.5,64,.5))
-        .thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,1,1)).thenCompose(v->supplyQuestView())
+        .thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,1,1)).thenCompose(v->publicCourse?publicRouteCheck("tools","workbench"):CompletableFuture.completedFuture(null)).thenCompose(v->supplyQuestView())
         .thenCompose(v->gatherFixtureItem(bd[0],actor[0],33,64,1,new ItemStack(Material.AIR),Material.OAK_LOG))
         .thenCompose(v->gatherFixtureItem(bd[0],actor[0],34,64,1,new ItemStack(Material.AIR),Material.OAK_LOG))
         .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(row->check(row.revision()==0&&s1.save().dirty()&&craftingCount(one.capture(),Material.OAK_LOG)==2,"supply_two_pickups_dirty_without_per_item_DB_write"))
         .thenCompose(v->coordinator.saveBoundary(s1)).thenCompose(v->bd[0].dungeon().leave(actor[0]))
-        .thenCompose(v->craftingQuestTool()).thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,2,2))
+        .thenCompose(v->publicCourse?journal.enterPlaces(a1,s1,()->coordinator.playable(s1),0,64,0,6,64,6).thenAccept(view->{}):CompletableFuture.completedFuture(null))
+        .thenCompose(v->craftingQuestTool()).thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,2,2)).thenCompose(v->publicCourse?publicRouteCheck("tools","material_site"):CompletableFuture.completedFuture(null))
         .thenRun(()->{supplyMaterials(true,false);check(craftingQuestSaves==1,"supply_wood_tool_goal_after_confirmed_source_save");gen[0]=bd[0].dungeon().snapshot().generation();})
         .thenCompose(v->bd[0].dungeon().enter(actor[0]))
         .thenRun(()->{check(bd[0].dungeon().snapshot().generation()==gen[0]+1&&!bd[0].dungeon().canGather(actor[0],gen[0]),"supply_reentry_reset_old_generation_rejected");supplyMaterials(true,false);check(Bukkit.getWorld(worlds.get(b).mapping().physicalId()).getBlockAt(33,64,1).getType()==Material.OAK_LOG&&bd[1].dungeon().snapshot().generation()==1,"supply_other_run_resources_generation_unchanged");})
         .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.reach(q,course,32.5,64,.5))
-        .thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,3,3))
+        .thenCompose(v->supplyQuestRead(QuestStore.Phase.ACTIVE,3,3)).thenCompose(v->publicCourse?publicRouteCheck("tools","workbench"):CompletableFuture.completedFuture(null))
         .thenRun(()->{var block=Bukkit.getWorld(physical).getBlockAt(33,64,2);check(block.getDrops(new ItemStack(Material.AIR)).isEmpty(),"supply_stone_requires_native_appropriate_tool");})
         .thenCompose(v->gatherFixtureItem(bd[0],actor[0],33,64,2,new ItemStack(Material.WOODEN_PICKAXE),Material.COBBLESTONE))
         .thenCompose(v->gatherFixtureItem(bd[0],actor[0],34,64,2,new ItemStack(Material.WOODEN_PICKAXE),Material.COBBLESTONE))
         .thenCompose(v->gatherFixtureItem(bd[0],actor[0],35,64,2,new ItemStack(Material.WOODEN_PICKAXE),Material.COBBLESTONE))
         .thenRun(()->{supplyMaterials(true,true);var protectedSlots=codec.decode(one.capture());protectedSlots[36]=new ItemStack(Material.COBBLESTONE,3);protectedSlots[40]=new ItemStack(Material.STICK,2);protectedSlots[9]=new ItemStack(Material.COBBLESTONE,3);protectedSlots[9].editMeta(m->m.displayName(Component.text("제작 제외 시험 재료")));for(int i=0;i<36;i++)if(protectedSlots[i]!=null&&!protectedSlots[i].hasItemMeta()&&protectedSlots[i].getType()==Material.COBBLESTONE)protectedSlots[i]=null;var counts=crafting.planner.materials(crafting.content.recipes().get("stone_pickaxe"),codec.encode(protectedSlots));check(counts.stream().filter(n->n.material().equals("COBBLESTONE")).allMatch(n->n.available()==0),"supply_material_counts_ignore_named_and_equipment_slots");})
         .thenCompose(v->coordinator.saveBoundary(s1)).thenCompose(v->bd[0].dungeon().leave(actor[0]))
-        .thenCompose(v->craftingQuestRecipe("stone_pickaxe")).thenCompose(v->supplyQuestRead(QuestStore.Phase.REPORT_READY,4,3))
+        .thenCompose(v->craftingQuestRecipe("stone_pickaxe")).thenCompose(v->supplyQuestRead(QuestStore.Phase.REPORT_READY,4,3)).thenCompose(v->publicCourse?publicRouteCheck("tools",null):CompletableFuture.completedFuture(null))
         .thenRun(()->check(craftingQuestSaves==2&&craftingCount(one.capture(),Material.STONE_PICKAXE)==1&&craftingCount(one.capture(),Material.COBBLESTONE)==0,"supply_real_recipe_consumes_collected_cobble_and_saves_before_goal"))
         .thenCompose(v->quests.open(a1,course.id(),s1,()->coordinator.playable(s1))).thenCompose(q->quests.advance(q,QuestStore.Phase.COMPLETED))
         .thenCompose(v->supplyQuestRead(QuestStore.Phase.COMPLETED,5,3)).thenCompose(v->supplyQuestView())
@@ -1838,12 +1897,13 @@ public final class SessionVerification implements AutoCloseable {
         .thenCompose(v->bd[0].dungeon().enter(actor[0])).thenRun(()->check(craftingCount(one.capture(),Material.STONE_PICKAXE)==1&&craftingCount(one.capture(),Material.WOODEN_PICKAXE)==1&&Bukkit.getWorld(physical).getBlockAt(33,64,2).getType()==Material.STONE,"supply_next_reset_keeps_obtained_items_and_restores_resources"))
         .thenCompose(v->bd[0].dungeon().leave(actor[0]))
         .thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(row->{payload[0]=row.payload();revision[0]=row.revision();gen[0]=bd[0].dungeon().snapshot().generation();check(codec.equivalent(row.payload(),one.capture()),"supply_latest_inventory_durable");})
-        .thenCompose(v->coordinator.disconnect(s1)).thenCompose(v->coordinator.disconnect(s2)).thenCompose(v->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
+        // 연결 코스에서는 필드 조우의 언로드 후 재소환 금지를 유지하고, 재로드 검사를 던전 종료 뒤 함께 수행합니다.
+        .thenCompose(ignored->{if(joined){publicGatheringGeneration=gen[0];return CompletableFuture.<Void>completedFuture(null);}return coordinator.disconnect(s1).thenCompose(x->coordinator.disconnect(s2)).thenCompose(x->until(()->worlds.get(a).state()==WorldLifecycle.State.OFFLINE))
         .thenRun(()->check(Bukkit.getWorld(physical)==null&&coordinator.playable(s3),"supply_world_unload_other_run_active"))
         .thenCompose(v->{one=new Controlled();two=new Controlled();s1=connect(a1,one);s2=connect(a2,two);return CompletableFuture.allOf(s1.ready().toCompletableFuture(),s2.ready().toCompletableFuture());})
         .thenCompose(v->gathering.bind(a1,false,gatheringPeople(a)))
-        .thenAccept(value->{bd[0]=value;check(value.dungeon().snapshot().generation()==gen[0]&&codec.equivalent(payload[0],one.capture())&&s1.save().revision()==revision[0],"supply_existing_gather_generation_inventory_revision_restored_without_create");check(Bukkit.getWorld(physical).getBlockAt(6,64,6).getType()==Material.CRAFTING_TABLE,"supply_existing_workbench_preserved");check(GatheringStatus.lines(value.dungeon().snapshot(),0,false,gatheringClock.get()).stream().anyMatch(line->line.contains("다음 입장 전에 초기화")),"supply_empty_reset_status_after_reload");})
-        .thenCompose(v->supplyQuestRead(QuestStore.Phase.COMPLETED,5,3)).thenCompose(v->supplyQuestView()).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(ctx(b,1),7,0));
+        .thenAccept(value->{bd[0]=value;check(value.dungeon().snapshot().generation()==gen[0]&&codec.equivalent(payload[0],one.capture())&&s1.save().revision()==revision[0],"supply_existing_gather_generation_inventory_revision_restored_without_create");check(Bukkit.getWorld(physical).getBlockAt(6,64,6).getType()==Material.CRAFTING_TABLE,"supply_existing_workbench_preserved");check(GatheringStatus.lines(value.dungeon().snapshot(),0,false,gatheringClock.get()).stream().anyMatch(line->line.contains("다음 입장 전에 초기화")),"supply_empty_reset_status_after_reload");});})
+        .thenRun(()->{if(publicCourse)publicRoster();}).thenCompose(v->supplyQuestRead(QuestStore.Phase.COMPLETED,5,3)).thenCompose(v->supplyQuestView()).thenCompose(v->verify(a2,5,0)).thenCompose(v->verify(ctx(b,1),7,0));
     }
     private CompletionStage<CraftingOrders.Board> craftingOrders(PlayerSessions.Session session,String facility,BooleanSupplier current){
         main();if(!coordinator.playable(session)||!current.getAsBoolean())return CompletableFuture.failedFuture(new IllegalStateException("CRAFT_ORDERS_SESSION"));

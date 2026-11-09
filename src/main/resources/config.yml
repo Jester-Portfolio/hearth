@@ -27,6 +27,8 @@ world-effect-verification-enabled: false
 
 # 새 격리 환경에서만 공개 시험 코스·안내를 켭니다.
 playthrough-verification-enabled: false
+# 새 격리 실행에서만 public-course-demo.yml을 선택할 수 있습니다.
+playthrough-content-file: playthrough-demo.yml
 
 # 기존 격리 퀘스트/세션 게이트 안에서만 동작하는 Dialog 프로토타입.
 phone-dialog-enabled: false

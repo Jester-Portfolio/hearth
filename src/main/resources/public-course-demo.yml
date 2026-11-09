@@ -1,0 +1,21 @@
+# 기존 공개 콘텐츠를 잇는 안내 순서입니다. 수락/입장/공유 조건을 새로 추가하지 않습니다.
+format: 1
+steps:
+  - {id: survey, kind: QUEST, reference: survey_marker, title: 개인 방문 조사, hint: 안내원에게 수락하고 현장 조사 결과를 보고하세요.}
+  - {id: shared_start, kind: STAGE, reference: trial_vote, title: 공동 조사 준비, hint: 접속 구성원의 조사 완료를 확인한 뒤 기존 공동 조사 안내로 진행하세요.}
+  - {id: materials, kind: PLACE, reference: public_material_site, title: 채집 시설 확인, hint: 공개 채집 입구와 준비 안내를 확인하고 직접 방문하세요.}
+  - {id: tools, kind: QUEST, reference: gathering_workshop_route, title: 채집과 도구 제작, hint: 개인 실습을 수락하고 채집장과 작업대를 오가며 두 도구를 제작한 뒤 보고하세요.}
+  - {id: workbench, kind: PLACE, reference: public_workshop, title: 작업대 방문 기록, hint: 본인의 작업대 방문 기록과 준비 상태를 확인하세요.}
+  - {id: path, kind: QUEST, reference: path_marker, title: 개인 경로 조사, hint: 안내원에게 경로 조사를 수락하고 결과를 보고하세요.}
+  - {id: shared_open, kind: STAGE, reference: trial_open, title: 공동 경로 선택, hint: 접속자의 경로 조사 완료를 확인하고 기존 채팅 투표로 경로를 정하세요.}
+  - {id: dungeon, kind: QUEST, reference: public_dungeon_quest, title: 공개 던전 현장 의뢰, hint: 담당 NPC에게 수락하고 기존 입장 버튼으로 길목·보스 도전에 참가한 뒤 개인 결과를 보고하세요.}
+  - {id: discovery, kind: PLACE, reference: survey_place, title: 개인 탐험 기록, hint: 개방된 장소를 방문해 본인의 지도·일지·연대기를 확인하세요.}
+  - {id: shared_finish, kind: STAGE_COMPLETE, reference: trial_open, title: 공동 조사 정리, hint: 마지막 공유 조건을 기존 공동 조사 안내에서 확인하세요.}
+routes:
+  - {step: materials, objective: -1, preparation: material_site}
+  - {step: tools, objective: 0, preparation: material_site}
+  - {step: tools, objective: 1, preparation: workbench}
+  - {step: tools, objective: 2, preparation: material_site}
+  - {step: tools, objective: 3, preparation: workbench}
+  - {step: workbench, objective: -1, preparation: workbench}
+  - {step: dungeon, objective: 0, preparation: dungeon_entry}

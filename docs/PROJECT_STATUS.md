@@ -51,7 +51,7 @@ Hearth는 현대 과학·기술 지식을 마법 없는 중세 세계에서 활�
 
 퀘스트 목록 필터·상세/추적/알림 연결과 가까운 NPC 보고 대화 열기를 통합했다. [검증](quest-navigation-verification.md): 관련25개·한 JVM/PG 수락→보고→완료/추적 정리 PASS. 실제 GUI/NPC·WorldGuard 사용자 권한 동작은 미검증이다.
 
-콘텐츠 기반 `/hearthjourney`를 NPC 아이템창·책·스마트폰의 다음 플레이 안내로 연결했다. 현재 목표 상세·추적·담당 NPC 보고·실패 후 재시작·지급 대기 보상 조회와 지도/일지/알림으로 이어지며, 실행 전 최신 목표·revision·추적/공유 상태를 재검사한다. [최신 검증](quest-journey-verification.md): 관련52개·한 JVM/PG PASS. 기존 도보 코스/저장 구조는 보존하며 실제 코스·책/GUI 조작은 미검증이다. 후속 [공개 코스 진행판](playthrough-overview-verification.md)에 개인·공유·탐험 기록과 상세/준비 안내 왕복·쪽 나누기를, [장소·일지·연대기·공유 정보 연결](course-records-verification.md)에 기록 읽기·이전 정보·진행판 복귀를 연결했다. [누적 배치 최종 통합](pending-batch-review.md)에서 관련 단위·실제 책/Dialog 객체·개인 DB 발견 기록/조회 불변을 통과했다. 실제 클릭·코스 플레이와 운영 배포는 미검증이다.
+콘텐츠 기반 `/hearthjourney`를 NPC 아이템창·책·스마트폰의 다음 플레이 안내로 연결했다. 현재 목표 상세·추적·담당 NPC 보고·실패 후 재시작·지급 대기 보상 조회와 지도/일지/알림으로 이어지며, 실행 전 최신 목표·revision·추적/공유 상태를 재검사한다. [최신 검증](quest-journey-verification.md): 관련52개·한 JVM/PG PASS. 기존 도보 코스/저장 구조는 보존하며 실제 코스·책/GUI 조작은 미검증이다. 후속 [공개 코스 진행판](playthrough-overview-verification.md)에 개인·공유·탐험 기록과 상세/준비 안내 왕복·쪽 나누기를, [장소·일지·연대기·공유 정보 연결](course-records-verification.md)에 기록 읽기·이전 정보·진행판 복귀를 연결했다. [누적 배치 최종 통합](pending-batch-review.md)에서 관련 단위·실제 책/Dialog 객체·개인 DB 발견 기록/조회 불변을 통과했다. 실제 클릭·코스 플레이와 운영 배포는 미검증이다. 후속 [공개 코스·현재 시설 동선 통합](public-course-integration-verification.md)은 기존 조사/공유 준비→채집·두 도구 제작/보고→경로 투표→던전 보고→개인 탐험/공유 정리를 선택형 코스로 연결한다. 현재 목표의 공개 시설 준비·의뢰 상세/후속 처리·현재 진행판 왕복을 통합하고, 같은 격리 환경에서 제작 도구/개인 기록/공유 경계와 최종 월드 재연결 보존을 검사한다. 기본 코스와 비활성 설정은 유지하며 실제 코스 조작은 미검증이다.
 
 개인 목표에 단계별 정형 위치 공개(정확/탐색 구역/비공개)를 연결했다. [검증](quest-locations-verification.md): 관련22개·한 JVM/PG 표시/진행 경계 PASS. 기존 저장 계약은 유지하며 실제 화면·목표 마커는 미검증이다.
 

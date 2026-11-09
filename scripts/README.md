@@ -139,3 +139,5 @@
 [채집·던전 개인 목표 안내](../docs/facility-objectives-verification.md)는 기존 `--sessions --quests --story-batch --gathering-crafting --gathering-facilities`와 별도 새 경로의 `--sessions --quests --story-batch --combat-players --dungeon-play`를 사용한다. 개인 DB 목표/공개 범위·책/시설 메뉴 객체·조회 불변과 기존 입퇴장/전투/실패 보존을 두 한 JVM 모드에서 묶어 확인하며 실제 클릭/왕복은 검증하지 않는다.
 
 [실패·보상·결과·복귀 통합](../docs/quest-followup-batch-verification.md)의 `--sessions --quests --story-batch --quest-completion --phone-dialog --completion-navigation`은 기존 완료 콘텐츠·DB/자원 감시를 쓰는 단독 한 JVM 모드다. 재시작/보상 실제 저장·취소 조회 불변·공통 요청 중복/결과·DB 거부 보존과 Book/Dialog 객체를 검사한다. 다른 모드 혼합/필수 플래그 누락을 거부하며 기존 완료/분기 두 JVM 복원 모드를 대체하지 않는다. 같은 최종 JAR의 작업대 의뢰·준비 안내 회귀와 실제 클릭 미검증은 연결 기록을 따른다.
+
+[공개 코스·현재 시설 동선](../docs/public-course-integration-verification.md)은 `verify-lifecycle.py --sessions --quests --story-batch --public-course` 단독 한 JVM 모드다. 조사·공유 준비→채집/두 도구 제작·보고→공유 투표→던전 승리·보고→개인 탐험/공유 정리를 같은 격리 환경에서 잇는다. 등록 콘텐츠와 목표별 준비 안내·Book/Dialog, 개인/진행 격리·DB 실패 보존·최종 월드 재연결 후 제작 도구/인벤토리 보존을 확인한다. 나머지 모드/수동 옵션은 섞지 않으며 기존 자원·시도 상한을 유지한다. 필드 조우의 언로드 후 임의 재소환 금지를 지키기 위해 월드 재연결은 던전 뒤에 수행한다. 실제 클라이언트 행동과 운영 활성화는 검증하지 않는다.

@@ -60,6 +60,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void showQuest(Player player,String quest){if(!quest.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("QUEST_ID");ui.command(player,"/hearthquest manage "+quest);}
     public void showQuest(Player player,String quest,java.util.function.BooleanSupplier current,Runnable back){ui.contextQuest(player,quest,current,back);}
     public void showFacility(Player player,java.util.function.Function<QuestJournal.View,FacilityObjectives.Board> reader,java.util.function.BooleanSupplier current,Runnable back){ui.facility(player,reader,current,back);}
+    public void courseRoute(java.util.function.BiFunction<Player,QuestJournal.View,CourseRoute.Page> reader){ui.courseRoute(reader);if(phone!=null)phone.courseRoute(reader);}
     public void preparation(java.util.function.BiFunction<Player,QuestJournal.View,PreparationGuide.Page> reader){ui.preparation(reader);if(phone!=null)phone.preparation(reader);}
     public void playthrough(Playthrough content,io.github.jesterportfolio.hearth.story.SharedStory shared){ui.playthrough(content,shared);if(phone!=null)phone.playthrough(content,shared);}
     public PaperQuestAdapter(JavaPlugin plugin,PaperSessionAdapter players,PersonalQuest quests,QuestCatalog catalog,QuestJournal journal,Executor owner,Set<UUID> worldIds) {
