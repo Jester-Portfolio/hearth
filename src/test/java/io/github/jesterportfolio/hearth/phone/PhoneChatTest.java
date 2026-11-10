@@ -5,6 +5,39 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class PhoneChatTest {
+    @Test void timeoutCancelsOwnedRequestInsteadOfCompletingItsFutureWithTimeout()throws Exception{
+        var source=new CompletableFuture<String>();var chat=new PhoneChat(q->source,Runnable::run,20);
+        assertThrows(ExecutionException.class,()->chat.submit("대기").toCompletableFuture().get(1,TimeUnit.SECONDS));
+        assertTrue(source.isCancelled());assertFalse(chat.busy());assertTrue(chat.error().contains("시간"));assertEquals("대기",chat.draft());
+    }
+    @Test void cancelDuringValidationSettlesResultImmediatelyWithoutCancellingSharedRead(){
+        var query=new CompletableFuture<Boolean>();var chat=new PhoneChat(q->CompletableFuture.completedFuture("응답"),Runnable::run);
+        var result=chat.submit("질문","자료","diary",()->true,()->query).toCompletableFuture();chat.cancel();
+        assertTrue(result.isDone());assertFalse(query.isDone());assertFalse(chat.busy());assertEquals("질문",chat.draft());
+        query.complete(true);assertTrue(chat.history().isEmpty());
+    }
+    @Test void closingDuringValidationImmediatelySettlesResultAndKeepsSharedReadUntouched(){
+        var query=new CompletableFuture<Boolean>();var chat=new PhoneChat(q->CompletableFuture.completedFuture("응답"),Runnable::run);
+        var result=chat.submit("질문","자료","diary",()->true,()->query).toCompletableFuture();chat.close();
+        assertTrue(result.isDone());assertFalse(query.isDone());query.complete(true);assertTrue(chat.history().isEmpty());
+    }
+    @Test void callerCancellationReleasesBusyAndCancelsOwnedTransport(){
+        var source=new CompletableFuture<String>();var chat=new PhoneChat(q->source,Runnable::run);
+        var result=chat.submit("질문").toCompletableFuture();assertTrue(result.cancel(true));
+        assertFalse(chat.busy());assertTrue(source.isCancelled());assertTrue(chat.canRetry());assertEquals("질문",chat.draft());
+    }
+    @Test void validationTimeoutDoesNotCompleteSharedQueryFuture()throws Exception{
+        var query=new CompletableFuture<Boolean>();var chat=new PhoneChat(q->CompletableFuture.completedFuture("응답"),Runnable::run,20);
+        assertThrows(ExecutionException.class,()->chat.submit("질문","자료","diary",()->true,()->query).toCompletableFuture().get(1,TimeUnit.SECONDS));
+        assertFalse(query.isDone());query.complete(true);assertTrue(chat.history().isEmpty());assertFalse(chat.busy());
+    }
+    @Test void classifiedFailuresPreserveDraftAndNeverExposeServiceDetails(){
+        for(var reason:AssistantFailure.Reason.values()){
+            var chat=new PhoneChat(q->CompletableFuture.failedFuture(new AssistantFailure(reason)),Runnable::run);
+            assertTrue(chat.submit("보존할 질문").toCompletableFuture().isCompletedExceptionally());
+            assertEquals(AssistantFailure.message(new AssistantFailure(reason)),chat.error());assertEquals("보존할 질문",chat.draft());assertTrue(chat.canRetry());assertTrue(chat.history().isEmpty());
+        }
+    }
     @Test void mockKeepsOrderedBoundedPersonalHistory(){
         var one=new PhoneChat(LocalAssistant.mock(),Runnable::run);var two=new PhoneChat(LocalAssistant.mock(),Runnable::run);
         for(int i=0;i<7;i++)one.submit("질문 "+i).toCompletableFuture().join();

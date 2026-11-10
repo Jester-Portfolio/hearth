@@ -32,6 +32,7 @@ playthrough-content-file: playthrough-demo.yml
 
 # 기존 격리 퀘스트/세션 게이트 안에서만 동작하는 Dialog 프로토타입.
 phone-dialog-enabled: false
+# mock/local만 허용합니다. 알 수 없는 값은 Mock으로 자동 대체하지 않습니다.
 phone-ai-mode: mock
 # local 모드: 인증정보 없는 루프백 HTTP text/plain 프로토콜만 지원합니다.
 phone-ai-endpoint: http://127.0.0.1:11435/ask

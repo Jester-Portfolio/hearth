@@ -1,0 +1,132 @@
+{
+  "checked_at": "2026-11-10",
+  "baseline_commit": "b0b1022",
+  "outcome": "MODEL_NEUTRAL_REQUEST_LIFECYCLE_PASS",
+  "whole_s5_complete": false,
+  "actual_model_selected": false,
+  "actual_model_run": false,
+  "actual_client_tests_run": false,
+  "production_deployed": false,
+  "evidence_root": "/tmp/hearth-ai-lifecycle-evidence.obpntqor",
+  "initial_regressions": {
+    "tests": 21,
+    "new_failures_reproduced": 6,
+    "log": "/tmp/hearth-ai-lifecycle-evidence.obpntqor/initial-regression.log",
+    "xml": "/tmp/hearth-ai-lifecycle-evidence.obpntqor/initial-unit-results"
+  },
+  "unit_tests": {
+    "unique_cases": 56,
+    "failures": 0,
+    "batches": [
+      {
+        "evidence": "/tmp/hearth-ai-lifecycle-evidence.obpntqor/phone-unit-results",
+        "tests": 55,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "evidence": "/tmp/hearth-ai-lifecycle-evidence.obpntqor/final-lifecycle-unit-results",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0
+      }
+    ]
+  },
+  "build": {
+    "result": "PASS",
+    "logs": [
+      "/tmp/hearth-ai-lifecycle-evidence.obpntqor/phone-tests.log",
+      "/tmp/hearth-ai-lifecycle-evidence.obpntqor/final-build-stage.log"
+    ]
+  },
+  "final_artifact": {
+    "path": "/tmp/hearth-ai-lifecycle-evidence.obpntqor/Hearth-final.jar",
+    "sha256": "c77a42b317d1d9105672ec9620569f34558148183c01b0b7f070c9303028237b",
+    "bytes": 2265365
+  },
+  "native": {
+    "result": "PASS",
+    "workspace": "/tmp/hearth-s4-11.fzs2yk2p",
+    "raw_result": "/tmp/hearth-s4-11.fzs2yk2p/run-result.json",
+    "command": [
+      "python3",
+      "scripts/verify-lifecycle.py",
+      "--workspace",
+      "/tmp/hearth-s4-11.fzs2yk2p",
+      "--java",
+      "/home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java",
+      "--plugin",
+      "/tmp/hearth-ai-lifecycle-evidence.obpntqor/Hearth-final.jar",
+      "--artifact-source",
+      "/tmp/hearth-s4-2.vnd2kki4",
+      "--sessions",
+      "--quests",
+      "--story-batch",
+      "--quest-navigation",
+      "--phone-dialog",
+      "--accept-eula"
+    ],
+    "assertions": 97,
+    "changed_boundary_checks": [
+      "ai_lifecycle_shared_PG_validation_untouched_cancel",
+      "ai_lifecycle_result_immediately_settled_cancel",
+      "ai_lifecycle_original_PG_read_completes_cancel",
+      "ai_lifecycle_no_late_history_cancel",
+      "ai_lifecycle_shared_PG_validation_untouched_close",
+      "ai_lifecycle_result_immediately_settled_close",
+      "ai_lifecycle_original_PG_read_completes_close",
+      "ai_lifecycle_no_late_history_close",
+      "ai_lifecycle_shared_PG_validation_untouched_stale",
+      "ai_lifecycle_original_PG_read_completes_stale",
+      "ai_lifecycle_no_late_history_stale",
+      "ai_lifecycle_PG_failure_keeps_question_without_answer",
+      "ai_lifecycle_original_journal_and_inventory_unchanged"
+    ],
+    "duration_seconds": 44.655,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 1,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "player_actions_verdict": "NOT_RUN",
+    "processes": {
+      "database": {
+        "exit_code": 0,
+        "duration_seconds": 44.048,
+        "max_sampled_rss_kib": 221504,
+        "min_sampled_host_available_kib": 11933332
+      },
+      "paper-prepare": {
+        "exit_code": 0,
+        "duration_seconds": 41.156,
+        "max_sampled_rss_kib": 1365796,
+        "min_sampled_host_available_kib": 11933332
+      }
+    }
+  },
+  "unchanged_limits": {
+    "http_requests_max": 4,
+    "http_seconds": 6,
+    "connect_seconds": 2,
+    "response_bytes": 8192,
+    "worker_threads": 2,
+    "worker_queue": 8,
+    "chat_timeout_millis": 8000
+  },
+  "not_run": [
+    "실제 AI 모델/런타임 선택·설치·실행",
+    "추론 품질/출처 충실도·목표 사용량 성능",
+    "모델 서버의 실제 추론 취소",
+    "실제 인증 Minecraft 클라이언트/화면/코옵",
+    "운영 서비스·월드/DB·SSH/터널·시스템 패키지 변경",
+    "두 번째 Paper JVM: 저장/복원 계약 불변",
+    "무관한 전체 회귀·Python·리소스팩: 영향 없음"
+  ]
+}

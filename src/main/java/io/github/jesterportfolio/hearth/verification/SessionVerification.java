@@ -1898,7 +1898,34 @@ public final class SessionVerification implements AutoCloseable {
                 check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary").contains("갱신된 공개 합성 정보"),"phone_AI_other_player_no_private_context");
                 check(io.github.jesterportfolio.hearth.phone.PhoneRetrieval.find(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary","갱신된 정보").sources().isEmpty(),"phone_AI_retrieval_other_player_no_private_source");
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"STORY").size()==1,"phone_library_same_run_shared_fact");
-            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");});
+            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");}).thenCompose(v->phoneRequestLifecycle());
+    }
+    private CompletionStage<Void> phoneRequestLifecycle(){
+        var inventory=one.capture();long revision=s1.save().revision();
+        return mainResult(store.readJournal(a1)).thenCompose(before->{
+            CompletionStage<Void> sequence=CompletableFuture.completedFuture(null);
+            for(String action:List.of("cancel","close","stale"))sequence=sequence.thenCompose(v->{
+                var gate=new CompletableFuture<Boolean>();var started=new CompletableFuture<Void>();var live=new java.util.concurrent.atomic.AtomicBoolean(true);
+                var shared=new java.util.concurrent.atomic.AtomicReference<CompletableFuture<Boolean>>();
+                var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(io.github.jesterportfolio.hearth.phone.LocalAssistant.mock(),owner);
+                var result=chat.submit("보존할 공개 질문","본인 공개 자료","diary",()->coordinator.playable(s1)&&live.get(),()->{
+                    var validation=mainResult(store.readJournal(a1)).thenApply(row->row.equals(before)).thenCombine(gate,(same,allowed)->same&&allowed).toCompletableFuture();
+                    shared.set(validation);started.complete(null);return validation;
+                }).toCompletableFuture();
+                return started.thenRunAsync(()->{
+                    if(action.equals("cancel"))chat.cancel();else if(action.equals("close"))chat.close();else live.set(false);
+                    check(!shared.get().isDone(),"ai_lifecycle_shared_PG_validation_untouched_"+action);
+                    if(!action.equals("stale"))check(result.isDone()&&!chat.busy(),"ai_lifecycle_result_immediately_settled_"+action);
+                    gate.complete(true);
+                },owner).thenCompose(x->mainResult(shared.get())).thenAccept(accepted->check(Boolean.TRUE.equals(accepted),"ai_lifecycle_original_PG_read_completes_"+action))
+                    .thenCompose(x->rejectQuest(result)).thenRun(()->check(chat.history().isEmpty()&&!chat.busy(),"ai_lifecycle_no_late_history_"+action)).whenCompleteAsync((x,error)->chat.close(),owner);
+            });
+            return sequence.thenCompose(v->{
+                var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(io.github.jesterportfolio.hearth.phone.LocalAssistant.mock(),owner);
+                var result=chat.submit("조회 실패 질문","본인 공개 자료","diary",()->coordinator.playable(s1),()->mainResult(store.readInventory(ctx(b,9999))).thenApply(row->true));
+                return rejectQuest(result).thenRun(()->{check(chat.history().isEmpty()&&chat.canRetry()&&chat.draft().equals("조회 실패 질문"),"ai_lifecycle_PG_failure_keeps_question_without_answer");chat.close();});
+            }).thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(after->check(after.equals(before)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"ai_lifecycle_original_journal_and_inventory_unchanged"));
+        });
     }
     private CompletionStage<Void> gameInformation(){
         return mainResult(store.readJournal(a1)).thenCompose(before->journal.information(a1,s1,()->coordinator.playable(s1)).thenCompose(info->{
