@@ -50,7 +50,7 @@ public final class PaperFieldEncounters implements Listener,AutoCloseable {
     public FieldEncounters engine(){main();return engine;}
     public boolean restartHeld(){return restartHeld;}
     private boolean live(Binding b){var lifecycle=worlds.get(b.run());return !closed&&!restartHeld&&lifecycle!=null&&lifecycle.generation()==b.generation()&&lifecycle.mapping().physicalId().equals(b.world())&&lifecycle.state()==WorldLifecycle.State.ACTIVE&&Bukkit.getWorld(b.world())!=null;}
-    public Binding binding(UUID run){main();if(restartHeld)throw new IllegalStateException("FIELD_RESTART_REVIEW_REQUIRED");var w=Objects.requireNonNull(worlds.get(run));var b=new Binding(run,w.mapping().physicalId(),w.generation());if(!live(b))throw new IllegalStateException("FIELD_WORLD_NOT_READY");engine.bind(b);return b;}
+    public Binding binding(UUID run){main();if(restartHeld)throw new IllegalStateException("FIELD_RESTART_REVIEW_REQUIRED");var w=Objects.requireNonNull(worlds.get(run));var b=new Binding(run,w.mapping().physicalId(),w.generation());if(!live(b))throw new IllegalStateException("FIELD_WORLD_NOT_READY");engine.bind(b);reported.remove(run);return b;}
     public List<String> enter(Binding b,UUID player,Point from,Point to,List<Presence> online){main();if(!live(b))throw new IllegalStateException("FIELD_STALE_GENERATION");return engine.enter(b,player,from,to,online);}
     public void validateReset(FieldReset plan){main();plan.selected(content);}
     public FieldReset resetPolicy(){main();return content.reset();}
@@ -75,7 +75,7 @@ public final class PaperFieldEncounters implements Listener,AutoCloseable {
     }
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void blocks(EntityChangeBlockEvent e){if(mobs.containsKey(e.getEntity().getUniqueId()))e.setCancelled(true);}
     @EventHandler public void died(EntityDeathEvent e){var ref=mobs.remove(e.getEntity().getUniqueId());if(ref!=null){e.getDrops().clear();e.setDroppedExp(0);engine.died(ref.binding(),ref.zone(),e.getEntity().getUniqueId());}}
-    @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){for(var w:worlds.values())if(w.mapping().physicalId().equals(e.getWorld().getUID()))retire(w.mapping().storyRunId());}
+    @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void unload(WorldUnloadEvent e){for(var w:worlds.values())if(w.mapping().physicalId().equals(e.getWorld().getUID())){if(!closed&&w.state()==WorldLifecycle.State.UNLOADING)engine.suspend(w.mapping().storyRunId());else retire(w.mapping().storyRunId());}}
     public void retire(UUID run){main();engine.retire(run);}
     public int count(UUID run){main();return (int)mobs.values().stream().filter(m->m.binding().run().equals(run)).count();}
     public List<LivingEntity> entities(UUID run){main();return mobs.values().stream().filter(m->m.binding().run().equals(run)).map(MobRef::entity).toList();}

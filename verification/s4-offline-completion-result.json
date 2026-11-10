@@ -1,0 +1,302 @@
+{
+  "checked_at": "2026-11-10",
+  "baseline_commit": "9ee8ff9",
+  "outcome": "APPROVED_OFFLINE_SCOPE_PASS_ACTUAL_ACCEPTANCE_PENDING",
+  "whole_s4_complete": false,
+  "actual_client_tests_run": false,
+  "production_deployed": false,
+  "evidence_root": "/tmp/hearth-offline-completion.z6dy7ccc",
+  "final_artifact": {
+    "path": "/tmp/hearth-offline-completion.z6dy7ccc/Hearth-final-r1.jar",
+    "sha256": "b9b32e0df1c39eda4f8d1401488ed368909492d29b00756304e4165b46757898",
+    "bytes": 2257434
+  },
+  "unit_tests": {
+    "full": {
+      "result": "PASS",
+      "suites": 121,
+      "tests": 912,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "/tmp/hearth-offline-completion.z6dy7ccc/unit-results"
+    },
+    "final_affected": {
+      "result": "PASS",
+      "suites": 2,
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "/tmp/hearth-offline-completion.z6dy7ccc/final-scene-unit-results"
+    },
+    "unique_cases": 912,
+    "explanation": "전체 912개 PASS 뒤 책 재열기를 최신 상태로 통일한 변경에 관련 17개와 JAR 빌드 PASS. 이후 변경은 필드 통합 시험의 청크 티켓 유지/정리뿐이며 컴파일과 해당 native만 재실행했다."
+  },
+  "python_tests": {
+    "tests": 6,
+    "result": "PASS",
+    "log": "/tmp/hearth-offline-completion.z6dy7ccc/python-tests.log"
+  },
+  "native_runs": [
+    {
+      "mode": "completion",
+      "outcome": "PASS",
+      "workspace": "/tmp/hearth-s4-11.t1dj6_sa",
+      "raw_result": "/tmp/hearth-s4-11.t1dj6_sa/run-result.json",
+      "command": [
+        "python3",
+        "scripts/verify-lifecycle.py",
+        "--workspace",
+        "/tmp/hearth-s4-11.t1dj6_sa",
+        "--java",
+        "/home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java",
+        "--plugin",
+        "/tmp/hearth-offline-completion.z6dy7ccc/Hearth-final.jar",
+        "--artifact-source",
+        "/tmp/hearth-s4-2.vnd2kki4",
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--s4-completion",
+        "--accept-eula"
+      ],
+      "assertions": 439,
+      "duration_seconds": 145.82,
+      "plugin_sha256": "d70ee9452b2cbf92dbbe591d205fdfc9ca821b554ec9f6539e72d98779580b6e",
+      "installed_plugin_sha256": "d70ee9452b2cbf92dbbe591d205fdfc9ca821b554ec9f6539e72d98779580b6e",
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "player_actions_verdict": "NOT_RUN",
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "duration_seconds": 145.113,
+          "max_sampled_rss_kib": 222972,
+          "min_sampled_host_available_kib": 12010916
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "duration_seconds": 125.641,
+          "max_sampled_rss_kib": 1283004,
+          "min_sampled_host_available_kib": 12010916
+        },
+        "paper-resume": {
+          "exit_code": 0,
+          "duration_seconds": 16.482,
+          "max_sampled_rss_kib": 992592,
+          "min_sampled_host_available_kib": 12334412
+        }
+      },
+      "changed_boundary_checks": [
+        "offline_scene_concurrent_real_PG_read_shared_session",
+        "offline_scene_reopen_keeps_incomplete_frame_without_new_attempt",
+        "offline_scene_reopen_does_not_write_original_row",
+        "offline_environment_first_difficulty_saved",
+        "offline_environment_UI_never_overwrites_original",
+        "offline_new_JVM_environment_original_difficulty_preserved",
+        "offline_new_JVM_original_difficulty_restored"
+      ]
+    },
+    {
+      "mode": "field",
+      "outcome": "PASS",
+      "workspace": "/tmp/hearth-s4-11.dxn5veh6",
+      "raw_result": "/tmp/hearth-s4-11.dxn5veh6/run-result.json",
+      "command": [
+        "python3",
+        "scripts/verify-lifecycle.py",
+        "--workspace",
+        "/tmp/hearth-s4-11.dxn5veh6",
+        "--java",
+        "/home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java",
+        "--plugin",
+        "/tmp/hearth-offline-completion.z6dy7ccc/Hearth-final-r1.jar",
+        "--artifact-source",
+        "/tmp/hearth-s4-2.vnd2kki4",
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--field-encounters",
+        "--accept-eula"
+      ],
+      "assertions": 28,
+      "duration_seconds": 38.335,
+      "plugin_sha256": "b9b32e0df1c39eda4f8d1401488ed368909492d29b00756304e4165b46757898",
+      "installed_plugin_sha256": "b9b32e0df1c39eda4f8d1401488ed368909492d29b00756304e4165b46757898",
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "player_actions_verdict": "NOT_RUN",
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "duration_seconds": 37.735,
+          "max_sampled_rss_kib": 218844,
+          "min_sampled_host_available_kib": 12115472
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "duration_seconds": 34.91,
+          "max_sampled_rss_kib": 1193640,
+          "min_sampled_host_available_kib": 12115472
+        }
+      },
+      "changed_boundary_checks": [
+        "field_controlled_spawn_chunk_prepared",
+        "field_controlled_spawn_chunk_prepared",
+        "field_controlled_spawn_chunk_prepared",
+        "field_controlled_spawn_chunk_prepared",
+        "field_no_eager_spawning",
+        "field_spawn_population_unique_and_run_scoped",
+        "field_real_entities_fixed_attributes_and_world",
+        "field_real_entities_fixed_attributes_and_world",
+        "field_reentry_does_not_duplicate_or_rescale",
+        "field_next_zone_recounts_population",
+        "field_other_run_independent_encounter",
+        "field_real_entity_deaths_clear_only_matching_encounter",
+        "field_cleared_encounter_not_implicitly_reset",
+        "field_stale_binding_rejected",
+        "field_A_active_tail_and_B_before_normal_unload",
+        "field_existing_scope_marker_prevents_automatic_recreation",
+        "field_world_unload_removes_only_A_references",
+        "field_normal_reload_preserves_clear_and_does_not_respawn_active_tail",
+        "field_PG_prerequisite_failure_preserves_all_original_encounters",
+        "field_explicit_saved_reset_reopens_only_retired_tail_after_world_reload",
+        "field_terminal_retire_never_auto_respawns",
+        "field_all_owned_entities_removed"
+      ]
+    },
+    {
+      "mode": "betterhud",
+      "outcome": "PASS",
+      "workspace": "/tmp/hearth-s4-11.cakdeuac",
+      "raw_result": "/tmp/hearth-s4-11.cakdeuac/run-result.json",
+      "command": [
+        "python3",
+        "scripts/verify-lifecycle.py",
+        "--workspace",
+        "/tmp/hearth-s4-11.cakdeuac",
+        "--java",
+        "/home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java",
+        "--plugin",
+        "/tmp/hearth-offline-completion.z6dy7ccc/Hearth-final-r1.jar",
+        "--artifact-source",
+        "/tmp/hearth-s4-2.vnd2kki4",
+        "--sessions",
+        "--quests",
+        "--story-batch",
+        "--betterhud",
+        "--accept-eula",
+        "--betterhud-plugin",
+        "/tmp/hearth-s4-11.zux02_ff/server/plugins/BetterHud.jar"
+      ],
+      "assertions": 99,
+      "duration_seconds": 46.979,
+      "plugin_sha256": "b9b32e0df1c39eda4f8d1401488ed368909492d29b00756304e4165b46757898",
+      "installed_plugin_sha256": "b9b32e0df1c39eda4f8d1401488ed368909492d29b00756304e4165b46757898",
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "player_actions_verdict": "NOT_RUN",
+      "processes": {
+        "database": {
+          "exit_code": 0,
+          "duration_seconds": 46.351,
+          "max_sampled_rss_kib": 211440,
+          "min_sampled_host_available_kib": 11902868
+        },
+        "paper-prepare": {
+          "exit_code": 0,
+          "duration_seconds": 43.495,
+          "max_sampled_rss_kib": 1405736,
+          "min_sampled_host_available_kib": 11902868
+        }
+      },
+      "changed_boundary_checks": []
+    }
+  ],
+  "native_assertions": 566,
+  "generated_pack_check": {
+    "result": {
+      "outcome": "PASS",
+      "pack": "/tmp/hearth-s4-11.cakdeuac/server/plugins/BetterHud/build.zip",
+      "sha256": "cd144bc927401d5c776b4b7cfa9699802f4a07b9baa0426642b462e8911be6ad",
+      "checks": [
+        "exported_pack_ID_matches_all_generated_assets",
+        "smartphone_asset_preserved_font/phone.json",
+        "smartphone_asset_preserved_items/phone.json",
+        "smartphone_asset_preserved_models/item/phone.json",
+        "smartphone_asset_preserved_textures/item/phone.png",
+        "smartphone_asset_preserved_textures/gui/frame.png",
+        "sixteen_4px_pixel_font_rows",
+        "minimap_row_offsets_are_4px",
+        "six_two_line_quest_fonts_include_Hangul",
+        "target_pack_format_88",
+        "target_shader_has_viewport_relative_right_anchor",
+        "quest_top_left_anchor",
+        "minimap_top_right_anchor",
+        "minimap_64px_with_12px_edge_margin",
+        "remove-default-hotbar_disabled",
+        "enable-self-host_disabled",
+        "merge-boss-bar_disabled"
+      ],
+      "pack_id": "4b6ed528-ac9a-3867-a0d0-cc76e4f806ce",
+      "client_rendering_tested": false
+    },
+    "evidence": "/tmp/hearth-offline-completion.z6dy7ccc/betterhud-pack-check.json"
+  },
+  "source_changes_after_completion_native": "SessionVerification.fieldEncounters 시험 메서드의 청크 티켓 유지/정리만 변경. 성공한 S4 기능/복원 경로와 게임 로직은 같아 반복하지 않음.",
+  "preserved_failed_attempt": {
+    "workspace": "/tmp/hearth-s4-11._afp1nuc",
+    "raw_result": "/tmp/hearth-s4-11._afp1nuc/run-result.json",
+    "outcome": "FAIL",
+    "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+    "cleanup_errors": [
+      "AssertionError: DB 풀 종료 확인 누락"
+    ],
+    "process_exit_codes": {
+      "database": 0,
+      "paper-prepare": 0
+    },
+    "cause": "새 재진입 fixture가 비동기 저장 중 재소환 청크를 유지하지 않아 FIELD_CHUNK_NOT_READY. fixture의 플러그인 청크 티켓 유지/정리로 수정.",
+    "cleanup_observation": "실패 결과의 DB 풀 종료 확인 누락은 그대로 보존. 실제 로그에는 Hikari shutdown completed, 소유 프로세스 exit 0. 새 경로 재시험은 종료/포트 검사 모두 PASS."
+  },
+  "not_run": [
+    "실제 인증 클라이언트/클릭/키 입력/화면 수용",
+    "두 계정 코옵/실사용 경합",
+    "실제 프로세스 강제 종료·파일시스템 저장 장애",
+    "PostgreSQL 프로세스 재시작",
+    "TPS/MSPT 전체 부하·장기 누수",
+    "미정 AI 모델·자원 예산/콘텐츠/밸런스·경제 운영 규칙",
+    "운영 배포/기존 운영 서비스 및 SSH·방화벽·터널 변경"
+  ]
+}

@@ -34,7 +34,7 @@ final class ManualS4Support implements Listener,AutoCloseable {
     void prepare(WorldLifecycle.Mapping mapping,Map<BlockVector3,Material> facilities){
         World world=Objects.requireNonNull(Bukkit.getWorld(mapping.physicalId()));
         if(!world.getKey().toString().equals(mapping.worldKey()))throw new IllegalStateException("MANUAL_S4_WORLD");
-        worlds.add(world.getUID());environment(world);
+        try{if(!difficulties.containsKey(world.getUID()))difficulties.put(world.getUID(),Difficulty.valueOf(ManualEnvironmentState.load(mapping.directory().resolve("hearth-manual-environment.properties"),mapping.storyRunId(),mapping.physicalId(),world.getDifficulty().name())));}catch(java.io.IOException error){throw new IllegalStateException("CLIENT_ENVIRONMENT_ORIGINAL_HOLD",error);}worlds.add(world.getUID());environment(world);
         var file=mapping.directory().resolve("hearth-manual-s4.properties");
         var manager=Objects.requireNonNull(WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(world)));
         String region="hearth_manual_s4_lab";
@@ -67,7 +67,7 @@ final class ManualS4Support implements Listener,AutoCloseable {
         }catch(java.io.IOException error){throw new IllegalStateException("MANUAL_S4_PREPARATION",error);}
     }
     private void environment(World world){
-        difficulties.putIfAbsent(world.getUID(),world.getDifficulty());
+        if(!difficulties.containsKey(world.getUID()))throw new IllegalStateException("CLIENT_ENVIRONMENT_ORIGINAL_MISSING");
         world.setDifficulty(combatMode?difficulties.get(world.getUID()):Difficulty.PEACEFUL);
         for(var rule:List.of(GameRules.ADVANCE_TIME,GameRules.ADVANCE_WEATHER,GameRules.SPAWN_MOBS,GameRules.MOB_GRIEFING,GameRules.SPAWN_PHANTOMS,GameRules.SPAWN_PATROLS))if(!world.setGameRule(rule,false)||!Boolean.FALSE.equals(world.getGameRuleValue(rule)))throw new IllegalStateException("CLIENT_ENVIRONMENT_RULE");
         world.setTime(6000);world.setStorm(false);world.setThundering(false);world.setClearWeatherDuration(Integer.MAX_VALUE);

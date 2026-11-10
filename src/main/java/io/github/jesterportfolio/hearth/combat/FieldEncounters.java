@@ -15,9 +15,10 @@ public final class FieldEncounters {
     private record ResetRecord(Binding binding,Set<String> zones,boolean done){}
     private final Map<ResetKey,ResetRecord> resets=new HashMap<>();private final Set<UUID> resetting=new HashSet<>();
     private final FieldContent content;private final Port port;private final Runnable check;
+    private final Map<UUID,Binding> suspended=new HashMap<>();private final Set<Key> resettable=new HashSet<>();
     private final Map<UUID,Binding> bindings=new HashMap<>();private final Set<UUID> retired=new HashSet<>();private final Map<Key,Snapshot> events=new HashMap<>();
     public FieldEncounters(FieldContent content,Port port,Runnable check){this.content=content;this.port=port;this.check=check;}
-    public void bind(Binding b){check.run();if(retired.contains(b.run()))throw new IllegalStateException("FIELD_RETIRED");if(bindings.values().stream().anyMatch(v->v.world().equals(b.world())&&!v.run().equals(b.run())))throw new IllegalStateException("FIELD_WORLD_CONFLICT");var old=bindings.putIfAbsent(b.run(),b);if(old!=null&&!old.equals(b))throw new IllegalStateException("FIELD_STALE_GENERATION");}
+    public void bind(Binding b){check.run();if(retired.contains(b.run()))throw new IllegalStateException("FIELD_RETIRED");var prior=suspended.get(b.run());if(prior!=null){if(!prior.world().equals(b.world())||b.generation()<=prior.generation())throw new IllegalStateException("FIELD_STALE_GENERATION");if(resetting.contains(b.run())||events.entrySet().stream().anyMatch(e->e.getKey().run().equals(b.run())&&(e.getValue().phase()==Phase.ERROR_HOLD||!e.getValue().mobs().isEmpty())))throw new IllegalStateException("FIELD_SUSPEND_HOLD");}if(bindings.values().stream().anyMatch(v->v.world().equals(b.world())&&!v.run().equals(b.run()))||suspended.values().stream().anyMatch(v->v.world().equals(b.world())&&!v.run().equals(b.run())))throw new IllegalStateException("FIELD_WORLD_CONFLICT");var old=bindings.putIfAbsent(b.run(),b);if(old!=null&&!old.equals(b))throw new IllegalStateException("FIELD_STALE_GENERATION");suspended.remove(b.run());}
     public boolean current(Binding b){check.run();return b.equals(bindings.get(b.run()));}
     public Optional<Snapshot> state(UUID run,String zone){check.run();return Optional.ofNullable(events.get(new Key(run,zone)));}
     public boolean mayAttack(Binding b,UUID entity){check.run();return current(b)&&!resetting.contains(b.run())&&events.entrySet().stream().anyMatch(e->e.getKey().run().equals(b.run())&&e.getValue().phase()==Phase.ACTIVE&&e.getValue().mobs().contains(entity));}
@@ -43,15 +44,22 @@ public final class FieldEncounters {
         resets.put(key,new ResetRecord(binding,selected,false));
         try{
             for(String id:selected){var zoneKey=new Key(binding.run(),id);var old=events.get(zoneKey);if(old==null)continue;
-                if(old.phase()==Phase.ERROR_HOLD||old.phase()==Phase.SPAWNING||old.phase()==Phase.RETIRED)throw new IllegalStateException("FIELD_RESET_SOURCE_HOLD");
+                if(old.phase()==Phase.ERROR_HOLD||old.phase()==Phase.SPAWNING||old.phase()==Phase.RETIRED&&!resettable.contains(zoneKey))throw new IllegalStateException("FIELD_RESET_SOURCE_HOLD");
             }
             for(String id:selected){var zoneKey=new Key(binding.run(),id);var old=events.get(zoneKey);if(old==null)continue;var remaining=new HashSet<>(old.mobs());
                 try{for(UUID entity:old.mobs()){if(!current(binding))throw new IllegalStateException("FIELD_STALE_GENERATION");port.remove(entity);remaining.remove(entity);}}
                 catch(RuntimeException failure){events.put(zoneKey,new Snapshot(Phase.ERROR_HOLD,old.players(),old.difficulty(),remaining));throw failure;}
             }
             if(!current(binding))throw new IllegalStateException("FIELD_STALE_GENERATION");
-            selected.forEach(id->events.remove(new Key(binding.run(),id)));resets.put(key,new ResetRecord(binding,selected,true));resetting.remove(binding.run());
+            selected.forEach(id->{var selectedKey=new Key(binding.run(),id);events.remove(selectedKey);resettable.remove(selectedKey);});resets.put(key,new ResetRecord(binding,selected,true));resetting.remove(binding.run());
         }catch(RuntimeException failure){throw new IllegalStateException("FIELD_RESET_HOLD",failure);}
     }
-    public void retire(UUID run){check.run();bindings.remove(run);retired.add(run);var failures=new ArrayList<RuntimeException>();events.replaceAll((key,old)->{if(!key.run().equals(run))return old;var left=new HashSet<UUID>();for(UUID id:old.mobs())try{port.remove(id);}catch(RuntimeException e){left.add(id);failures.add(e);}return new Snapshot(left.isEmpty()?Phase.RETIRED:Phase.ERROR_HOLD,old.players(),old.difficulty(),left);});if(!failures.isEmpty())throw new IllegalStateException("FIELD_CLEANUP_HOLD",failures.getFirst());}
+    /** 같은 JVM의 정상 언로드입니다. 완료 기록은 보존하며 미완료 조우는 명시적 저장/리셋 전까지 재소환하지 않습니다. */
+    public void suspend(UUID run){check.run();var binding=bindings.remove(run);if(binding==null)return;suspended.put(run,binding);var failures=new ArrayList<RuntimeException>();
+        events.replaceAll((key,old)->{if(!key.run().equals(run))return old;if(old.phase()==Phase.CLEARED)return old;var left=new HashSet<UUID>();for(UUID id:old.mobs())try{port.remove(id);}catch(RuntimeException error){left.add(id);failures.add(error);}boolean safe=left.isEmpty()&&old.phase()!=Phase.ERROR_HOLD&&old.phase()!=Phase.SPAWNING&&!resetting.contains(run);if(safe)resettable.add(key);return new Snapshot(safe?Phase.RETIRED:Phase.ERROR_HOLD,old.players(),old.difficulty(),left);});
+        if(!failures.isEmpty())throw new IllegalStateException("FIELD_CLEANUP_HOLD",failures.getFirst());
+    }
+    public boolean suspended(UUID run){check.run();return suspended.containsKey(run);}
+    public boolean held(UUID run){check.run();return retired.contains(run)||resetting.contains(run)||events.entrySet().stream().anyMatch(e->e.getKey().run().equals(run)&&(e.getValue().phase()==Phase.ERROR_HOLD||e.getValue().phase()==Phase.RETIRED));}
+    public void retire(UUID run){check.run();bindings.remove(run);suspended.remove(run);resettable.removeIf(key->key.run().equals(run));retired.add(run);var failures=new ArrayList<RuntimeException>();events.replaceAll((key,old)->{if(!key.run().equals(run))return old;var left=new HashSet<UUID>();for(UUID id:old.mobs())try{port.remove(id);}catch(RuntimeException e){left.add(id);failures.add(e);}return new Snapshot(left.isEmpty()?Phase.RETIRED:Phase.ERROR_HOLD,old.players(),old.difficulty(),left);});if(!failures.isEmpty())throw new IllegalStateException("FIELD_CLEANUP_HOLD",failures.getFirst());}
 }
