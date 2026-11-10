@@ -46,10 +46,12 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:26.2.build.134-stable")
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.19")
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.4.4")
+    compileOnly("com.google.code.gson:gson:2.14.0") // pinned Paper runtime provides Gson
     implementation("org.postgresql:postgresql:$postgresJdbcVersion")
     implementation("com.zaxxer:HikariCP:$hikariVersion")
     testImplementation(platform("org.junit:junit-bom:5.13.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("com.google.code.gson:gson:2.14.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.17")
 }

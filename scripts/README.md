@@ -159,3 +159,9 @@
 관리자 복구 진단은 `verify-lifecycle.py --sessions --quests --story-batch --recovery-inspection --accept-eula` 단독 모드로 새 격리 DB/Paper 한 JVM에서 콘솔 등록·검증 연결 제한·단일 SELECT의 동시 41/27슬롯 저장 관측·실제 SQL 실패·CAS 원본 보존·읽기 한도를 검사합니다. 실행 경로/아티팩트/자원 한도는 기존과 같으며 [명령 및 검증 기록](../docs/recovery-inspection-verification.md)을 따릅니다. 진단 명령 자체는 조회만 수행하며 복구/재지급/초기화 명령을 추가하지 않습니다.
 
 실제 S4 통합 수용은 `--s4-client --sessions --quests --story-batch --manual-player --operator-ready --profile PROFILE --betterhud-plugin PATH --accept-eula`로 준비합니다. 준비된 실제 인증 클라이언트가 필요하며 [실제 수용 절차/진행 기록](../docs/s4-client-acceptance.md)을 따릅니다. 사용자 명시 요청이 있는 이번 수동 시험에만 `--manual-no-time-limit`로 전체 경과 시간 제한을 해제합니다. 자동 모드의 600초 기본 한도, CPU/RAM·개별 대기·정리 한도는 유지합니다. `stop`은 다음 JVM으로, 연결 종료 후 `finish`는 전체 시험 정리로 이어집니다. `scripts/test_manual_s4.py`는 팩 제공 범위·경과 시간 예외와 자원 방어·수동 명령 제한을 검사하며 실제 플레이 PASS를 만들지 않습니다.
+
+## S5 고정 로컬 AI 격리 시험
+
+`s5_ai_trial.py`는 [ADR-0018](../docs/decisions/0018-local-ai-runtime-and-trial-budget.md)의 명시적 모델/예산 승인이 있는 새 사용자 소유 `/tmp/hearth-s5-trial.*`·전용 표식 경로만 사용한다. 실제 파일 해시·manifest 검증, libzstd 안전 해제, 독립 프로필/모델·루프백/클라우드 비활성·소유 프로세스 트리와 GPU/RAM/디스크/시간 감시를 수행한다. `--java`와 고정 JAR/fixture/Gson의 `--classpath`를 받는다. 일반 실행이 모델 설치/운영 변경 승인을 대신하지 않는다.
+
+`--continue-after-review`는 실패 원본을 보존하고 같은 최초 600초의 남은 시간만 사용하는 한 번의 관련 재확인이다. 새 시간 예산·모델/상한 확대가 아니며 원래 아티팩트 해시를 다시 확인하고 모델/프로필/로그/결과는 분리한다. 최초 표식의 경과 시간이 450초 이상이거나 재확인 결과가 이미 있으면 거부한다. 준비는 `OllamaTrialWarmup`, 실제 제한 흐름은 `OllamaTrialProbe`를 사용하며 Minecraft Player를 생성하지 않는다. [실제 결과·실패·최종 코드 미재실행 범위](../docs/s5-local-ai-verification.md)를 반드시 구분한다.

@@ -1,5 +1,9 @@
 # Hearth 주요 변경 이력
 
+## 2026-11-10 — 첫 로컬 AI 연결·격리 실제 추론
+
+- 승인한 [Ollama/Qwen3 조합과 격리 예산](decisions/0018-local-ai-runtime-and-trial-budget.md)에 맞춰 선택형 JSON 어댑터·버전/모델 확인·원본 자료/요청 한도를 연결했다. 기본 Mock은 유지하며 실제 한국어·진행별 자료 분리·정보 부재·취소 후 재요청을 부분 확인했다. [초기 준비 실패·한도 분류 보완·미검증](s5-local-ai-verification.md)을 구분하며 전체 S5 완료나 운영 적용을 뜻하지 않는다.
+
 ## 2026-11-09 — 선택형 BetterHud·단일 퀘스트/관전 표시
 
 - 중복 퀘스트 BossBar/sidebar와 관전 중 표시 소실을 보완하고, 승인된 [선택형 BetterHud](decisions/0017-optional-betterhud-presentation.md)의 상대 앵커·개인 프레임/팩 로드 확인·스마트폰 팩 병합을 연결했다. 기본 출력과 다른 전투 채널을 보존한다. [검사·실제 클라이언트 미검증](hud-display-verification.md)을 구분한다.

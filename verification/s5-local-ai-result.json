@@ -1,0 +1,288 @@
+{
+  "checked_at": "2026-11-10",
+  "baseline_commit": "9604fce",
+  "decision": "ADR-0018",
+  "outcome": "IMPLEMENTATION_INTERNAL_PASS_ACTUAL_MODEL_PARTIAL_ACCEPTANCE",
+  "whole_s5_complete": false,
+  "production_deployed": false,
+  "actual_minecraft_client": false,
+  "approved_trial_completed": true,
+  "evidence_root": "/tmp/hearth-s5-implementation.3u9kxrar",
+  "actual_workspace": "/tmp/hearth-s5-trial.9iqwd8ex",
+  "final_artifact": {
+    "path": "/tmp/hearth-s5-implementation.3u9kxrar/Hearth-final-r1.jar",
+    "sha256": "ecdc33e39266883c082a048c862c12c73769176d89ad58526842236ef02803d0",
+    "bytes": 2278633
+  },
+  "actual_test_artifact": {
+    "path": "/tmp/hearth-s5-implementation.3u9kxrar/Hearth-final.jar",
+    "sha256": "4c212efa4abcaf1b82ac8cc7ef46d96a5e14fd5b16b58f0764cad7466048d1c6"
+  },
+  "artifact_difference": "최종 제품 JAR은 실제 관측된 HTTP 400 한도 초과의 오류 분류만 보완했다. 마지막 관련 단위 8개 PASS. 전송/권한/영속 계약 불변으로 성공한 모델 흐름·Paper 검사를 반복하지 않았다.",
+  "unit_tests": {
+    "unique_cases": 64,
+    "final_failures": 0,
+    "runs": [
+      {
+        "evidence": "/tmp/hearth-s5-implementation.3u9kxrar/initial-unit-results",
+        "tests": 64,
+        "failures": 1
+      },
+      {
+        "evidence": "/tmp/hearth-s5-implementation.3u9kxrar/final-ollama-unit-results",
+        "tests": 8,
+        "failures": 0
+      },
+      {
+        "evidence": "/tmp/hearth-s5-implementation.3u9kxrar/final-context-unit-results",
+        "tests": 8,
+        "failures": 0
+      }
+    ],
+    "first_failure": "응답 타입 오류 fixture가 여전히 유효한 string을 사용해 수정. 원래 실패 XML/로그 보존."
+  },
+  "python_tests": {
+    "unique_cases": 11,
+    "failures": 0,
+    "initial_log": "/tmp/hearth-s5-implementation.3u9kxrar/python-tests.log",
+    "final_related_tests": 5,
+    "final_log": "/tmp/hearth-s5-implementation.3u9kxrar/final-script-tests.log"
+  },
+  "compile_logs": [
+    "/tmp/hearth-s5-implementation.3u9kxrar/final-build.log",
+    "/tmp/hearth-s5-implementation.3u9kxrar/native-stage.log",
+    "/tmp/hearth-s5-implementation.3u9kxrar/context-fix-build.log",
+    "/tmp/hearth-s5-implementation.3u9kxrar/final-bounded-warmup-compile.log"
+  ],
+  "native": {
+    "workspace": "/tmp/hearth-s4-11.bgjsb7kc",
+    "raw_result": "/tmp/hearth-s4-11.bgjsb7kc/run-result.json",
+    "result": "PASS",
+    "assertions": 98,
+    "duration_seconds": 42.819,
+    "artifact_sha256": "4c212efa4abcaf1b82ac8cc7ef46d96a5e14fd5b16b58f0764cad7466048d1c6",
+    "all_owned_processes_and_ports_closed": true,
+    "cleanup_errors": [],
+    "new_check": [
+      "ollama_Paper_Gson_load_and_input_limit_never_mock_success"
+    ]
+  },
+  "actual_trial": {
+    "raw_initial_result": "/tmp/hearth-s5-trial.9iqwd8ex/run-result.json",
+    "initial_automated_outcome": "ACTUAL_MODEL_ACCEPTANCE_FAILED",
+    "initial_duration_seconds": 131.599,
+    "initial_probe": {
+      "cases": [
+        {
+          "name": "korean_short",
+          "outcome": "TIMEOUT",
+          "history_size": 0,
+          "milliseconds": 6043
+        },
+        {
+          "name": "personal_A",
+          "outcome": "TIMEOUT",
+          "history_size": 0,
+          "milliseconds": 6004
+        },
+        {
+          "name": "other_run_B",
+          "outcome": "TIMEOUT",
+          "history_size": 0,
+          "milliseconds": 6001
+        },
+        {
+          "name": "unknown_information",
+          "outcome": "TIMEOUT",
+          "history_size": 0,
+          "milliseconds": 6001
+        },
+        {
+          "name": "context_overflow",
+          "outcome": "TIMEOUT",
+          "milliseconds": 6001
+        },
+        {
+          "name": "cancel_then_next",
+          "cancelled": true,
+          "history_empty": true
+        },
+        {
+          "name": "after_cancel",
+          "outcome": "TIMEOUT",
+          "history_size": 0,
+          "milliseconds": 6001
+        },
+        {
+          "name": "four_concurrent",
+          "outcomes": [
+            "SUCCESS",
+            "SUCCESS",
+            "SUCCESS",
+            "SUCCESS"
+          ]
+        }
+      ],
+      "model": "qwen3:4b-instruct-2507-q4_K_M",
+      "version": "0.40.16",
+      "real_model": true,
+      "actual_minecraft_client": false
+    },
+    "raw_review_result": "/tmp/hearth-s5-trial.9iqwd8ex/run-result-reviewed.json",
+    "review_automated_outcome": "ACTUAL_MODEL_ACCEPTANCE_FAILED",
+    "cumulative_original_budget_seconds": 430.624,
+    "time_budget_restarted": false,
+    "downloaded_bytes": 4043062302,
+    "downloaded_again_on_review": false,
+    "verified_receipts": [
+      {
+        "file": "models/blobs/sha256-b72accf9724e93698c57cbd3b1af2d3341b3d05ec2089d86d273d97964853cd2",
+        "bytes": 487,
+        "sha256": "b72accf9724e93698c57cbd3b1af2d3341b3d05ec2089d86d273d97964853cd2",
+        "verified": true
+      },
+      {
+        "file": "ollama.tar.zst",
+        "bytes": 1545767640,
+        "sha256": "87bfafb2acbc89b2e6a1be0a9043de6aa75fb450696f86bc426e65fc448f788d",
+        "verified": true
+      },
+      {
+        "file": "models/blobs/sha256-eade0a07cac7712787bbce23d12f9306adb4781d873d1df6e16f7840fa37afec",
+        "bytes": 1379,
+        "sha256": "eade0a07cac7712787bbce23d12f9306adb4781d873d1df6e16f7840fa37afec",
+        "verified": true
+      },
+      {
+        "file": "models/blobs/sha256-d18a5cc71b84bc4af394a31116bd3932b42241de70c77d2b76d69a314ec8aa12",
+        "bytes": 11338,
+        "sha256": "d18a5cc71b84bc4af394a31116bd3932b42241de70c77d2b76d69a314ec8aa12",
+        "verified": true
+      },
+      {
+        "file": "models/blobs/sha256-0914c7781e001948488d937994217538375b4fd8c1466c5e7a625221abd3ea7a",
+        "bytes": 119,
+        "sha256": "0914c7781e001948488d937994217538375b4fd8c1466c5e7a625221abd3ea7a",
+        "verified": true
+      },
+      {
+        "file": "models/blobs/sha256-85e4a5b7b8ef0e48af0e8658f5aaab9c2324c76c1641493f4d1e25fce54b18b9",
+        "bytes": 2497280480,
+        "sha256": "85e4a5b7b8ef0e48af0e8658f5aaab9c2324c76c1641493f4d1e25fce54b18b9",
+        "verified": true
+      }
+    ],
+    "review_warmup": {
+      "model": "qwen3:4b-instruct-2507-q4_K_M",
+      "created_at": "2026-11-10T10:01:15.317893165Z",
+      "response": "준비 완료",
+      "done": true,
+      "done_reason": "stop",
+      "total_duration": 66294627519,
+      "load_duration": 34299110768,
+      "prompt_eval_count": 84,
+      "prompt_eval_cached_count": 0,
+      "prompt_eval_duration": 31924235000,
+      "eval_count": 6,
+      "eval_duration": 69917000
+    },
+    "review_probe": {
+      "cases": [
+        {
+          "name": "korean_short",
+          "answer": "준비 완료",
+          "outcome": "PASS",
+          "milliseconds": 221
+        },
+        {
+          "name": "personal_A",
+          "answer": "느티상점",
+          "outcome": "PASS",
+          "milliseconds": 477
+        },
+        {
+          "name": "other_run_B",
+          "answer": "바람상점",
+          "outcome": "PASS",
+          "milliseconds": 206
+        },
+        {
+          "name": "unknown_information",
+          "answer": "모르는 내용은 추측하지 않습니다. 제공된 자료에는 성의 암호가 없습니다. 따라서 자료에 없는 성의 암호를 알려드릴 수 없습니다.",
+          "outcome": "PASS",
+          "milliseconds": 766
+        },
+        {
+          "name": "context_overflow",
+          "outcome": "INVALID_RESPONSE",
+          "milliseconds": 23
+        },
+        {
+          "name": "cancel_then_next",
+          "cancelled": true,
+          "history_empty": true
+        },
+        {
+          "name": "after_cancel",
+          "answer": "준비 완료",
+          "outcome": "PASS",
+          "milliseconds": 192
+        },
+        {
+          "name": "four_concurrent",
+          "outcomes": [
+            "SUCCESS",
+            "SUCCESS",
+            "SUCCESS",
+            "SUCCESS"
+          ]
+        }
+      ],
+      "model": "qwen3:4b-instruct-2507-q4_K_M",
+      "version": "0.40.16",
+      "real_model": true,
+      "actual_minecraft_client": false
+    },
+    "input_overflow_runtime_observed": {
+      "input_tokens": 6568,
+      "context_tokens": 4096,
+      "http_status": 400,
+      "truncated": false,
+      "rejected": true
+    },
+    "final_context_error_classification": {
+      "final_reason": "CONTEXT_LIMIT",
+      "unit_replay_pass": true,
+      "final_live_retest": false,
+      "reason": "실제 입력 거부는 확인했으며 마지막 변경은 표시 분류다. 원래 자동 실패를 덮어쓰지 않고 최종 관련 단위로 확인했다."
+    },
+    "actual_overload_observed": false,
+    "actual_four_short_requests": "4개 응답. 실제 BUSY 응답은 미관측; 프로토콜 단위에서 429/503 매핑 확인.",
+    "all_cleanup_errors": [],
+    "parent_home_unchanged": true
+  },
+  "resources": {
+    "total_seconds_max": 600,
+    "work_seconds_max": 550,
+    "action_seconds_max": 90,
+    "download_bytes_max": 6442450944,
+    "directory_bytes_max": 12884901888,
+    "cpu_affinity_count": 2,
+    "nice": 10,
+    "rss_stop_mib": 4096,
+    "gpu_stop_mib": 5120,
+    "max_sampled_rss_kib": 3413804,
+    "max_sampled_gpu_mib": 3128,
+    "max_sampled_directory_bytes": 9207487335,
+    "min_sampled_host_available_kib": 11951168,
+    "sampling_is_not_kernel_hard_limit": true
+  },
+  "not_run": [
+    "최종 HTTP 400 안내 분류의 실제 서버 재요청",
+    "Minecraft 실제 입력/클릭·화면·코옵",
+    "모델 정답률/과학 지식·출처 충실도의 일반 평가",
+    "응답 캐시·긴 자료/대화 품질·목표 사용량/TPS/MSPT·장기 안정성",
+    "실제 혼잡 거부/모델 추론 즉시 취소의 일반 보장",
+    "운영 상시 설치/서비스 등록·기존 Docker/SSH/터널·드라이버 변경"
+  ]
+}

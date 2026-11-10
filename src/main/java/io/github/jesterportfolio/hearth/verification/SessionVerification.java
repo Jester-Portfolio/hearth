@@ -1924,6 +1924,9 @@ public final class SessionVerification implements AutoCloseable {
                 var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(io.github.jesterportfolio.hearth.phone.LocalAssistant.mock(),owner);
                 var result=chat.submit("조회 실패 질문","본인 공개 자료","diary",()->coordinator.playable(s1),()->mainResult(store.readInventory(ctx(b,9999))).thenApply(row->true));
                 return rejectQuest(result).thenRun(()->{check(chat.history().isEmpty()&&chat.canRetry()&&chat.draft().equals("조회 실패 질문"),"ai_lifecycle_PG_failure_keeps_question_without_answer");chat.close();});
+            }).thenCompose(v->{
+                var service=io.github.jesterportfolio.hearth.phone.LocalAssistant.configured("ollama","http://127.0.0.1:11435/api/generate");
+                return service.ask("가".repeat(7000)).handleAsync((answer,error)->{service.close();check(error!=null&&io.github.jesterportfolio.hearth.phone.AssistantFailure.reason(error)==io.github.jesterportfolio.hearth.phone.AssistantFailure.Reason.CONTEXT_LIMIT,"ollama_Paper_Gson_load_and_input_limit_never_mock_success");return (Void)null;},owner);
             }).thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(after->check(after.equals(before)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"ai_lifecycle_original_journal_and_inventory_unchanged"));
         });
     }
