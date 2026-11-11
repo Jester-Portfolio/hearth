@@ -2,7 +2,6 @@ package io.github.jesterportfolio.hearth.phone;
 
 import io.github.jesterportfolio.hearth.quest.GameInformation;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /** 공개 DTO 내부의 유한 키워드 검색. DB/원본 콘텐츠/다른 진행 검색이나 임베딩 서비스는 없습니다. */
 public final class PhoneRetrieval {
@@ -14,7 +13,7 @@ public final class PhoneRetrieval {
         if(!PhoneContext.MODES.containsKey(mode))throw new IllegalArgumentException("UNKNOWN_AI_CONTEXT");
         if(question==null||question.isBlank()||question.codePointCount(0,question.length())>256)throw new IllegalArgumentException("AI_QUESTION_LENGTH");
         if(mode.equals("none"))return new Result(List.of(),"");
-        var tokens=new LinkedHashSet<String>();var matches=Pattern.compile("[\\p{L}\\p{N}_]{2,32}").matcher(question.toLowerCase(Locale.ROOT));while(matches.find()&&tokens.size()<16)tokens.add(matches.group());
+        var terms=PhoneSearchTerms.parse(question);
         var candidates=new ArrayList<Source>();
         switch(mode){
             case "quests"->{for(int i=0;i<data.quests().size();i++){var q=data.quests().get(i);candidates.add(new Source(mode,i,q.title(),"NPC: "+q.npc()+" · "+q.status()+" · "+q.guidance()));}}
@@ -24,7 +23,7 @@ public final class PhoneRetrieval {
             default->throw new IllegalArgumentException("UNKNOWN_AI_CONTEXT");
         }
         var ranked=new ArrayList<Ranked>();
-        for(var source:candidates){String title=source.title().toLowerCase(Locale.ROOT),text=source.text().toLowerCase(Locale.ROOT);int score=0;for(String token:tokens){if(title.contains(token))score+=3;if(text.contains(token))score++;}if(score>0)ranked.add(new Ranked(source,score));}
+        for(var source:candidates){String title=PhoneSearchTerms.normalize(source.title()),text=PhoneSearchTerms.normalize(source.text());int score=0;for(var term:terms)score+=PhoneSearchTerms.score(term,title,text);if(score>0)ranked.add(new Ranked(source,score));}
         ranked.sort(Comparator.comparingInt(Ranked::score).reversed().thenComparingInt(r->r.source().index()));
         var sources=ranked.stream().limit(4).map(r->new Source(mode,r.source().index(),AssistantRequest.limit(r.source().title(),64),AssistantRequest.limit(r.source().text(),400))).toList();
         return present(sources);

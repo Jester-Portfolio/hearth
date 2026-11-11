@@ -1888,6 +1888,7 @@ public final class SessionVerification implements AutoCloseable {
                 var retrieval=io.github.jesterportfolio.hearth.phone.PhoneRetrieval.find(approved,"diary","갱신된 합성 정보");
                 check(retrieval.sources().stream().anyMatch(source->source.text().contains("갱신된 공개 합성 정보")),"phone_AI_retrieval_own_record_and_source");
                 check(!retrieval.context().contains(a1.playerId().toString()),"phone_AI_retrieval_no_player_ID");
+                var natural=io.github.jesterportfolio.hearth.phone.PhoneRetrieval.find(approved,"diary","기록을 어디에서 확인하나요");check(natural.sources().stream().anyMatch(source->source.text().contains("갱신된 공개 합성 정보")),"phone_AI_Korean_particle_search_in_own_public_PG");
                 check(io.github.jesterportfolio.hearth.phone.PhoneContext.from(approved,"none").isEmpty(),"phone_AI_general_question_no_game_context");
                 var mock=io.github.jesterportfolio.hearth.phone.LocalAssistant.mock().ask(new io.github.jesterportfolio.hearth.phone.AssistantRequest("도움",List.of(),context)).toCompletableFuture();
                 check(mock.isDone()&&mock.getNow("").contains("Mock AI"),"phone_AI_Mock_structured_request");
@@ -1915,7 +1916,7 @@ public final class SessionVerification implements AutoCloseable {
             public CompletionStage<String> ask(io.github.jesterportfolio.hearth.phone.AssistantRequest request){generated[0]++;check(request.sources()==1&&!request.prompt().contains(a1.playerId().toString())&&!request.prompt().contains("phone_personal_note"),"grounded_cache_only_public_prompt_and_source_count");return CompletableFuture.completedFuture(bad.get()?"잘못된 자료 [자료 2]":"공개 기록의 내용입니다. [자료 1]");}
             public CompletionStage<String> confirmCached(String answer){identities[0]++;return identity.get()==null?CompletableFuture.completedFuture(answer):identity.get();}
         };
-        var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(service,owner);var beforeHistory=new java.util.concurrent.atomic.AtomicReference<List<io.github.jesterportfolio.hearth.phone.PhoneChat.Turn>>();
+        var measured=new io.github.jesterportfolio.hearth.phone.MeasuredAssistant(service);var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(measured,owner);var beforeHistory=new java.util.concurrent.atomic.AtomicReference<List<io.github.jesterportfolio.hearth.phone.PhoneChat.Turn>>();
         return mainResult(store.readJournal(a1)).thenCompose(journalBefore->mainResult(store.readExploration(a2)).thenCompose(otherBefore->journal.load(a1,s1,()->coordinator.playable(s1)).thenCompose(view->{
             var plan=phoneCachePlan(view);CompletionStage<Void> sequence=CompletableFuture.completedFuture(null);
             for(int i=0;i<5;i++)sequence=sequence.thenCompose(v->chat.submit(plan.question(),plan.result().context(),plan.mode(),()->coordinator.playable(s1),()->phoneCacheValidate(plan,reads),plan.scope()));
@@ -1935,7 +1936,12 @@ public final class SessionVerification implements AutoCloseable {
                 });
         }).thenCompose(v->mainResult(store.readExploration(a2))).thenAccept(otherAfter->check(otherAfter.equals(otherBefore),"grounded_cache_preserves_other_player_PG"))
             .thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(after->check(after.equals(journalBefore)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"grounded_cache_reads_preserve_journal_inventory_and_revision"))))
-            .whenCompleteAsync((v,error)->{chat.close();check(chat.cacheStats().entries()==0,"grounded_cache_close_discards_session_answers");},owner);
+            .whenCompleteAsync((v,error)->{
+                chat.close();check(chat.cacheStats().entries()==0,"grounded_cache_close_discards_session_answers");
+                var usage=measured.snapshot();check(usage.usage().getFirst().succeeded()==generated[0]&&usage.usage().getLast().succeeded()==identities[0]&&usage.usage().stream().allMatch(row->row.active()==0),"phone_AI_usage_separates_backend_generation_and_cache_confirmation_from_PG_acceptance");
+                var lines=io.github.jesterportfolio.hearth.phone.AssistantDiagnostics.lines(true,new String[]{"status"},"mock",measured::snapshot);check(!String.join("\n",lines).contains("공개 기록의 내용")&&!usage.toString().contains(a1.playerId().toString())&&measured.snapshot().equals(usage),"phone_AI_readonly_usage_has_no_text_or_personal_identity");measured.close();
+                check(Bukkit.dispatchCommand(Bukkit.getConsoleSender(),"hearthai status"),"phone_AI_registered_console_usage_command");
+            },owner);
     }
     private CompletionStage<Void> phoneRequestLifecycle(){
         var inventory=one.capture();long revision=s1.save().revision();

@@ -53,10 +53,12 @@ public final class PaperPhone implements Listener,AutoCloseable {
     public void contact(java.util.function.BiConsumer<Player,String> handler){contact=handler;}
     private java.util.function.BiConsumer<Player,String> peopleTalk=(p,npc)->{};
     public void peopleTalk(java.util.function.BiConsumer<Player,String> handler){peopleTalk=handler;}
-    public void report(java.util.function.BiConsumer<Player,String> handler){report=handler;}private final Executor owner;private final AssistantService assistant;private final NamespacedKey device;private boolean closed;
+    public void report(java.util.function.BiConsumer<Player,String> handler){report=handler;}private final Executor owner;private final MeasuredAssistant assistant;private final NamespacedKey device;private boolean closed;
     public PaperPhone(JavaPlugin plugin,PaperSessionAdapter players,QuestJournal journal,QuestCatalog catalog,Executor owner){
         this.plugin=plugin;this.players=players;this.journal=journal;this.catalog=catalog;this.owner=owner;device=new NamespacedKey(plugin,"dev_phone");
-        assistant=LocalAssistant.configured(plugin.getConfig().getString("phone-ai-mode","mock"),plugin.getConfig().getString("phone-ai-endpoint","http://127.0.0.1:11435/ask"));
+        String mode=plugin.getConfig().getString("phone-ai-mode","mock");
+        assistant=new MeasuredAssistant(LocalAssistant.configured(mode,plugin.getConfig().getString("phone-ai-endpoint","http://127.0.0.1:11435/ask")));
+        Objects.requireNonNull(plugin.getCommand("hearthai")).setExecutor((sender,command,label,args)->{AssistantDiagnostics.lines(sender instanceof org.bukkit.command.ConsoleCommandSender,args,mode,assistant::snapshot).forEach(sender::sendMessage);return true;});
         Bukkit.getPluginManager().registerEvents(this,plugin);
     }
     private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();contextModes.remove(old.session());helpSelections.remove(old.session());completionFlow.forget(old.session());completionReturns.remove(old.session());references.remove(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner));screens.put(p.getUniqueId(),next);return next;}

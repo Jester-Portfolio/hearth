@@ -12,6 +12,15 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class OllamaAssistantTest {
+    @Test void measuredAdapterKeepsRealHttpGenerationIdentityFailureAndCancellationSeparate()throws Exception{
+        try(var fixture=new Fixture();var service=new MeasuredAssistant(new OllamaAssistant(fixture.endpoint()))){
+            assertEquals("한국어 응답",service.ask(new AssistantRequest("질문",List.of(),"")).toCompletableFuture().get(2,TimeUnit.SECONDS));
+            assertEquals("저장된 답변",service.confirmCached("저장된 답변").toCompletableFuture().get(2,TimeUnit.SECONDS));assertEquals(1,fixture.generations.get());
+            fixture.digest="0".repeat(64);assertEquals(AssistantFailure.Reason.MODEL_MISMATCH,rejected(service.confirmCached("표시 금지")));
+            var snapshot=service.snapshot();assertEquals(1,snapshot.usage().getFirst().succeeded());assertEquals(1,snapshot.usage().getLast().succeeded());assertEquals(Map.of(AssistantFailure.Reason.MODEL_MISMATCH,1L),snapshot.usage().getLast().failures());
+        }
+        try(var fixture=new Fixture();var service=new MeasuredAssistant(new OllamaAssistant(fixture.endpoint()))){fixture.block="/api/tags";var request=service.ask("취소").toCompletableFuture();assertTrue(fixture.entered.await(2,TimeUnit.SECONDS));assertTrue(request.cancel(true));fixture.release.countDown();assertEquals(1,service.snapshot().usage().getFirst().cancelled());assertEquals(0,service.snapshot().usage().getFirst().active());assertEquals(0,fixture.generations.get());}
+    }
     @Test void cacheConfirmationChecksCurrentIdentityWithoutGenerationOrFallback()throws Exception{
         try(var fixture=new Fixture();var service=new OllamaAssistant(fixture.endpoint())){
             assertTrue(service.allowsCache());assertEquals("저장된 답변",service.confirmCached("저장된 답변").toCompletableFuture().get(2,TimeUnit.SECONDS));assertEquals(1,fixture.versions.get());assertEquals(1,fixture.tags.get());assertEquals(0,fixture.generations.get());

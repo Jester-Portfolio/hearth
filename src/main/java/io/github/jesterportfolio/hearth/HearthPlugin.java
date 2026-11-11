@@ -62,6 +62,9 @@ public final class HearthPlugin extends JavaPlugin {
         java.util.Objects.requireNonNull(getCommand("hearthquest")).setExecutor((sender,cmd,label,args)->{
             sender.sendMessage("격리 퀘스트는 준비된 플레이어의 NPC 대화에서만 사용할 수 있습니다.");return true;
         });
+        java.util.Objects.requireNonNull(getCommand("hearthai")).setExecutor((sender,cmd,label,args)->{
+            sender.sendMessage(sender instanceof ConsoleCommandSender?"AI 진단 모듈이 준비되지 않았습니다.":"AI 관리 진단은 서버 콘솔 전용입니다.");return true;
+        });
         java.util.Objects.requireNonNull(getCommand("hearthrecovery")).setExecutor((sender,cmd,label,args)->{
             if(!(sender instanceof ConsoleCommandSender)){sender.sendMessage("관리 진단은 서버 콘솔 전용입니다.");return true;}
             if(lifecycleVerification==null){sender.sendMessage("스토리 관리 진단 모듈이 준비되지 않았습니다.");return true;}

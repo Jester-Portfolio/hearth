@@ -1,0 +1,129 @@
+{
+  "checked_at": "2026-11-11",
+  "baseline_commit": "1235ec9",
+  "outcome": "INTERNAL_PASS_REAL_MODEL_WAITING_FOR_DISK",
+  "whole_s5_complete": false,
+  "actual_model_run": false,
+  "actual_minecraft_client_run": false,
+  "production_changed": false,
+  "evidence_root": "/tmp/hearth-s5-search-usage.2ztvx4xg",
+  "artifact": {
+    "path": "/tmp/hearth-s5-search-usage.2ztvx4xg/Hearth-final-r1.jar",
+    "sha256": "9c1de67c7546db78f1d5f7754d6bfa2a47a75ca1c00c0b0948fba654756cfb9f",
+    "bytes": 2311605
+  },
+  "unit_tests": {
+    "unique_cases": 137,
+    "failures": 0,
+    "runs": [
+      {
+        "evidence": "/tmp/hearth-s5-search-usage.2ztvx4xg/unit-results",
+        "tests": 135,
+        "failures": 0
+      },
+      {
+        "evidence": "/tmp/hearth-s5-search-usage.2ztvx4xg/final-metrics-unit-results",
+        "tests": 20,
+        "failures": 0
+      },
+      {
+        "evidence": "/tmp/hearth-s5-search-usage.2ztvx4xg/observer-unit-results",
+        "tests": 8,
+        "failures": 0
+      }
+    ],
+    "logs": [
+      "/tmp/hearth-s5-search-usage.2ztvx4xg/unit-build.log",
+      "/tmp/hearth-s5-search-usage.2ztvx4xg/final-metrics-build.log",
+      "/tmp/hearth-s5-search-usage.2ztvx4xg/final-observer-build.log",
+      "/tmp/hearth-s5-search-usage.2ztvx4xg/probe-compile.log"
+    ]
+  },
+  "search_quality": {
+    "synthetic_cases": 22,
+    "korean_particle_fallback": true,
+    "nfkc_and_case_normalization": true,
+    "latin_number_identifier_boundaries": true,
+    "public_snapshot_only": true,
+    "source_index_and_original_text_preserved": true,
+    "general_language_or_science_quality_proven": false
+  },
+  "usage_diagnostics": {
+    "command": "hearthai status",
+    "console_only": true,
+    "read_only": true,
+    "network_on_status": false,
+    "raw_content_or_player_identity_recorded": false,
+    "persistent_or_per_request_log": false,
+    "kinds": [
+      "GENERATION",
+      "CACHE_CONFIRMATION"
+    ],
+    "latency_bucket_upper_millis": [
+      100,
+      500,
+      1000,
+      3000,
+      6000,
+      null
+    ],
+    "completion_cancel_race_cases": 200,
+    "backend_success_implies_game_acceptance": false
+  },
+  "native": {
+    "workspace": "/tmp/hearth-s4-11.75xxtxka",
+    "raw_result": "/tmp/hearth-s4-11.75xxtxka/run-result.json",
+    "log": "/tmp/hearth-s5-search-usage.2ztvx4xg/native-final.log",
+    "outcome": "PASS",
+    "assertions": 123,
+    "duration_seconds": 52.433,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 1,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "player_actions_verdict": "NOT_RUN",
+    "new_checks": [
+      "phone_AI_Korean_particle_search_in_own_public_PG",
+      "phone_AI_usage_separates_backend_generation_and_cache_confirmation_from_PG_acceptance",
+      "phone_AI_readonly_usage_has_no_text_or_personal_identity",
+      "phone_AI_registered_console_usage_command"
+    ]
+  },
+  "preserved_prior_attempts": [
+    {
+      "log": "/tmp/hearth-s5-search-usage.2ztvx4xg/native.log",
+      "outcome": "PRESTART_REFUSED_MISSING_WORKSPACE_MARKER",
+      "paper_starts": 0
+    },
+    {
+      "raw_result": "/tmp/hearth-s4-11.23de7oal/run-result.json",
+      "log": "/tmp/hearth-s5-search-usage.2ztvx4xg/native-r1.log",
+      "outcome": "PASS",
+      "duration_seconds": 50.355,
+      "note": "응답 완료/취소 계측 순서 보완 전 JAR; 최종 검증과 구분"
+    }
+  ],
+  "pending": {
+    "actual_ai_trial": "16GiB /tmp 시작 전제 및 사용자의 공간 확보 알림 대기",
+    "observed_before_batch_tmp_free_mib": 15424,
+    "minimum_lowered": false,
+    "old_evidence_deleted": false,
+    "new_model_downloads": false,
+    "model_trial_probe": "production MeasuredAssistant 집계 포함·컴파일만 완료",
+    "probe_classpath": "/tmp/hearth-s5-search-usage.2ztvx4xg/Hearth-final-r1.jar:/tmp/hearth-s5-search-usage.2ztvx4xg/probe-classes-final:/tmp/hearth-s5-search-usage.2ztvx4xg/gson-2.14.0.jar"
+  },
+  "not_run": [
+    "실제 모델의 새 검색/자료 번호 응답 품질·실제 사용량/성능",
+    "일반 정답률·과학 지식·출처 충실도",
+    "실제 Player 명령/화면·클릭·코옵",
+    "운영 설치/배포·운영 DB/서비스/SSH 변경"
+  ]
+}

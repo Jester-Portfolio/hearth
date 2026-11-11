@@ -9,6 +9,10 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth S4 isolated multiworld verification foundation
 commands:
+  hearthai:
+    description: Console-only read-only AI backend usage totals
+    usage: /hearthai status
+    permission: hearth.ai.inspect
   hearthrecovery:
     description: Console-only read-only story recovery inspection
     usage: /hearthrecovery list [page] | inspect <run> <player> | compare <report>
@@ -47,6 +51,8 @@ commands:
     description: Console-only isolated S4 verification
     permission: hearth.verify
 permissions:
+  hearth.ai.inspect:
+    default: op
   hearth.recovery:
     default: op
   hearth.verify:
