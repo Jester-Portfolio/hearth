@@ -1,0 +1,230 @@
+{
+  "checked_at": "2026-11-11",
+  "baseline_commit": "745610d",
+  "outcome": "PASS_ISOLATED_ACTUAL_AI_AND_AUTOMATIC_SPACE",
+  "whole_s5_complete": false,
+  "actual_model_run": true,
+  "actual_minecraft_client_run": false,
+  "production_changed": false,
+  "evidence_root": "/tmp/hearth-space-reclaim.wks3y82t",
+  "artifact": {
+    "path": "/tmp/hearth-space-reclaim.wks3y82t/Hearth-prompt-fix.jar",
+    "sha256": "58a081d9fd8e706e96f4b8ba96aa415e9753d4c522f2bcf6f7ab6362e50d7bc4",
+    "bytes": 2312032
+  },
+  "unit_tests": {
+    "tests": 138,
+    "failures": 0,
+    "xml": "/tmp/hearth-space-reclaim.wks3y82t/unit-results",
+    "build_log": "/tmp/hearth-space-reclaim.wks3y82t/prompt-fix-build.log"
+  },
+  "python_tests": {
+    "unique_cases": 16,
+    "failures": 0,
+    "trial_cases": 11,
+    "space_cases": 5,
+    "logs": [
+      "/tmp/hearth-space-reclaim.wks3y82t/trial-tests-final.log",
+      "/tmp/hearth-space-reclaim.wks3y82t/space-tests-final-r1.log"
+    ],
+    "final_log": "/tmp/hearth-space-reclaim.wks3y82t/final-python-tests-r1.log"
+  },
+  "storage": {
+    "user_authorized_automatic_reclamation": true,
+    "user_reconfirmation_required": false,
+    "method": "FIDEDUPERANGE with readonly FIEMAP skip; independent CoW files, no hardlinks",
+    "files_deleted": 0,
+    "preserved_fields": [
+      "bytes/SHA256",
+      "path",
+      "inode",
+      "size",
+      "mtime_ns",
+      "mode",
+      "uid/gid",
+      "links"
+    ],
+    "manual_proof": "/tmp/hearth-space-reclaim.wks3y82t/result.json",
+    "isolated_independent_write_proof": "/tmp/hearth-space-proof.ojcqkyrf",
+    "initial_free_mib": 14640,
+    "first_reclaimed_bytes": 2497277952,
+    "space_before_actual_trial_mib": 17021,
+    "first_automatic_attempt": {
+      "result": "/tmp/hearth-space-reclaim.5fvtc0xy/result.json",
+      "outcome": "SPACE_NOT_READY",
+      "failure": "TimeoutError: SPACE_RECLAIM_DEADLINE",
+      "duration_seconds": 90.003,
+      "free_after_mib": 13000
+    },
+    "final_automatic_attempt": {
+      "result": "/tmp/hearth-space-reclaim.8hpvcz2w/result.json",
+      "outcome": "PASS",
+      "duration_seconds": 54.028,
+      "verified_pairs": 5,
+      "already_shared_files_skipped": 4,
+      "free_after_mib": 16407
+    },
+    "ai_preflight": "one automatic bounded reclaim; actual 16GiB recheck; elapsed included in same 600s",
+    "no_operating_service_or_partition_changes": true
+  },
+  "actual_ai": {
+    "workspace": "/tmp/hearth-s5-trial.4983fa8m",
+    "runtime": "Ollama 0.40.16",
+    "model": "qwen3:4b-instruct-2507-q4_K_M",
+    "model_manifest_sha256": "0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0",
+    "artifact_source": "/tmp/hearth-s5-trial.9iqwd8ex",
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "initial_result": "/tmp/hearth-s5-trial.4983fa8m/run-result.json",
+    "initial_outcome": "FAIL",
+    "initial_failure": "AssertionError: Actual-format warmup failed",
+    "initial_duration_seconds": 103.023,
+    "initial_reply": "상점 이름: 느티상점 / 자료 번호: 1 — 필수 각괄호 형식 없어 거부",
+    "reviewed_result": "/tmp/hearth-s5-trial.4983fa8m/run-result-reviewed.json",
+    "reviewed_outcome": "PASS",
+    "same_initial_budget_duration_seconds": 307.495,
+    "automatic_budget_reset": false,
+    "warmup_reviewed_seconds": 68.852282541,
+    "required_checks_passed": true,
+    "observed_cases": [
+      {
+        "name": "repeat_0",
+        "answer": "상점 이름은 느티상점이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 1229
+      },
+      {
+        "name": "repeat_1",
+        "answer": "상점 이름은 느티상점이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 830
+      },
+      {
+        "name": "repeat_2",
+        "answer": "상점 이름은 느티상점이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 835
+      },
+      {
+        "name": "repeat_3",
+        "answer": "상점 이름은 느티상점이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 828
+      },
+      {
+        "name": "repeat_4",
+        "answer": "상점 이름은 느티상점이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 6
+      },
+      {
+        "name": "repeat_5",
+        "answer": "상점 이름은 느티상점이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 7
+      },
+      {
+        "name": "repeat_6",
+        "answer": "상점 이름은 느티상점이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 3
+      },
+      {
+        "name": "repeat_7",
+        "answer": "상점 이름은 느티상점이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 4
+      },
+      {
+        "name": "same_text_new_session",
+        "answer": "상점 이름은 느티상점이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 728
+      },
+      {
+        "name": "other_run",
+        "answer": "상점 이름: 바람상점 [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 1021
+      },
+      {
+        "name": "no_sources",
+        "answer": "현재 공개 정보에 일치하는 자료가 없으므로, 성의 암호를 알려드릴 수 없습니다.",
+        "outcome": "PASS",
+        "milliseconds": 935
+      }
+    ],
+    "cache_hits_in_8_repeats": 4,
+    "generations_in_8_repeats": 4,
+    "backend_usage": {
+      "closed": false,
+      "usage": [
+        {
+          "kind": "GENERATION",
+          "started": 8,
+          "succeeded": 7,
+          "failed": 1,
+          "cancelled": 0,
+          "active": 0,
+          "totalMillis": 6404,
+          "maxMillis": 1206,
+          "latencyBuckets": [
+            1,
+            0,
+            5,
+            2,
+            0,
+            0
+          ],
+          "failures": {
+            "CONTEXT_LIMIT": 1
+          }
+        },
+        {
+          "kind": "CACHE_CONFIRMATION",
+          "started": 5,
+          "succeeded": 5,
+          "failed": 0,
+          "cancelled": 0,
+          "active": 0,
+          "totalMillis": 19,
+          "maxMillis": 4,
+          "latencyBuckets": [
+            5,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": {}
+        }
+      ]
+    },
+    "new_session_generated": true,
+    "stale_cached_answer_rejected": true,
+    "context_overflow_reason": "CONTEXT_LIMIT",
+    "overflow_server_tokens": 6610,
+    "context_limit": 4096,
+    "cache_cleared_on_close": true,
+    "max_sampled_rss_kib": 3354252,
+    "max_sampled_gpu_mib": 3132,
+    "max_sampled_workspace_bytes": 9207442576,
+    "cleanup_errors": [],
+    "owned_processes_port_gpu_release_confirmed": true,
+    "original_failure_logs_and_samples_hash_unchanged": true,
+    "original_hash_evidence": "/tmp/hearth-space-reclaim.wks3y82t/original-trial-evidence-sha256.json",
+    "scope_validation": "합성 공개 DTO와 현재성 callback; 실제 PG/Player 행동을 대체하지 않음"
+  },
+  "prestart_refusal": {
+    "path": "/tmp/hearth-s5-trial.qjnypzhv/launcher.log",
+    "reason": "출력 파일을 fresh root 안에 먼저 만들어 시작 전 거부; 새 경로로 재준비",
+    "processes_started": 0
+  },
+  "not_run": [
+    "이번 Paper/PG 재실행 — 프롬프트/검증 도구 변경만으로 기존 저장/권한 계약 유지",
+    "일반 정답률·과학 지식·인용 충실도·긴 대화와 다중 자료 실제 품질",
+    "목표 동시 사용량·장기 누수/성능·상시 운영 예산",
+    "Minecraft 실제 화면/입력·코옵·운영 배포"
+  ]
+}

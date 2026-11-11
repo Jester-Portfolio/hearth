@@ -167,3 +167,5 @@
 `--continue-after-review`는 실패 원본을 보존하고 같은 최초 600초의 남은 시간만 사용하는 한 번의 관련 재확인이다. 새 시간 예산·모델/상한 확대가 아니며 원래 아티팩트 해시를 다시 확인하고 모델/프로필/로그/결과는 분리한다. 최초 표식의 경과 시간이 450초 이상이거나 재확인 결과가 이미 있으면 거부한다. 준비는 `OllamaTrialWarmup`, 실제 제한 흐름은 `OllamaTrialProbe`를 사용하며 Minecraft Player를 생성하지 않는다. [실제 결과·실패·최종 코드 미재실행 범위](../docs/s5-local-ai-verification.md)를 반드시 구분한다.
 
 S5 후속 `--artifact-source /tmp/hearth-s5-trial...`는 이전 소유 경로의 고정 해시 아카이브/blob만 새 경로로 검증 복사한다. 다운로드 대신 복사해도 최초 디스크 여유 16GiB와 새 경로/프로필·모든 기존 자원/시간 조건을 유지한다. `--grounded`는 자료 번호/접속 캐시·동일 본문의 다른 세션·stale/한도 흐름과 대표 자료 프롬프트 예열을 준비한다. 이전 로그/프로필/실행 중 서비스는 입력으로 사용하지 않는다. [실행·미실행 범위](../docs/s5-grounded-cache-verification.md)를 따른다.
+
+디스크 전제가 부족하면 `s5_ai_trial.py`가 비활성 AI 시험의 동일 아카이브/blob/런타임 블록을 자동 공유하고 다시 16GiB를 확인한다. 독립 실행은 `python3 scripts/space_reclaim.py`다. 삭제 없이 원본 해시/경로/수정 시각을 유지하며, 지원 실패/공간 부족은 시작 전 차단한다. [자동 공간 확보 절차](../docs/DEVELOPMENT_WORKFLOW.md#시험-디스크-공간)와 [실제 자료/캐시 재시험](../docs/s5-grounded-live-verification.md)을 따른다. 재개는 기존 품질 거부 외에 명시적인 준비 응답의 `INVALID_REFERENCE`만 허용하며, 자원/정리/시간 실패를 허용하지 않고 최초 시간 예산·원본을 유지한다.

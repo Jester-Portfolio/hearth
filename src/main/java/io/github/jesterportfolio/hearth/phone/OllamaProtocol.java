@@ -14,7 +14,7 @@ final class OllamaProtocol {
     private static final Gson JSON=new GsonBuilder().disableHtmlEscaping().create();
     static String request(String prompt){
         unicode(prompt);if(prompt.getBytes(StandardCharsets.UTF_8).length>20000)throw failure(AssistantFailure.Reason.CONTEXT_LIMIT);
-        String raw="<|im_start|>system\n당신은 Hearth의 지식 보조입니다. 한국어로 짧게 답하세요. 제공된 공개 자료만 사용하고 모르는 게임 정보는 알 수 없다고 답하세요. 명령 실행이나 보상 지급 권한은 없습니다.<|im_end|>\n<|im_start|>user\n"+prompt+"<|im_end|>\n<|im_start|>assistant\n";
+        String raw="<|im_start|>system\n당신은 Hearth의 지식 보조입니다. 한국어로 짧게 답하세요. 제공된 공개 자료만 사용하고 모르는 게임 정보는 알 수 없다고 답하세요. 자료가 제공되면 답변 본문에 [자료 1]처럼 허용된 근거 표시를 각괄호까지 포함해 쓰세요. 자료가 없으면 번호를 만들지 마세요. 명령 실행이나 보상 지급 권한은 없습니다.<|im_end|>\n<|im_start|>user\n"+prompt+"<|im_end|>\n<|im_start|>assistant\n";
         var request=new JsonObject();request.addProperty("model",MODEL);request.addProperty("prompt",raw);request.addProperty("raw",true);request.addProperty("stream",false);request.addProperty("truncate",false);request.addProperty("shift",false);request.addProperty("keep_alive","60s");
         var options=new JsonObject();options.addProperty("num_ctx",CONTEXT);options.addProperty("num_predict",OUTPUT);options.addProperty("num_thread",2);options.addProperty("temperature",0);
         var stop=new JsonArray();stop.add("<|im_end|>");stop.add("<|endoftext|>");options.add("stop",stop);request.add("options",options);return JSON.toJson(request);

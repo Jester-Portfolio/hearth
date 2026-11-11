@@ -15,4 +15,9 @@ final class AssistantRequestTest {
         assertEquals("",PhoneContext.from(data,"none"));assertTrue(PhoneContext.from(data,"quests").contains("허용 퀘스트"));assertFalse(PhoneContext.from(data,"quests").contains("본인 기록"));assertTrue(PhoneContext.from(data,"diary").contains("본인 기록"));assertFalse(PhoneContext.from(data,"map").contains("허용 상세"));assertThrows(IllegalArgumentException.class,()->PhoneContext.from(data,"private"));
     }
     @Test void plainRequestWithoutHistoryPreservesLegacyTextContract(){assertEquals("질문",new AssistantRequest("질문",List.of(),"").prompt());}
+    @Test void groundedCitationRulesFollowTheQuestionAndKeepOnlyAllowedNumbers(){
+        var request=new AssistantRequest("자료 번호만 답하세요.",List.of(new PhoneChat.Turn("지난 질문","옛 응답")),"공개 자료",2);String prompt=request.prompt();
+        assertTrue(prompt.indexOf("[최종 응답 규칙]")>prompt.indexOf("[현재 질문]"));assertTrue(prompt.contains("[자료 1], [자료 2]"));assertFalse(prompt.contains("[자료 3]"));
+        assertTrue(new AssistantRequest("암호?",List.of(),"일치 없음",0).prompt().endsWith("근거 번호를 만들지 마세요."));
+    }
 }

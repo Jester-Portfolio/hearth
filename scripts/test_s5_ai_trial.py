@@ -13,6 +13,15 @@ import s5_ai_trial as trial
 
 
 class TrialSafetyTests(unittest.TestCase):
+    def test_review_only_accepts_explicit_citation_warmup_rejection_without_guard_or_cleanup_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);result=dict(outcome='FAIL',failure='AssertionError: Actual-format warmup failed',cleanup_errors=[])
+            self.assertFalse(trial.reviewable_result(root,result));(root/'warmup.json').write_text('{}');(root/'warmup.log').write_text('AssistantFailure: LOCAL_AI_INVALID_REFERENCE')
+            before=result.copy();self.assertTrue(trial.reviewable_result(root,result));self.assertEqual(before,result)
+            for field,value in [('guard_failure','AI_RESOURCE_LIMIT'),('cleanup_errors',['port open']),('failure','HTTP failed')]:
+                failed=dict(result);failed[field]=value;self.assertFalse(trial.reviewable_result(root,failed))
+            (root/'warmup.log').write_text('TIMEOUT');self.assertFalse(trial.reviewable_result(root,result))
+
     def test_verified_reuse_keeps_original_and_does_not_download(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);source=root/'source';source.write_bytes(b'fixture');stamp=source.stat().st_mtime_ns;monitor=trial.Trial(root);target=root/'new/artifact'
@@ -31,9 +40,25 @@ class TrialSafetyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='hearth-s5-trial.',dir='/tmp') as directory:
             root=Path(directory);(root/'.hearth-s5-isolated').write_text(trial.MARKER)
             args=['s5_ai_trial.py','--workspace',str(root),'--java','/unused','--classpath','unused','--artifact-source','/unread']
-            with patch.object(sys,'argv',args),patch.object(trial.shutil,'disk_usage',return_value=SimpleNamespace(free=15*trial.GIB)),patch.object(trial,'urlopen') as network,patch.object(trial.subprocess,'Popen') as processes:
+            with patch.object(sys,'argv',args),patch.object(trial.os,'sched_setaffinity'),patch.object(trial.os,'nice'),patch.object(trial.shutil,'disk_usage',return_value=SimpleNamespace(free=15*trial.GIB)),patch.object(trial.space_reclaim,'reclaim',return_value=dict(outcome='SPACE_NOT_READY')) as recovery,patch.object(trial,'urlopen') as network,patch.object(trial.subprocess,'Popen') as processes:
                 with self.assertRaises(AssertionError):trial.main()
-                network.assert_not_called();processes.assert_not_called()
+                recovery.assert_called_once();network.assert_not_called();processes.assert_not_called()
+
+    def test_automatic_reclamation_rechecks_16_gib_before_any_server_start(self):
+        with tempfile.TemporaryDirectory(prefix='hearth-s5-trial.',dir='/tmp') as directory:
+            root=Path(directory);(root/'.hearth-s5-isolated').write_text(trial.MARKER)
+            args=['s5_ai_trial.py','--workspace',str(root),'--java','/unused','--classpath','unused']
+            with patch.object(sys,'argv',args),patch.object(trial.os,'sched_setaffinity'),patch.object(trial.os,'nice'),patch.object(trial,'available_kib',return_value=8*1024**2),patch.object(trial.shutil,'disk_usage',side_effect=[SimpleNamespace(free=15*trial.GIB),SimpleNamespace(free=16*trial.GIB)]),patch.object(trial.space_reclaim,'reclaim',return_value=dict(outcome='PASS')) as recovery,patch.object(trial,'port_free',side_effect=RuntimeError('preflight passed')),patch.object(trial.subprocess,'Popen') as processes:
+                with self.assertRaisesRegex(RuntimeError,'preflight passed'):trial.main()
+                recovery.assert_called_once();processes.assert_not_called()
+
+    def test_reclamation_failure_cannot_be_hidden_by_concurrent_free_space_increase(self):
+        with tempfile.TemporaryDirectory(prefix='hearth-s5-trial.',dir='/tmp') as directory:
+            root=Path(directory);(root/'.hearth-s5-isolated').write_text(trial.MARKER)
+            args=['s5_ai_trial.py','--workspace',str(root),'--java','/unused','--classpath','unused']
+            with patch.object(sys,'argv',args),patch.object(trial.os,'sched_setaffinity'),patch.object(trial.os,'nice'),patch.object(trial.shutil,'disk_usage',side_effect=[SimpleNamespace(free=15*trial.GIB),SimpleNamespace(free=17*trial.GIB)]),patch.object(trial.space_reclaim,'reclaim',return_value=dict(outcome='SPACE_NOT_READY',failure='POST_HASH_MISMATCH')),patch.object(trial.subprocess,'Popen') as processes:
+                with self.assertRaisesRegex(AssertionError,'not verified'):trial.main()
+                processes.assert_not_called()
 
     def test_paths_and_links_cannot_escape_owned_root(self):
         with tempfile.TemporaryDirectory() as directory:

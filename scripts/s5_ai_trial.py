@@ -16,7 +16,9 @@ import subprocess
 import tarfile
 import threading
 import time
+import tempfile
 from urllib.request import Request, urlopen
+import space_reclaim
 
 REPO = Path(__file__).resolve().parents[1]
 GIB = 1024 ** 3
@@ -33,6 +35,19 @@ def port_free():
     with socket.socket() as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('127.0.0.1', 11435))
+
+
+def reviewable_result(root, result):
+    if result.get('cleanup_errors') or result.get('guard_failure'):
+        return False
+    if result.get('outcome') == 'ACTUAL_MODEL_ACCEPTANCE_FAILED':
+        return True
+    # 첫 실제 자료 준비 응답의 번호 형식 거부만 복구 허용. 자원/HTTP/시간 실패는 재개하지 않습니다.
+    return (result.get('outcome') == 'FAIL'
+            and result.get('failure') == 'AssertionError: Actual-format warmup failed'
+            and (root/'warmup.json').is_file()
+            and (root/'warmup.log').is_file()
+            and 'AssistantFailure: LOCAL_AI_INVALID_REFERENCE' in (root/'warmup.log').read_text())
 
 
 class ZstdReader(io.RawIOBase):
@@ -342,6 +357,7 @@ class Trial:
 
 
 def main():
+    budget_started=time.monotonic()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--workspace', type=Path, required=True)
     parser.add_argument('--java', type=Path, required=True)
@@ -353,12 +369,20 @@ def main():
     root = args.workspace.resolve(strict=True)
     assert os.getuid() != 0 and not args.workspace.is_symlink() and root.parent == Path('/tmp') and root.name.startswith('hearth-s5-trial.')
     assert root.stat().st_uid == os.getuid() and (root / '.hearth-s5-isolated').read_text() == MARKER
+    os.sched_setaffinity(0, set(sorted(os.sched_getaffinity(0))[:2]))
+    os.nice(10)
     if args.continue_after_review:
         original=json.loads((root/'run-result.json').read_text())
-        assert original['outcome']=='ACTUAL_MODEL_ACCEPTANCE_FAILED' and not original['cleanup_errors']
+        assert reviewable_result(root,original)
         assert not (root/'run-result-reviewed.json').exists() and not (root/'models-reviewed').exists()
     else:
         assert set(p.name for p in root.iterdir()) == {'.hearth-s5-isolated'}, 'Fresh workspace required'
+        if shutil.disk_usage(root).free < 16 * GIB:
+            reclaimed=space_reclaim.reclaim()
+            evidence=Path(tempfile.mkdtemp(prefix='hearth-space-reclaim.',dir='/tmp'))
+            (evidence/'result.json').write_text(json.dumps(reclaimed,indent=2)+'\n')
+            print('S5 storage preflight '+reclaimed['outcome']+' evidence='+str(evidence),flush=True)
+            assert reclaimed['outcome']=='PASS','Storage reclamation was not verified'
         assert shutil.disk_usage(root).free >= 16 * GIB
     assert available_kib() >= 6 * 1024**2
     source_root=None
@@ -367,9 +391,8 @@ def main():
         assert not args.artifact_source.is_symlink() and source_root!=root and source_root.parent==Path('/tmp') and source_root.name.startswith('hearth-s5-trial.')
         assert source_root.stat().st_uid==os.getuid() and (source_root/'.hearth-s5-isolated').read_text()==MARKER
     port_free()
-    os.sched_setaffinity(0, set(sorted(os.sched_getaffinity(0))[:2]))
-    os.nice(10)
     trial = Trial(root)
+    trial.started=budget_started
     if args.continue_after_review:
         elapsed=time.time()-(root/'.hearth-s5-isolated').stat().st_mtime
         assert 0<=elapsed<450, 'No new time budget is granted by review'
