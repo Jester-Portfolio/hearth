@@ -1,0 +1,75 @@
+{
+  "checked_on": "2026-11-11",
+  "baseline_commit": "7940b96",
+  "outcome": "LOCAL_CALCULATOR_AND_RELATED_REGRESSION_PASS",
+  "whole_s5_complete": false,
+  "actual_minecraft_client_test_run": false,
+  "actual_model_inference_run": false,
+  "previous_actual_model_science_quality_hold_preserved": true,
+  "production_changes": false,
+  "workspace": "/home/server/hearth-tmp/hearth-calculator.cp09rlwx",
+  "artifact": {
+    "path": "/home/server/hearth-tmp/hearth-calculator.cp09rlwx/Hearth-calculator.jar",
+    "sha256": "f60d2a39423d1f300ab6f6dcef7e3f5749368b016fa12d307e1de487c3b8e6aa"
+  },
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/phone/ExactArithmetic.java": "9567680604ec698a228701236e7108c1c25b39f057afbb47ec2e28da6d2c5214",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneCalculator.java": "f4290c9a7a3fb7e3f40bb05236085b6ea26e48cbca10a4f510127d271f9c1897",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/ScienceCalculation.java": "8888c820f8ca96889c7aad063612a2e234c1639e7ef48fb74e89ea1e6ccafb1c",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PaperPhone.java": "23baf73f88cad1325f3783d257f5cb9de3a1107675ae795fc738ca763940f5c0"
+  },
+  "checks": {
+    "related_java_unit_regression": {
+      "tests": 156,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "new_calculator_tests": 17,
+    "main_test_compilation": "PASS",
+    "jar_build": "PASS",
+    "integration_fixture_compilation": "UP-TO-DATE",
+    "log": "/home/server/hearth-tmp/hearth-calculator.cp09rlwx/final-build.log",
+    "xml": "/home/server/hearth-tmp/hearth-calculator.cp09rlwx/final-unit-results",
+    "paper_pg_run": false,
+    "paper_pg_reason": "Pure bounded Java calculation, ephemeral calculator state and existing Dialog navigation; no persistence, world event judgement or data access contract change."
+  },
+  "features": [
+    "Explicit player-selected arithmetic input; no natural language dispatch or model tools",
+    "Structured lever, gravitational energy increase and two resistors in series with SI input and assumptions",
+    "Exact rational previous value; separately labelled rounded approximation",
+    "Per-connection four results and input draft; failure preserves last successful result",
+    "AI draft, pending work, conversation and cache unchanged; no automatic AI transfer"
+  ],
+  "limits": {
+    "expression_chars": 128,
+    "number_digits": 32,
+    "scientific_input_exponent_absolute": 30,
+    "power_integer_exponent_min": -12,
+    "power_integer_exponent_max": 12,
+    "recursive_depth": 12,
+    "recursive_entries": 96,
+    "reduced_numerator_denominator_bits": 256,
+    "science_field_chars": 32,
+    "successful_results_retained": 4,
+    "approximation_significant_digits_max": 20,
+    "approximation_rounding": "HALF_EVEN"
+  },
+  "unit_expected_values": {
+    "lever_400N_load_arm_0_5m_effort_arm_2m": "100 N",
+    "lever_effort_arm_changed_to_1m": "200 N",
+    "lever_arms_reversed": "1600 N",
+    "energy_10kg_5m_g10": "500 J",
+    "energy_g_changed_to_9_8": "490 J",
+    "series_2ohm_3ohm": "5 Ω",
+    "fraction_followup_1_div_3_then_previous_times_3": "1",
+    "decimal_0_1_plus_0_2": "0.3"
+  },
+  "non_claims": [
+    "No Minecraft dialog click or display acceptance",
+    "No fresh model inference or improvement in natural language/model scientific accuracy claimed",
+    "No unit inference/conversion for generic arithmetic or previous numeric value",
+    "No new Paper/PG or persistent restore execution",
+    "No whole S5, target concurrency, production readiness or deployment acceptance"
+  ]
+}
