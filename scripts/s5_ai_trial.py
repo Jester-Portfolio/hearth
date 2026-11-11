@@ -43,12 +43,22 @@ def reviewable_result(root, result):
         return False
     if result.get('outcome') == 'ACTUAL_MODEL_ACCEPTANCE_FAILED':
         return True
-    # 첫 실제 자료 준비 응답의 번호 형식 거부만 복구 허용. 자원/HTTP/시간 실패는 재개하지 않습니다.
-    return (result.get('outcome') == 'FAIL'
+    # 완료된 준비 응답의 번호/출력 길이 거부만 복구 허용. 자원/HTTP/시간 실패는 재개하지 않습니다.
+    eligible=(result.get('outcome') == 'FAIL'
             and result.get('failure') == 'AssertionError: Actual-format warmup failed'
             and (root/'warmup.json').is_file()
-            and (root/'warmup.log').is_file()
-            and 'AssistantFailure: LOCAL_AI_INVALID_REFERENCE' in (root/'warmup.log').read_text())
+            and (root/'warmup.log').is_file())
+    if not eligible:return False
+    log=(root/'warmup.log').read_text()
+    if 'AssistantFailure: LOCAL_AI_INVALID_REFERENCE' in log:return True
+    if 'AssistantFailure: LOCAL_AI_OUTPUT_LIMIT' not in log:return False
+    try:
+        response=json.loads((root/'warmup.json').read_text())
+        if not isinstance(response,dict):return False
+        return (response.get('model')==MODEL and response.get('done') is True
+                and response.get('done_reason')=='length' and response.get('eval_count')==128
+                and type(response.get('prompt_eval_count')) is int and 1<=response['prompt_eval_count']<=4096-128)
+    except (ValueError,TypeError):return False
 
 
 class ZstdReader(io.RawIOBase):
@@ -367,6 +377,7 @@ def main():
     quality=parser.add_mutually_exclusive_group()
     quality.add_argument('--grounded',action='store_true',help='자료 번호·세션 캐시·최신성 확인 probe를 사용합니다')
     quality.add_argument('--focused',action='store_true',help='긴 공개 자료 발췌·복수 자료·이전 대화 선택 probe를 사용합니다')
+    quality.add_argument('--knowledge',action='store_true',help='일반 과학 지식·후속 대화·게임 자료 경계 probe를 사용합니다')
     parser.add_argument('--continue-after-review', action='store_true', help='원본 결과/파일을 보존하고 같은 최초 600초 예산의 남은 시간만 사용합니다')
     args = parser.parse_args()
     root = isolated_paths.workspace(args.workspace,'hearth-s5-trial.')
@@ -491,18 +502,19 @@ def main():
         print('S5 runtime ready; bounded model warmup started', flush=True)
         warm_file=root/('warmup'+suffix+'.json')
         warm_command=[str(args.java),'-Xmx192m','-XX:ActiveProcessorCount=2','-cp',args.classpath,'io.github.jesterportfolio.hearth.phone.OllamaTrialWarmup',HOST+'/api/generate',str(warm_file)]
-        if args.grounded or args.focused:warm_command.append('grounded')
+        if args.knowledge:warm_command.append('knowledge')
+        elif args.grounded or args.focused:warm_command.append('grounded')
         warm=trial.launch(warm_command,os.environ.copy(),'warmup'+suffix)
         assert trial.wait(warm,90)==0,'Actual-format warmup failed'
         report['warmup']=json.loads(warm_file.read_text())
         report['model_processes'] = trial.api('/api/ps')
         probe_file=root/('probe-result'+suffix+'.json')
-        command=[str(args.java), '-Xmx192m', '-XX:ActiveProcessorCount=2', '-cp', args.classpath, 'io.github.jesterportfolio.hearth.phone.'+('OllamaFocusedProbe' if args.focused else 'OllamaGroundingProbe' if args.grounded else 'OllamaTrialProbe'), HOST+'/api/generate', str(probe_file)]
+        command=[str(args.java), '-Xmx192m', '-XX:ActiveProcessorCount=2', '-cp', args.classpath, 'io.github.jesterportfolio.hearth.phone.'+('OllamaKnowledgeProbe' if args.knowledge else 'OllamaFocusedProbe' if args.focused else 'OllamaGroundingProbe' if args.grounded else 'OllamaTrialProbe'), HOST+'/api/generate', str(probe_file)]
         probe = trial.launch(command, os.environ.copy(), 'probe'+suffix)
         assert trial.wait(probe, 90) == 0, 'Java adapter probe failed'
         report['probe'] = json.loads(probe_file.read_text())
         report['real_model'] = True
-        if args.grounded or args.focused:
+        if args.grounded or args.focused or args.knowledge:
             report['required_checks_passed']=report['probe']['required_checks_passed']
             report['outcome']='PASS' if report['required_checks_passed'] else 'ACTUAL_MODEL_ACCEPTANCE_FAILED'
         else:

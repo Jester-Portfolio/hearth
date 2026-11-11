@@ -1,0 +1,256 @@
+{
+  "checked_at": "2026-11-11",
+  "baseline_commit": "7bf8928",
+  "outcome": "IMPLEMENTATION_AND_GUARD_PASS_MODEL_SCIENCE_QUALITY_HOLD",
+  "whole_s5_complete": false,
+  "operational_acceptance": false,
+  "actual_model_acceptance_passed": false,
+  "final_guard_actual_model_retest_run": false,
+  "actual_minecraft_client_run": false,
+  "production_changed": false,
+  "decision": "ADR-0020",
+  "evidence_root": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku",
+  "artifact": {
+    "path": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku/Hearth-final-guard.jar",
+    "sha256": "e04cd0a2c36426c636f1a880a243f95b483b0f1fdee9192da81a57423439cb16",
+    "bytes": 2336407
+  },
+  "purpose_contract": {
+    "server_selected_enum": [
+      "GENERAL_KNOWLEDGE",
+      "PUBLIC_GAME"
+    ],
+    "legacy_string_and_3_4_arg_constructors": "PUBLIC_GAME",
+    "general_context_empty": true,
+    "general_sources": 0,
+    "game_history_not_sent_to_general": true,
+    "cache_includes_purpose": true,
+    "raw_role_tokens_literalized": true,
+    "escaped_utf8_bytes_max": 20000,
+    "model_context_and_output_unchanged": [
+      4096,
+      128
+    ],
+    "response_6s_chat_8s_unchanged": true
+  },
+  "arithmetic_guard": {
+    "scope": "standalone numeric or supported one-variable linear equation chains in general displayed text only",
+    "known_failure": "F*2=400*0.5 -> F=200N",
+    "correct_equation_solution": "F=100N",
+    "action": "reject before history/cache/continuation validation",
+    "math_context": "DECIMAL128",
+    "relative_tolerance": "1e-9 with absolute floor scale 1",
+    "max_line_chars": 512,
+    "max_lines": 50,
+    "max_steps_per_line": 8,
+    "max_parser_atoms": 96,
+    "max_depth": 12,
+    "unsupported_forms_not_verified": true,
+    "word_problem_or_dimension_correctness_proven": false
+  },
+  "unit_tests": {
+    "unique_cases": 160,
+    "failures": 0,
+    "xml": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku/guard-unit-results",
+    "log": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku/arithmetic-guard-build.log"
+  },
+  "python_tests": {
+    "tests": 12,
+    "failures": 0,
+    "log": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku/final-python-tests.log"
+  },
+  "native": {
+    "workspace": "/home/server/hearth-tmp/hearth-s4-11.yp_2w89z",
+    "raw_result": "/home/server/hearth-tmp/hearth-s4-11.yp_2w89z/run-result.json",
+    "outcome": "PASS",
+    "assertions": 139,
+    "new_boundary_checks": [
+      "knowledge_AI_trusted_mode_keeps_real_PG_game_request_separate",
+      "knowledge_AI_general_followup_excludes_game_data_history_and_identity",
+      "knowledge_AI_general_game_context_misuse_rejected_before_backend",
+      "knowledge_AI_observed_arithmetic_contradiction_blocks_display_history_and_cache",
+      "knowledge_AI_other_personal_PG_unchanged",
+      "knowledge_AI_journal_inventory_revision_unchanged"
+    ],
+    "duration_seconds": 59.678,
+    "paper_jvms": 1,
+    "postgres_instances": 1,
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "player_actions_verdict": "NOT_RUN",
+    "log": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku/native-guard.log",
+    "prior_pre_guard_result": "/home/server/hearth-tmp/hearth-s4-11.0h90zro6/run-result.json"
+  },
+  "actual_model": {
+    "workspace": "/home/server/hearth-tmp/hearth-s5-trial.l18ypfb0",
+    "runtime_and_model": "Ollama 0.40.16 / qwen3:4b-instruct-2507-q4_K_M",
+    "initial_result": "/home/server/hearth-tmp/hearth-s5-trial.l18ypfb0/run-result.json",
+    "initial_outcome": "FAIL",
+    "initial_duration_seconds": 103.696,
+    "initial_warmup_reason": "OUTPUT_LIMIT; 128 generated tokens, unfinished response rejected",
+    "initial_artifact": {
+      "path": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku/Hearth-final.jar",
+      "sha256": "6b6fbdd2f662fbcc0600445deb9ae19d1626b8c6e83c952edb2b68c4e0ebfd3b"
+    },
+    "reviewed_result": "/home/server/hearth-tmp/hearth-s5-trial.l18ypfb0/run-result-reviewed.json",
+    "reviewed_outcome": "ACTUAL_MODEL_ACCEPTANCE_FAILED",
+    "reviewed_artifact": {
+      "path": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku/Hearth-final-r1.jar",
+      "sha256": "3464bb54121dd1728d538769f3a049e05c264716fbe9c62f40c554bfed5c98b1"
+    },
+    "same_initial_budget_duration_seconds": 367.098,
+    "warmup_reviewed_seconds": 69.370254595,
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "probe": {
+      "general_cache_reuses_without_generation": true,
+      "general_requests_no_game_context_references_or_game_history": true,
+      "purposes": [
+        "GENERAL_KNOWLEDGE",
+        "GENERAL_KNOWLEDGE",
+        "GENERAL_KNOWLEDGE",
+        "GENERAL_KNOWLEDGE",
+        "GENERAL_KNOWLEDGE",
+        "PUBLIC_GAME",
+        "GENERAL_KNOWLEDGE",
+        "GENERAL_KNOWLEDGE"
+      ],
+      "history_sizes": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        0,
+        3,
+        0
+      ],
+      "backend_usage": {
+        "closed": false,
+        "usage": [
+          {
+            "kind": "GENERATION",
+            "started": 8,
+            "succeeded": 8,
+            "failed": 0,
+            "cancelled": 0,
+            "active": 0,
+            "totalMillis": 10524,
+            "maxMillis": 2163,
+            "latencyBuckets": [
+              0,
+              1,
+              0,
+              7,
+              0,
+              0
+            ],
+            "failures": {}
+          },
+          {
+            "kind": "CACHE_CONFIRMATION",
+            "started": 1,
+            "succeeded": 1,
+            "failed": 0,
+            "cancelled": 0,
+            "active": 0,
+            "totalMillis": 10,
+            "maxMillis": 10,
+            "latencyBuckets": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "failures": {}
+          }
+        ]
+      },
+      "cache_cleared_on_close": true,
+      "required_checks_passed": false,
+      "real_model": true,
+      "actual_minecraft_client": false,
+      "cases": [
+        {
+          "name": "lever_100N",
+          "reference": "https://openstax.org/books/physics/pages/9-3-simple-machines",
+          "answer": "마찰 없이 지렛대에서 균형을 이루려면 힘 × 작용 팔 = 하중 × 하중 팔이므로,  \nF × 2 = 400 × 0.5 → F = 200 N  \n필요한 힘은 200 N입니다.",
+          "outcome": "QUALITY_REVIEW_REQUIRED",
+          "milliseconds": 1217
+        },
+        {
+          "name": "lever_followup_200N",
+          "reference": "https://openstax.org/books/physics/pages/9-3-simple-machines",
+          "answer": "작용 팔이 1 m가 되면, F × 1 = 400 × 0.5 → F = 200 N  \n필요한 힘은 여전히 200 N입니다.",
+          "outcome": "PASS",
+          "milliseconds": 1464
+        },
+        {
+          "name": "potential_energy_500J",
+          "reference": "https://openstax.org/books/college-physics/pages/7-3-gravitational-potential-energy",
+          "answer": "중력 위치 에너지 = 질량 × 중력 가속도 × 높이  \nE = 10 × 10 × 5 = 500 J  \n500 J",
+          "outcome": "PASS",
+          "milliseconds": 1273
+        },
+        {
+          "name": "series_resistance_5ohm",
+          "reference": "https://openstax.org/books/college-physics/pages/21-1-resistors-in-series-and-parallel",
+          "answer": "직렬 저항의 합성 저항은 R = R₁ + R₂이므로,  \n2 + 3 = 5 Ω  \n5 옴",
+          "outcome": "PASS",
+          "milliseconds": 1136
+        },
+        {
+          "name": "pulley_work_conserved",
+          "reference": "https://openstax.org/books/physics/pages/9-3-simple-machines",
+          "answer": "아니오. 마찰이 없고 이상적인 도르래이므로 필요한 일은 물체의 위치 에너지 증가와 같고, 높이가 같으면 에너지가 변하지 않음.",
+          "outcome": "PASS",
+          "milliseconds": 2164
+        },
+        {
+          "name": "public_game_stays_grounded",
+          "answer": "공개 창고 이름은 잣나무창고입니다. [자료 1]",
+          "outcome": "PASS",
+          "milliseconds": 1678
+        },
+        {
+          "name": "general_does_not_know_game_state",
+          "answer": "게임 정보 없음",
+          "outcome": "PASS",
+          "milliseconds": 1337
+        },
+        {
+          "name": "independent_general_question",
+          "answer": "게임 정보 없음",
+          "outcome": "PASS",
+          "milliseconds": 279
+        },
+        {
+          "name": "general_cache",
+          "answer": "게임 정보 없음",
+          "outcome": "PASS",
+          "milliseconds": 11
+        }
+      ]
+    },
+    "max_sampled_rss_kib": 3209764,
+    "max_sampled_gpu_mib": 3130,
+    "max_sampled_workspace_bytes": 9207446301,
+    "cleanup_errors": [],
+    "original_failure_evidence_sha256_unchanged": true,
+    "no_third_model_attempt": true
+  },
+  "offline_replay": {
+    "result": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku/arithmetic-replay.json",
+    "log": "/home/server/hearth-tmp/hearth-s5-knowledge.fbwsb6ku/arithmetic-replay.log",
+    "observed_wrong_response_rejected": true,
+    "new_model_inference": false,
+    "other_display_accepted_does_not_prove_scientific_correctness": true
+  },
+  "not_run": [
+    "최종 수식 차단 코드의 새 실제 모델 추론 — 최초+검토 한 번의 기존 시도 한도 유지",
+    "전체 과학 지식/정답률·문제 해석·모든 수식/단위 검증·깨끗한 최종 후속 대화",
+    "실제 Minecraft 입력/화면·코옵·운영 배포·상시 AI 예산/목표 동시 사용량"
+  ]
+}

@@ -21,6 +21,10 @@ public final class OllamaAssistant implements AssistantService {
         final String payload;try{payload=OllamaProtocol.request(prompt);}catch(RuntimeException invalid){return CompletableFuture.failedFuture(invalid);}
         return operation(payload,null);
     }
+    @Override public synchronized CompletionStage<String> ask(AssistantRequest request){
+        final String payload;try{payload=OllamaProtocol.request(request);}catch(RuntimeException invalid){return CompletableFuture.failedFuture(invalid);}
+        return operation(payload,null);
+    }
     @Override public boolean allowsCache(){return true;}
     @Override public CompletionStage<String> confirmCached(String answer){return operation(null,Objects.requireNonNull(answer));}
     private synchronized CompletionStage<String> operation(String payload,String cached){

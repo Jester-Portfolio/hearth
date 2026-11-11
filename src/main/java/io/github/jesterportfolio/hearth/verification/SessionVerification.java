@@ -1899,7 +1899,7 @@ public final class SessionVerification implements AutoCloseable {
                 check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary").contains("갱신된 공개 합성 정보"),"phone_AI_other_player_no_private_context");
                 check(io.github.jesterportfolio.hearth.phone.PhoneRetrieval.find(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary","갱신된 정보").sources().isEmpty(),"phone_AI_retrieval_other_player_no_private_source");
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"STORY").size()==1,"phone_library_same_run_shared_fact");
-            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");}).thenCompose(v->phoneRequestLifecycle()).thenCompose(v->phoneCachedGrounding()).thenCompose(v->phoneFocusedGrounding());
+            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");}).thenCompose(v->phoneRequestLifecycle()).thenCompose(v->phoneCachedGrounding()).thenCompose(v->phoneFocusedGrounding()).thenCompose(v->phoneGeneralKnowledge());
     }
     private io.github.jesterportfolio.hearth.phone.PhoneGrounding.Plan phoneCachePlan(QuestJournal.View view){
         var data=journal.projectInformation(a1,view,()->coordinator.playable(s1));int index=java.util.stream.IntStream.range(0,view.exploration().facts().size()).filter(i->view.exploration().facts().get(i).id().equals("phone_personal_note")).findFirst().orElseThrow();
@@ -1970,6 +1970,31 @@ public final class SessionVerification implements AutoCloseable {
             }).thenCompose(v->mainResult(store.readExploration(a2))).thenAccept(latest->check(latest.equals(other),"focused_AI_other_personal_PG_preserved"))
                 .thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(latest->check(latest.equals(before)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"focused_AI_journal_inventory_revision_preserved"));
         })).whenCompleteAsync((value,error)->chat.close(),owner);
+    }
+    private CompletionStage<Void> phoneGeneralKnowledge(){
+        var inventory=one.capture();long revision=s1.save().revision();var sent=new ArrayList<io.github.jesterportfolio.hearth.phone.AssistantRequest>();
+        var service=new io.github.jesterportfolio.hearth.phone.AssistantService(){
+            public CompletionStage<String> ask(String prompt){throw new AssertionError("Typed purpose required");}
+            public CompletionStage<String> ask(io.github.jesterportfolio.hearth.phone.AssistantRequest request){sent.add(request);return CompletableFuture.completedFuture(request.purpose()==io.github.jesterportfolio.hearth.phone.AssistantRequest.Purpose.GENERAL_KNOWLEDGE?"합성 원리 설명: 100 N":"게임 전용 응답 [자료 1]");}
+        };
+        var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(service,owner);
+        return mainResult(store.readJournal(a1)).thenCompose(before->mainResult(store.readExploration(a2)).thenCompose(other->journal.load(a1,s1,()->coordinator.playable(s1)).thenCompose(view->{
+            var plan=phoneCachePlan(view);
+            return chat.submit(plan.question(),plan.result().context(),plan.mode(),()->coordinator.playable(s1),()->phoneCacheValidate(plan,new int[]{0}),plan.scope())
+                .thenCompose(v->chat.submit("지렛대 원리를 설명해","","none",()->coordinator.playable(s1)))
+                .thenCompose(v->chat.submit("작용 팔이 짧아지면?","","none",()->coordinator.playable(s1)))
+                .thenRun(()->{
+                    check(sent.getFirst().purpose()==io.github.jesterportfolio.hearth.phone.AssistantRequest.Purpose.PUBLIC_GAME&&sent.get(1).purpose()==io.github.jesterportfolio.hearth.phone.AssistantRequest.Purpose.GENERAL_KNOWLEDGE,"knowledge_AI_trusted_mode_keeps_real_PG_game_request_separate");
+                    check(sent.subList(1,3).stream().allMatch(r->r.context().isEmpty()&&r.sources()==0&&!r.prompt().contains("게임 전용 응답")&&!r.prompt().contains("phone_personal_note")&&!r.prompt().contains(a1.playerId().toString()))&&sent.get(1).history().isEmpty()&&sent.get(2).history().size()==1,"knowledge_AI_general_followup_excludes_game_data_history_and_identity");
+                }).thenCompose(v->rejectQuest(chat.submit("거부할 일반 질문",plan.result().context(),"none",()->coordinator.playable(s1))))
+                .thenRun(()->check(sent.size()==3&&chat.draft().equals("거부할 일반 질문")&&chat.history().size()==3,"knowledge_AI_general_game_context_misuse_rejected_before_backend"))
+                .thenCompose(v->{
+                    var bad=new io.github.jesterportfolio.hearth.phone.PhoneChat(prompt->CompletableFuture.completedFuture("F × 2 = 400 × 0.5 → F = 200 N"),owner);
+                    return rejectQuest(bad.submit("지렛대 계산","","none",()->coordinator.playable(s1))).thenRun(()->check(bad.history().isEmpty()&&bad.cacheStats().entries()==0&&bad.draft().equals("지렛대 계산")&&bad.error().contains("수식"),"knowledge_AI_observed_arithmetic_contradiction_blocks_display_history_and_cache")).whenCompleteAsync((value,error)->bad.close(),owner);
+                });
+        }).thenCompose(v->mainResult(store.readExploration(a2))).thenAccept(latest->check(latest.equals(other),"knowledge_AI_other_personal_PG_unchanged"))
+            .thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(latest->check(latest.equals(before)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"knowledge_AI_journal_inventory_revision_unchanged"))))
+            .whenCompleteAsync((value,error)->chat.close(),owner);
     }
     private CompletionStage<Void> phoneRequestLifecycle(){
         var inventory=one.capture();long revision=s1.save().revision();

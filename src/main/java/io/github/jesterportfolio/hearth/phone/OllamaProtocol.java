@@ -12,9 +12,14 @@ final class OllamaProtocol {
     static final String VERSION="0.40.16",MODEL="qwen3:4b-instruct-2507-q4_K_M",DIGEST="0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0";
     static final int CONTEXT=4096,OUTPUT=128;
     private static final Gson JSON=new GsonBuilder().disableHtmlEscaping().create();
-    static String request(String prompt){
-        unicode(prompt);if(prompt.getBytes(StandardCharsets.UTF_8).length>20000)throw failure(AssistantFailure.Reason.CONTEXT_LIMIT);
-        String raw="<|im_start|>system\n당신은 Hearth의 지식 보조입니다. 한국어로 짧게 답하세요. 제공된 공개 자료만 사용하고 모르는 게임 정보는 알 수 없다고 답하세요. 자료가 제공되면 답변 본문에 [자료 1]처럼 허용된 근거 표시를 각괄호까지 포함해 쓰세요. 자료가 없으면 번호를 만들지 마세요. 명령 실행이나 보상 지급 권한은 없습니다.<|im_end|>\n<|im_start|>user\n"+prompt+"<|im_end|>\n<|im_start|>assistant\n";
+    static String request(String prompt){return request(prompt,AssistantRequest.Purpose.PUBLIC_GAME);}
+    static String request(AssistantRequest request){return request(request.prompt(),request.purpose());}
+    private static String request(String prompt,AssistantRequest.Purpose purpose){
+        unicode(prompt);String data=prompt.replace("<|","< |");if(data.getBytes(StandardCharsets.UTF_8).length>20000)throw failure(AssistantFailure.Reason.CONTEXT_LIMIT);
+        String policy=purpose==AssistantRequest.Purpose.GENERAL_KNOWLEDGE
+            ?"당신은 Hearth의 지식 보조입니다. 한국어로 짧게 답하세요. 일반 과학·기술·수학의 원리를 설명할 수 있습니다. 답은 핵심만 한국어 1~2문장으로 쓰세요. 계산은 일반 텍스트 한 줄의 식과 결과만 쓰고 입력값 목록·풀이 단계·LaTeX·반복 설명은 생략하세요. 가정과 단위를 확인하고 확신하지 못하면 모른다고 답하세요. 현재 게임 상태·미발견 정보·개인 진행은 제공되지 않았으므로 추측하지 마세요. 자료 번호나 출처를 지어내지 마세요. 명령 실행이나 보상 지급 권한은 없습니다."
+            :"당신은 Hearth의 지식 보조입니다. 한국어로 짧게 답하세요. 제공된 공개 자료만 사용하고 모르는 게임 정보는 알 수 없다고 답하세요. 자료가 제공되면 답변 본문에 [자료 1]처럼 허용된 근거 표시를 각괄호까지 포함해 쓰세요. 자료가 없으면 번호를 만들지 마세요. 명령 실행이나 보상 지급 권한은 없습니다.";
+        String raw="<|im_start|>system\n"+policy+"<|im_end|>\n<|im_start|>user\n"+data+"<|im_end|>\n<|im_start|>assistant\n";
         var request=new JsonObject();request.addProperty("model",MODEL);request.addProperty("prompt",raw);request.addProperty("raw",true);request.addProperty("stream",false);request.addProperty("truncate",false);request.addProperty("shift",false);request.addProperty("keep_alive","60s");
         var options=new JsonObject();options.addProperty("num_ctx",CONTEXT);options.addProperty("num_predict",OUTPUT);options.addProperty("num_thread",2);options.addProperty("temperature",0);
         var stop=new JsonArray();stop.add("<|im_end|>");stop.add("<|endoftext|>");options.add("stop",stop);request.add("options",options);return JSON.toJson(request);

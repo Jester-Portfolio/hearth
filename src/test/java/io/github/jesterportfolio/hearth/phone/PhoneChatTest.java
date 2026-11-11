@@ -58,7 +58,8 @@ final class PhoneChatTest {
     }
     @Test void retryUsesOnlyFailedQuestionAndClearIsSessionLocal(){
         var answers=new java.util.ArrayList<String>();var calls=new java.util.concurrent.atomic.AtomicInteger();
-        var chat=new PhoneChat(q->{answers.add(q);return calls.getAndIncrement()==0?CompletableFuture.failedFuture(new IllegalStateException()):CompletableFuture.completedFuture("성공");},Runnable::run);
+        var service=new AssistantService(){public CompletionStage<String> ask(String prompt){throw new AssertionError();}public CompletionStage<String> ask(AssistantRequest request){answers.add(request.question());return calls.getAndIncrement()==0?CompletableFuture.failedFuture(new IllegalStateException()):CompletableFuture.completedFuture("성공");}};
+        var chat=new PhoneChat(service,Runnable::run);
         var other=new PhoneChat(LocalAssistant.mock(),Runnable::run);other.submit("다른 개인").toCompletableFuture().join();
         assertTrue(chat.submit("실패한 질문").toCompletableFuture().isCompletedExceptionally());assertTrue(chat.canRetry());chat.retry().toCompletableFuture().join();
         assertEquals(java.util.List.of("실패한 질문","실패한 질문"),answers);assertFalse(chat.canRetry());chat.clear();assertTrue(chat.history().isEmpty());assertNull(chat.question());assertFalse(other.history().isEmpty());

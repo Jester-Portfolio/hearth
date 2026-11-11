@@ -14,6 +14,18 @@ import s5_ai_trial as trial
 
 
 class TrialSafetyTests(unittest.TestCase):
+    def test_review_output_length_requires_completed_pinned_bounded_reply(self):
+        with tempfile.TemporaryDirectory(dir=isolated_paths.require_base()) as directory:
+            root=Path(directory);result=dict(outcome='FAIL',failure='AssertionError: Actual-format warmup failed',cleanup_errors=[])
+            (root/'warmup.log').write_text('AssistantFailure: LOCAL_AI_OUTPUT_LIMIT');reply=dict(model=trial.MODEL,done=True,done_reason='length',eval_count=128,prompt_eval_count=267)
+            import json
+            (root/'warmup.json').write_text(json.dumps(reply));self.assertTrue(trial.reviewable_result(root,result))
+            for key,value in [('model','other'),('done',False),('done_reason','stop'),('eval_count',129),('prompt_eval_count',4096)]:
+                changed=dict(reply);changed[key]=value;(root/'warmup.json').write_text(json.dumps(changed));self.assertFalse(trial.reviewable_result(root,result))
+            (root/'warmup.json').write_text(json.dumps(reply));self.assertFalse(trial.reviewable_result(root,dict(result,guard_failure='AI_RESOURCE_LIMIT')))
+            for value in [None,[],"invalid"]:
+                (root/'warmup.json').write_text(json.dumps(value));self.assertFalse(trial.reviewable_result(root,result))
+
     def test_review_only_accepts_explicit_citation_warmup_rejection_without_guard_or_cleanup_failure(self):
         with tempfile.TemporaryDirectory(dir=isolated_paths.require_base()) as directory:
             root=Path(directory);result=dict(outcome='FAIL',failure='AssertionError: Actual-format warmup failed',cleanup_errors=[])

@@ -14,6 +14,7 @@ public final class AssistantAnswer {
             int opened=0,at=0;while((at=answer.indexOf("[자료",at))>=0){opened++;at+=3;}if(opened!=markers)throw invalid();
             if(request.sources()>0&&!CITATION.matcher(visible).find())throw invalid();
         }
+        if(request.purpose()==AssistantRequest.Purpose.GENERAL_KNOWLEDGE)ArithmeticConsistency.check(visible);
         return visible;
     }
     private static boolean permitted(String value,int count){try{if(!value.matches("[0-9]+"))return false;int id=Integer.parseInt(value);return id>=1&&id<=count;}catch(NumberFormatException invalid){return false;}}

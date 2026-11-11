@@ -549,6 +549,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     }
     private void chat(Player p){
         var s=advance(p);var body=new ArrayList<DialogBody>();body.add(DialogBody.plainMessage(Component.text("최근 대화 · 현재 접속 세션에서만 유지\n"+PhoneContext.MODES.get(contextModes.getOrDefault(s.session(),"none")))));
+        if(contextModes.getOrDefault(s.session(),"none").equals("none"))body.add(DialogBody.plainMessage(Component.text("일반 과학·기술 원리를 질문할 수 있습니다. 현재 게임 진행·좌표·보상 정보는 전달하지 않습니다.")));
         var selected=helpSelections.get(s.session());if(selected!=null)body.add(DialogBody.plainMessage(Component.text("선택한 자료 한 항목: "+selected.source().title())));
         if(references.containsKey(s.session()))body.add(DialogBody.plainMessage(Component.text("답변의 자료 번호는 ‘최근 요청 참고자료’에서 확인할 수 있습니다.")));
         body.add(DialogBody.plainMessage(Component.text(s.chat().includeHistory()?"같은 자료 범위의 최근 대화 일부를 함께 보냅니다.":"이전 대화를 보내지 않고 질문합니다. 화면의 대화 기록은 유지합니다.")));

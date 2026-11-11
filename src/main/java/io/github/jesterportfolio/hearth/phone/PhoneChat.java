@@ -41,7 +41,9 @@ public final class PhoneChat {
         try{
             if(!current.getAsBoolean())throw new IllegalStateException("STALE_AI_CONTEXT");
             int sources=materialScope instanceof PhoneGrounding.Scope materials?materials.items().size():-1;
-            request=new AssistantRequest(question,includeHistory?history.stream().filter(e->e.scope().equals(scope)).map(Exchange::turn).toList():List.of(),context,sources);
+            var recent=includeHistory?history.stream().filter(e->e.scope().equals(scope)).map(Exchange::turn).toList():List.<Turn>of();
+            if(mode.equals("none")&&(!context.isEmpty()||materialScope!=null))throw new IllegalArgumentException("GENERAL_KNOWLEDGE_HAS_GAME_CONTEXT");
+            request=mode.equals("none")?AssistantRequest.general(question,recent):new AssistantRequest(question,recent,context,sources);
             cache.select(scope);var saved=service.allowsCache()?cache.find(request):Optional.<String>empty();
             fromCache=saved.isPresent();
             pending=new Work((saved.isPresent()?service.confirmCached(saved.orElseThrow()):service.ask(request)).toCompletableFuture(),timeoutMillis);
