@@ -25,7 +25,7 @@ public final class PhoneRetrieval {
         var ranked=new ArrayList<Ranked>();
         for(var source:candidates){String title=PhoneSearchTerms.normalize(source.title()),text=PhoneSearchTerms.normalize(source.text());int score=0;for(var term:terms)score+=PhoneSearchTerms.score(term,title,text);if(score>0)ranked.add(new Ranked(source,score));}
         ranked.sort(Comparator.comparingInt(Ranked::score).reversed().thenComparingInt(r->r.source().index()));
-        var sources=ranked.stream().limit(4).map(r->new Source(mode,r.source().index(),AssistantRequest.limit(r.source().title(),64),AssistantRequest.limit(r.source().text(),400))).toList();
+        var sources=ranked.stream().limit(4).map(r->new Source(mode,r.source().index(),AssistantRequest.limit(r.source().title(),64),PhoneExcerpt.publicText(data,mode,r.source().index(),question,r.source().text()))).toList();
         return present(sources);
     }
     public static Result present(List<Source> chosen){

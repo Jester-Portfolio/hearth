@@ -171,3 +171,5 @@
 S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기준 경로에 보존된 사용자 소유 시험의 고정 해시 아카이브/blob만 새 경로로 검증 복사한다. 다운로드 대신 복사해도 최초 디스크 여유 16GiB와 새 경로/프로필·모든 기존 자원/시간 조건을 유지한다. `--grounded`는 자료 번호/접속 캐시·동일 본문의 다른 세션·stale/한도 흐름과 대표 자료 프롬프트 예열을 준비한다. 이전 로그/프로필/실행 중 서비스는 입력으로 사용하지 않는다. [실행·미실행 범위](../docs/s5-grounded-cache-verification.md)를 따른다.
 
 디스크 전제가 부족하면 `s5_ai_trial.py`가 비활성 AI 시험의 동일 아카이브/blob/런타임 블록을 자동 공유하고 다시 16GiB를 확인한다. 독립 실행은 `python3 scripts/space_reclaim.py`다. 삭제 없이 원본 해시/경로/수정 시각을 유지하며, 지원 실패/공간 부족은 시작 전 차단한다. [자동 공간 확보 절차](../docs/DEVELOPMENT_WORKFLOW.md#시험-디스크-공간)와 [실제 자료/캐시 재시험](../docs/s5-grounded-live-verification.md)을 따른다. 재개는 기존 품질 거부 외에 명시적인 준비 응답의 `INVALID_REFERENCE`만 허용하며, 자원/정리/시간 실패를 허용하지 않고 최초 시간 예산·원본을 유지한다.
+
+`--focused`는 긴 합성 공개 본문의 질문 관련 발췌·자료 4개/제외 후 번호 재지정·이전 대화 전송 선택과 독립 질문 캐시를 같은 승인 예산에서 검사한다. `--grounded`와 상호 배타적이며 모델/자원·시간/정리 한도는 유지한다. [질문 관련 도움 검증](../docs/s5-focused-help-verification.md)을 따른다.

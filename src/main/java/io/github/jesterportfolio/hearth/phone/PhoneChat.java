@@ -13,11 +13,13 @@ public final class PhoneChat {
         Work(CompletableFuture<String> source,long timeout){this.source=source;answer=source.copy().orTimeout(timeout,TimeUnit.MILLISECONDS);}
         void cancel(){answer.cancel(true);source.cancel(true);if(validation!=null)validation.cancel(true);}
     }
-    private Work pending;private String error;private String question;private final long timeoutMillis;private boolean closed,retryable;
+    private Work pending;private String error;private String question;private final long timeoutMillis;private boolean closed,retryable,includeHistory=true;
     public PhoneChat(AssistantService service,Executor owner){this(service,owner,8000);}
     PhoneChat(AssistantService service,Executor owner,long timeoutMillis){this(service,owner,timeoutMillis,new PhoneAnswerCache());}
     PhoneChat(AssistantService service,Executor owner,long timeoutMillis,PhoneAnswerCache cache){this.service=service;this.owner=owner;this.timeoutMillis=timeoutMillis;this.cache=cache;}
     public PhoneAnswerCache.Stats cacheStats(){return cache.stats();}
+    public boolean includeHistory(){return includeHistory;}
+    public void includeHistory(boolean value){if(closed||busy())throw new IllegalStateException("CHAT_BUSY_OR_CLOSED");if(includeHistory!=value){includeHistory=value;cache.invalidate();}}
     public String draft(){return draft;}
     public void draft(String value){if(closed||value==null||value.codePointCount(0,value.length())>256)throw new IllegalArgumentException("CHAT_DRAFT_LENGTH");draft=value;draftVersion++;}
     public String question(){return question;}
@@ -39,7 +41,7 @@ public final class PhoneChat {
         try{
             if(!current.getAsBoolean())throw new IllegalStateException("STALE_AI_CONTEXT");
             int sources=materialScope instanceof PhoneGrounding.Scope materials?materials.items().size():-1;
-            request=new AssistantRequest(question,history.stream().filter(e->e.scope().equals(scope)).map(Exchange::turn).toList(),context,sources);
+            request=new AssistantRequest(question,includeHistory?history.stream().filter(e->e.scope().equals(scope)).map(Exchange::turn).toList():List.of(),context,sources);
             cache.select(scope);var saved=service.allowsCache()?cache.find(request):Optional.<String>empty();
             fromCache=saved.isPresent();
             pending=new Work((saved.isPresent()?service.confirmCached(saved.orElseThrow()):service.ask(request)).toCompletableFuture(),timeoutMillis);

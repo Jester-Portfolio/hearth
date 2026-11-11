@@ -1,0 +1,228 @@
+{
+  "checked_at": "2026-11-11",
+  "baseline_commit": "a90064f",
+  "outcome": "PASS_FOCUSED_PUBLIC_HELP",
+  "whole_s5_complete": false,
+  "actual_minecraft_client_run": false,
+  "production_changed": false,
+  "evidence_root": "/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc",
+  "artifact": {
+    "path": "/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/Hearth-final.jar",
+    "sha256": "b84c1a57f6ad1258ab379b6f1f8f23b0026a3a737db5f40444fc8b3db7daa78a",
+    "bytes": 2323181
+  },
+  "implementation": {
+    "question_aware_contiguous_excerpt": true,
+    "short_paragraph_preferred_when_same_keyword_coverage": true,
+    "public_status_personal_shared_metadata_preserved": true,
+    "source_text_max_codepoints": 400,
+    "source_count_max": 4,
+    "context_max_codepoints": 2400,
+    "full_DTO_identity_revision_checks_unchanged": true,
+    "history_choice_default": true,
+    "history_off_keeps_screen_history_and_draft": true,
+    "history_choice_change_evicts_cache": true,
+    "history_scope": "existing mode/exact transmitted context/full material identity unchanged",
+    "silent_auto_retry_or_budget_expansion": false
+  },
+  "unit_tests": {
+    "tests": 148,
+    "failures": 0,
+    "xml": "/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/unit-results",
+    "log": "/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/final-build.log"
+  },
+  "python_tests": {
+    "tests": 11,
+    "failures": 0,
+    "log": "/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/python-tests.log"
+  },
+  "native": {
+    "workspace": "/home/server/hearth-tmp/hearth-s4-11.ajxkb5rv",
+    "raw_result": "/home/server/hearth-tmp/hearth-s4-11.ajxkb5rv/run-result.json",
+    "log": "/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/native.log",
+    "outcome": "PASS",
+    "assertions": 131,
+    "new_checks": [
+      "focused_AI_actual_PG_four_late_answers_in_bounded_excerpts",
+      "focused_AI_exclusion_renumbers_only_sent_sources",
+      "focused_AI_history_choice_preserves_display_and_evicts_cache",
+      "focused_AI_history_choice_reaches_request_without_internal_identity",
+      "focused_AI_change_outside_excerpt_rejects_PG_answer_without_history",
+      "focused_AI_other_personal_PG_preserved",
+      "focused_AI_journal_inventory_revision_preserved"
+    ],
+    "duration_seconds": 55.627,
+    "paper_jvms": 1,
+    "postgres_instances": 1,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 1,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "player_actions_verdict": "NOT_RUN",
+    "command": [
+      "python3",
+      "scripts/verify-lifecycle.py",
+      "--workspace",
+      "/home/server/hearth-tmp/hearth-s4-11.ajxkb5rv",
+      "--java",
+      "/home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java",
+      "--plugin",
+      "/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/Hearth-final.jar",
+      "--artifact-source",
+      "/tmp/hearth-s4-2.vnd2kki4",
+      "--sessions",
+      "--quests",
+      "--story-batch",
+      "--quest-navigation",
+      "--phone-dialog",
+      "--accept-eula"
+    ]
+  },
+  "actual_ai": {
+    "workspace": "/home/server/hearth-tmp/hearth-s5-trial.oq992xmv",
+    "raw_result": "/home/server/hearth-tmp/hearth-s5-trial.oq992xmv/run-result.json",
+    "log": "/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/ai.log",
+    "outcome": "PASS",
+    "duration_seconds": 107.169,
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "artifact_source": "/home/server/hearth-tmp/hearth-s5-trial.3368750f",
+    "warmup_seconds": 72.096796298,
+    "probe": {
+      "history_off_cached_without_generation": true,
+      "full_context_codepoints": 235,
+      "sent_history_sizes": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        0
+      ],
+      "backend_usage": {
+        "closed": false,
+        "usage": [
+          {
+            "kind": "GENERATION",
+            "started": 6,
+            "succeeded": 6,
+            "failed": 0,
+            "cancelled": 0,
+            "active": 0,
+            "totalMillis": 14717,
+            "maxMillis": 3014,
+            "latencyBuckets": [
+              0,
+              0,
+              0,
+              5,
+              1,
+              0
+            ],
+            "failures": {}
+          },
+          {
+            "kind": "CACHE_CONFIRMATION",
+            "started": 1,
+            "succeeded": 1,
+            "failed": 0,
+            "cancelled": 0,
+            "active": 0,
+            "totalMillis": 4,
+            "maxMillis": 4,
+            "latencyBuckets": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "failures": {}
+          }
+        ]
+      },
+      "cache_cleared_on_close": true,
+      "required_checks_passed": true,
+      "real_model": true,
+      "actual_minecraft_client": false,
+      "cases": [
+        {
+          "name": "four_sources_history_0",
+          "answer": "공방 1의 운반품은 판자이다. [자료 1]  \n공방 2의 운반품은 석재이다. [자료 2]  \n공방 3의 운반품은 실타래이다. [자료 3]  \n공방 4의 운반품은 철못이다. [자료 4]",
+          "outcome": "PASS",
+          "milliseconds": 3025
+        },
+        {
+          "name": "four_sources_history_1",
+          "answer": "공방 1의 운반품은 판자이다. [자료 1]  \n공방 2의 운반품은 석재이다. [자료 2]  \n공방 3의 운반품은 실타래이다. [자료 3]  \n공방 4의 운반품은 철못이다. [자료 4]",
+          "outcome": "PASS",
+          "milliseconds": 2474
+        },
+        {
+          "name": "four_sources_history_2",
+          "answer": "공방 1의 운반품은 판자이다. [자료 1]  \n공방 2의 운반품은 석재이다. [자료 2]  \n공방 3의 운반품은 실타래이다. [자료 3]  \n공방 4의 운반품은 철못이다. [자료 4]",
+          "outcome": "PASS",
+          "milliseconds": 2553
+        },
+        {
+          "name": "four_sources_history_3",
+          "answer": "공방 1의 운반품은 판자이다. [자료 1]  \n공방 2의 운반품은 석재이다. [자료 2]  \n공방 3의 운반품은 실타래이다. [자료 3]  \n공방 4의 운반품은 철못이다. [자료 4]",
+          "outcome": "PASS",
+          "milliseconds": 2567
+        },
+        {
+          "name": "two_sources_excluded_and_renumbered",
+          "answer": "공방 1의 운반품은 판자이다. [자료 1]  \n공방 3의 운반품은 실타래이다. [자료 2]",
+          "outcome": "PASS",
+          "milliseconds": 1608
+        },
+        {
+          "name": "history_off",
+          "answer": "공방 1의 운반품은 판자이다. [자료 1]  \n공방 2의 운반품은 석재이다. [자료 2]  \n공방 3의 운반품은 실타래이다. [자료 3]  \n공방 4의 운반품은 철못이다. [자료 4]",
+          "outcome": "PASS",
+          "milliseconds": 2511
+        },
+        {
+          "name": "history_off_cached",
+          "answer": "공방 1의 운반품은 판자이다. [자료 1]  \n공방 2의 운반품은 석재이다. [자료 2]  \n공방 3의 운반품은 실타래이다. [자료 3]  \n공방 4의 운반품은 철못이다. [자료 4]",
+          "outcome": "PASS",
+          "milliseconds": 5
+        }
+      ]
+    },
+    "max_sampled_rss_kib": 3407404,
+    "max_sampled_gpu_mib": 3130,
+    "max_sampled_workspace_bytes": 6643779987,
+    "cleanup_errors": [],
+    "owned_process_port_gpu_release_confirmed": true,
+    "scope": "synthetic authorized public DTO; callback validation, not actual Player/PG access",
+    "command": [
+      "python3",
+      "scripts/s5_ai_trial.py",
+      "--workspace",
+      "/home/server/hearth-tmp/hearth-s5-trial.oq992xmv",
+      "--java",
+      "/home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java",
+      "--classpath",
+      "/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/Hearth-final.jar:/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/probe-classes:/home/server/hearth-tmp/hearth-s5-focused.vamgdqgc/gson-2.14.0.jar",
+      "--artifact-source",
+      "/home/server/hearth-tmp/hearth-s5-trial.3368750f",
+      "--focused"
+    ]
+  },
+  "not_run": [
+    "실제 Minecraft 메뉴/입력/클릭·코옵",
+    "different excerpt conversation continuity, broad long-dialog quality, general correctness/scientific knowledge/citation entailment",
+    "target concurrent load/long-running performance/always-on budget and deployment",
+    "second Paper JVM — persistent storage/restore contract unchanged"
+  ]
+}

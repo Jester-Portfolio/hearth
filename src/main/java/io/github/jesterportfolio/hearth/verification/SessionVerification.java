@@ -1899,7 +1899,7 @@ public final class SessionVerification implements AutoCloseable {
                 check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary").contains("갱신된 공개 합성 정보"),"phone_AI_other_player_no_private_context");
                 check(io.github.jesterportfolio.hearth.phone.PhoneRetrieval.find(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary","갱신된 정보").sources().isEmpty(),"phone_AI_retrieval_other_player_no_private_source");
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"STORY").size()==1,"phone_library_same_run_shared_fact");
-            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");}).thenCompose(v->phoneRequestLifecycle()).thenCompose(v->phoneCachedGrounding());
+            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");}).thenCompose(v->phoneRequestLifecycle()).thenCompose(v->phoneCachedGrounding()).thenCompose(v->phoneFocusedGrounding());
     }
     private io.github.jesterportfolio.hearth.phone.PhoneGrounding.Plan phoneCachePlan(QuestJournal.View view){
         var data=journal.projectInformation(a1,view,()->coordinator.playable(s1));int index=java.util.stream.IntStream.range(0,view.exploration().facts().size()).filter(i->view.exploration().facts().get(i).id().equals("phone_personal_note")).findFirst().orElseThrow();
@@ -1942,6 +1942,34 @@ public final class SessionVerification implements AutoCloseable {
                 var lines=io.github.jesterportfolio.hearth.phone.AssistantDiagnostics.lines(true,new String[]{"status"},"mock",measured::snapshot);check(!String.join("\n",lines).contains("공개 기록의 내용")&&!usage.toString().contains(a1.playerId().toString())&&measured.snapshot().equals(usage),"phone_AI_readonly_usage_has_no_text_or_personal_identity");measured.close();
                 check(Bukkit.dispatchCommand(Bukkit.getConsoleSender(),"hearthai status"),"phone_AI_registered_console_usage_command");
             },owner);
+    }
+    private CompletionStage<Void> phoneFocusedGrounding(){
+        var inventory=one.capture();long revision=s1.save().revision();var names=List.of("판자","석재","천","못");var requests=new ArrayList<io.github.jesterportfolio.hearth.phone.AssistantRequest>();
+        var texts=names.stream().map(name->"합성 배경입니다. ".repeat(70)+"\n공방 운반품은 "+name+"이다.\n"+"나머지 안내입니다. ".repeat(70)).toList();
+        var service=new io.github.jesterportfolio.hearth.phone.AssistantService(){
+            public boolean allowsCache(){return true;}
+            public CompletionStage<String> confirmCached(String answer){return CompletableFuture.completedFuture(answer);}
+            public CompletionStage<String> ask(String prompt){throw new AssertionError("Structured request required");}
+            public CompletionStage<String> ask(io.github.jesterportfolio.hearth.phone.AssistantRequest request){requests.add(request);return CompletableFuture.completedFuture("공방 운반품: 판자 [자료 1], 석재 [자료 2], 천 [자료 3], 못 [자료 4]");}
+        };
+        var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(service,owner);
+        return mainResult(store.readJournal(a1)).thenCompose(before->mainResult(store.readExploration(a2)).thenCompose(other->{
+            CompletionStage<Void> setup=CompletableFuture.completedFuture(null);
+            for(int i=0;i<4;i++){int n=i;setup=setup.thenCompose(v->mainResult(store.recordFact(a1,new io.github.jesterportfolio.hearth.exploration.ExplorationContent.Fact("phone_focused_"+n,"PERSON","공방 "+n,"합성 공개 안내",texts.get(n),1,true),false)).thenApply(x->null));}
+            return setup.thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenCompose(view->{
+                var data=journal.projectInformation(a1,view,()->coordinator.playable(s1));var plan=io.github.jesterportfolio.hearth.phone.PhoneGrounding.search(catalog,view,data,"diary","공방 운반품");
+                check(plan.materials().size()==4&&names.stream().allMatch(name->plan.result().context().contains("운반품은 "+name)),"focused_AI_actual_PG_four_late_answers_in_bounded_excerpts");
+                var reduced=plan.toggle("P:phone_focused_0").sent();check(reduced.selected().size()==3&&!reduced.result().context().contains("운반품은 판자")&&!reduced.result().context().contains("[자료 4]"),"focused_AI_exclusion_renumbers_only_sent_sources");
+                java.util.function.Supplier<CompletionStage<Boolean>> validate=()->journal.load(a1,s1,()->coordinator.playable(s1)).thenApply(latest->{io.github.jesterportfolio.hearth.phone.PhoneGrounding.refresh(catalog,latest,journal.projectInformation(a1,latest,()->coordinator.playable(s1)),plan);return true;});
+                java.util.function.Supplier<CompletionStage<Void>> ask=()->chat.submit(plan.question(),plan.result().context(),plan.mode(),()->coordinator.playable(s1),validate,plan.scope());
+                return ask.get().thenCompose(v->ask.get()).thenCompose(v->{var visible=chat.history();chat.includeHistory(false);check(chat.history().equals(visible)&&chat.cacheStats().entries()==0,"focused_AI_history_choice_preserves_display_and_evicts_cache");return ask.get();})
+                    .thenCompose(v->{chat.includeHistory(true);return ask.get();}).thenCompose(v->{
+                        check(requests.stream().map(r->r.history().size()).toList().equals(List.of(0,1,0,3))&&requests.stream().allMatch(r->r.sources()==4&&!r.prompt().contains("phone_focused_")&&!r.prompt().contains(a1.playerId().toString())),"focused_AI_history_choice_reaches_request_without_internal_identity");
+                        var savedHistory=chat.history();return mainResult(store.recordFact(a1,new io.github.jesterportfolio.hearth.exploration.ExplorationContent.Fact("phone_focused_0","PERSON","공방 0","합성 공개 안내",texts.getFirst()+"끝 변경",2,true),false)).thenCompose(x->rejectQuest(ask.get())).thenRun(()->check(chat.history().equals(savedHistory)&&chat.draft().equals(plan.question())&&chat.cacheStats().entries()==0,"focused_AI_change_outside_excerpt_rejects_PG_answer_without_history"));
+                    });
+            }).thenCompose(v->mainResult(store.readExploration(a2))).thenAccept(latest->check(latest.equals(other),"focused_AI_other_personal_PG_preserved"))
+                .thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(latest->check(latest.equals(before)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"focused_AI_journal_inventory_revision_preserved"));
+        })).whenCompleteAsync((value,error)->chat.close(),owner);
     }
     private CompletionStage<Void> phoneRequestLifecycle(){
         var inventory=one.capture();long revision=s1.save().revision();

@@ -17,7 +17,10 @@ public final class PhonePages {
             entries.add(new Entry(i,label));
         }return new Page(entries,page,total);
     }
-    public static Detail detail(GameInformation data,String section,int index){
+    private record Content(String title,List<String> lines){}
+    public static Detail detail(GameInformation data,String section,int index){var content=content(data,section,index);return text(content.title(),content.lines());}
+    public static String body(GameInformation data,String section,int index){return String.join("\n\n",content(data,section,index).lines());}
+    private static Content content(GameInformation data,String section,int index){
         if(index<0||index>=size(data,section))throw new IllegalArgumentException("PHONE_DETAIL_RANGE");
         String title;List<String> lines;
         switch(section){
@@ -26,7 +29,7 @@ public final class PhonePages {
             case "diary"->{var d=data.diary().get(index);title=d.title();lines=List.of(d.shared()?"공동체 공유 기록 · 개인 완료/보상과 별개":"개인 기록",d.category(),d.summary(),d.detail());}
             default->throw new IllegalArgumentException("UNKNOWN_PHONE_SECTION");
         }
-        return text(title,lines);
+        return new Content(title,lines);
     }
     public static Detail text(String title,List<String> lines){
         // 개별 본문 길이를 제한하되 다음 페이지에서 남은 내용도 읽을 수 있게 합니다.

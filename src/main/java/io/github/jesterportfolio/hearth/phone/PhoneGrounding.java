@@ -24,19 +24,19 @@ public final class PhoneGrounding {
         public Plan sent(){if(!sendable())throw new IllegalStateException("AI_NO_SELECTED_MATERIAL");return new Plan(mode,question,single,selected(),included);}
     }
     public static Plan search(QuestCatalog catalog,QuestJournal.View view,GameInformation data,String mode,String question){
-        var result=PhoneRetrieval.find(data,mode,question);var items=result.sources().stream().map(s->material(catalog,view,data,mode,s.index())).toList();
+        var result=PhoneRetrieval.find(data,mode,question);var items=result.sources().stream().map(s->material(catalog,view,data,mode,s.index(),question)).toList();
         return new Plan(mode,question,false,items,items.stream().map(m->m.item().key()).collect(java.util.stream.Collectors.toSet()));
     }
     public static Plan single(QuestCatalog catalog,QuestJournal.View view,GameInformation data,String question,PhoneHelp.Selection expected){
-        var current=PhoneHelp.refresh(catalog,view,data,expected);var item=material(catalog,view,data,current.section(),current.source().index());return new Plan(current.section(),question,true,List.of(item),Set.of(current.key()));
+        var current=PhoneHelp.refresh(catalog,view,data,expected);var item=material(catalog,view,data,current.section(),current.source().index(),question);return new Plan(current.section(),question,true,List.of(item),Set.of(current.key()));
     }
-    private static Material material(QuestCatalog catalog,QuestJournal.View view,GameInformation data,String mode,int index){
+    private static Material material(QuestCatalog catalog,QuestJournal.View view,GameInformation data,String mode,int index,String question){
         if(mode.equals("story")){
             var selected=new GameInformation(List.of(),List.of(),List.of(),List.of(data.story().get(index)));
-            var source=new PhoneRetrieval.Source(mode,index,"현재 공유 정보 "+(index+1),AssistantRequest.limit(data.story().get(index),400));
+            var source=new PhoneRetrieval.Source(mode,index,"현재 공유 정보 "+(index+1),PhoneExcerpt.publicText(data,mode,index,question,data.story().get(index)));
             return new Material(new PhoneHelp.Selection(mode,"story:"+index,selected,source),view.exploration().story().revision(),index);
         }
-        var item=PhoneHelp.select(catalog,view,data,mode,index);long revision=-1;int objective=-1;
+        var item=PhoneHelp.select(catalog,view,data,mode,index);var source=item.source();item=new PhoneHelp.Selection(item.section(),item.key(),item.selected(),new PhoneRetrieval.Source(mode,index,source.title(),PhoneExcerpt.publicText(item.selected(),mode,0,question,PhonePages.body(item.selected(),mode,0))));long revision=-1;int objective=-1;
         if(mode.equals("quests")){var saved=view.states().get(item.key());revision=saved.revision();objective=saved.objectiveIndex();}
         else if(mode.equals("diary"))revision=view.exploration().facts().get(index).version();
         return new Material(item,revision,objective);
@@ -50,7 +50,7 @@ public final class PhoneGrounding {
             var item=old.item();int index;
             if(item.section().equals("story")){index=item.source().index();if(index<0||index>=data.story().size())throw new IllegalStateException("STALE_AI_MATERIAL");}
             else index=PhoneHelp.refresh(catalog,view,data,item).source().index();
-            var current=material(catalog,view,data,expected.mode(),index);
+            var current=material(catalog,view,data,expected.mode(),index,expected.question());
             if(!current.item().key().equals(item.key())||!current.item().selected().equals(item.selected())||current.revision()!=old.revision()||current.objective()!=old.objective())throw new IllegalStateException("STALE_AI_MATERIAL");
             items.add(current);
         }

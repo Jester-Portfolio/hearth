@@ -551,6 +551,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         var s=advance(p);var body=new ArrayList<DialogBody>();body.add(DialogBody.plainMessage(Component.text("최근 대화 · 현재 접속 세션에서만 유지\n"+PhoneContext.MODES.get(contextModes.getOrDefault(s.session(),"none")))));
         var selected=helpSelections.get(s.session());if(selected!=null)body.add(DialogBody.plainMessage(Component.text("선택한 자료 한 항목: "+selected.source().title())));
         if(references.containsKey(s.session()))body.add(DialogBody.plainMessage(Component.text("답변의 자료 번호는 ‘최근 요청 참고자료’에서 확인할 수 있습니다.")));
+        body.add(DialogBody.plainMessage(Component.text(s.chat().includeHistory()?"같은 자료 범위의 최근 대화 일부를 함께 보냅니다.":"이전 대화를 보내지 않고 질문합니다. 화면의 대화 기록은 유지합니다.")));
         for(var turn:s.chat().history()){body.add(DialogBody.plainMessage(Component.text("나: "+turn.question())));body.add(DialogBody.plainMessage(Component.text("AI: "+turn.answer())));}
         if(s.chat().error()!=null)body.add(DialogBody.plainMessage(Component.text(s.chat().error())));
         if(s.chat().busy())body.add(DialogBody.plainMessage(Component.text("나: "+s.chat().question()+"\n응답 대기 중입니다. 잠시 후 응답 확인을 눌러 주세요.")));
@@ -562,6 +563,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         if(!s.chat().busy()&&(!s.chat().history().isEmpty()||s.chat().error()!=null))actions.add(chatButton(p,s,"대화 정리",()->clearConfirm(p)));
         if(s.chat().busy())actions.add(chatButton(p,s,"요청 취소",()->{s.chat().cancel();references.remove(s.session());chat(p);}));
         if(!s.chat().busy())actions.add(chatButton(p,s,"도움 범위 선택",()->contextMenu(p)));
+        if(!s.chat().busy())actions.add(chatButton(p,s,"이전 대화 함께 보내기: "+(s.chat().includeHistory()?"켬":"끔"),()->{s.chat().includeHistory(!s.chat().includeHistory());chat(p);}));
         if(selected!=null){actions.add(chatButton(p,s,"원래 정보",()->returnHelp(p,s)));if(!s.chat().busy())actions.add(chatButton(p,s,"항목 선택 해제",()->{helpSelections.remove(s.session());references.remove(s.session());contextModes.put(s.session(),"none");chat(p);}));}
         if(references.containsKey(s.session()))actions.add(chatButton(p,s,"최근 요청 참고자료",()->referenceList(p,advance(p))));
         actions.add(chatButton(p,s,"응답 확인",()->chat(p)));actions.add(chatButton(p,s,"홈",()->home(p)));
@@ -593,7 +595,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     }
     private void previewContext(Player p,Screen s,QuestJournal.View view,PhoneGrounding.Plan plan,int page){
         if(!valid(p,s))return;
-        try{information(p,s,view);var text=plan.sendable()?plan.result().context():"전송할 자료를 한 개 이상 선택하세요.";var pages=PhonePages.text("전송할 공개 자료",List.of("질문: "+plan.question(),"아래 발췌 자료만 AI에 전달합니다. 전체 자료는 따로 읽을 수 있습니다.",text));var actions=new ArrayList<ActionButton>();
+        try{information(p,s,view);var text=plan.sendable()?plan.result().context():"전송할 자료를 한 개 이상 선택하세요.";var pages=PhonePages.text("전송할 공개 자료",List.of("질문: "+plan.question(),s.chat().includeHistory()?"같은 자료 범위의 최근 대화 일부도 함께 보냅니다.":"이전 대화는 보내지 않습니다.","질문에 맞춘 연속 발췌만 보냅니다. … 표시는 생략된 부분이며 전체 자료는 따로 읽을 수 있습니다.",text));var actions=new ArrayList<ActionButton>();
             if(page>1)actions.add(button(p,s,"앞 자료",()->previewContext(p,advance(p),view,plan,page-1)));
             if(page<pages.pages().size())actions.add(button(p,s,"다음 자료",()->previewContext(p,advance(p),view,plan,page+1)));
             for(var material:plan.materials()){

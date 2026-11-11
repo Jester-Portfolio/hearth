@@ -7,6 +7,13 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class PhoneGroundingTest {
+    @Test void lateEvidenceSurvivesSearchSingleSelectionRefreshAndTwoSourceRenumbering(){
+        var a=PhoneReaderLinksTest.fact("found_fact",2,false);String detail="합성 배경. ".repeat(100)+"\n운반품은 판자다.\n"+"끝 안내. ".repeat(100);var longFact=new ExplorationStore.Fact(a.id(),a.category(),a.title(),a.summary(),detail,2,a.first(),a.updated(),false);
+        var other=new ExplorationStore.Fact("other",a.category(),"다른 공방",a.summary(),detail.replace("판자","석재"),1,a.first(),a.updated(),false);var v=facts(List.of(longFact,other));var plan=search(v,"diary","운반품");assertEquals(2,plan.materials().size());assertTrue(plan.result().context().contains("운반품은 판자"));assertTrue(plan.result().context().contains("운반품은 석재"));assertEquals(plan,PhoneGrounding.refresh(catalog,v,data(v),plan));
+        var single=PhoneGrounding.single(catalog,v,data(v),"운반품",plan.materials().getFirst().item());assertTrue(single.result().context().contains("운반품은 판자"));assertTrue(String.join("",PhoneGrounding.detail(single.materials().getFirst()).pages()).contains(detail));
+        var remaining=plan.toggle("P:found_fact").sent();assertTrue(remaining.result().context().contains("[자료 1]"));assertFalse(remaining.result().context().contains("[자료 2]"));assertFalse(remaining.result().context().contains("판자"));
+        var changed=new ExplorationStore.Fact(longFact.id(),longFact.category(),longFact.title(),longFact.summary(),detail+"나중 변경",3,longFact.first(),longFact.updated(),false);var latest=facts(List.of(changed,other));assertEquals(plan.result().context(),search(latest,"diary","운반품").result().context());assertThrows(IllegalStateException.class,()->PhoneGrounding.refresh(catalog,latest,data(latest),plan));
+    }
     final QuestCatalog catalog=GeneralNpcTest.catalog();final QuestJournal.View view=PhoneReaderLinksTest.known();
     GameInformation data(QuestJournal.View v){return GameInformation.build(catalog,v);}
     PhoneGrounding.Plan search(QuestJournal.View v,String mode,String question){return PhoneGrounding.search(catalog,v,data(v),mode,question);}
