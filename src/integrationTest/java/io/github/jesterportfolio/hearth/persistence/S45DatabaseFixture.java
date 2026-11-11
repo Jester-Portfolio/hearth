@@ -9,14 +9,14 @@ import java.util.*;
 /** S4-5 전용 신규 DB 한 개와 실패 주입. 임의 URL/SQL 입력이나 운영 DB 접근 기능은 없습니다. */
 public final class S45DatabaseFixture {
     public static void main(String[] args) throws Exception {
-        Path root=Path.of(args[0]).toRealPath();
+        Path root=Path.of(args[0]).toAbsolutePath();
         boolean lifecycle=args.length==2 && args[1].equals("--lifecycle");
         boolean inventory=lifecycle || args.length==2 && args[1].equals("--inventory");
         String prefix=lifecycle ? "hearth-s4-11." : inventory ? "hearth-s4-6." : "hearth-s4-5.";
         String database=lifecycle ? "hearth_s4_11" : inventory ? "hearth_s4_6" : "hearth_s4_5";
         String table=inventory ? "story_inventory" : "player_progress";
         byte[] originalInventory=null;
-        if (System.getProperty("user.name").equals("root") || !root.getParent().equals(Path.of("/tmp"))
+        if (System.getProperty("user.name").equals("root") || !root.equals(io.github.jesterportfolio.hearth.verification.IsolatedPaths.require(root,prefix))
                 || !root.getFileName().toString().startsWith(prefix)
                 || !Files.getOwner(root).getName().equals(System.getProperty("user.name"))
                 || !Files.readString(root.resolve(lifecycle ? ".hearth-lifecycle-isolated" : inventory ? ".hearth-inventory-isolated" : ".hearth-s45-isolated")).trim().equals(lifecycle ? "S4-11 isolated test only" : inventory ? "S4-6 isolated test only" : "S4-5 isolated test only")

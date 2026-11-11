@@ -20,7 +20,7 @@ final class InventoryPostgresTest {
     private static InventoryPayload payload(int n) { byte[][] slots=new byte[41][]; slots[0]=new byte[]{(byte)n}; return InventoryPayload.pack(slots); }
     @Test void v001UpgradeIsolationRevisionsFailuresAndReconnect() throws Exception {
         Path root=Path.of(System.getProperty("hearth.inventory.workspace")).toRealPath();
-        assertEquals(Path.of("/tmp"),root.getParent()); assertTrue(root.getFileName().toString().startsWith("hearth-s4-6."));
+        io.github.jesterportfolio.hearth.verification.IsolatedPaths.require(root,"hearth-s4-6."); assertTrue(root.getFileName().toString().startsWith("hearth-s4-6."));
         assertNotEquals("root",System.getProperty("user.name")); assertEquals(System.getProperty("user.name"),Files.getOwner(root).getName());
         assertEquals("S4-6 isolated test only",Files.readString(root.resolve(".hearth-inventory-isolated")).trim());
         assertFalse(Files.exists(root.resolve("data")));

@@ -22,7 +22,7 @@ final class PostgresIsolationTest {
 
     @Test void realPostgresIsolationRevisionAndReconnect() throws Exception {
         Path root = Path.of(Objects.requireNonNull(System.getProperty("hearth.s44.workspace"))).toRealPath();
-        assertEquals(Path.of("/tmp"),root.getParent());
+        io.github.jesterportfolio.hearth.verification.IsolatedPaths.require(root,"hearth-s4-4.");
         assertTrue(root.getFileName().toString().startsWith("hearth-s4-4."));
         assertNotEquals("root",System.getProperty("user.name"));
         assertEquals(System.getProperty("user.name"),Files.getOwner(root).getName());

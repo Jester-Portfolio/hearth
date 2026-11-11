@@ -45,7 +45,7 @@ public final class LifecycleVerification implements AutoCloseable, Listener {
         this.plugin=plugin; main();
         sessionMode=plugin.getConfig().getBoolean("session-verification-enabled");
         if (sessionMode && !Boolean.getBoolean("hearth.verification.sessions")) throw new IllegalStateException("Session gate missing");
-        if (!root.toRealPath().equals(root) || !root.getParent().equals(Path.of("/tmp"))
+        if (!root.toRealPath().equals(root) || !root.equals(IsolatedPaths.require(root,"hearth-s4-11."))
                 || !root.getFileName().toString().startsWith("hearth-s4-11.")
                 || !Files.getOwner(root).getName().equals(System.getProperty("user.name"))
                 || !Files.readString(root.resolve(".hearth-lifecycle-isolated")).trim().equals("S4-11 isolated test only")) throw new IllegalStateException("Lifecycle root rejected");

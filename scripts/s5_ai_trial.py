@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""승인한 S5 한 묶음: 새 /tmp, 고정 해시, 다운로드 포함 600초, 소유 프로세스만 정리."""
+"""승인한 S5 한 묶음: 새 사용자 소유 시험 경로, 고정 해시, 다운로드 포함 600초, 소유 프로세스만 정리."""
+import isolated_paths
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import ctypes
@@ -266,7 +267,7 @@ class Trial:
     def launch(self, command, env, name):
         self.guard()
         log = (self.root / (name + '.log')).open('wb')
-        child = subprocess.Popen(command, cwd=self.root, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+        child = subprocess.Popen(isolated_paths.java_command(command,self.root), cwd=self.root, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
         self.children.append((child, log))
         self.owned[child.pid] = self.process(child.pid)['start']
         return child
@@ -366,8 +367,8 @@ def main():
     parser.add_argument('--grounded',action='store_true',help='자료 번호·세션 캐시·최신성 확인 probe를 사용합니다')
     parser.add_argument('--continue-after-review', action='store_true', help='원본 결과/파일을 보존하고 같은 최초 600초 예산의 남은 시간만 사용합니다')
     args = parser.parse_args()
-    root = args.workspace.resolve(strict=True)
-    assert os.getuid() != 0 and not args.workspace.is_symlink() and root.parent == Path('/tmp') and root.name.startswith('hearth-s5-trial.')
+    root = isolated_paths.workspace(args.workspace,'hearth-s5-trial.')
+    assert os.getuid() != 0 and not args.workspace.is_symlink() and root.parent == isolated_paths.BASE and root.name.startswith('hearth-s5-trial.')
     assert root.stat().st_uid == os.getuid() and (root / '.hearth-s5-isolated').read_text() == MARKER
     os.sched_setaffinity(0, set(sorted(os.sched_getaffinity(0))[:2]))
     os.nice(10)
@@ -379,7 +380,7 @@ def main():
         assert set(p.name for p in root.iterdir()) == {'.hearth-s5-isolated'}, 'Fresh workspace required'
         if shutil.disk_usage(root).free < 16 * GIB:
             reclaimed=space_reclaim.reclaim()
-            evidence=Path(tempfile.mkdtemp(prefix='hearth-space-reclaim.',dir='/tmp'))
+            evidence=isolated_paths.fresh('hearth-space-reclaim.')
             (evidence/'result.json').write_text(json.dumps(reclaimed,indent=2)+'\n')
             print('S5 storage preflight '+reclaimed['outcome']+' evidence='+str(evidence),flush=True)
             assert reclaimed['outcome']=='PASS','Storage reclamation was not verified'
@@ -387,8 +388,8 @@ def main():
     assert available_kib() >= 6 * 1024**2
     source_root=None
     if args.artifact_source is not None:
-        source_root=args.artifact_source.resolve(strict=True)
-        assert not args.artifact_source.is_symlink() and source_root!=root and source_root.parent==Path('/tmp') and source_root.name.startswith('hearth-s5-trial.')
+        source_root=isolated_paths.workspace(args.artifact_source,'hearth-s5-trial.',legacy_source=True)
+        assert not args.artifact_source.is_symlink() and source_root!=root and source_root.parent in (Path('/tmp'),isolated_paths.BASE) and source_root.name.startswith('hearth-s5-trial.')
         assert source_root.stat().st_uid==os.getuid() and (source_root/'.hearth-s5-isolated').read_text()==MARKER
     port_free()
     trial = Trial(root)
@@ -468,7 +469,7 @@ def main():
         env = os.environ.copy()
         # Child HOME retains its normal meaning as this process's isolated profile;
         # the caller's HOME/os.environ and existing profile are never reassigned.
-        env.update(HOME=str(trial_profile), OLLAMA_HOST='127.0.0.1:11435', OLLAMA_MODELS=str(models), OLLAMA_TMPDIR=str(root / ('runner-tmp'+suffix)), OLLAMA_NO_CLOUD='1', OLLAMA_NOHISTORY='1', OLLAMA_MAX_LOADED_MODELS='1', OLLAMA_NUM_PARALLEL='1', OLLAMA_MAX_QUEUE='1', OLLAMA_CONTEXT_LENGTH='4096', OLLAMA_KEEP_ALIVE='60s', OLLAMA_LOAD_TIMEOUT='90s', OLLAMA_DEBUG='0', GOMAXPROCS='2')
+        env.update(TMPDIR=str(root),HOME=str(trial_profile), OLLAMA_HOST='127.0.0.1:11435', OLLAMA_MODELS=str(models), OLLAMA_TMPDIR=str(root / ('runner-tmp'+suffix)), OLLAMA_NO_CLOUD='1', OLLAMA_NOHISTORY='1', OLLAMA_MAX_LOADED_MODELS='1', OLLAMA_NUM_PARALLEL='1', OLLAMA_MAX_QUEUE='1', OLLAMA_CONTEXT_LENGTH='4096', OLLAMA_KEEP_ALIVE='60s', OLLAMA_LOAD_TIMEOUT='90s', OLLAMA_DEBUG='0', GOMAXPROCS='2')
         server = trial.launch([str(root / 'runtime/bin/ollama'), 'serve'], env, 'ollama'+suffix)
         end = time.monotonic()+30
         while True:

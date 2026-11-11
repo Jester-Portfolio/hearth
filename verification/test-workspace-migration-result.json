@@ -1,0 +1,157 @@
+{
+  "checked_at": "2026-11-11",
+  "baseline_commit": "dc52533",
+  "outcome": "PASS_HOME_BACKED_TEST_WORKSPACES",
+  "approved_base": "/home/server/hearth-tmp",
+  "owner_uid": 1000,
+  "mode": "0o700",
+  "base_marker": ".hearth-test-base",
+  "different_filesystem_from_legacy_tmp": true,
+  "available_base_gib": 373.26,
+  "no_mount_lvm_service_or_package_changes": true,
+  "old_evidence_moved_or_deleted": false,
+  "source_legacy_tmp_allowed_readonly": true,
+  "legacy_tmp_destination_rejected": true,
+  "whole_s5_complete": false,
+  "actual_minecraft_client_run": false,
+  "production_changed": false,
+  "evidence_root": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3",
+  "artifact": {
+    "path": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/Hearth-final.jar",
+    "sha256": "468a70000d27665c75fc6994c399d7146dd833ba869f82262a8845fd29598603",
+    "bytes": 2313955,
+    "fixture_gate_class_matches_jar": true
+  },
+  "tooling": {
+    "gradle": "/home/server/hearth-tmp/gradle-9.1.0",
+    "gradle_home": "/home/server/hearth-tmp/gradle-home",
+    "gradle_tmp": "/home/server/hearth-tmp/gradle-tmp",
+    "old_tooling_preserved": true,
+    "symlink_count": 0
+  },
+  "python_tests": {
+    "unique_cases": 28,
+    "modules": {
+      "test_isolated_paths": 6,
+      "test_s5_ai_trial": 11,
+      "test_space_reclaim": 5,
+      "test_manual_s4": 6
+    },
+    "failures_after_fix": 0,
+    "initial_log": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/python-tests.log",
+    "initial_issue": "space test module import typo; no process launched by failed import",
+    "affected_rerun_log": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/python-space-r1.log",
+    "logs_retained": true
+  },
+  "java_tests": {
+    "unique_cases": 3,
+    "failures": 0,
+    "xml": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/final-unit-results",
+    "log": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/final-path-tests.log",
+    "prefixes_checked": [
+      "hearth-s4-1.",
+      "hearth-s4-2.",
+      "hearth-s4-4.",
+      "hearth-s4-5.",
+      "hearth-s4-6.",
+      "hearth-s4-11."
+    ]
+  },
+  "negative_cli": {
+    "result": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/negative-cli-result.json",
+    "cases": 2,
+    "rejected_before_launch": true,
+    "legacy_results_sha256_preserved": true
+  },
+  "native": {
+    "workspace": "/home/server/hearth-tmp/hearth-s4-11._7uyjt2i",
+    "raw_result": "/home/server/hearth-tmp/hearth-s4-11._7uyjt2i/run-result.json",
+    "log": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/native-final.log",
+    "result": "PASS",
+    "assertions": 79,
+    "duration_seconds": 62.619,
+    "paper_jvms": 2,
+    "postgres_instances": 1,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "all_owned_processes_and_ports_closed": true,
+    "cleanup_errors": [],
+    "player_actions_verdict": "NOT_RUN",
+    "java_temporary_directory_within_workspace": true,
+    "command": [
+      "python3",
+      "scripts/verify-lifecycle.py",
+      "--workspace",
+      "/home/server/hearth-tmp/hearth-s4-11._7uyjt2i",
+      "--java",
+      "/home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java",
+      "--plugin",
+      "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/Hearth-final.jar",
+      "--artifact-source",
+      "/tmp/hearth-s4-2.vnd2kki4",
+      "--sessions",
+      "--quests",
+      "--story-batch",
+      "--accept-eula"
+    ]
+  },
+  "preserved_native_preparation_failure": {
+    "workspace": "/home/server/hearth-tmp/hearth-s4-11.n7_dvkas",
+    "raw_result": "/home/server/hearth-tmp/hearth-s4-11.n7_dvkas/run-result.json",
+    "outcome": "FAIL",
+    "cause": "standalone DB fixture classpath missing new IsolatedPaths; stage now copies exactly that class",
+    "actual_postgres_started": false,
+    "paper_jvms": 0
+  },
+  "actual_ai": {
+    "workspace": "/home/server/hearth-tmp/hearth-s5-trial.3368750f",
+    "raw_result": "/home/server/hearth-tmp/hearth-s5-trial.3368750f/run-result.json",
+    "log": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/ai.log",
+    "outcome": "PASS",
+    "duration_seconds": 100.333,
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "artifact_source": "/tmp/hearth-s5-trial.9iqwd8ex",
+    "runtime_and_model": "Ollama 0.40.16 / qwen3:4b-instruct-2507-q4_K_M",
+    "required_checks_passed": true,
+    "warmup_seconds": 76.853974696,
+    "cache_hits": 4,
+    "new_session_generated": true,
+    "stale_cached_answer_rejected": true,
+    "overflow": "CONTEXT_LIMIT",
+    "cache_cleared_on_close": true,
+    "max_sampled_rss_kib": 3412556,
+    "max_sampled_gpu_mib": 3132,
+    "cleanup_errors": [],
+    "java_tmp_and_ollama_runner_tmp_within_workspace": true,
+    "legacy_source_size_mtime_inode_owner_preserved": true,
+    "legacy_metadata_evidence": "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/legacy-source-metadata.json",
+    "command": [
+      "python3",
+      "scripts/s5_ai_trial.py",
+      "--workspace",
+      "/home/server/hearth-tmp/hearth-s5-trial.3368750f",
+      "--java",
+      "/home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java",
+      "--classpath",
+      "/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/Hearth-final.jar:/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/probe-classes:/home/server/hearth-tmp/hearth-path-migration.3gaaqau3/gson-2.14.0.jar",
+      "--artifact-source",
+      "/tmp/hearth-s5-trial.9iqwd8ex",
+      "--grounded"
+    ]
+  },
+  "not_run": [
+    "S4-1/2/4/5/6 개별 전체 시나리오 — 공통 경로 단위/컴파일과 대표 S4-11 두 JVM/PG 검증으로 변경 영향 확인",
+    "실제 Minecraft 화면/입력·플레이어 클릭·코옵",
+    "운영 서비스/마운트/LVM 변경·기존 DB/월드 이전",
+    "일반 모델 정답률/과학 지식/목표 동시 사용량·장기 성능"
+  ]
+}

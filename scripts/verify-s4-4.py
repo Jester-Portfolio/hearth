@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """새 사용자 소유 PostgreSQL만 실행하는 S4-4 시험 도구. 데이터는 삭제하지 않습니다."""
+import isolated_paths
 import argparse
 import hashlib
 import json
@@ -52,15 +53,20 @@ def main():
     assert os.getuid() != 0, 'root 실행 금지'
     available = next(int(line.split()[1]) for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:'))
     assert available >= 4 * 1024 * 1024, '가용 메모리 4GiB 미만: 실행 중단'
-    assert shutil.disk_usage('/tmp').free >= 2 * 1024**3, '임시 디스크 여유 2GiB 미만'
+    isolated_paths.ensure_base()
+    assert shutil.disk_usage(isolated_paths.require_base()).free >= 2 * 1024**3, '임시 디스크 여유 2GiB 미만'
     project = Path(__file__).resolve().parents[1]
-    root = Path(tempfile.mkdtemp(prefix='hearth-s4-4.', dir='/tmp')).resolve()
+    root = isolated_paths.fresh('hearth-s4-4.')
     (root / '.hearth-s44-isolated').write_text('S4-4 isolated test only\n')
     print(f'시험 경로: {root}', flush=True)
     env = os.environ.copy()
     env['JAVA_HOME'] = str(args.java_home.resolve())
+    assert args.gradle_home.absolute()==args.gradle_home.resolve(strict=True) and args.gradle_home.parent==isolated_paths.require_base() and args.gradle_home.stat().st_uid==os.getuid(),'Gradle cache must be under the approved test base'
     env['GRADLE_USER_HOME'] = str(args.gradle_home.resolve())
-    command = [str(args.gradle.resolve()), '--no-daemon', '--offline', '--console=plain']
+    env['TMPDIR'] = str(isolated_paths.BASE)
+    env['GRADLE_OPTS'] = env.get('GRADLE_OPTS','')+' -Djava.io.tmpdir='+str(root)+' -XX:ActiveProcessorCount=2'
+    command = [str(args.gradle.resolve()), '--no-daemon', '--offline', '--console=plain', '--max-workers=2',
+               '-Dorg.gradle.jvmargs=-Xmx512m -XX:ActiveProcessorCount=2 -Djava.io.tmpdir='+str(root)]
     active = None
 
     def run(task, name):

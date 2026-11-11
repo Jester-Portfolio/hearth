@@ -1,3 +1,4 @@
+import isolated_paths
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -11,7 +12,7 @@ from manual_s4 import ClientPackServer
 
 class ClientPackTests(unittest.TestCase):
     def setUp(self):
-        self.directory = tempfile.TemporaryDirectory(prefix='hearth-s4-11.', dir='/tmp')
+        self.directory = tempfile.TemporaryDirectory(prefix='hearth-s4-11.', dir=isolated_paths.require_base())
         self.root = Path(self.directory.name)
         (self.root / '.hearth-lifecycle-isolated').write_text('S4-11 isolated test only\n')
         self.pack = self.root / 'server/plugins/BetterHud/build.zip'
@@ -62,7 +63,7 @@ class ManualTimeLimitTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location('lifecycle_test', Path(__file__).with_name('verify-lifecycle.py'))
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        with tempfile.TemporaryDirectory() as root:
+        with tempfile.TemporaryDirectory(dir=isolated_paths.require_base()) as root:
             monitor = module.Monitor(Path(root), time.monotonic() - 1000, work_seconds=550)
             try:
                 with patch.object(module.s42, 'available_kib', return_value=8 * 1024**2):

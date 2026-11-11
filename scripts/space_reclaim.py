@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """사용자 소유·비활성 AI 시험의 중복 아티팩트만 CoW 공유합니다. 삭제/덮어쓰기 없음."""
+import isolated_paths
 import argparse
 import fcntl
 import hashlib
@@ -70,7 +71,7 @@ def candidates(roots,guard=lambda:None):
     for root in roots:
         guard()
         try:
-            if (root.parent!=Path('/tmp') or not root.name.startswith('hearth-s5-trial.') or root.is_symlink()
+            if (root.parent!=isolated_paths.require_base() or not root.name.startswith('hearth-s5-trial.') or root.is_symlink()
                     or root.stat().st_uid!=os.getuid() or (root/'.hearth-s5-isolated').is_symlink() or (root/'.hearth-s5-isolated').read_text()!=MARKER):continue
             if active(root):skipped.append(str(root));continue
             paths=[root/'ollama.tar.zst']+list(root.glob('models*/blobs/sha256-*'))
@@ -113,13 +114,13 @@ def dedupe_pair(source,target,expected,guard):
 
 
 def reclaim(roots=None,minimum=16*GIB,seconds=90):
-    started=time.monotonic();free=lambda:shutil.disk_usage('/tmp').free
+    started=time.monotonic();free=lambda:shutil.disk_usage(isolated_paths.require_base()).free
     report=dict(method='FIDEDUPERANGE',minimum_free_bytes=minimum,free_before_bytes=free(),pairs=[],active_roots_skipped=[],shared_files_skipped=0,files_deleted=0,limits=dict(seconds=seconds,processors=2,nice=10))
     def guard():
         if time.monotonic()-started>=seconds:raise TimeoutError('SPACE_RECLAIM_DEADLINE')
     try:
         if free()<minimum:
-            guard();paths,skipped=candidates(list(Path('/tmp').glob('hearth-s5-trial.*')) if roots is None else roots,guard);report['active_roots_skipped']=skipped
+            guard();paths,skipped=candidates(list(isolated_paths.require_base().glob('hearth-s5-trial.*')) if roots is None else roots,guard);report['active_roots_skipped']=skipped
             groups={}
             for path in paths:groups.setdefault((path.stat().st_size,path.name),[]).append(path)
             for _,group in sorted(groups.items(),reverse=True):
@@ -146,7 +147,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.parse_args()
     assert os.getuid()!=0,'User-owned cleanup only'
     os.sched_setaffinity(0,set(sorted(os.sched_getaffinity(0))[:2]));os.nice(10)
-    evidence=Path(tempfile.mkdtemp(prefix='hearth-space-reclaim.',dir='/tmp'))
+    evidence=isolated_paths.fresh('hearth-space-reclaim.')
     report=reclaim();(evidence/'result.json').write_text(json.dumps(report,indent=2)+'\n')
     print(report['outcome']+' free_MiB='+str(report['free_after_bytes']//1024**2)+' evidence='+str(evidence))
     return 0 if report['outcome']=='PASS' else 1

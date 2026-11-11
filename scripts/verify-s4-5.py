@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """S4-5 순차 Paper 두 JVM·신규 PostgreSQL 한 개의 제한된 통합 시험."""
+import isolated_paths
 import argparse
 import hashlib
 import importlib.util
@@ -41,7 +42,7 @@ class Monitor:
     def launch(self, name, command, cwd):
         self.guard()
         started = time.monotonic()
-        proc = subprocess.Popen(command, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        proc = subprocess.Popen(isolated_paths.java_command(command,self.root), cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT, start_new_session=True, preexec_fn=lambda: os.nice(10))
         item = dict(proc=proc, started=started, lines=[], pending=b'', log=(self.root / (name + '-console.log')).open('wb'),
                     samples=[], ready=None, stop_at=None, exit_at=None)
@@ -204,9 +205,9 @@ def main():
     parser.add_argument('--artifact-source', required=True, type=Path)
     parser.add_argument('--accept-eula', action='store_true')
     args = parser.parse_args()
-    root = args.workspace.resolve(strict=True)
+    root = isolated_paths.workspace(args.workspace,'hearth-s4-5.')
     assert args.accept_eula and os.getuid()!=0, 'EULA 동의·일반 사용자 실행 필요'
-    assert not args.workspace.is_symlink() and root.parent==Path('/tmp') and root.name.startswith('hearth-s4-5.')
+    assert not args.workspace.is_symlink() and root.parent==isolated_paths.BASE and root.name.startswith('hearth-s4-5.')
     assert root.stat().st_uid==os.getuid() and (root/'.hearth-s45-isolated').read_text().strip()=='S4-5 isolated test only'
     assert not (root/'server').exists() and not (root/'data').exists(), '기존 시험 데이터 재사용 금지'
     assert s42.available_kib()>=6*1024**2 and shutil.disk_usage(root).free>=4*1024**3

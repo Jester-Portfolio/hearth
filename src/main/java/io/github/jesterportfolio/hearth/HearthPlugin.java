@@ -29,8 +29,8 @@ public final class HearthPlugin extends JavaPlugin {
                 boolean inventory = cwd.getParent().getFileName().toString().startsWith("hearth-s4-6.");
                 boolean s45 = cwd.getParent().getFileName().toString().startsWith("hearth-s4-5.");
                 boolean s42 = cwd.getParent().getFileName().toString().startsWith("hearth-s4-2.");
+                io.github.jesterportfolio.hearth.verification.IsolatedPaths.require(cwd.getParent(),lifecycle ? "hearth-s4-11." : inventory ? "hearth-s4-6." : s45 ? "hearth-s4-5." : s42 ? "hearth-s4-2." : "hearth-s4-1.");
                 if (approved.isBlank() || !cwd.equals(Path.of(approved).toRealPath())
-                        || !cwd.getParent().getParent().equals(Path.of("/tmp"))
                         || !(lifecycle || inventory || s45 || s42 || cwd.getParent().getFileName().toString().startsWith("hearth-s4-1."))
                         || !Files.readString(cwd.resolve(".hearth-s4-isolated")).trim()
                                 .equals((lifecycle ? "S4-11" : inventory ? "S4-6" : s45 ? "S4-5" : s42 ? "S4-2" : "S4-1") + " disposable test data only")) {

@@ -40,10 +40,16 @@
 - 기존 Git Gitleaks 훅을 매 작업 별도 수동 재검사로 중복하지 않는다. GitHub API 쓰기는 훅을 거치지 않으므로 수행되지 않았다고 알린다.
 - 추가 CLI·MCP 도구(RTK·CodeGraph 포함)는 지금 설치하지 않는다. 기존 개선 전후에서 도구 출력/긴 탐색의 병목이 측정되면 한 종류씩 별도로 검토한다.
 
+## 시험 임시 경로
+
+새 시험 공간은 `/home/server/hearth-tmp`만 허용한다. 사용자가 2026-11-11 `/home/server` 아래로 이전을 요청했다. `python3 scripts/isolated_paths.py`로 사용자 소유 0700 기준 디렉터리와 전용 표식을 만들고, `--prefix hearth-s4-11.`처럼 명시한 접두사로 새 하위 시험 경로를 만든다. 각 시험의 기존 표식·fresh 데이터/소유권 검사와 EULA·자원·시간/포트 한도를 유지한다. Python·Java·Gradle은 기준 디렉터리의 정본 경로/소유권/권한·표식과 직접 하위 경로/접두사를 함께 확인한다.
+
+Gradle 캐시는 `/home/server/hearth-tmp/gradle-home`, 새 Gradle 배포본은 같은 기준 경로 아래에 둔다. 직접 Gradle을 실행할 때도 `TMPDIR`와 `GRADLE_USER_HOME`을 새 기준 경로로 지정하고 launcher/daemon의 `java.io.tmpdir`를 기준 경로의 `gradle-tmp`로 지정한다. 단위/보조/서버 JVM의 `java.io.tmpdir`와 AI 프로필/모델/runner 임시 경로도 새 파일시스템을 사용한다. 이전 `/tmp`의 증거·DB/월드·모델·도구는 그대로 보존한다. 검증된 아티팩트만 읽기 전용으로 복사할 수 있으며 이전 경로에서 새 서버/DB/AI를 실행하지 않는다. 시스템 `/tmp` 마운트나 LVM/운영 서비스를 변경하지 않는다. [이전 검증](test-workspace-migration-verification.md)을 따른다.
+
 ## 시험 디스크 공간
 
 사용자는 여유 공간을 다시 묻지 않고 자동 확보하도록 승인했다. AI 시험의 16GiB 시작 조건이 부족하면 `scripts/space_reclaim.py`를 적용한다. `s5_ai_trial.py`도 이 절차를 한 번 자동 실행하고 실제 여유를 다시 검사한다. 자동 정리 시간도 해당 AI 시험의 최초 600초/작업 550초 예산에 포함한다.
 
-새 사용자 소유 `/tmp/hearth-space-reclaim.*`에 결과를 보존한다. 정리는 CPU 2개/nice 10·최대 90초로 제한하며, 올바른 표식의 비활성 `/tmp/hearth-s5-trial.*` 안에 있는 아카이브·모델 blob·해제된 런타임만 대상으로 한다. 실행 중 프로세스가 사용하는 경로, symlink·다른 소유자·프로필/로그·DB/월드/프로젝트·운영 파일은 제외한다.
+새 사용자 소유 `/home/server/hearth-tmp/hearth-space-reclaim.*`에 결과를 보존한다. 정리는 CPU 2개/nice 10·최대 90초로 제한하며, 올바른 표식의 비활성 `/home/server/hearth-tmp/hearth-s5-trial.*` 안에 있는 아카이브·모델 blob·해제된 런타임만 대상으로 한다. 실행 중 프로세스가 사용하는 경로, symlink·다른 소유자·프로필/로그·DB/월드/프로젝트·운영 파일은 제외한다.
 
 Linux `FIDEDUPERANGE`로 동일 바이트의 물리 블록만 공유한다. 별도 파일/경로를 유지하는 copy-on-write 방식이며 일반 hard link로 합치지 않는다. 전후 SHA-256·크기·inode·수정 시각·권한/소유자/링크 수를 검증한다. 이미 공유된 전체 블록은 읽기 전용 [FIEMAP](https://docs.kernel.org/filesystems/fiemap.html)으로 확인해 반복 검사를 생략한다. [Linux man-pages](https://man7.org/linux/man-pages/man2/ioctl_fideduperange.2.html)의 비교 후 공유/독립 쓰기 계약을 따른다. 파일 삭제/내용 덮어쓰기·파티션/서비스/패키지 변경은 하지 않는다. 지원 실패나 정리 후에도 공간이 부족하면 원인을 증거에 남기고 AI 프로세스를 시작하지 않는다. 전제/자원 한도를 낮추거나 같은 증거를 지우는 방식으로 우회하지 않는다.

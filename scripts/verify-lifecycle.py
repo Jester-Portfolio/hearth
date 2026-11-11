@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """S4-11 월드 생명주기 순차 두 JVM 통합 시험. S4-5 감시·소유 DB 정리와 고정 아티팩트를 재사용합니다."""
+import isolated_paths
 import argparse
 import hashlib
 import importlib.util
@@ -318,9 +319,9 @@ def main():
         assert len(data)==pin['size_bytes'] and hashlib.sha256(data).hexdigest()==pin['sha256'],'BetterHud 공식 아티팩트 해시 불일치'
         args.betterhud=True;args.public_course=True;args.playthrough=True;args.s4_gameplay=True;args.phone_dialog=True
         args.combat_players=True;args.dungeon_play=True;args.gathering_crafting=True;args.gathering_facilities=True;args.play_preparation=True;args.fast_travel=True
-    root = args.workspace.resolve(strict=True)
+    root = isolated_paths.workspace(args.workspace,'hearth-s4-11.')
     assert args.accept_eula and os.getuid()!=0, 'EULA 동의·일반 사용자 실행 필요'
-    assert not args.workspace.is_symlink() and root.parent==Path('/tmp') and root.name.startswith('hearth-s4-11.')
+    assert not args.workspace.is_symlink() and root.parent==isolated_paths.BASE and root.name.startswith('hearth-s4-11.')
     assert root.stat().st_uid==os.getuid() and (root/'.hearth-lifecycle-isolated').read_text().strip()=='S4-11 isolated test only'
     assert not (root/'server').exists() and not (root/'data').exists(), '기존 시험 데이터 재사용 금지'
     assert s42.available_kib()>=6*1024**2 and shutil.disk_usage(root).free>=4*1024**3

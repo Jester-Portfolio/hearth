@@ -30,7 +30,7 @@ public final class DatabaseVerification implements AutoCloseable {
 
     public DatabaseVerification(JavaPlugin plugin, Path root) throws Exception {
         this.plugin=plugin; this.logger=plugin.getLogger();
-        if (!Bukkit.isPrimaryThread() || !root.toRealPath().equals(root) || !root.getParent().equals(Path.of("/tmp"))
+        if (!Bukkit.isPrimaryThread() || !root.toRealPath().equals(root) || !root.equals(IsolatedPaths.require(root,"hearth-s4-5."))
                 || !root.getFileName().toString().startsWith("hearth-s4-5.")
                 || !Files.getOwner(root).getName().equals(System.getProperty("user.name"))) throw new IllegalStateException("DB root rejected");
         Properties endpoint=new Properties();

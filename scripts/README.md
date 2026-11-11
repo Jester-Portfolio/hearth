@@ -1,25 +1,27 @@
 # 스크립트
 
+새 시험 기준 경로는 `/home/server/hearth-tmp`다. `python3 scripts/isolated_paths.py`로 소유권/0700·표식을 준비하고 `--prefix hearth-s4-11.`로 새 하위 경로를 만든다. 각 시험의 개별 표식과 기존 fresh/자원 한도는 유지한다. Gradle 캐시도 같은 기준 경로의 `gradle-home`을 사용한다. 기존 `/tmp` 증거는 읽기 전용 복사 원본으로 보존한다. [경로 이전 검증](../docs/test-workspace-migration-verification.md)을 따른다.
+
 개발·검증과 Hearth 운영 보조 스크립트를 위한 공간입니다. 기존 S4-1/S4-2 도구와 별도로 S4-4 격리 DB 시험 도구를 제공합니다.
 
 스크립트 추가 시 목적, 사전 조건, 변경 대상과 검증 방법을 문서화합니다. 비밀 정보를 포함하거나 출력하지 않고, 두 월드의 데이터 경계를 유지합니다. 운영 변경이나 파괴적 작업의 승인 요건은 `AGENTS.md`를 따릅니다.
 
 ## S4-4 PostgreSQL 시험
 
-`verify-s4-4.py`는 준비된 JDK·Gradle·의존성 캐시를 받아 새 사용자 소유 `/tmp/hearth-s4-4.*` 경로에서만 실행합니다. 핵심 의존성 해시·자원 사전 검사 후 실제 PostgreSQL 통합 task를 실행하며 종료 시 자신의 시험 DB/포트를 확인하고 증거 데이터는 보존합니다. 운영 DB URL이나 계정 설정을 받지 않습니다. 사용 명령·라이선스/무결성 경계·시험 결과·미실행 범위는 [S4-4 기록](../docs/s4-4-verification.md)을 따릅니다.
+`verify-s4-4.py`는 준비된 JDK·Gradle·의존성 캐시를 받아 새 사용자 소유 `/home/server/hearth-tmp/hearth-s4-4.*` 경로에서만 실행합니다. 핵심 의존성 해시·자원 사전 검사 후 실제 PostgreSQL 통합 task를 실행하며 종료 시 자신의 시험 DB/포트를 확인하고 증거 데이터는 보존합니다. 운영 DB URL이나 계정 설정을 받지 않습니다. 사용 명령·라이선스/무결성 경계·시험 결과·미실행 범위는 [S4-4 기록](../docs/s4-4-verification.md)을 따릅니다.
 
 ## S4-5 Paper·PostgreSQL 통합 시험
 
-`verify-s4-5.py`는 사전 빌드·stage된 새 사용자 소유 `/tmp/hearth-s4-5.*` 경로에서만 실행합니다. 기존 S4-2 자원/포트 검사·S4-4 해시/소유 DB 정리를 재사용하며 Paper 최대 2회 순차·PostgreSQL 1개·480초(작업 430초/정리 50초)·가용 RAM 6GiB·Paper 힙 1536MiB/RSS 2.5GiB 중단 한도를 적용합니다. 정확한 명령과 성공/미실행·소유권/자원/증거 경계는 [S4-5 기록](../docs/s4-5-verification.md)을 참고합니다. 기존 증거 경로에서 재실행하지 않습니다.
+`verify-s4-5.py`는 사전 빌드·stage된 새 사용자 소유 `/home/server/hearth-tmp/hearth-s4-5.*` 경로에서만 실행합니다. 기존 S4-2 자원/포트 검사·S4-4 해시/소유 DB 정리를 재사용하며 Paper 최대 2회 순차·PostgreSQL 1개·480초(작업 430초/정리 50초)·가용 RAM 6GiB·Paper 힙 1536MiB/RSS 2.5GiB 중단 한도를 적용합니다. 정확한 명령과 성공/미실행·소유권/자원/증거 경계는 [S4-5 기록](../docs/s4-5-verification.md)을 참고합니다. 기존 증거 경로에서 재실행하지 않습니다.
 
 ## S4-6~8 인벤토리 통합
 
-`verify-inventory.py`는 S4-5 Monitor와 DB 보조 도구의 명시적 인벤토리 모드를 재사용합니다. 사용자 소유 새 /tmp/hearth-s4-6.*·600초·PG 1개/Paper 순차 최대 2회·기존 RAM/RSS/CPU/포트/EULA 제한을 적용하고 결과를 보존합니다. 사전 stage와 정확한 명령·실제/미실행 범위는 [S4-8 기록](../docs/s4-8-verification.md)을 참고합니다. 기존 증거 경로에 재실행하지 않습니다.
+`verify-inventory.py`는 S4-5 Monitor와 DB 보조 도구의 명시적 인벤토리 모드를 재사용합니다. 사용자 소유 새 /home/server/hearth-tmp/hearth-s4-6.*·600초·PG 1개/Paper 순차 최대 2회·기존 RAM/RSS/CPU/포트/EULA 제한을 적용하고 결과를 보존합니다. 사전 stage와 정확한 명령·실제/미실행 범위는 [S4-8 기록](../docs/s4-8-verification.md)을 참고합니다. 기존 증거 경로에 재실행하지 않습니다.
 
 
 ## S4-11 수명주기 통합 시험
 
-`verify-lifecycle.py`는 기존 S4-5 감시·DB fixture·S4-2 최초 준비를 재사용하며 새 /tmp/hearth-s4-11.* 경로만 허용합니다. 시험 설정/JVM 게이트가 필요한 콘솔 어댑터이며 기본 플러그인 부팅은 비활성입니다. [S4-11 기록](../docs/s4-11-verification.md)의 첫 실행은 watchdog 실패로 중단됐습니다. 기존 실패 경로/증거를 보존하고 사용자 재개 후 새 격리 경로에서 수정본 두 JVM·대표 실패·정상 종료를 통과했습니다. 기존 실패 경로를 재실행하지 않으며 재개 시 새 격리 경로·원격/미커밋 변경·단계별 검사·자원 예산을 먼저 확인합니다. 실행은 운영 배포나 실제 플레이어 검증이 아닙니다.
+`verify-lifecycle.py`는 기존 S4-5 감시·DB fixture·S4-2 최초 준비를 재사용하며 새 /home/server/hearth-tmp/hearth-s4-11.* 경로만 허용합니다. 시험 설정/JVM 게이트가 필요한 콘솔 어댑터이며 기본 플러그인 부팅은 비활성입니다. [S4-11 기록](../docs/s4-11-verification.md)의 첫 실행은 watchdog 실패로 중단됐습니다. 기존 실패 경로/증거를 보존하고 사용자 재개 후 새 격리 경로에서 수정본 두 JVM·대표 실패·정상 종료를 통과했습니다. 기존 실패 경로를 재실행하지 않으며 재개 시 새 격리 경로·원격/미커밋 변경·단계별 검사·자원 예산을 먼저 확인합니다. 실행은 운영 배포나 실제 플레이어 검증이 아닙니다.
 
 
 최소 세션 자동 검증은 `verify-lifecycle.py --sessions`로 기존 감시/DB 도구를 재사용합니다. 최초 포함 최대3묶음의 기록과 개발 모드 게이트·사용자 접속 준비는 [세션 기록](../docs/player-session-verification.md)을 따릅니다. `verify-s4-2.py --manual-player`는 준비와 첫 수동 시험을 합쳐 총2 JVM/240초이며 실제 행동 판정은 자동으로 만들지 않습니다. 사용자의 클라이언트 준비 대기 중 서버를 먼저 기동하지 않습니다.
@@ -162,10 +164,10 @@
 
 ## S5 고정 로컬 AI 격리 시험
 
-`s5_ai_trial.py`는 [ADR-0018](../docs/decisions/0018-local-ai-runtime-and-trial-budget.md)의 명시적 모델/예산 승인이 있는 새 사용자 소유 `/tmp/hearth-s5-trial.*`·전용 표식 경로만 사용한다. 실제 파일 해시·manifest 검증, libzstd 안전 해제, 독립 프로필/모델·루프백/클라우드 비활성·소유 프로세스 트리와 GPU/RAM/디스크/시간 감시를 수행한다. `--java`와 고정 JAR/fixture/Gson의 `--classpath`를 받는다. 일반 실행이 모델 설치/운영 변경 승인을 대신하지 않는다.
+`s5_ai_trial.py`는 [ADR-0018](../docs/decisions/0018-local-ai-runtime-and-trial-budget.md)의 명시적 모델/예산 승인이 있는 새 사용자 소유 `/home/server/hearth-tmp/hearth-s5-trial.*`·전용 표식 경로만 사용한다. 실제 파일 해시·manifest 검증, libzstd 안전 해제, 독립 프로필/모델·루프백/클라우드 비활성·소유 프로세스 트리와 GPU/RAM/디스크/시간 감시를 수행한다. `--java`와 고정 JAR/fixture/Gson의 `--classpath`를 받는다. 일반 실행이 모델 설치/운영 변경 승인을 대신하지 않는다.
 
 `--continue-after-review`는 실패 원본을 보존하고 같은 최초 600초의 남은 시간만 사용하는 한 번의 관련 재확인이다. 새 시간 예산·모델/상한 확대가 아니며 원래 아티팩트 해시를 다시 확인하고 모델/프로필/로그/결과는 분리한다. 최초 표식의 경과 시간이 450초 이상이거나 재확인 결과가 이미 있으면 거부한다. 준비는 `OllamaTrialWarmup`, 실제 제한 흐름은 `OllamaTrialProbe`를 사용하며 Minecraft Player를 생성하지 않는다. [실제 결과·실패·최종 코드 미재실행 범위](../docs/s5-local-ai-verification.md)를 반드시 구분한다.
 
-S5 후속 `--artifact-source /tmp/hearth-s5-trial...`는 이전 소유 경로의 고정 해시 아카이브/blob만 새 경로로 검증 복사한다. 다운로드 대신 복사해도 최초 디스크 여유 16GiB와 새 경로/프로필·모든 기존 자원/시간 조건을 유지한다. `--grounded`는 자료 번호/접속 캐시·동일 본문의 다른 세션·stale/한도 흐름과 대표 자료 프롬프트 예열을 준비한다. 이전 로그/프로필/실행 중 서비스는 입력으로 사용하지 않는다. [실행·미실행 범위](../docs/s5-grounded-cache-verification.md)를 따른다.
+S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기준 경로에 보존된 사용자 소유 시험의 고정 해시 아카이브/blob만 새 경로로 검증 복사한다. 다운로드 대신 복사해도 최초 디스크 여유 16GiB와 새 경로/프로필·모든 기존 자원/시간 조건을 유지한다. `--grounded`는 자료 번호/접속 캐시·동일 본문의 다른 세션·stale/한도 흐름과 대표 자료 프롬프트 예열을 준비한다. 이전 로그/프로필/실행 중 서비스는 입력으로 사용하지 않는다. [실행·미실행 범위](../docs/s5-grounded-cache-verification.md)를 따른다.
 
 디스크 전제가 부족하면 `s5_ai_trial.py`가 비활성 AI 시험의 동일 아카이브/blob/런타임 블록을 자동 공유하고 다시 16GiB를 확인한다. 독립 실행은 `python3 scripts/space_reclaim.py`다. 삭제 없이 원본 해시/경로/수정 시각을 유지하며, 지원 실패/공간 부족은 시작 전 차단한다. [자동 공간 확보 절차](../docs/DEVELOPMENT_WORKFLOW.md#시험-디스크-공간)와 [실제 자료/캐시 재시험](../docs/s5-grounded-live-verification.md)을 따른다. 재개는 기존 품질 거부 외에 명시적인 준비 응답의 `INVALID_REFERENCE`만 허용하며, 자원/정리/시간 실패를 허용하지 않고 최초 시간 예산·원본을 유지한다.

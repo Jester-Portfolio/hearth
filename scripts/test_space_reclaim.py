@@ -1,3 +1,4 @@
+import isolated_paths
 from pathlib import Path
 import errno
 import hashlib
@@ -9,7 +10,7 @@ import space_reclaim as space
 
 class SpaceReclaimTests(unittest.TestCase):
     def test_kernel_sharing_preserves_paths_hash_metadata_and_independent_writes(self):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir=isolated_paths.require_base()) as directory:
             root=Path(directory);a=root/'a';b=root/'b';a.write_bytes(b'A'*65536);b.write_bytes(a.read_bytes());before=[space.identity(p) for p in (a,b)]
             try:result=space.dedupe_pair(a,b,hashlib.sha256(a.read_bytes()).hexdigest(),lambda:None)
             except OSError as error:
@@ -24,7 +25,7 @@ class SpaceReclaimTests(unittest.TestCase):
             new.write_bytes(b'B'*65536);self.assertEqual(b'A'*65536,a.read_bytes())
 
     def test_different_bytes_or_symlinks_never_reach_ioctl(self):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir=isolated_paths.require_base()) as directory:
             root=Path(directory);a=root/'a';b=root/'b';a.write_bytes(b'A'*4096);b.write_bytes(b'B'*4096)
             with patch.object(space.fcntl,'ioctl') as ioctl:
                 with self.assertRaises(AssertionError):space.dedupe_pair(a,b,hashlib.sha256(a.read_bytes()).hexdigest(),lambda:None)
@@ -34,7 +35,7 @@ class SpaceReclaimTests(unittest.TestCase):
             self.assertEqual(b'A'*4096,a.read_bytes());self.assertEqual(b'B'*4096,b.read_bytes())
 
     def test_candidates_only_use_owned_marked_inactive_roots_and_skip_profiles_logs_and_symlinks(self):
-        with tempfile.TemporaryDirectory(prefix='hearth-s5-trial.',dir='/tmp') as directory:
+        with tempfile.TemporaryDirectory(prefix='hearth-s5-trial.',dir=isolated_paths.require_base()) as directory:
             root=Path(directory);(root/'.hearth-s5-isolated').write_text(space.MARKER)
             for name in ['ollama.tar.zst','runtime/lib/tool.so','models/blobs/sha256-fixture','profile/history','warmup.json']:
                 p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b'A'*1024**2)
@@ -51,7 +52,7 @@ class SpaceReclaimTests(unittest.TestCase):
             result=space.reclaim(seconds=0);self.assertEqual('SPACE_NOT_READY',result['outcome']);self.assertEqual(0,result['files_deleted']);self.assertIn('SPACE_RECLAIM_DEADLINE',result['failure'])
 
     def test_unsupported_filesystem_preserves_both_files_and_reports_no_deletion(self):
-        with tempfile.TemporaryDirectory(prefix='hearth-s5-trial.',dir='/tmp') as directory:
+        with tempfile.TemporaryDirectory(prefix='hearth-s5-trial.',dir=isolated_paths.require_base()) as directory:
             root=Path(directory);(root/'.hearth-s5-isolated').write_text(space.MARKER);a=root/'models/blobs/sha256-fixture';b=root/'models-reviewed/blobs/sha256-fixture'
             for p in (a,b):p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b'A'*1024**2)
             before=[space.identity(p) for p in (a,b)]

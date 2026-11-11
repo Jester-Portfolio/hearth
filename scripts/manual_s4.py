@@ -1,4 +1,5 @@
 """명시적으로 요청한 S4 실제 클라이언트 시험의 loopback 전용 팩 제공기."""
+import isolated_paths
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import threading
@@ -8,8 +9,8 @@ class ClientPackServer:
     def __init__(self, root, port=25587):
         root = Path(root)
         assert not root.is_symlink()
-        root = root.resolve(strict=True)
-        assert root.parent == Path('/tmp') and root.name.startswith('hearth-s4-11.')
+        root = isolated_paths.workspace(root,'hearth-s4-11.')
+        assert root.parent == isolated_paths.BASE and root.name.startswith('hearth-s4-11.')
         assert (root / '.hearth-lifecycle-isolated').read_text().strip() == 'S4-11 isolated test only'
         pack = root / 'server/plugins/BetterHud/build.zip'
         self.downloads = 0

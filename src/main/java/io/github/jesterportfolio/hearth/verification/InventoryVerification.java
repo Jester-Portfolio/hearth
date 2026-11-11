@@ -36,7 +36,7 @@ public final class InventoryVerification implements AutoCloseable {
 
     public InventoryVerification(JavaPlugin plugin,Path root) throws Exception {
         this.plugin=plugin;
-        if (!Bukkit.isPrimaryThread() || !root.toRealPath().equals(root) || !root.getParent().equals(Path.of("/tmp"))
+        if (!Bukkit.isPrimaryThread() || !root.toRealPath().equals(root) || !root.equals(IsolatedPaths.require(root,"hearth-s4-6."))
                 || !root.getFileName().toString().startsWith("hearth-s4-6.") || !Files.getOwner(root).getName().equals(System.getProperty("user.name"))) throw new IllegalStateException("Inventory root rejected");
         Properties endpoint=new Properties(); try (var in=Files.newInputStream(root.resolve("db-endpoint.properties"))) { endpoint.load(in); }
         var pid=Files.readAllLines(root.resolve("data/postmaster.pid"));

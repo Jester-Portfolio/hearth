@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Bounded localhost smoke test. No downloads, production data, services or SQL changes."""
+import isolated_paths
 import argparse
 import hashlib
 import json
@@ -30,11 +31,11 @@ def main():
     args = parser.parse_args()
     if not args.accept_eula:
         parser.error('Explicit operator EULA agreement is required; server was not started')
-    base = args.workspace.resolve(strict=True)
+    base = isolated_paths.workspace(args.workspace,'hearth-s4-1.')
     if args.workspace.is_symlink():
         parser.error('Workspace must not be a symlink')
-    if os.geteuid() == 0 or base.parent != Path('/tmp') or not base.name.startswith('hearth-s4-1.'):
-        parser.error('Use a non-root-owned /tmp/hearth-s4-1.* workspace')
+    if os.geteuid() == 0 or base.parent != isolated_paths.BASE or not base.name.startswith('hearth-s4-1.'):
+        parser.error('Use a non-root-owned /home/server/hearth-tmp/hearth-s4-1.* workspace')
     if base.stat().st_uid != os.getuid() or base.is_symlink():
         parser.error('Workspace must be owned by the invoking user')
     if available_kib() < 6 * 1024 * 1024 or shutil.disk_usage(base).free < 4 * 1024**3:
@@ -90,7 +91,7 @@ motd=Hearth isolated S4 verification
     def lower_priority():
         os.nice(10)
     started = time.monotonic()
-    child = subprocess.Popen(command, cwd=runtime, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    child = subprocess.Popen(isolated_paths.java_command(command,base), cwd=runtime, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT, start_new_session=True, preexec_fn=lower_priority)
     poller = selectors.DefaultSelector()
     poller.register(child.stdout, selectors.EVENT_READ)

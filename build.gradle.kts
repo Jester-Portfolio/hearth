@@ -1,4 +1,8 @@
 import java.time.Duration
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.attribute.PosixFilePermissions
 import java.security.MessageDigest
 
 plugins { java }
@@ -79,7 +83,30 @@ tasks.jar {
     isReproducibleFileOrder = true
 }
 
-tasks.test { useJUnitPlatform() }
+fun approvedTestBase(): File {
+    val base=file("/home/server/hearth-tmp")
+    val marker=base.resolve(".hearth-test-base").toPath()
+    require(base.toPath()==base.toPath().toRealPath() && base.isDirectory)
+    require((Files.getAttribute(Path.of("/proc/self"),"unix:uid") as Number).toInt()!=0)
+    require(Files.getOwner(base.toPath())==Files.getOwner(Path.of("/proc/self")))
+    require(Files.getPosixFilePermissions(base.toPath())==PosixFilePermissions.fromString("rwx------"))
+    require(!Files.isSymbolicLink(marker) && Files.isRegularFile(marker) && Files.getOwner(marker)==Files.getOwner(base.toPath()) && Files.readString(marker)=="Hearth isolated test base v1\n")
+    return base
+}
+fun requireTestRoot(root: File,prefix: String) {
+    require(root.absoluteFile==root.canonicalFile && root.isDirectory && root.parentFile==approvedTestBase())
+    require(root.name.matches(Regex(Regex.escape(prefix)+"[A-Za-z0-9_-]{1,80}")))
+    require(Files.getOwner(root.toPath())==Files.getOwner(Path.of("/proc/self")))
+}
+tasks.test {
+    useJUnitPlatform()
+    doFirst {
+        val temp=approvedTestBase().resolve("gradle-tmp").toPath()
+        if(!Files.exists(temp)) Files.createDirectory(temp,PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")))
+        require(temp==temp.toRealPath() && Files.getOwner(temp)==Files.getOwner(Path.of("/proc/self")))
+        systemProperty("java.io.tmpdir",temp.toString())
+    }
+}
 
 val integrationTest by sourceSets.creating {
     compileClasspath += sourceSets.main.get().output
@@ -105,7 +132,8 @@ tasks.register<Test>("postgresIntegrationTest") {
     outputs.upToDateWhen { false }
     doFirst {
         val root = providers.gradleProperty("s44Workspace").orNull
-            ?: error("-Ps44Workspace=/tmp/hearth-s4-4.* 새 격리 경로가 필요합니다.")
+            ?: error("-Ps44Workspace=/home/server/hearth-tmp/hearth-s4-4.* 새 격리 경로가 필요합니다.")
+        requireTestRoot(file(root),"hearth-s4-4.")
         systemProperty("hearth.s44.workspace", root)
         systemProperty("java.io.tmpdir", root)
     }
@@ -115,7 +143,7 @@ tasks.register("stageS44Runtime") {
     description = "네이티브 바이너리 실행 전 해시 검사용 시험 의존성을 격리 경로에 복사합니다."
     doLast {
         val root = file(providers.gradleProperty("s44Workspace").get())
-        require(root.canonicalPath.startsWith("/tmp/hearth-s4-4."))
+        requireTestRoot(root,"hearth-s4-4.")
         val target = root.resolve("resolved-jars")
         require(!target.exists()) { "기존 시험 의존성 경로 재사용 금지" }
         copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(target) }
@@ -127,11 +155,12 @@ tasks.register("stageS45Runtime") {
     dependsOn(tasks.named("integrationTestClasses"))
     doLast {
         val root = file(providers.gradleProperty("s45Workspace").get())
-        require(root.canonicalFile.parentFile == file("/tmp") && root.name.startsWith("hearth-s4-5."))
+        requireTestRoot(root,"hearth-s4-5.")
         val target = root.resolve("resolved-jars")
         require(!target.exists()) { "기존 시험 경로 덮어쓰기 금지" }
         copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(target) }
         copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
+        copy { from(sourceSets.main.get().output.classesDirs); include("io/github/jesterportfolio/hearth/verification/IsolatedPaths.class"); into(root.resolve("fixture-classes")) }
     }
 }
 
@@ -147,6 +176,7 @@ tasks.register<Test>("inventoryIntegrationTest") {
     outputs.upToDateWhen { false }
     doFirst {
         val root = providers.gradleProperty("inventoryWorkspace").get()
+        requireTestRoot(file(root),"hearth-s4-6.")
         systemProperty("hearth.inventory.workspace", root)
         systemProperty("java.io.tmpdir", root)
     }
@@ -156,10 +186,11 @@ tasks.register("stageInventoryRuntime") {
     dependsOn(tasks.named("integrationTestClasses"))
     doLast {
         val root = file(providers.gradleProperty("inventoryWorkspace").get())
-        require(root.canonicalFile.parentFile == file("/tmp") && root.name.startsWith("hearth-s4-6."))
+        requireTestRoot(root,"hearth-s4-6.")
         require(!root.resolve("resolved-jars").exists())
         copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(root.resolve("resolved-jars")) }
         copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
+        copy { from(sourceSets.main.get().output.classesDirs); include("io/github/jesterportfolio/hearth/verification/IsolatedPaths.class"); into(root.resolve("fixture-classes")) }
     }
 }
 
@@ -169,9 +200,10 @@ tasks.register("stageLifecycleRuntime") {
     dependsOn(tasks.named("integrationTestClasses"))
     doLast {
         val root = file(providers.gradleProperty("lifecycleWorkspace").get())
-        require(root.canonicalFile.parentFile == file("/tmp") && root.name.startsWith("hearth-s4-11."))
+        requireTestRoot(root,"hearth-s4-11.")
         require(!root.resolve("resolved-jars").exists())
         copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(root.resolve("resolved-jars")) }
         copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
+        copy { from(sourceSets.main.get().output.classesDirs); include("io/github/jesterportfolio/hearth/verification/IsolatedPaths.class"); into(root.resolve("fixture-classes")) }
     }
 }

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Fresh isolated S4-2 fixture; sequential JVMs, no client impersonation or operational changes."""
+import isolated_paths
 import argparse
 import hashlib
 import json
@@ -72,7 +73,7 @@ def run_jvm(base, java, phase, deadline, manual=False):
         command.append('-Dhearth.verification.players=true')
     command += ['-jar', str(base / 'paper-26.2-134.jar'), '--nogui']
     started = time.monotonic()
-    child = subprocess.Popen(command, cwd=runtime, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    child = subprocess.Popen(isolated_paths.java_command(command,base), cwd=runtime, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT, start_new_session=True, preexec_fn=lambda: os.nice(10))
     poller = selectors.DefaultSelector()
     poller.register(child.stdout, selectors.EVENT_READ)
@@ -209,10 +210,10 @@ def main():
         parser.error('Explicit operator EULA acceptance is required; no server was created')
     if args.manual_player and not sys.stdin.isatty():
         parser.error('Manual player mode requires an operator TTY and an independently authenticated client')
-    base = args.workspace.resolve(strict=True)
-    if (args.workspace.is_symlink() or os.geteuid() == 0 or base.parent != Path('/tmp')
+    base = isolated_paths.workspace(args.workspace,'hearth-s4-2.')
+    if (args.workspace.is_symlink() or os.geteuid() == 0 or base.parent != isolated_paths.BASE
             or not base.name.startswith('hearth-s4-2.') or base.stat().st_uid != os.getuid()):
-        parser.error('Need fresh user-owned /tmp/hearth-s4-2.* workspace')
+        parser.error('Need fresh user-owned /home/server/hearth-tmp/hearth-s4-2.* workspace')
     if available_kib() < 6 * 1024**2 or shutil.disk_usage(base).free < 4 * 1024**3:
         parser.error('Need 6 GiB available RAM and 4 GiB free disk')
     port_free()
