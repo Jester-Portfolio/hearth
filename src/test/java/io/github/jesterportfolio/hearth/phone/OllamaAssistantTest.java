@@ -12,6 +12,15 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class OllamaAssistantTest {
+    @Test void cacheConfirmationChecksCurrentIdentityWithoutGenerationOrFallback()throws Exception{
+        try(var fixture=new Fixture();var service=new OllamaAssistant(fixture.endpoint())){
+            assertTrue(service.allowsCache());assertEquals("저장된 답변",service.confirmCached("저장된 답변").toCompletableFuture().get(2,TimeUnit.SECONDS));assertEquals(1,fixture.versions.get());assertEquals(1,fixture.tags.get());assertEquals(0,fixture.generations.get());
+            fixture.digest="0".repeat(64);assertEquals(AssistantFailure.Reason.MODEL_MISMATCH,rejected(service.confirmCached("표시 금지")));assertEquals(0,fixture.generations.get());
+        }
+    }
+    @Test void cancellationDuringCacheIdentityReadDoesNotGenerate()throws Exception{
+        try(var fixture=new Fixture();var service=new OllamaAssistant(fixture.endpoint())){fixture.block="/api/tags";var work=service.confirmCached("저장된 답변").toCompletableFuture();assertTrue(fixture.entered.await(2,TimeUnit.SECONDS));assertTrue(work.cancel(true));fixture.release.countDown();assertEquals(0,fixture.generations.get());}
+    }
     static String answer(){return "{\"model\":\""+OllamaAssistant.MODEL+"\",\"response\":\"한국어 응답\",\"done\":true,\"done_reason\":\"stop\",\"prompt_eval_count\":40,\"eval_count\":10}";}
     static final class Fixture implements AutoCloseable {
         final HttpServer server;final ExecutorService workers=Executors.newFixedThreadPool(6);final List<JsonObject> sent=Collections.synchronizedList(new ArrayList<>());

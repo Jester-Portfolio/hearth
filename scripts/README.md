@@ -165,3 +165,5 @@
 `s5_ai_trial.py`는 [ADR-0018](../docs/decisions/0018-local-ai-runtime-and-trial-budget.md)의 명시적 모델/예산 승인이 있는 새 사용자 소유 `/tmp/hearth-s5-trial.*`·전용 표식 경로만 사용한다. 실제 파일 해시·manifest 검증, libzstd 안전 해제, 독립 프로필/모델·루프백/클라우드 비활성·소유 프로세스 트리와 GPU/RAM/디스크/시간 감시를 수행한다. `--java`와 고정 JAR/fixture/Gson의 `--classpath`를 받는다. 일반 실행이 모델 설치/운영 변경 승인을 대신하지 않는다.
 
 `--continue-after-review`는 실패 원본을 보존하고 같은 최초 600초의 남은 시간만 사용하는 한 번의 관련 재확인이다. 새 시간 예산·모델/상한 확대가 아니며 원래 아티팩트 해시를 다시 확인하고 모델/프로필/로그/결과는 분리한다. 최초 표식의 경과 시간이 450초 이상이거나 재확인 결과가 이미 있으면 거부한다. 준비는 `OllamaTrialWarmup`, 실제 제한 흐름은 `OllamaTrialProbe`를 사용하며 Minecraft Player를 생성하지 않는다. [실제 결과·실패·최종 코드 미재실행 범위](../docs/s5-local-ai-verification.md)를 반드시 구분한다.
+
+S5 후속 `--artifact-source /tmp/hearth-s5-trial...`는 이전 소유 경로의 고정 해시 아카이브/blob만 새 경로로 검증 복사한다. 다운로드 대신 복사해도 최초 디스크 여유 16GiB와 새 경로/프로필·모든 기존 자원/시간 조건을 유지한다. `--grounded`는 자료 번호/접속 캐시·동일 본문의 다른 세션·stale/한도 흐름과 대표 자료 프롬프트 예열을 준비한다. 이전 로그/프로필/실행 중 서비스는 입력으로 사용하지 않는다. [실행·미실행 범위](../docs/s5-grounded-cache-verification.md)를 따른다.

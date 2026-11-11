@@ -22,6 +22,7 @@
 | [ADR-0016: S4 개인 기능·복귀 정책](0016-s4-personal-features-and-recovery.md) | 승인 | 필수 시청/재시청·무료 시설 이동·개인 엔더·스마트폰 발급·재시작 HOLD/복귀 |
 | [ADR-0017: 선택형 BetterHud 표시](0017-optional-betterhud-presentation.md) | 승인·개발/격리 범위 | 상대 앵커·단일 출력·개인 프레임/팩 응답·기본 표시 보존 |
 | [ADR-0018: 로컬 AI 런타임·격리 예산](0018-local-ai-runtime-and-trial-budget.md) | 승인·구현/격리 실제 추론 범위 | 고정 Ollama/Qwen3 조합·정보/요청 한도·다운로드/CPU/RAM/GPU/시간·소유 자원 정리 |
+| [ADR-0019: 접속별 AI 캐시·참고자료 계약](0019-session-ai-cache-and-reference-contract.md) | 승인된 후속 범위의 구현 결정 | 접속/자료 버전별 유한 캐시·백엔드/최신 권한 재확인·자료 번호와 표시 정합성 |
 
 각 기록에는 다음 내용을 포함합니다.
 

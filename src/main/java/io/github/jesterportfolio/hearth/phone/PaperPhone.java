@@ -548,6 +548,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private void chat(Player p){
         var s=advance(p);var body=new ArrayList<DialogBody>();body.add(DialogBody.plainMessage(Component.text("최근 대화 · 현재 접속 세션에서만 유지\n"+PhoneContext.MODES.get(contextModes.getOrDefault(s.session(),"none")))));
         var selected=helpSelections.get(s.session());if(selected!=null)body.add(DialogBody.plainMessage(Component.text("선택한 자료 한 항목: "+selected.source().title())));
+        if(references.containsKey(s.session()))body.add(DialogBody.plainMessage(Component.text("답변의 자료 번호는 ‘최근 요청 참고자료’에서 확인할 수 있습니다.")));
         for(var turn:s.chat().history()){body.add(DialogBody.plainMessage(Component.text("나: "+turn.question())));body.add(DialogBody.plainMessage(Component.text("AI: "+turn.answer())));}
         if(s.chat().error()!=null)body.add(DialogBody.plainMessage(Component.text(s.chat().error())));
         if(s.chat().busy())body.add(DialogBody.plainMessage(Component.text("나: "+s.chat().question()+"\n응답 대기 중입니다. 잠시 후 응답 확인을 눌러 주세요.")));
@@ -629,8 +630,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
         journal.load(s.session().context(),s.session(),()->valid(p,s)).whenCompleteAsync((view,error)->{
             if(!valid(p,s))return;if(error!=null){info(p,s,"참고자료 조회 실패",List.of("현재 자료를 확인하지 못했습니다. 최신 정보로 다시 조회하세요."));return;}
             try{if(!references.current(expected))throw new IllegalStateException("STALE_AI_REFERENCE");var plan=PhoneGrounding.refresh(catalog,view,information(p,s,view),expected.plan());references.update(expected,plan);var actions=new ArrayList<ActionButton>();List<String> lines;String title;
-                if(key==null){title="최근 게임 도움 참고자료";lines=List.of(plan.materials().isEmpty()?"현재 공개 정보에서 일치하는 자료가 없었던 요청입니다.":"AI에 전송한 공개 자료입니다. 현재 공개 상태를 다시 확인했습니다.");for(var material:plan.materials())actions.add(button(p,s,material.item().source().title(),()->reference(p,advance(p),material.item().key(),1)));}
-                else{var material=plan.materials().stream().filter(m->m.item().key().equals(key)).findFirst().orElseThrow(()->new IllegalStateException("STALE_AI_REFERENCE"));var detail=PhoneGrounding.detail(material);title=detail.title();lines=List.of(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1));
+                if(key==null){title="최근 게임 도움 참고자료";lines=List.of(plan.materials().isEmpty()?"현재 공개 정보에서 일치하는 자료가 없었던 요청입니다.":"AI에 전송한 공개 자료입니다. 현재 공개 상태를 다시 확인했습니다.");for(var material:plan.materials())actions.add(button(p,s,PhoneReferences.label(plan,material.item().key()),()->reference(p,advance(p),material.item().key(),1)));}
+                else{var material=plan.materials().stream().filter(m->m.item().key().equals(key)).findFirst().orElseThrow(()->new IllegalStateException("STALE_AI_REFERENCE"));var detail=PhoneGrounding.detail(material);title=PhoneReferences.label(plan,key);lines=List.of(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1));
                     if(page>1)actions.add(button(p,s,"앞 내용",()->reference(p,advance(p),key,page-1)));if(page<detail.pages().size())actions.add(button(p,s,"다음 내용",()->reference(p,advance(p),key,page+1)));
                     actions.add(button(p,s,"원래 정보",()->openReference(p,advance(p),plan,key)));
                     if(!material.item().section().equals("story")&&!s.chat().busy())actions.add(button(p,s,"이 자료 AI 도움",()->help(p,s,material.item())));
@@ -647,7 +648,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         },owner);
     }
     private void clearConfirm(Player p){
-        var s=advance(p);show(p,s,"대화 정리 확인",List.of(DialogBody.plainMessage(Component.text("현재 접속 세션의 AI 대화 기록만 지웁니다. 퀘스트·일지·인벤토리는 변경하지 않습니다."))),List.of(),List.of(button(p,s,"기록 지우기",()->{if(!s.chat().busy()){s.chat().clear();references.remove(s.session());}chat(p);}),button(p,s,"취소",()->chat(p))));
+        var s=advance(p);show(p,s,"대화 정리 확인",List.of(DialogBody.plainMessage(Component.text("현재 접속 세션의 AI 대화와 임시 응답을 지웁니다. 퀘스트·일지·인벤토리는 변경하지 않습니다."))),List.of(),List.of(button(p,s,"기록 지우기",()->{if(!s.chat().busy()){s.chat().clear();references.remove(s.session());}chat(p);}),button(p,s,"취소",()->chat(p))));
     }
     public boolean command(Player p,String command){
         if(command.equals("/hearthphone")){home(p);return true;}

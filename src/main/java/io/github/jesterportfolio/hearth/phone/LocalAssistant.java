@@ -20,7 +20,9 @@ public final class LocalAssistant implements AssistantService {
     public static AssistantService configured(String mode,String address){return switch(mode){case "mock"->mock();case "local"->new LocalAssistant(address);case "ollama"->new OllamaAssistant(address);default->throw new IllegalArgumentException("UNKNOWN_PHONE_AI_MODE");};}
     public static AssistantService mock(){return new AssistantService(){
         public CompletionStage<String> ask(String question){return CompletableFuture.completedFuture("[Mock AI] 질문을 확인했습니다: "+question+"\n실제 로컬 AI 서비스는 아직 연결되지 않았습니다.");}
-        public CompletionStage<String> ask(AssistantRequest request){return ask(request.question()).thenApply(answer->answer+"\n전달된 최근 대화: "+request.history().size()+"개 · 공개 정보: "+(request.context().isEmpty()?"없음":"선택한 범위만 포함"));}
+        public CompletionStage<String> ask(AssistantRequest request){return ask(request.question()).thenApply(answer->answer+"\n전달된 최근 대화: "+request.history().size()+"개 · 공개 정보: "+(request.context().isEmpty()?"없음":"선택한 범위만 포함")+(request.sources()>0?"\n[자료 1]":""));}
+        public boolean allowsCache(){return true;}
+        public CompletionStage<String> confirmCached(String answer){return CompletableFuture.completedFuture(answer);}
     };}
 
     @Override public CompletionStage<String> ask(String question){

@@ -5,11 +5,36 @@ import tarfile
 import tempfile
 import time
 import unittest
+import hashlib
+import sys
+from types import SimpleNamespace
 from unittest.mock import patch
 import s5_ai_trial as trial
 
 
 class TrialSafetyTests(unittest.TestCase):
+    def test_verified_reuse_keeps_original_and_does_not_download(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);source=root/'source';source.write_bytes(b'fixture');stamp=source.stat().st_mtime_ns;monitor=trial.Trial(root);target=root/'new/artifact'
+            with patch.object(trial,'available_kib',return_value=8*1024**2),patch.object(trial,'urlopen') as network:
+                monitor.reuse(source,target,7,hashlib.sha256(b'fixture').hexdigest());network.assert_not_called()
+            self.assertEqual(b'fixture',source.read_bytes());self.assertEqual(stamp,source.stat().st_mtime_ns);self.assertEqual(source.read_bytes(),target.read_bytes());self.assertEqual(0,monitor.downloaded);self.assertEqual(7,monitor.reused)
+
+    def test_reuse_bad_hash_never_publishes_or_changes_original(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);source=root/'source';source.write_bytes(b'fixture');monitor=trial.Trial(root);target=root/'artifact'
+            with patch.object(trial,'available_kib',return_value=8*1024**2):
+                with self.assertRaisesRegex(RuntimeError,'HASH'):monitor.reuse(source,target,7,'0'*64)
+            self.assertFalse(target.exists());self.assertEqual(b'fixture',source.read_bytes())
+
+    def test_reusing_artifacts_does_not_bypass_initial_disk_precondition(self):
+        with tempfile.TemporaryDirectory(prefix='hearth-s5-trial.',dir='/tmp') as directory:
+            root=Path(directory);(root/'.hearth-s5-isolated').write_text(trial.MARKER)
+            args=['s5_ai_trial.py','--workspace',str(root),'--java','/unused','--classpath','unused','--artifact-source','/unread']
+            with patch.object(sys,'argv',args),patch.object(trial.shutil,'disk_usage',return_value=SimpleNamespace(free=15*trial.GIB)),patch.object(trial,'urlopen') as network,patch.object(trial.subprocess,'Popen') as processes:
+                with self.assertRaises(AssertionError):trial.main()
+                network.assert_not_called();processes.assert_not_called()
+
     def test_paths_and_links_cannot_escape_owned_root(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

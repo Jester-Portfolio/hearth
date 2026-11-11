@@ -18,13 +18,18 @@ public final class OllamaAssistant implements AssistantService {
         http=new LocalAiHttp(address,timeout);this.timeout=timeout;
     }
     @Override public synchronized CompletionStage<String> ask(String prompt){
+        final String payload;try{payload=OllamaProtocol.request(prompt);}catch(RuntimeException invalid){return CompletableFuture.failedFuture(invalid);}
+        return operation(payload,null);
+    }
+    @Override public boolean allowsCache(){return true;}
+    @Override public CompletionStage<String> confirmCached(String answer){return operation(null,Objects.requireNonNull(answer));}
+    private synchronized CompletionStage<String> operation(String payload,String cached){
         if(closed)return CompletableFuture.failedFuture(OllamaProtocol.failure(AssistantFailure.Reason.CLOSED));
         requests.removeIf(w->w.result.isDone());if(requests.size()>=4)return CompletableFuture.failedFuture(OllamaProtocol.failure(AssistantFailure.Reason.BUSY));
-        final String payload;try{payload=OllamaProtocol.request(prompt);}catch(RuntimeException invalid){return CompletableFuture.failedFuture(invalid);}
         var work=new Work();requests.add(work);
         work.result.whenComplete((value,error)->{synchronized(this){requests.remove(work);if(error!=null&&work.phase!=null)work.phase.cancel(true);}});
         work.result.copy().orTimeout(timeout.toMillis(),TimeUnit.MILLISECONDS).whenComplete((value,error)->{if(error!=null&&!work.result.isDone())work.result.completeExceptionally(OllamaProtocol.failure(AssistantFailure.reason(error)));});
-        step(work,"/api/version","GET",null,version->{OllamaProtocol.version(version);step(work,"/api/tags","GET",null,models->{OllamaProtocol.model(models);step(work,"/api/generate","POST",payload,answer->work.result.complete(OllamaProtocol.answer(answer)));});});return work.result;
+        step(work,"/api/version","GET",null,version->{OllamaProtocol.version(version);step(work,"/api/tags","GET",null,models->{OllamaProtocol.model(models);if(cached!=null)work.result.complete(cached);else step(work,"/api/generate","POST",payload,answer->work.result.complete(OllamaProtocol.answer(answer)));});});return work.result;
     }
     private synchronized void step(Work work,String path,String method,String payload,Consumer<String> accept){
         if(work.result.isDone())return;

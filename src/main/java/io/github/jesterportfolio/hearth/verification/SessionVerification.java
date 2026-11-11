@@ -1898,7 +1898,44 @@ public final class SessionVerification implements AutoCloseable {
                 check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary").contains("갱신된 공개 합성 정보"),"phone_AI_other_player_no_private_context");
                 check(io.github.jesterportfolio.hearth.phone.PhoneRetrieval.find(journal.projectInformation(a2,view,()->coordinator.playable(s2)),"diary","갱신된 정보").sources().isEmpty(),"phone_AI_retrieval_other_player_no_private_source");
                 check(io.github.jesterportfolio.hearth.phone.PhoneLibrary.rows(catalog,view,"STORY").size()==1,"phone_library_same_run_shared_fact");
-            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");}).thenCompose(v->phoneRequestLifecycle());
+            }).thenCompose(v->journal.load(ctx(b,1),new Object(),()->true)).thenAccept(view->{check(view.exploration().facts().isEmpty()&&view.exploration().events().isEmpty(),"phone_library_other_run_no_records");check(!io.github.jesterportfolio.hearth.phone.PhoneContext.from(journal.projectInformation(ctx(b,1),view,()->true),"diary").contains("공개 시험 공동 기록"),"phone_AI_other_run_no_context");}).thenCompose(v->phoneRequestLifecycle()).thenCompose(v->phoneCachedGrounding());
+    }
+    private io.github.jesterportfolio.hearth.phone.PhoneGrounding.Plan phoneCachePlan(QuestJournal.View view){
+        var data=journal.projectInformation(a1,view,()->coordinator.playable(s1));int index=java.util.stream.IntStream.range(0,view.exploration().facts().size()).filter(i->view.exploration().facts().get(i).id().equals("phone_personal_note")).findFirst().orElseThrow();
+        return io.github.jesterportfolio.hearth.phone.PhoneGrounding.single(catalog,view,data,"공개 기록을 설명해.",io.github.jesterportfolio.hearth.phone.PhoneHelp.select(catalog,view,data,"diary",index));
+    }
+    private CompletionStage<Boolean> phoneCacheValidate(io.github.jesterportfolio.hearth.phone.PhoneGrounding.Plan expected,int[] reads){
+        reads[0]++;return journal.load(a1,s1,()->coordinator.playable(s1)).thenApplyAsync(view->{io.github.jesterportfolio.hearth.phone.PhoneGrounding.refresh(catalog,view,journal.projectInformation(a1,view,()->coordinator.playable(s1)),expected);return true;},owner);
+    }
+    private CompletionStage<Void> phoneCachedGrounding(){
+        var inventory=one.capture();long revision=s1.save().revision();int[] generated={0},identities={0},reads={0};var bad=new java.util.concurrent.atomic.AtomicBoolean();var identity=new java.util.concurrent.atomic.AtomicReference<CompletableFuture<String>>();
+        var service=new io.github.jesterportfolio.hearth.phone.AssistantService(){
+            public boolean allowsCache(){return true;}
+            public CompletionStage<String> ask(String text){throw new AssertionError("Structured request required");}
+            public CompletionStage<String> ask(io.github.jesterportfolio.hearth.phone.AssistantRequest request){generated[0]++;check(request.sources()==1&&!request.prompt().contains(a1.playerId().toString())&&!request.prompt().contains("phone_personal_note"),"grounded_cache_only_public_prompt_and_source_count");return CompletableFuture.completedFuture(bad.get()?"잘못된 자료 [자료 2]":"공개 기록의 내용입니다. [자료 1]");}
+            public CompletionStage<String> confirmCached(String answer){identities[0]++;return identity.get()==null?CompletableFuture.completedFuture(answer):identity.get();}
+        };
+        var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(service,owner);var beforeHistory=new java.util.concurrent.atomic.AtomicReference<List<io.github.jesterportfolio.hearth.phone.PhoneChat.Turn>>();
+        return mainResult(store.readJournal(a1)).thenCompose(journalBefore->mainResult(store.readExploration(a2)).thenCompose(otherBefore->journal.load(a1,s1,()->coordinator.playable(s1)).thenCompose(view->{
+            var plan=phoneCachePlan(view);CompletionStage<Void> sequence=CompletableFuture.completedFuture(null);
+            for(int i=0;i<5;i++)sequence=sequence.thenCompose(v->chat.submit(plan.question(),plan.result().context(),plan.mode(),()->coordinator.playable(s1),()->phoneCacheValidate(plan,reads),plan.scope()));
+            return sequence.thenRun(()->{check(generated[0]==4&&identities[0]==1&&reads[0]==5&&chat.cacheStats().hits()==1,"grounded_cache_hit_still_checks_identity_and_real_PG");check(io.github.jesterportfolio.hearth.phone.PhoneReferences.label(plan,plan.selected().getFirst().item().key()).startsWith("[자료 1]"),"grounded_cache_public_reference_number_matches_material");beforeHistory.set(chat.history());})
+                .thenCompose(v->rejectQuest(chat.submit(plan.question(),plan.result().context(),plan.mode(),()->coordinator.playable(s1),()->mainResult(store.readInventory(ctx(b,9999))).thenApply(row->true),plan.scope())))
+                .thenRun(()->check(chat.cacheStats().entries()==0&&chat.history().equals(beforeHistory.get())&&chat.draft().equals(plan.question()),"grounded_cache_real_PG_failure_evicts_without_history_or_draft_loss"))
+                .thenCompose(v->chat.submit(plan.question(),plan.result().context(),plan.mode(),()->coordinator.playable(s1),()->phoneCacheValidate(plan,reads),plan.scope()))
+                .thenCompose(v->{
+                    identity.set(new CompletableFuture<>());beforeHistory.set(chat.history());int prior=generated[0];var pending=chat.submit(plan.question(),plan.result().context(),plan.mode(),()->coordinator.playable(s1),()->phoneCacheValidate(plan,reads),plan.scope());
+                    check(chat.busy()&&generated[0]==prior,"grounded_cache_waits_identity_without_generation");
+                    var updated=new io.github.jesterportfolio.hearth.exploration.ExplorationContent.Fact("phone_personal_note","PERSON","공개 시험 인물 기록","합성 요약","갱신된 공개 합성 정보",3,true);
+                    return mainResult(store.recordFact(a1,updated,false)).thenRun(()->identity.get().complete("공개 기록의 내용입니다. [자료 1]")).thenCompose(x->rejectQuest(pending)).thenRun(()->{identity.set(null);check(generated[0]==prior&&chat.cacheStats().entries()==0&&chat.history().equals(beforeHistory.get()),"grounded_cache_real_PG_revision_change_rejects_same_excerpt");});
+                }).thenCompose(v->journal.load(a1,s1,()->coordinator.playable(s1))).thenCompose(latest->{
+                    var fresh=phoneCachePlan(latest);check(fresh.result().context().equals(plan.result().context())&&!fresh.scope().equals(plan.scope()),"grounded_cache_same_text_has_distinct_actual_PG_provenance");
+                    return chat.submit(fresh.question(),fresh.result().context(),fresh.mode(),()->coordinator.playable(s1),()->phoneCacheValidate(fresh,reads),fresh.scope()).thenRun(()->check(chat.cacheStats().entries()==1,"grounded_cache_new_revision_requires_fresh_answer"))
+                        .thenCompose(x->{bad.set(true);beforeHistory.set(chat.history());int beforeReads=reads[0];return rejectQuest(chat.submit("다른 질문",fresh.result().context(),fresh.mode(),()->coordinator.playable(s1),()->phoneCacheValidate(fresh,reads),fresh.scope())).thenRun(()->check(reads[0]==beforeReads&&chat.history().equals(beforeHistory.get())&&chat.cacheStats().entries()==0,"grounded_cache_bad_reference_never_cached_or_recorded"));});
+                });
+        }).thenCompose(v->mainResult(store.readExploration(a2))).thenAccept(otherAfter->check(otherAfter.equals(otherBefore),"grounded_cache_preserves_other_player_PG"))
+            .thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(after->check(after.equals(journalBefore)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"grounded_cache_reads_preserve_journal_inventory_and_revision"))))
+            .whenCompleteAsync((v,error)->{chat.close();check(chat.cacheStats().entries()==0,"grounded_cache_close_discards_session_answers");},owner);
     }
     private CompletionStage<Void> phoneRequestLifecycle(){
         var inventory=one.capture();long revision=s1.save().revision();

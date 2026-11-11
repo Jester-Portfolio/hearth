@@ -159,6 +159,7 @@ class Trial:
         self.children = []
         self.owned = {}
         self.downloaded = 0
+        self.reused = 0
         self.samples = []
         self.receipts = []
 
@@ -255,6 +256,25 @@ class Trial:
         self.owned[child.pid] = self.process(child.pid)['start']
         return child
 
+    def reuse(self, source, target, size, digest):
+        self.guard()
+        assert source.is_file() and not source.is_symlink() and source.stat().st_size==size
+        target.parent.mkdir(parents=True,exist_ok=True)
+        partial=target.with_name(target.name+'.partial');checksum=hashlib.sha256();count=0
+        with source.open('rb') as incoming,partial.open('xb') as output:
+            while True:
+                self.guard();chunk=incoming.read(1024**2)
+                if not chunk:break
+                count+=len(chunk)
+                if count>size:raise RuntimeError('REUSED_ARTIFACT_SIZE')
+                checksum.update(chunk);output.write(chunk)
+        if count!=size or checksum.hexdigest()!=digest:raise RuntimeError('REUSED_ARTIFACT_HASH')
+        assert not target.exists();partial.rename(target)
+        with self.lock:
+            self.reused+=count
+            self.receipts.append(dict(file=str(target.relative_to(self.root)),bytes=count,sha256=digest,verified=True,reused=True))
+        print('S5 verified reused artifact bytes='+str(count),flush=True)
+
     def wait(self, process, seconds):
         end = min(self.started+550, time.monotonic()+seconds)
         while process.poll() is None:
@@ -326,6 +346,8 @@ def main():
     parser.add_argument('--workspace', type=Path, required=True)
     parser.add_argument('--java', type=Path, required=True)
     parser.add_argument('--classpath', required=True)
+    parser.add_argument('--artifact-source',type=Path,help='이전 소유 격리 경로의 아카이브/blob만 재검증·복사하며 프로필/로그/설정은 재사용하지 않습니다')
+    parser.add_argument('--grounded',action='store_true',help='자료 번호·세션 캐시·최신성 확인 probe를 사용합니다')
     parser.add_argument('--continue-after-review', action='store_true', help='원본 결과/파일을 보존하고 같은 최초 600초 예산의 남은 시간만 사용합니다')
     args = parser.parse_args()
     root = args.workspace.resolve(strict=True)
@@ -339,6 +361,11 @@ def main():
         assert set(p.name for p in root.iterdir()) == {'.hearth-s5-isolated'}, 'Fresh workspace required'
         assert shutil.disk_usage(root).free >= 16 * GIB
     assert available_kib() >= 6 * 1024**2
+    source_root=None
+    if args.artifact_source is not None:
+        source_root=args.artifact_source.resolve(strict=True)
+        assert not args.artifact_source.is_symlink() and source_root!=root and source_root.parent==Path('/tmp') and source_root.name.startswith('hearth-s5-trial.')
+        assert source_root.stat().st_uid==os.getuid() and (source_root/'.hearth-s5-isolated').read_text()==MARKER
     port_free()
     os.sched_setaffinity(0, set(sorted(os.sched_getaffinity(0))[:2]))
     os.nice(10)
@@ -357,7 +384,11 @@ def main():
         runtime, model = approved['proposed_runtime'], approved['proposed_model']
         manifest_file = root / 'model-manifest.json'
         if args.continue_after_review:
-            raw=manifest_file.read_bytes();trial.downloaded=original['downloaded_bytes']
+            raw=manifest_file.read_bytes();trial.downloaded=original['downloaded_bytes'];trial.reused=original.get('locally_reused_bytes',0)
+        elif source_root is not None:
+            source_manifest=source_root/'model-manifest.json'
+            assert source_manifest.is_file() and source_manifest.stat().st_size<=100000 and not source_manifest.is_symlink()
+            raw=source_manifest.read_bytes();trial.reused+=len(raw)
         else:
             with urlopen(model['manifest_url'], timeout=15) as response:
                 raw = response.read(100000)
@@ -378,9 +409,15 @@ def main():
                 assert file.stat().st_size==size and checksum.hexdigest()==digest,'Original artifact changed'
             trial.receipts=original['receipts'];print('S5 review continuation: original hashes unchanged, no downloads, original deadline retained',flush=True)
         else:
-            print('S5 download started: pinned runtime + pinned model; 6GiB aggregate limit', flush=True)
+            print('S5 artifact preparation: verified local copies' if source_root else 'S5 download started: pinned runtime + pinned model; 6GiB aggregate limit', flush=True)
             with ThreadPoolExecutor(max_workers=2) as workers:
-                futures = [workers.submit(trial.fetch, *job) for job in jobs]
+                if source_root is None:futures=[workers.submit(trial.fetch,*job) for job in jobs]
+                else:
+                    futures=[]
+                    for _,file,size,digest in jobs:
+                        source=source_root/file.relative_to(root)
+                        assert source.resolve().is_relative_to(source_root)
+                        futures.append(workers.submit(trial.reuse,source,file,size,digest))
                 for future in futures:
                     try:
                         future.result()
@@ -427,21 +464,27 @@ def main():
         report['tags'] = trial.api('/api/tags')
         print('S5 runtime ready; bounded model warmup started', flush=True)
         warm_file=root/('warmup'+suffix+'.json')
-        warm=trial.launch([str(args.java),'-Xmx192m','-XX:ActiveProcessorCount=2','-cp',args.classpath,'io.github.jesterportfolio.hearth.phone.OllamaTrialWarmup',HOST+'/api/generate',str(warm_file)],os.environ.copy(),'warmup'+suffix)
+        warm_command=[str(args.java),'-Xmx192m','-XX:ActiveProcessorCount=2','-cp',args.classpath,'io.github.jesterportfolio.hearth.phone.OllamaTrialWarmup',HOST+'/api/generate',str(warm_file)]
+        if args.grounded:warm_command.append('grounded')
+        warm=trial.launch(warm_command,os.environ.copy(),'warmup'+suffix)
         assert trial.wait(warm,90)==0,'Actual-format warmup failed'
         report['warmup']=json.loads(warm_file.read_text())
         report['model_processes'] = trial.api('/api/ps')
         probe_file=root/('probe-result'+suffix+'.json')
-        command=[str(args.java), '-Xmx192m', '-XX:ActiveProcessorCount=2', '-cp', args.classpath, 'io.github.jesterportfolio.hearth.phone.OllamaTrialProbe', HOST+'/api/generate', str(probe_file)]
+        command=[str(args.java), '-Xmx192m', '-XX:ActiveProcessorCount=2', '-cp', args.classpath, 'io.github.jesterportfolio.hearth.phone.'+('OllamaGroundingProbe' if args.grounded else 'OllamaTrialProbe'), HOST+'/api/generate', str(probe_file)]
         probe = trial.launch(command, os.environ.copy(), 'probe'+suffix)
         assert trial.wait(probe, 90) == 0, 'Java adapter probe failed'
         report['probe'] = json.loads(probe_file.read_text())
         report['real_model'] = True
-        positive = [case for case in report['probe']['cases'] if case['name'] in ('korean_short', 'personal_A', 'other_run_B', 'unknown_information', 'after_cancel')]
-        overflow = next(c for c in report['probe']['cases'] if c['name'] == 'context_overflow')
-        cancel = next((c for c in report['probe']['cases'] if c['name'] == 'cancel_then_next'),dict(cancelled=True,history_empty=True))
-        report['required_checks_passed'] = all(c['outcome'] == 'PASS' for c in positive) and overflow['outcome'] == 'CONTEXT_LIMIT' and cancel['cancelled'] and cancel['history_empty']
-        report['outcome'] = 'PASS' if report['required_checks_passed'] else 'ACTUAL_MODEL_ACCEPTANCE_FAILED'
+        if args.grounded:
+            report['required_checks_passed']=report['probe']['required_checks_passed']
+            report['outcome']='PASS' if report['required_checks_passed'] else 'ACTUAL_MODEL_ACCEPTANCE_FAILED'
+        else:
+            positive = [case for case in report['probe']['cases'] if case['name'] in ('korean_short', 'personal_A', 'other_run_B', 'unknown_information', 'after_cancel')]
+            overflow = next(c for c in report['probe']['cases'] if c['name'] == 'context_overflow')
+            cancel = next((c for c in report['probe']['cases'] if c['name'] == 'cancel_then_next'),dict(cancelled=True,history_empty=True))
+            report['required_checks_passed'] = all(c['outcome'] == 'PASS' for c in positive) and overflow['outcome'] == 'CONTEXT_LIMIT' and cancel['cancelled'] and cancel['history_empty']
+            report['outcome'] = 'PASS' if report['required_checks_passed'] else 'ACTUAL_MODEL_ACCEPTANCE_FAILED'
     except Exception as error:
         report['failure'] = type(error).__name__ + ': ' + str(error)
         print('S5 stopped: '+report['failure'], flush=True)
@@ -453,7 +496,7 @@ def main():
             report['guard_failure'] = trial.error
             report.setdefault('failure', trial.error)
             report['outcome'] = 'FAIL'
-        report.update(duration_seconds=round(time.monotonic()-trial.started, 3), downloaded_bytes=trial.downloaded, receipts=trial.receipts, samples=len(trial.samples), max_sampled_rss_kib=max((s['rss_kib'] for s in trial.samples), default=0), max_sampled_gpu_mib=max((s['gpu_mib'] for s in trial.samples), default=0), min_host_available_kib=min((s['host_available_kib'] for s in trial.samples), default=available_kib()), parent_home_unchanged=os.environ.get('HOME') == original_home)
+        report.update(duration_seconds=round(time.monotonic()-trial.started, 3), downloaded_bytes=trial.downloaded, locally_reused_bytes=trial.reused,artifact_source=str(source_root) if source_root else None,receipts=trial.receipts, samples=len(trial.samples), max_sampled_rss_kib=max((s['rss_kib'] for s in trial.samples), default=0), max_sampled_gpu_mib=max((s['gpu_mib'] for s in trial.samples), default=0), min_host_available_kib=min((s['host_available_kib'] for s in trial.samples), default=available_kib()), parent_home_unchanged=os.environ.get('HOME') == original_home)
         (root/('resource-samples'+suffix+'.json')).write_text(json.dumps(trial.samples)+'\n')
         if report['cleanup_errors'] or report['duration_seconds'] > 600:
             report['outcome'] = 'FAIL'

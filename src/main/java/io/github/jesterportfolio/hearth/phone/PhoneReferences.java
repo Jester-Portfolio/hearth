@@ -18,4 +18,5 @@ public final class PhoneReferences {
     public void remove(Request request){if(current(request))latest.remove(request.session);}
     public void remove(Object session){latest.remove(session);}
     public void clear(){latest.clear();}
+    public static String label(PhoneGrounding.Plan plan,String key){var selected=plan.selected();for(int i=0;i<selected.size();i++){var item=selected.get(i).item();if(item.key().equals(key))return "[자료 "+(i+1)+"] "+item.source().title();}throw new IllegalStateException("STALE_AI_REFERENCE");}
 }

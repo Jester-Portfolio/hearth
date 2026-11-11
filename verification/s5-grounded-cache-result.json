@@ -1,0 +1,152 @@
+{
+  "checked_at": "2026-11-11",
+  "baseline_commit": "1e561ab",
+  "decision": "ADR-0019",
+  "outcome": "INTERNAL_PASS_REAL_MODEL_RETEST_WAITING_FOR_DISK",
+  "whole_s5_complete": false,
+  "actual_model_retest_run": false,
+  "actual_minecraft_client_run": false,
+  "production_changed": false,
+  "evidence_root": "/tmp/hearth-s5-grounded-cache.besnbirt",
+  "artifact": {
+    "path": "/tmp/hearth-s5-grounded-cache.besnbirt/Hearth-final.jar",
+    "sha256": "c9b080a8e99620ebe6d525661993a3b02cede5fe23dc874f6c3b9881c2ade961",
+    "bytes": 2293843
+  },
+  "unit_tests": {
+    "unique_cases": 102,
+    "failures": 0,
+    "runs": [
+      {
+        "evidence": "/tmp/hearth-s5-grounded-cache.besnbirt/unit-results",
+        "tests": 81,
+        "failures": 0
+      },
+      {
+        "evidence": "/tmp/hearth-s5-grounded-cache.besnbirt/related-unit-results",
+        "tests": 19,
+        "failures": 0
+      },
+      {
+        "evidence": "/tmp/hearth-s5-grounded-cache.besnbirt/help-unit-results",
+        "tests": 8,
+        "failures": 0
+      }
+    ]
+  },
+  "python_tests": {
+    "unique_cases": 14,
+    "failures": 0,
+    "all_log": "/tmp/hearth-s5-grounded-cache.besnbirt/python-tests.log",
+    "final_related_cases": 8,
+    "final_log": "/tmp/hearth-s5-grounded-cache.besnbirt/final-python-tests.log"
+  },
+  "compile_logs": [
+    "/tmp/hearth-s5-grounded-cache.besnbirt/unit-build.log",
+    "/tmp/hearth-s5-grounded-cache.besnbirt/final-related-build.log",
+    "/tmp/hearth-s5-grounded-cache.besnbirt/native-stage.log",
+    "/tmp/hearth-s5-grounded-cache.besnbirt/help-tests.log",
+    "/tmp/hearth-s5-grounded-cache.besnbirt/probe-compile.log"
+  ],
+  "native": {
+    "workspace": "/tmp/hearth-s4-11.a56w7amb",
+    "raw_result": "/tmp/hearth-s4-11.a56w7amb/run-result.json",
+    "command": [
+      "python3",
+      "scripts/verify-lifecycle.py",
+      "--workspace",
+      "/tmp/hearth-s4-11.a56w7amb",
+      "--java",
+      "/home/server/.local/share/hearth-verification/jdk-25.0.5+8/bin/java",
+      "--plugin",
+      "/tmp/hearth-s5-grounded-cache.besnbirt/Hearth-final.jar",
+      "--artifact-source",
+      "/tmp/hearth-s4-2.vnd2kki4",
+      "--sessions",
+      "--quests",
+      "--story-batch",
+      "--quest-navigation",
+      "--phone-dialog",
+      "--accept-eula"
+    ],
+    "result": "PASS",
+    "assertions": 119,
+    "new_boundary_checks": [
+      "grounded_cache_only_public_prompt_and_source_count",
+      "grounded_cache_only_public_prompt_and_source_count",
+      "grounded_cache_only_public_prompt_and_source_count",
+      "grounded_cache_only_public_prompt_and_source_count",
+      "grounded_cache_hit_still_checks_identity_and_real_PG",
+      "grounded_cache_public_reference_number_matches_material",
+      "grounded_cache_real_PG_failure_evicts_without_history_or_draft_loss",
+      "grounded_cache_only_public_prompt_and_source_count",
+      "grounded_cache_waits_identity_without_generation",
+      "grounded_cache_real_PG_revision_change_rejects_same_excerpt",
+      "grounded_cache_same_text_has_distinct_actual_PG_provenance",
+      "grounded_cache_only_public_prompt_and_source_count",
+      "grounded_cache_new_revision_requires_fresh_answer",
+      "grounded_cache_only_public_prompt_and_source_count",
+      "grounded_cache_bad_reference_never_cached_or_recorded",
+      "grounded_cache_preserves_other_player_PG",
+      "grounded_cache_reads_preserve_journal_inventory_and_revision",
+      "grounded_cache_close_discards_session_answers"
+    ],
+    "duration_seconds": 51.145,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 1,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "all_owned_processes_and_ports_closed": true,
+    "cleanup_errors": [],
+    "player_actions_verdict": "NOT_RUN"
+  },
+  "cache_contract": {
+    "owner": "PhoneChat/current verified connection",
+    "global_or_persistent": false,
+    "entries_max": 4,
+    "ttl_seconds": 60,
+    "hit_extends_ttl": false,
+    "utf8_prompt_and_answer_bytes_max": 131072,
+    "key": "Exact AssistantRequest question/history/context/source contract inside current mode/material scope",
+    "scope_change_evicts": true,
+    "backend_identity_confirmed_on_hit": true,
+    "fresh_PG_authorization_required_on_hit": true,
+    "errors_cancel_stale_invalid_citations_never_cached": true,
+    "clear_quit_evict": true,
+    "unknown_text_protocol_not_cached": true
+  },
+  "reference_contract": {
+    "sources_max": 4,
+    "zero_sources_forbid_citation": true,
+    "internal_material_keys_not_transmitted": true,
+    "missing_invalid_out_of_range_or_invisible_only_citation_rejected": true,
+    "truth_or_citation_entailment_guaranteed": false
+  },
+  "actual_trial_precondition": {
+    "required_initial_tmp_free_mib": 16384,
+    "initial_observed_mib": 15815,
+    "later_observed_mib": 15425,
+    "user_answer": "직접 공간 확보 후 알림",
+    "awaiting_confirmation": true,
+    "existing_evidence_deleted": false,
+    "minimum_lowered": false,
+    "prepared_only": [
+      "--artifact-source verified immutable archive/blob copies",
+      "--grounded representative warmup and citation/session/cache/stale/overflow probe"
+    ],
+    "model_or_runtime_downloads_this_batch": false
+  },
+  "not_run": [
+    "새 참고자료 번호 지시/모델 응답 품질의 실제 추론",
+    "실제 모델 캐시 적중/절약·최종 HTTP 400 안내 재확인",
+    "일반 정답률·과학 지식·인용 충실도·사용량/장기 성능",
+    "실제 Minecraft 화면/클릭·코옵",
+    "운영 상시 설치/배포·기존 서비스/DB/SSH 변경"
+  ]
+}

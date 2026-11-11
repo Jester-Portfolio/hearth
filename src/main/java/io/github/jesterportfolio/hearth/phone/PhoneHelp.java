@@ -30,7 +30,7 @@ public final class PhoneHelp {
         };int index=keys.indexOf(expected.key());if(index<0)throw new IllegalStateException("HELP_SOURCE_UNAVAILABLE");var current=select(catalog,view,data,expected.section(),index);if(!current.selected().equals(expected.selected()))throw new IllegalStateException("STALE_HELP_SOURCE");return current;
     }
 
-    public static PhoneRetrieval.Result result(Selection selection){var source=selection.source();return new PhoneRetrieval.Result(List.of(source),"플레이어가 선택한 현재 공개 자료 한 항목입니다. 자료에 없는 스토리·진행·좌표는 추측하지 마세요. 게임 상태를 변경할 권한은 없습니다.\n[선택 자료] "+source.title()+"\n"+source.text());}
+    public static PhoneRetrieval.Result result(Selection selection){var source=selection.source();return new PhoneRetrieval.Result(List.of(source),"플레이어가 선택한 현재 공개 자료 한 항목입니다. 자료에 없는 스토리·진행·좌표는 추측하지 마세요. 게임 상태를 변경할 권한은 없습니다.\n[자료 1] "+source.title()+"\n"+source.text());}
     public static boolean same(Selection first,Selection second){return first!=null&&second!=null&&first.section().equals(second.section())&&first.key().equals(second.key())&&first.selected().equals(second.selected());}
     public static String question(){return "이 자료를 바탕으로 현재 상황을 이해하고 다음 행동을 정리해 주세요.";}
 }

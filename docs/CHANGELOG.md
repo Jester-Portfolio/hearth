@@ -1,5 +1,9 @@
 # Hearth 주요 변경 이력
 
+## 2026-11-11 — 공개 자료 번호·접속별 AI 캐시
+
+- 기존 공개 자료 도움에 번호 계약과 참고자료 목록/상세 표시를 연결하고, [접속별 유한 응답 캐시](decisions/0019-session-ai-cache-and-reference-contract.md)를 추가했다. 캐시 적중도 백엔드 신원/최신 PG 확인을 유지하며 잘못된 번호·버전 변경·조회 실패는 원본과 질문을 보존한다. [내부 검사·실제 모델 재시험 대기](s5-grounded-cache-verification.md)를 구분한다.
+
 ## 2026-11-10 — 첫 로컬 AI 연결·격리 실제 추론
 
 - 승인한 [Ollama/Qwen3 조합과 격리 예산](decisions/0018-local-ai-runtime-and-trial-budget.md)에 맞춰 선택형 JSON 어댑터·버전/모델 확인·원본 자료/요청 한도를 연결했다. 기본 Mock은 유지하며 실제 한국어·진행별 자료 분리·정보 부재·취소 후 재요청을 부분 확인했다. [초기 준비 실패·한도 분류 보완·미검증](s5-local-ai-verification.md)을 구분하며 전체 S5 완료나 운영 적용을 뜻하지 않는다.
