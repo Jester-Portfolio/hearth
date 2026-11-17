@@ -21,6 +21,7 @@
 - 최종 JAR의 정상 스토리 **두 JVM/PG PASS**, `/home/server/hearth-tmp/hearth-s4-11.tsn13qf2`, **46.108초·관련 assertion 15개**, `cleanup_errors=[]`. 실제 누락 연결/콘텐츠 변경 거부·경제 realm 첫 등록 경합 1회·기존 소유 누락 거부·실제 시장 SELECT `42P01`·새 JVM의 시계/revision/개인 인벤토리/공유 원본을 확인했다. 현재 READY 보고서의 읽기 검사와 정상 drain/종료 뒤 CLOSED의 역사 로그 판정을 구분했다.
 - 같은 JAR의 정상 경제 **두 JVM/PG PASS**, `/home/server/hearth-tmp/hearth-s4-11.pk72h4r6`, **48.442초·관련 assertion 20개**, `cleanup_errors=[]`. 새 소유 격리 fixture에 기존 경제 소유 표식을 명시해 정상 기동의 재초기화 금지 분기를 실행하고 기존 계정/잔액·시장/운송·PAUSE·스토리 원본과 종료를 확인했다. 이전 거래/채집 SQL 행렬은 반복하지 않았다.
 - 별도 JVM의 오프라인 감사 **13개 PASS**: 비활성 공개 합성 자료의 새 사본에서 스토리/경제/해시 채집 정의 파싱, 기존 출력 보존, 해시/필수 AI/경제 초기 잔액/미정리 표식·링크 거부와 실패 시 성공 출력 미생성을 확인했다. 기존 증거는 읽기만 했으며 PG/HTTP/모델 없이 통과했다.
+- 실제 `gradle operatorConfigAudit`의 인자/클래스패스 연결도 새 출력에서 PASS했다. 기존 클래스 검사와 별도로 실행 경로를 확인했으며 네이티브 검사는 반복하지 않았다.
 - 설치된 **Docker Compose v5.5.0의 `config --quiet` PASS**, 두 shell 구문과 승인 표식 부재의 즉시 거부 PASS. 검토용 가짜 digest/비존재 데이터 경로만 사용했으며 Docker 이미지 조회/빌드/실행은 하지 않았다. 이 결과는 실제 이미지 호환성·운영 배포 성공이 아니다.
 
 첫 두 통합 시도 `/home/server/hearth-tmp/hearth-s4-11.obnukwlp`(33.032초)와 `hearth-s4-11.k0lmjzyr`는 **검증 코드의 오류 코드 기대값** 때문에 FAIL이었다. DB worker 안의 누락 예외는 `INVALID_STATE`로 변환되지만 read 이후 비동기 검증 예외는 `STORY_BINDING_CONFLICT`로 남는 차이를 반영했다. 실패 원본·해당 JAR/로그/풀 종료 분류 오류를 보존하고 최종 새 격리 경로에서 통과했다. 원래 FAIL을 PASS로 덮어쓰지 않았다.

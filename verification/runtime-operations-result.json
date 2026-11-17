@@ -79,5 +79,7 @@
   "AI_inference": "NOT_RUN",
   "docker_image_build_and_run": "NOT_RUN",
   "actual_zabbix": "NOT_RUN",
-  "operating_changes": "NONE"
+  "operating_changes": "NONE",
+  "gradle_operator_config_audit_task": "PASS",
+  "gradle_operator_config_audit_log": "/home/server/hearth-tmp/hearth-runtime-safety.qo69wcaj/gradle-audit-task.log"
 }
