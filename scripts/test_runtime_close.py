@@ -38,5 +38,13 @@ class RuntimeCloseTests(unittest.TestCase):
     def test_nonzero_exit_is_not_accepted_by_a_success_log(self):
         with self.assertRaises(AssertionError):self.completed('paper-story-runtime',['HEARTH_STORY_DISABLE_CLOSE PASS'],1).stop('paper-story-runtime','stop')
 
+    def test_preparation_runtime_requires_its_own_clean_close(self):
+        self.completed('paper-story-preparation',['HEARTH_STORY_PREPARATION_DISABLE_CLOSE PASS']).stop('paper-story-preparation','stop')
+
+    def test_preparation_hold_or_other_mode_marker_does_not_count_as_clean(self):
+        for marker in ['HEARTH_STORY_PREPARATION_DISABLE_CLOSE HOLD','HEARTH_STORY_DISABLE_CLOSE PASS']:
+            with self.subTest(marker=marker),self.assertRaises(AssertionError):
+                self.completed('paper-story-preparation',[marker]).stop('paper-story-preparation','stop')
+
 
 if __name__=='__main__':unittest.main()

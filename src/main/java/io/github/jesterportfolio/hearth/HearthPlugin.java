@@ -11,6 +11,8 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class HearthPlugin extends JavaPlugin {
+    private volatile io.github.jesterportfolio.hearth.story.StoryPreparationRuntime storyPreparation;
+    public io.github.jesterportfolio.hearth.story.StoryPreparationRuntime storyPreparation(){return java.util.Objects.requireNonNull(storyPreparation);}
     private volatile io.github.jesterportfolio.hearth.story.StoryRuntime storyRuntime;
     public io.github.jesterportfolio.hearth.story.StoryRuntime storyRuntime(){return java.util.Objects.requireNonNull(storyRuntime);}
     private volatile io.github.jesterportfolio.hearth.economy.EconomyRuntime economyRuntime;
@@ -27,6 +29,12 @@ public final class HearthPlugin extends JavaPlugin {
         final String mode;
         try{mode=io.github.jesterportfolio.hearth.economy.EconomyRuntimeSettings.mode(getConfig().getString("runtime-mode","disabled"),getConfig().getBoolean("verification-enabled"));}
         catch(RuntimeException error){getLogger().severe("HEARTH_RUNTIME_MODE_REFUSED");getServer().getPluginManager().registerEvents(new io.github.jesterportfolio.hearth.economy.EconomyLoginGate(()->false),this);return;}
+        if(mode.equals("story-prepare")){
+            getServer().getPluginManager().registerEvents(new io.github.jesterportfolio.hearth.story.StoryLoginGate(uuid->false),this);
+            java.util.Objects.requireNonNull(getCommand("hearthstoryadmin")).setExecutor((sender,command,label,args)->{sender.sendMessage("스토리 준비 설정 보류 · 서버 콘솔에서 확인하세요.");return true;});
+            try{storyPreparation=new io.github.jesterportfolio.hearth.story.StoryPreparationRuntime(this);}catch(Exception error){getLogger().severe("HEARTH_STORY_PREPARATION_REFUSED; admissions remain closed");}
+            return;
+        }
         if(mode.equals("story")){
             getServer().getPluginManager().registerEvents(new io.github.jesterportfolio.hearth.story.StoryLoginGate(uuid->storyRuntime!=null&&storyRuntime.phase()==io.github.jesterportfolio.hearth.story.StoryRuntime.Phase.READY&&storyRuntime.settings().members().containsKey(uuid)),this);
             java.util.Objects.requireNonNull(getCommand("hearthstoryadmin")).setExecutor((sender,command,label,args)->{sender.sendMessage("스토리 실행 설정 보류 · 서버 콘솔에서 로그/설정을 확인하세요.");return true;});
@@ -139,7 +147,7 @@ public final class HearthPlugin extends JavaPlugin {
     }
 
     @Override public void onDisable() {
-        try{io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(storyRuntime,economyRuntime,lifecycleVerification,inventoryVerification,databaseVerification,verification,restartVerification);}
+        try{io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(storyPreparation,storyRuntime,economyRuntime,lifecycleVerification,inventoryVerification,databaseVerification,verification,restartVerification);}
         catch(RuntimeException error){getLogger().log(java.util.logging.Level.SEVERE,"HEARTH_DISABLE_CLEANUP_FAILED",error);}
     }
 }

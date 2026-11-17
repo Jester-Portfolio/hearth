@@ -1,0 +1,28 @@
+# 새 진행 준비 전용 예시입니다. 운영 서비스/설정에 자동 적용하지 않습니다.
+runtime-mode: story-prepare
+verification-enabled: false
+story-preparation:
+  content-file: story-content.yml
+  content-sha256: REPLACE_WITH_REVIEWED_CONTENT_SHA256
+  max-template-files: 10000
+  max-template-bytes: 1073741824
+  reserve-bytes: 268435456
+  db-host: 127.0.0.1
+  db-port: 5432
+  db-name: hearth_story
+  db-user: hearth
+  password-environment: HEARTH_STORY_DB_PASSWORD
+  jobs:
+    - id: prepared_one
+      run: 00000000-0000-0000-0000-000000000001
+      world-key: hearth_story:prepared_one
+      template: reviewed_template
+      template-version: reviewed-v1
+      template-sha256: REPLACE_WITH_SPATIAL_SHA256
+      regions-sha256: REPLACE_WITH_WORLDGUARD_FILE_SHA256
+      entry-x: 0.5
+      entry-y: 65
+      entry-z: 0.5
+      entry-yaw: 0
+      entry-pitch: 0
+      required-regions: [protected]

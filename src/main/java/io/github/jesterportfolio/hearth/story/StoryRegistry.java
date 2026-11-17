@@ -45,6 +45,20 @@ public final class StoryRegistry {
             c.commit();return null;
         }catch(Exception failure){c.rollback();throw failure;}finally{c.setAutoCommit(true);}
     });}
+    /** 새 진행 준비 전용. 기존 진행을 채택하거나 불명 commit을 재확정하지 않습니다. */
+    public CompletionStage<Void> requireNew(UUID run,String key){return database.module("story_prepare_available",c->{
+        try(var st=c.prepareStatement("SELECT EXISTS(SELECT 1 FROM hearth_progress.story_run WHERE story_run_id=?) OR EXISTS(SELECT 1 FROM hearth_runtime.story_binding WHERE world_key=?)")){st.setObject(1,run);st.setString(2,key);try(var rows=st.executeQuery()){rows.next();if(rows.getBoolean(1))throw new IllegalStateException("STORY_PREPARE_EXISTING_RUN_OR_KEY");}}
+        return null;
+    });}
+    public CompletionStage<Void> createPrepared(StoryBinding binding){return database.module("story_prepare_register",c->{
+        c.setAutoCommit(false);
+        try{
+            try(var st=c.createStatement()){st.setQueryTimeout(3);st.execute("SELECT pg_advisory_xact_lock(704404013)");}
+            try(var st=c.prepareStatement("INSERT INTO hearth_progress.story_run(story_run_id,state_value) VALUES (?,'story')")){st.setObject(1,binding.run());st.executeUpdate();}
+            try(var st=c.prepareStatement("INSERT INTO hearth_runtime.story_binding VALUES (?,?,?,?,?,?)")){st.setObject(1,binding.run());st.setString(2,binding.worldKey());st.setObject(3,binding.worldId());st.setString(4,binding.templateVersion());st.setString(5,binding.templateHash());st.setString(6,binding.contentHash());st.executeUpdate();}
+            c.commit();return null;
+        }catch(Exception failure){c.rollback();throw failure;}finally{c.setAutoCommit(true);}
+    });}
     public CompletionStage<StoryBinding> read(UUID run){return database.module("story_registry_read",c->read(c,run));}
     private static StoryBinding read(Connection c,UUID run)throws SQLException{
         try(var st=c.prepareStatement("SELECT world_key,world_uuid,template_version,template_hash,content_hash FROM hearth_runtime.story_binding WHERE story_run_id=?")){

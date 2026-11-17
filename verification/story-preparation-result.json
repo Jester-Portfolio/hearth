@@ -1,0 +1,115 @@
+{
+  "date": "2026-11-17",
+  "scope": "new story run preparation, protected template copy, strict registration and normal next-JVM restoration",
+  "outcome": "PASS",
+  "evidence": "/home/server/hearth-tmp/hearth-story-preparation.y3hsnmc4",
+  "final_jar_sha256": "750a17c312fe09ed1dae50239a9700c91db1d82d0ba741b00d64a2eb172822c7",
+  "units": {
+    "initial_passed": 14,
+    "additional_space_boundary_passed": 2,
+    "total_passed": 16,
+    "new": 15,
+    "old_successful_units_repeated": false
+  },
+  "python_controller_tests": {
+    "new_passed": 2
+  },
+  "native_runs": [
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.07bm7qxv",
+      "outcome": "PASS",
+      "duration_seconds": 41.537,
+      "session_checks": [
+        "story_preparation_normal_preparation_mode_without_gameplay_or_fixture_bootstrap",
+        "story_preparation_identical_job_shares_one_operation",
+        "story_preparation_copied_runs_have_independent_physical_UUIDs",
+        "story_preparation_prepared_run_progress_saved_without_replacing_template",
+        "story_preparation_concurrent_strict_new_registration_has_one_winner",
+        "story_preparation_strict_registration_race_preserves_winning_binding",
+        "story_preparation_existing_progress_refused_without_adoption",
+        "story_preparation_existing_run_refusal_allocates_no_world",
+        "story_preparation_real_final_registration_SQL_failure_preserves_prepared_assets",
+        "story_preparation_failed_registration_is_HOLD_not_retry_or_cleanup",
+        "story_preparation_normal_runtime_rejects_pending_preparation_marker",
+        "story_preparation_failed_registration_rolls_back_run_and_binding_together",
+        "story_preparation_original_sentinel_inventory_preserved",
+        "story_preparation_original_shared_progress_preserved",
+        "story_preparation_source_spatial_and_protection_hashes_unchanged",
+        "story_preparation_template_UUID_and_personal_files_not_imported_a",
+        "story_preparation_template_UUID_and_personal_files_not_imported_b",
+        "story_preparation_new_JVM_normal_gameplay_uses_prepared_runs",
+        "story_preparation_new_JVM_personal_A_inventory_preserved",
+        "story_preparation_new_JVM_personal_B_inventory_preserved",
+        "story_preparation_new_JVM_saved_world_A_change_and_original_B_are_independent",
+        "story_preparation_new_JVM_WorldGuard_progress_is_independent",
+        "story_preparation_failed_preparation_original_HOLD_marker_survives_restart",
+        "story_preparation_new_JVM_original_nonmember_inventory_preserved",
+        "story_preparation_new_JVM_personal_progress_preserved",
+        "story_preparation_new_JVM_shared_progress_preserved"
+      ],
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "ef9bedb352fdb2a43b8913660aa48f8e493d11c0704c69b2c8c21a1c5a2cd462",
+      "story_preparation_recheck": false
+    },
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.ahw9832q",
+      "outcome": "PASS",
+      "duration_seconds": 43.073,
+      "session_checks": [
+        "story_preparation_normal_preparation_mode_without_gameplay_or_fixture_bootstrap",
+        "story_preparation_identical_job_shares_one_operation",
+        "story_preparation_copied_runs_have_independent_physical_UUIDs",
+        "story_preparation_prepared_run_progress_saved_without_replacing_template",
+        "story_preparation_original_sentinel_inventory_preserved",
+        "story_preparation_original_shared_progress_preserved",
+        "story_preparation_source_spatial_and_protection_hashes_unchanged",
+        "story_preparation_template_UUID_and_personal_files_not_imported_a",
+        "story_preparation_template_UUID_and_personal_files_not_imported_b",
+        "story_preparation_new_JVM_normal_gameplay_uses_prepared_runs",
+        "story_preparation_new_JVM_personal_A_inventory_preserved",
+        "story_preparation_new_JVM_personal_B_inventory_preserved",
+        "story_preparation_new_JVM_saved_world_A_change_and_original_B_are_independent",
+        "story_preparation_new_JVM_WorldGuard_progress_is_independent",
+        "story_preparation_new_JVM_original_nonmember_inventory_preserved",
+        "story_preparation_new_JVM_personal_progress_preserved",
+        "story_preparation_new_JVM_shared_progress_preserved"
+      ],
+      "cleanup_errors": [],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "750a17c312fe09ed1dae50239a9700c91db1d82d0ba741b00d64a2eb172822c7",
+      "story_preparation_recheck": true
+    }
+  ],
+  "unchanged_storage_and_physical_boundary_classes": [
+    "io/github/jesterportfolio/hearth/administration/RuntimeLease$Lease.class",
+    "io/github/jesterportfolio/hearth/administration/RuntimeLease.class",
+    "io/github/jesterportfolio/hearth/story/StoryRegistry.class",
+    "io/github/jesterportfolio/hearth/story/StoryWorldBackend.class",
+    "io/github/jesterportfolio/hearth/world/PaperWorldBackend$1.class",
+    "io/github/jesterportfolio/hearth/world/PaperWorldBackend.class",
+    "io/github/jesterportfolio/hearth/world/TemplateStore.class"
+  ],
+  "source_template_evidence": "/home/server/hearth-tmp/hearth-s4-11.1va4750n (inactive PASS, read-only copy)",
+  "actual_client_actions": "NOT_RUN",
+  "new_AI_inference": "NOT_RUN",
+  "operating_changes": false,
+  "limits": {
+    "cpu": 2,
+    "nice": 10,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "preparation_job_seconds": 90,
+    "safe_Paper_stage_seconds": 10
+  },
+  "remaining": [
+    "normal story effects and read-only recovery integration",
+    "compatible-content migration",
+    "economy direct player trade/gathering integration",
+    "actual client/level design acceptance",
+    "operating budgets/SLO/deployment"
+  ]
+}

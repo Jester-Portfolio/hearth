@@ -11,7 +11,7 @@ description: Hearth story foundations and optional dedicated economy runtime
 commands:
   hearthstoryadmin:
     description: Console-only story runtime status and asynchronous save drain
-    usage: /hearthstoryadmin status|drain
+    usage: /hearthstoryadmin status|prepare|drain
     permission: hearth.story.manage
   heartheconomy:
     description: Console-only economy status, asynchronous drain and receipt inspection

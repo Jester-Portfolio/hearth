@@ -5,9 +5,16 @@ import java.util.*;
 import org.bukkit.*;
 import org.bukkit.generator.ChunkGenerator;
 
-/** S4-only allocation: rejects existing data; API calls must run outside world ticking. */
+/** Fresh allocation only: isolated defaults or explicit story keys; existing data is never adopted. */
 public final class PaperWorldBackend implements WorldBackend {
     private final Map<NamespacedKey, Placement> owned = new HashMap<>();
+    private final Set<NamespacedKey> allocationKeys;
+    public PaperWorldBackend(){allocationKeys=null;}
+    /** 새 스토리 준비자가 정한 정확한 키만 허용합니다. 기존 차원 재등록에는 사용하지 않습니다. */
+    public PaperWorldBackend(Set<NamespacedKey> allocationKeys){
+        this.allocationKeys=Set.copyOf(allocationKeys);
+        if(this.allocationKeys.isEmpty()||this.allocationKeys.size()>64||this.allocationKeys.stream().anyMatch(k->!k.getNamespace().equals("hearth_story")||!k.getKey().matches("[a-z0-9_]+")))throw new IllegalArgumentException("Explicit story allocation keys required");
+    }
     private final ChunkGenerator generator = new ChunkGenerator() {
         @Override public boolean shouldGenerateNoise() { return false; }
         @Override public boolean shouldGenerateSurface() { return false; }
@@ -22,7 +29,7 @@ public final class PaperWorldBackend implements WorldBackend {
 
     @Override public Placement create(UUID runId, NamespacedKey key) {
         safeThread();
-        if (!key.getNamespace().equals("hearth_verify") || !key.getKey().matches("[a-z0-9_]+")) {
+        if (allocationKeys==null?(!key.getNamespace().equals("hearth_verify") || !key.getKey().matches("[a-z0-9_]+")):!allocationKeys.contains(key)) {
             throw new IllegalArgumentException("Verification key required");
         }
         Path expected = Bukkit.getServer().getLevelDirectory().resolve("dimensions")
@@ -51,6 +58,14 @@ public final class PaperWorldBackend implements WorldBackend {
         }
         world.setAutoSave(false);
         return world;
+    }
+    /** 이 프로세스가 방금 할당한 준비 산출물만 재검사합니다. 재시작/기존 데이터 채택 경로가 아닙니다. */
+    public World loadAllocated(Placement placement){
+        safeThread();requireOwned(placement);
+        if(allocationKeys==null||!allocationKeys.contains(placement.key()))throw new IllegalStateException("Not a story allocation");
+        try{if(!placement.directory().toRealPath().equals(placement.directory())||!Files.isRegularFile(placement.directory().resolve("data/paper/metadata.dat"),LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException("Allocation metadata missing");}catch(java.io.IOException error){throw new IllegalStateException("Allocation metadata missing",error);}
+        var world=Objects.requireNonNull(Bukkit.createWorld(WorldCreator.ofKey(placement.key()).generator(generator)));
+        if(!world.getUID().equals(placement.physicalId())||!world.getWorldPath().toAbsolutePath().normalize().equals(placement.directory()))throw new IllegalStateException("Allocation identity changed");world.setAutoSave(false);return world;
     }
 
     /** Reattach a recorded test placement after JVM restart; never allocates or copies a world. */
