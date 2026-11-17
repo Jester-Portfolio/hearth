@@ -382,6 +382,8 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "economy-runtime-seed" -> {if(economy!=null)throw new IllegalStateException("Economy initialized");adapter.close();autosave.close();try{economy=new EconomyVerification(plugin,store,owner,codec,false);}catch(Exception error){throw new CompletionException(error);}yield EconomyRuntimeVerification.seed(plugin,store,economy.economy,codec,owner);}
+        case "economy-runtime-prepare" -> EconomyRuntimeVerification.prepare(plugin,store,Objects.requireNonNull(economy).economy,codec,owner);
         case "economy-start", "economy-resume", "economy-desk", "economy-report", "economy-supply", "economy-flow-start", "economy-flow-restored", "economy-quote", "economy-merchants" -> {if(economy!=null)throw new IllegalStateException("Economy already initialized");adapter.close();autosave.close();try{economy=new EconomyVerification(plugin,store,owner,codec,(phase.equals("economy-resume")||phase.equals("economy-flow-restored")));}catch(Exception e){throw new CompletionException(e);}yield switch(phase){case "economy-supply"->economy.runSupply();case "economy-flow-start","economy-flow-restored"->economy.runFlows();case "economy-quote"->economy.runQuote();case "economy-desk"->economy.runDesk();case "economy-report"->economy.runReport();case "economy-merchants"->economy.runMerchants();default->economy.run();};}
         case "effect-prepare" -> effectPrepare();
         case "effect-db-failure" -> effectDbFailure();

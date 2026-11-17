@@ -1,0 +1,22 @@
+# 준비용 예시입니다. 운영 설치/배포 설정이 아니며 기본 config.yml은 disabled입니다.
+# 별도 경제 전용 Paper 데이터 폴더, online-mode/whitelist, 기존 경제 차원과 보호 구역을 먼저 준비합니다.
+runtime-mode: economy
+verification-enabled: false
+economy-runtime:
+  realm: '00000000-0000-0000-0000-000000000001' # 실제로 정한 경제 realm으로 대체
+  world-key: 'hearth_economy:trade'
+  world-uuid: '00000000-0000-0000-0000-000000000002' # 기존 차원의 실제 UUID로 대체
+  # 진입 좌표/방향은 제작한 안전한 지점으로 대체합니다.
+  entry-x: 0.5
+  entry-y: 64
+  entry-z: 0.5
+  entry-yaw: 0
+  entry-pitch: 0
+  idle-seconds: 30
+  required-regions: [capital] # 실제 WorldGuard 보호 구역 ID
+  content-file: economy.properties
+  db-host: 127.0.0.1
+  db-port: 5432
+  db-name: hearth_economy
+  db-user: hearth
+  password-environment: HEARTH_DB_PASSWORD

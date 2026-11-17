@@ -7,8 +7,12 @@ softdepend: [BetterHud]
 libraries:
   - 'org.postgresql:postgresql:${postgresJdbcVersion}'
   - 'com.zaxxer:HikariCP:${hikariVersion}'
-description: Hearth S4 isolated multiworld verification foundation
+description: Hearth story foundations and optional dedicated economy runtime
 commands:
+  heartheconomy:
+    description: Console-only economy status, asynchronous drain and receipt inspection
+    usage: /heartheconomy status|drain|pending|history|inspect|recover
+    permission: hearth.economy.manage
   hearthai:
     description: Console-only AI usage totals and explicit model preparation
     usage: /hearthai status|prepare
@@ -51,6 +55,8 @@ commands:
     description: Console-only isolated S4 verification
     permission: hearth.verify
 permissions:
+  hearth.economy.manage:
+    default: op
   hearth.ai.inspect:
     default: op
   hearth.recovery:

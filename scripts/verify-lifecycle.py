@@ -159,6 +159,8 @@ def main():
     parser.add_argument('--economy-merchants', action='store_true', help='한 JVM에서 복수 상인·지역 거래·NPC 재로드 검사')
     parser.add_argument('--economy-report', action='store_true', help='한 JVM에서 공개 시장·운송·사건·생산 정보와 읽기 경계 검사')
     parser.add_argument('--economy-desk', action='store_true', help='한 JVM에서 다품목 상점·거래 기록·명시적 보류 정리 검사')
+    parser.add_argument('--economy-runtime-recheck',action='store_true',help='통과한 전체 경제 거래 검사를 반복하지 않고 새 복원 입력 준비·수정된 정상 기동/종료만 검사합니다')
+    parser.add_argument('--economy-runtime',action='store_true',help='기존 경제 fixture 준비 후 둘째 JVM에서 verification 비활성의 정상 경제 실행·계정 복원/종료를 검사합니다')
     parser.add_argument('--economy', action='store_true', help='경제 전용 월드·거래·두 JVM 복원 검증')
     parser.add_argument('--sessions', action='store_true', help='새 격리 환경에서 최소 세션 어댑터/저장 장벽을 검증합니다')
     parser.add_argument('--s4-client',action='store_true',help='실제 인증 클라이언트용 최신 S4 기능 전체를 같은 격리 환경에 준비합니다')
@@ -190,6 +192,8 @@ def main():
         parser.error('--combat-departures는 자동 --combat-players 모드에서 단독 시나리오로 실행합니다')
     if args.combat_paths and (not args.combat_players or args.manual_player):
         parser.error('--combat-paths는 자동 --combat-players 모드와 함께 실행합니다')
+    if args.economy_runtime_recheck and not args.economy_runtime:parser.error("--economy-runtime-recheck requires --economy-runtime")
+    if args.economy_runtime and (not args.economy or args.manual_player or any([args.economy_supply,args.economy_flows,args.economy_quote,args.economy_merchants,args.economy_report,args.economy_desk])):parser.error('--economy-runtime은 자동 --sessions --economy 기본 두 JVM에서 실행합니다')
     if args.combat_players and (not args.story_batch or any([args.combat_state,args.field_encounters,args.branch_progression,args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.world_effects])):
         parser.error('--combat-players는 --sessions --quests --story-batch와 단독 실행합니다')
     if args.combat_state and (not args.story_batch or any([args.manual_player,args.field_encounters,args.branch_progression,args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.world_effects])):
@@ -507,8 +511,28 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.dungeonPlay=true')
         if args.combat_players:
             paper.insert(-3,'-Dhearth.verification.combatPlayers=true')
+        if args.economy_runtime:paper.insert(-3,'-Dhearth.verification.economyRuntime=true')
         for phase in (['prepare','resume'] if args.s4_client or args.s4_completion or args.combat_paths else ['prepare'] if args.gathering_crafting or args.crafting_quests or args.crafting or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions and not args.inventory_workspaces or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
+            if phase=='resume' and args.economy_runtime:
+                endpoint=dict(line.split('=',1) for line in (root/'db-endpoint.properties').read_text().splitlines())
+                mapping=dict(line.split('=',1) for line in (plugins/'Hearth/economy-world.properties').read_text().splitlines() if line and not line.startswith('#'))
+                # Java Properties escapes ':' in keys/values; these known fixture values are narrow.
+                world_key=mapping['key'].replace('\\:',':')
+                config=plugins/'Hearth/config.yml'
+                text=re.sub(r'(?m)^([a-z-]*verification-enabled): true$',r'\1: false',config.read_text())
+                text+='\nruntime-mode: economy\neconomy-runtime:\n'
+                values={'realm':mapping['realm'],'world-key':world_key,'world-uuid':mapping['uuid'],'entry-x':5.5,'entry-y':64,'entry-z':5.5,'entry-yaw':0,'entry-pitch':0,'idle-seconds':1,'content-file':'economy-runtime.properties','db-host':'127.0.0.1','db-port':int(endpoint['port']),'db-name':'hearth_s4_11','db-user':'postgres','password-environment':'HEARTH_ISOLATED_ECONOMY_PASSWORD'}
+                text+=''.join('  '+key+': '+str(value)+'\n' for key,value in values.items())+'  required-regions: [capital]\n'
+                config.write_text(text)
+                properties=(plugins/'Hearth/economy-demo.properties').read_text().replace('fixture-balance=100000','fixture-balance=0')
+                (plugins/'Hearth/economy-runtime.properties').write_text(properties)
+                os.environ['HEARTH_ISOLATED_ECONOMY_PASSWORD']='isolated-not-a-secret'
+                name='paper-economy-runtime';monitor.launch(name,paper,runtime)
+                monitor.wait(name,'Done (',seconds=120);monitor.wait(name,'HEARTH_ECONOMY_RUNTIME_READY',seconds=30)
+                monitor.send(name,'heartheconomy verify');monitor.wait(name,'HEARTH_ECONOMY_RUNTIME_PROBE PASS',seconds=60)
+                monitor.send(name,'heartheconomy drain');monitor.wait(name,'HEARTH_ECONOMY_RUNTIME_DRAINED PASS',seconds=45)
+                monitor.stop(name,'stop');s42.port_free();continue
             if phase=='resume' and args.gathering:
                 content=plugins/'Hearth/gathering-demo.yml'
                 content.write_text(content.read_text().replace('active-template: ore_v1','active-template: ore_v2'))
@@ -556,7 +580,7 @@ motd=Hearth isolated S4-11 verification
                         elif args.fast_travel:
                             monitor.action(name,'travel-play')
                         elif args.economy:
-                            monitor.action(name,'economy-supply' if args.economy_supply else 'economy-flow-start' if args.economy_flows else 'economy-quote' if args.economy_quote else 'economy-merchants' if args.economy_merchants else 'economy-report' if args.economy_report else 'economy-desk' if args.economy_desk else 'economy-start')
+                            monitor.action(name,'economy-runtime-seed' if args.economy_runtime_recheck else 'economy-supply' if args.economy_supply else 'economy-flow-start' if args.economy_flows else 'economy-quote' if args.economy_quote else 'economy-merchants' if args.economy_merchants else 'economy-report' if args.economy_report else 'economy-desk' if args.economy_desk else 'economy-start')
                             if args.economy_flows:
                                 monitor.send(name,'hearthverify economy-event road_block 00000000-464c-4f57-0000-000000000002')
                                 monitor.wait(name,'HEARTH_ECONOMY_EVENT 예약 확인',seconds=20)
@@ -746,6 +770,7 @@ motd=Hearth isolated S4-11 verification
                     monitor.db('write-fail-on'); monitor.action(name,'db-failure'); monitor.db('write-fail-off')
                     monitor.action(name,'boundaries')
                     monitor.action(name,'unload-false')
+            if args.economy_runtime and not args.economy_runtime_recheck and phase=='prepare':monitor.action(name,'economy-runtime-prepare')
             monitor.action(name,'close')
             monitor.stop(name,'stop')
             s42.port_free()
@@ -804,7 +829,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    pack_downloads=pack_downloads,s4_client_mode=args.s4_client,manual_no_time_limit=args.manual_no_time_limit,recovery_inspection_mode=args.recovery_inspection,hud_display_mode=args.hud_display,betterhud_mode=args.betterhud,s4_completion_mode=args.s4_completion,inventory_workspaces_mode=args.inventory_workspaces,s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    pack_downloads=pack_downloads,s4_client_mode=args.s4_client,manual_no_time_limit=args.manual_no_time_limit,recovery_inspection_mode=args.recovery_inspection,hud_display_mode=args.hud_display,betterhud_mode=args.betterhud,s4_completion_mode=args.s4_completion,inventory_workspaces_mode=args.inventory_workspaces,s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,economy_runtime_mode=args.economy_runtime,economy_runtime_recheck=args.economy_runtime_recheck,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

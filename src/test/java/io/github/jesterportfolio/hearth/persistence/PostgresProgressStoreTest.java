@@ -15,6 +15,20 @@ final class PostgresProgressStoreTest {
         return access.forVerifiedServerLink(UUID.randomUUID(),UUID.randomUUID());
     }
 
+    @Test void moduleOnlyPoolNeverMigratesOrAccessesStoryAndKeepsAsyncConnectionBoundary() throws Exception {
+        var calls=new AtomicInteger();var caller=Thread.currentThread().getName();var threads=new CopyOnWriteArrayList<String>();
+        var source=new BrokenSource(()->{calls.incrementAndGet();threads.add(Thread.currentThread().getName());});
+        var store=PostgresProgressStore.forModules(source,f->{});
+        try{
+            assertEquals("MODULE_ONLY",failed(store.migrate()).code());
+            assertEquals("SCHEMA_NOT_READY",failed(store.createRun(UUID.randomUUID(),"story")).code());
+            assertEquals(0,calls.get());
+            failed(store.module("module_probe",connection->null));
+            assertTrue(calls.get()>0);assertTrue(threads.stream().noneMatch(caller::equals));
+        }finally{store.closeAsync().toCompletableFuture().get(5,TimeUnit.SECONDS);}
+        int previous=calls.get();assertEquals("CLOSED",failed(store.module("module_probe",connection->null)).code());assertEquals(previous,calls.get());
+    }
+
     @Test void foreignContextAndClosedStoreNeverConnect() throws Exception {
         var calls = new AtomicInteger();
         var failures = new CopyOnWriteArrayList<PostgresProgressStore.Failure>();

@@ -11,6 +11,8 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class HearthPlugin extends JavaPlugin {
+    private volatile io.github.jesterportfolio.hearth.economy.EconomyRuntime economyRuntime;
+    public io.github.jesterportfolio.hearth.economy.EconomyRuntime economyRuntime(){return java.util.Objects.requireNonNull(economyRuntime);}
     private SmokeVerification verification;
     private RestartVerification restartVerification;
     private boolean playerTest;
@@ -20,7 +22,17 @@ public final class HearthPlugin extends JavaPlugin {
 
     @Override public void onEnable() {
         saveDefaultConfig();
-        getLogger().info("Hearth enabled; production gameplay modules are not implemented.");
+        final String mode;
+        try{mode=io.github.jesterportfolio.hearth.economy.EconomyRuntimeSettings.mode(getConfig().getString("runtime-mode","disabled"),getConfig().getBoolean("verification-enabled"));}
+        catch(RuntimeException error){getLogger().severe("HEARTH_RUNTIME_MODE_REFUSED");getServer().getPluginManager().registerEvents(new io.github.jesterportfolio.hearth.economy.EconomyLoginGate(()->false),this);return;}
+        if(mode.equals("economy")){
+            getServer().getPluginManager().registerEvents(new io.github.jesterportfolio.hearth.economy.EconomyLoginGate(()->economyRuntime!=null&&economyRuntime.phase()==io.github.jesterportfolio.hearth.economy.EconomyRuntime.Phase.READY),this);
+            java.util.Objects.requireNonNull(getCommand("heartheconomy")).setExecutor((sender,command,label,args)->{sender.sendMessage("경제 실행 설정 보류 · 서버 콘솔에서 로그/설정을 확인하세요.");return true;});
+            try{economyRuntime=new io.github.jesterportfolio.hearth.economy.EconomyRuntime(this);}
+            catch(Exception error){getLogger().severe("HEARTH_ECONOMY_RUNTIME_REFUSED; admissions remain closed");}
+            return;
+        }
+        getLogger().info("Hearth enabled; gameplay is inactive unless an explicit runtime or isolated verification mode is configured.");
         if (getConfig().getBoolean("verification-enabled")) {
             try {
                 Path cwd = Path.of("").toRealPath();
@@ -118,7 +130,7 @@ public final class HearthPlugin extends JavaPlugin {
     }
 
     @Override public void onDisable() {
-        try{io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(lifecycleVerification,inventoryVerification,databaseVerification,verification,restartVerification);}
+        try{io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(economyRuntime,lifecycleVerification,inventoryVerification,databaseVerification,verification,restartVerification);}
         catch(RuntimeException error){getLogger().log(java.util.logging.Level.SEVERE,"HEARTH_DISABLE_CLEANUP_FAILED",error);}
     }
 }

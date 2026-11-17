@@ -95,7 +95,7 @@ class Monitor:
                     item['ready'] = round(time.monotonic()-item['started'], 3)
                 if any(token in line for token in [self.prefix+'_RESULT', 'HEARTH_S4_2_RESULT', 'HEARTH_S45_DB OK', 'HEARTH_S45_DB READY', self.prefix+'_DISABLE_CLOSE']):
                     print(key.data + ': ' + line, flush=True)
-                if not self.stopping and any(token in line for token in [self.prefix+'_RESULT FAIL', 'HEARTH_S4_2_RESULT FAIL', 'Error occurred while', 'Could not load', 'Unknown or incomplete command']):
+                if not self.stopping and any(token in line for token in [self.prefix+'_RESULT FAIL', 'HEARTH_ECONOMY_RUNTIME_PROBE FAIL', 'HEARTH_S4_2_RESULT FAIL', 'Error occurred while', 'Could not load', 'Unknown or incomplete command']):
                     raise RuntimeError('통합 시험/플러그인 오류: ' + key.data)
 
     def wait(self, name, token, since=0, seconds=90):
@@ -147,7 +147,7 @@ class Monitor:
         self.pump()
         assert proc.returncode == 0, name+': 비정상 종료'
         if name.startswith('paper'):
-            assert any(self.prefix+'_DISABLE_CLOSE PASS' in line for line in item['lines']), 'DB 풀 종료 확인 누락'
+            assert any(('HEARTH_ECONOMY_DISABLE_CLOSE PASS' if name=='paper-economy-runtime' else self.prefix+'_DISABLE_CLOSE PASS') in line for line in item['lines']), 'DB 풀 종료 확인 누락'
 
     def finish(self):
         self.stopping = True

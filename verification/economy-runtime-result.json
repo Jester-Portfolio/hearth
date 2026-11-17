@@ -1,0 +1,137 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "b3cd7a8",
+  "outcome": "DEDICATED_ECONOMY_ADMISSION_AND_RESTORE_DRAIN_PASS_AFTER_FIX",
+  "whole_economy_complete": false,
+  "actual_minecraft_client": false,
+  "operational_deployment": false,
+  "workspace": "/home/server/hearth-tmp/hearth-economy-runtime.qmm4nmk3",
+  "final_artifact": {
+    "path": "/home/server/hearth-tmp/hearth-economy-runtime.qmm4nmk3/Hearth-fixed.jar",
+    "sha256": "3ec51d74cf3917c7835d8bfe6d7064343f90a9976a202eb22b52d554c2921f33",
+    "native_installed_same_jar": true
+  },
+  "checks": {
+    "core_unit_tests": 121,
+    "new_core_tests": 13,
+    "additional_runtime_lease_tests": 5,
+    "failures_errors_skips": 0,
+    "python_control_tests": 6,
+    "core_unit_sweeps": 1,
+    "runtime_lease_sweeps": 1,
+    "initial_compile_failure_before_tests": "/home/server/hearth-tmp/hearth-economy-runtime.qmm4nmk3/build-first-failure.log",
+    "core_class_byte_identity_in_final_jar": {
+      "economy/EconomyStore": {
+        "class_files": 10,
+        "identical": true
+      },
+      "economy/EconomyAdmission": {
+        "class_files": 2,
+        "identical": true
+      },
+      "economy/EconomyRuntimeSettings": {
+        "class_files": 1,
+        "identical": true
+      },
+      "persistence/PostgresProgressStore": {
+        "class_files": 3,
+        "identical": true
+      },
+      "session/PaperSessionAdapter": {
+        "class_files": 11,
+        "identical": true
+      }
+    },
+    "reason_for_reusing_successful_units": "After successful core units only Paper shutdown scheduling/cleanup and gated fixture chunk setup changed; critical core classes/nested classes are identical. Added file lease has five separate final tests."
+  },
+  "first_native": {
+    "result": "/home/server/hearth-tmp/hearth-s4-11.eqsaxrdl/run-result.json",
+    "sha256": "d1dc0599500c6e6b4c44084fef8114534078a5f912a1ec4c3a703a1f182fbc7c",
+    "outcome": "FAIL",
+    "duration_seconds": 59.788,
+    "cleanup_errors": [
+      "AssertionError: DB 풀 종료 확인 누락"
+    ],
+    "all_owned_processes_and_ports_closed": false,
+    "passed_core_checks": [
+      "economy_runtime_existing_realm_not_reinitialized",
+      "economy_runtime_concurrent_realm_bootstrap_initializes_once",
+      "economy_runtime_new_account_rejects_nonempty_initial_assets",
+      "economy_runtime_first_empty_account_balance_zero",
+      "economy_runtime_reopening_never_resets_existing_account",
+      "economy_runtime_concurrent_account_creation_single_row",
+      "economy_runtime_failed_creation_not_accepted",
+      "economy_runtime_creation_rollback_preserves_missing_row",
+      "economy_runtime_foreign_context_cannot_provision",
+      "economy_runtime_bootstrap_keeps_story_database"
+    ],
+    "failure": "Normal controlled session expected merchant chunks without real players; undrained onDisable then attempted disabled scheduler and missed clean-close confirmation.",
+    "original_preserved": true
+  },
+  "final_native": {
+    "result": "/home/server/hearth-tmp/hearth-s4-11.393jm7pj/run-result.json",
+    "sha256": "fbbc96b73f131c6b94df5e6b680756716d2b351e9d3c243ce1daa16497dedb85",
+    "outcome": "PASS",
+    "duration_seconds": 51.747,
+    "checks": [
+      "fixture_prepared_no_login_provisioning",
+      "economy_runtime_normal_mode_without_story_or_verification_runtime",
+      "economy_runtime_offline_pause_no_catchup",
+      "economy_runtime_new_JVM_existing_account_preserved",
+      "economy_runtime_legacy_account_preserved_1",
+      "economy_runtime_legacy_account_preserved_2",
+      "economy_runtime_legacy_account_preserved_3",
+      "economy_runtime_legacy_account_preserved_4",
+      "economy_runtime_legacy_account_preserved_5",
+      "economy_runtime_legacy_account_preserved_6",
+      "economy_runtime_legacy_account_preserved_7",
+      "economy_runtime_legacy_account_preserved_8",
+      "economy_runtime_unmanaged_nonempty_inventory_preserved",
+      "economy_runtime_foreign_inventory_owner_denied",
+      "economy_runtime_normal_admission_new_zero_account",
+      "economy_runtime_normal_bootstrap_does_not_reset_realm",
+      "economy_runtime_offline_resume_and_admission_preserve_market_transport_tick",
+      "economy_runtime_normal_module_boot_keeps_original_story_PG",
+      "economy_runtime_normal_controlled_session_applies_only_own_PG_inventory",
+      "economy_runtime_normal_session_world_existing_WorldGuard_and_merchants_ready"
+    ],
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "paper_starts": 2,
+    "postgres_instances": 1,
+    "full_previously_successful_economy_trade_scenario_repeated": false,
+    "preparation": "Fresh minimal realm/accounts/world restore inputs only."
+  },
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/HearthPlugin.java": "78b294ef6046f069baacac9965c3b56257ff577fa53edfb73b21f49b04950b3f",
+    "src/main/java/io/github/jesterportfolio/hearth/economy/EconomyAdmission.java": "573969cb1775a5d06fe43577641f3cc85d92b081357a18d784dcb4aec9a3635e",
+    "src/main/java/io/github/jesterportfolio/hearth/economy/EconomyRuntimeSettings.java": "d9fed742a699640506f55b7445a7783a4199f98ed2cfeebbe3de83d71f7bc689",
+    "src/main/java/io/github/jesterportfolio/hearth/economy/EconomyLoginGate.java": "0b7c206e789960212a8ab67c29809fd417aaca1aa386f4d5f7afbffc1056712b",
+    "src/main/java/io/github/jesterportfolio/hearth/economy/EconomyRuntime.java": "23eaea20f25491e7ead0a158c8ae7a17fcdb410979b1474c11a99e9bf3c6e490",
+    "src/main/java/io/github/jesterportfolio/hearth/economy/EconomyWorldBackend.java": "92ceb1e1cb0cf411bf99ba7429af76404f74971c56d7f9dcddc481806018e137",
+    "src/main/java/io/github/jesterportfolio/hearth/economy/EconomyStore.java": "f33bf3c152dbbadfbcab218bfedd9a0a470597f38e0093ebb3ffacd106ed812b",
+    "src/main/java/io/github/jesterportfolio/hearth/economy/PaperEconomy.java": "d14b788613e42c9fe0c012c5a71941a16d2b38a614cf19bc5fa0b702f079d8a7",
+    "src/main/java/io/github/jesterportfolio/hearth/administration/RuntimeLease.java": "1a2e1cacc7970e8e83bc0b65a75a18bd5736cc142e5d91e0f4f833c69ba2089d",
+    "src/main/java/io/github/jesterportfolio/hearth/session/PaperSessionAdapter.java": "c49993748fffb5a912afe067a9ea830c6810c1baf287e081f8508b44a042fca8",
+    "src/main/java/io/github/jesterportfolio/hearth/persistence/PostgresProgressStore.java": "fd57eb9df994a9ae50de0f5e064086405423b21cd9516c233be0b4847c391a37",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/EconomyRuntimeVerification.java": "a0e3c36dc798a7a8ba7b536a67475aea7d8db42fda586ed1a88cb7db0c966222",
+    "scripts/verify-lifecycle.py": "e8a55016cfbacb03928e47b3a20ad9642d9f3dd7f587112281487de3c87b5442",
+    "scripts/verify-s4-5.py": "3105d2eff4ab2d6bb988708848d100a2c0c19ba6cda16c05bc39d02831427f6c"
+  },
+  "remaining": [
+    "Actual authenticated login/source ownership marker, NPC click and player movement not run.",
+    "No operating service, DB, world, container, network or monitoring configuration applied.",
+    "Generic file lease failure/changed-marker behavior verified internally; actual forced crash/hot reload acceptance not claimed.",
+    "Story/economy transfers, content balance, player direct trades, full workload and deployment acceptance remain separate."
+  ]
+}

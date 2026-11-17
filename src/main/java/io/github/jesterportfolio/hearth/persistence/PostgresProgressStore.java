@@ -28,12 +28,19 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
     private final HikariDataSource pool;
     private final ThreadPoolExecutor worker;
     private final Consumer<Failure> failures;
+    private final boolean modulesOnly;
     private final AtomicBoolean closing = new AtomicBoolean();
     private final AtomicBoolean schemaReady = new AtomicBoolean();
     private final Set<CompletableFuture<?>> pending = ConcurrentHashMap.newKeySet();
     private final CompletableFuture<Void> closed = new CompletableFuture<>();
 
     public PostgresProgressStore(DataSource trustedServerDataSource, ServerProgressAccess access, Consumer<Failure> failures) {
+        this(trustedServerDataSource,access,failures,false);
+    }
+    /** 경제 전용 프로세스는 스토리 스키마를 생성/준비하지 않고 같은 제한 worker만 사용합니다. */
+    public static PostgresProgressStore forModules(DataSource source,Consumer<Failure> failures){return new PostgresProgressStore(source,new ServerProgressAccess(),failures,true);}
+    private PostgresProgressStore(DataSource trustedServerDataSource,ServerProgressAccess access,Consumer<Failure> failures,boolean modulesOnly){
+        this.modulesOnly=modulesOnly;
         this.access = Objects.requireNonNull(access);
         this.failures = Objects.requireNonNull(failures);
         pool = new HikariDataSource(); // 무인자 생성은 아직 연결하지 않습니다. 최초 getConnection도 worker에서만 호출합니다.
@@ -52,8 +59,8 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
 
     /** 신뢰하는 내부 모듈도 기존 제한 큐·풀·종료 경계를 재사용합니다. 연결은 worker에서만 제공합니다. */
     @FunctionalInterface public interface SqlWork<T>{T run(java.sql.Connection connection) throws Exception;}
-    public <T> CompletionStage<T> module(String operation,SqlWork<T> work){return submit(operation,null,()->{requireReady();try(var c=pool.getConnection()){return work.run(c);}});}
-    public <T> CompletionStage<T> module(String operation,ServerProgressAccess.Context ctx,SqlWork<T> work){return submit(operation,ctx,()->{access.requireIssued(ctx);requireReady();try(var c=pool.getConnection()){return work.run(c);}});}
+    public <T> CompletionStage<T> module(String operation,SqlWork<T> work){return submit(operation,null,()->{if(!modulesOnly)requireReady();try(var c=pool.getConnection()){return work.run(c);}});}
+    public <T> CompletionStage<T> module(String operation,ServerProgressAccess.Context ctx,SqlWork<T> work){return submit(operation,ctx,()->{access.requireIssued(ctx);if(!modulesOnly)requireReady();try(var c=pool.getConnection()){return work.run(c);}});}
     private static void checkpointKeys(String... values){for(String v:values)if(v==null||!v.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid checkpoint key");}
     @Override public CompletionStage<Optional<CheckpointStore.Saved>> checkpoint(ServerProgressAccess.Context ctx,String dungeon,String quest,String point){return submit("checkpoint_read",ctx,()->{
         access.requireIssued(ctx);requireReady();checkpointKeys(dungeon,quest,point);
@@ -69,6 +76,7 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
     @Override public CompletionStage<Void> migrate() {
         schemaReady.set(false);
         return submit("migrate", null, () -> {
+            if(modulesOnly)throw new StorageFailure("migrate","MODULE_ONLY");
             try (var c = pool.getConnection()) { SchemaMigration.apply(c); }
             schemaReady.set(true); return null;
         });

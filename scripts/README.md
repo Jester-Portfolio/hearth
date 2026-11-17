@@ -187,3 +187,5 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 `--concurrent`는 다른 AI 프로필과 배타적으로 준비 후 순차 기준·두 논리 요청의 겹침/자료 분리·취소 후 재요청·캐시 수용/검증 거부와 서버 수용 집계를 같은 고정 예산에서 검사한다. [최종 계측·실제 모델 관측](../docs/s5-ai-observation-verification.md)을 따른다. 논리 Chat 객체이며 실제 4명 접속이나 Paper/PG/AI 합동 부하가 아니다.
 
 `offline_backup.py create/verify/restore`는 정상 종료한 Paper/전용 PG 전체의 해시 묶음과 새 경로 복원 도구다. [운영 전제·명령·수동 대응](../infrastructure/backup/README.md)을 먼저 따른다. `verify-lifecycle.py --backup-restore`는 기존 자동 시나리오 정상 종료 후 같은 시계에서 묶음/복원과 복사 PG의 원본 테이블 비교를 확인한다. 운영/기존 데이터 덮어쓰기나 실제 Paper 복원 행동 검사가 아니다.
+
+`--sessions --economy --economy-runtime`은 첫 경제 fixture 준비 후 둘째 JVM에서 verification을 끈 경제 전용 정상 기동·계정/기존 저장 복원·drain을 검사한다. `--economy-runtime-recheck`는 실패 보완 때 새 최소 복원 입력만 만들고 이미 통과한 전체 거래 시나리오를 반복하지 않는다. [최초 실패와 최종 영향 검사](../docs/economy-runtime-verification.md)를 따른다. 실제 플레이어 로그인/상인 클릭은 판정하지 않는다.
