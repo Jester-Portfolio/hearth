@@ -34,7 +34,7 @@ public final class PaperGatheringFacilities implements Listener,AutoCloseable{
         public Inventory getInventory(){return inventory;}
     }
     public PaperGatheringFacilities(JavaPlugin plugin,PaperGathering gathering,PaperSessionAdapter sessions,Map<UUID,WorldLifecycle> worlds,GatheringFacilities content,BiPredicate<ServerProgressAccess.Context,GatheringFacilities.Site> access,Consumer<Player> preparation,Objectives objectives){
-        if(!io.github.jesterportfolio.hearth.administration.GameplayRuntime.allowed(plugin,"gathering-facility-verification-enabled","hearth.verification.gatheringFacilities"))throw new IllegalStateException("GATHERING_FACILITY_GATE");this.plugin=plugin;this.gathering=gathering;this.sessions=sessions;this.worlds=worlds;this.content=content;this.access=access;this.preparation=preparation;
+        if(!io.github.jesterportfolio.hearth.administration.GameplayRuntime.allowed(plugin,"gathering-facility-verification-enabled","hearth.verification.gatheringFacilities")&&!io.github.jesterportfolio.hearth.administration.GameplayRuntime.economyGathering(plugin))throw new IllegalStateException("GATHERING_FACILITY_GATE");this.plugin=plugin;this.gathering=gathering;this.sessions=sessions;this.worlds=worlds;this.content=content;this.access=access;this.preparation=preparation;
         this.objectives=Objects.requireNonNull(objectives);sessions.gatheringInventory((p,i)->i.getHolder() instanceof Screen s&&s.player==p&&valid(s));for(UUID run:worlds.keySet())if(Bukkit.getWorld(worlds.get(run).mapping().physicalId())!=null)ensureRegions(run);Bukkit.getPluginManager().registerEvents(this,plugin);
     }
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("GATHERING_FACILITY_MAIN_THREAD");}

@@ -76,6 +76,7 @@ public final class EconomyRuntimeVerification {
         });return done;
     }
     public static CompletionStage<Void> run(JavaPlugin plugin,EconomyRuntime runtime){
+        if(Boolean.getBoolean("hearth.verification.economyGathering"))return EconomyGatheringVerification.restored(plugin,runtime);
         if(Boolean.getBoolean("hearth.verification.peerTrade"))return PeerTradeVerification.restored(plugin,runtime);
         final Path root;final Properties expected=new Properties();try{root=root(plugin);try(var input=Files.newInputStream(root.resolve("economy-runtime-expected.properties"))){expected.load(input);}var endpoint=new Properties();try(var input=Files.newInputStream(root.resolve("db-endpoint.properties"))){endpoint.load(input);}var pid=Files.readAllLines(root.resolve("data/postmaster.pid"));if(!runtime.settings().dbHost().equals("127.0.0.1")||runtime.settings().dbPort()!=Integer.parseInt(endpoint.getProperty("port"))||!runtime.settings().dbName().equals("hearth_s4_11")||!Path.of(pid.get(1)).toRealPath().equals(root.resolve("data")))throw new IllegalStateException("ECON_RUNTIME_PROBE_DB_GATE");}catch(Exception error){return CompletableFuture.failedFuture(error);}
         var economy=runtime.economy();economy.pinFixtureChunks();var owner=runtime.owner();var codec=new PaperInventoryCodec();var empty=codec.encode(new ItemStack[41]);var saved=economy.store.context(economy.realm,SAVED);var fresh=economy.store.context(economy.realm,NEW);var baseline=new java.util.concurrent.atomic.AtomicReference<EconomyEngine.State>();

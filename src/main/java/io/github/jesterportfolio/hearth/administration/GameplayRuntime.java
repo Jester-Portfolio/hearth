@@ -7,5 +7,8 @@ public final class GameplayRuntime {
     private GameplayRuntime(){}
     public static boolean story(JavaPlugin plugin){return story(plugin.getConfig().getString("runtime-mode","disabled"),plugin.getConfig().getBoolean("verification-enabled"));}
     public static boolean story(String mode,boolean verification){return "story".equals(mode)&&!verification;}
+    public static boolean economy(JavaPlugin plugin){return economy(plugin.getConfig().getString("runtime-mode","disabled"),plugin.getConfig().getBoolean("verification-enabled"));}
+    public static boolean economy(String mode,boolean verification){return "economy".equals(mode)&&!verification;}
+    public static boolean economyGathering(JavaPlugin plugin){return economy(plugin)||plugin.getConfig().getBoolean("verification-enabled")&&plugin.getConfig().getBoolean("economy-verification-enabled")&&Boolean.getBoolean("hearth.verification.economyGathering");}
     public static boolean allowed(JavaPlugin plugin,String flag,String property){return story(plugin)||plugin.getConfig().getBoolean(flag)&&Boolean.getBoolean(property);}
 }

@@ -1,0 +1,23 @@
+# 형식 안내만 제공합니다. REVIEWED_*를 검토한 콘텐츠로 채우고 파일 해시를 지정하세요.
+format: 1
+gathering:
+  format: 1
+  isolated-region-prototype: true
+  id: REVIEWED_ID
+  area: {x: REVIEWED_X, y: REVIEWED_Y, z: REVIEWED_Z, width: REVIEWED_WIDTH, height: REVIEWED_HEIGHT, depth: REVIEWED_DEPTH}
+  entrance: {x: REVIEWED_ENTRY_X, y: REVIEWED_ENTRY_Y, z: REVIEWED_ENTRY_Z, yaw: 0, pitch: 0}
+  spawn: {x: REVIEWED_SPAWN_X, y: REVIEWED_SPAWN_Y, z: REVIEWED_SPAWN_Z, yaw: 0, pitch: 0}
+  interval-ms: REVIEWED_INTERVAL
+  warning-ms: REVIEWED_WARNING
+  active-template: reviewed_v1
+  templates:
+    - version: reviewed_v1
+      layers: [{y: REVIEWED_FLOOR_Y, material: STONE}]
+      blocks: [{x: REVIEWED_RESOURCE_X, y: REVIEWED_RESOURCE_Y, z: REVIEWED_RESOURCE_Z, material: REVIEWED_RESOURCE}]
+facilities:
+  format: 1
+  isolated-prototype: true
+  gathering-id: REVIEWED_ID
+  sites:
+    - {id: reviewed_entry, title: 채집장 입구, action: ENTER, x: REVIEWED_ENTRY_BUTTON_X, y: REVIEWED_ENTRY_BUTTON_Y, z: REVIEWED_ENTRY_BUTTON_Z, material: STONE_BUTTON}
+    - {id: reviewed_exit, title: 채집장 출구, action: LEAVE, x: REVIEWED_EXIT_BUTTON_X, y: REVIEWED_EXIT_BUTTON_Y, z: REVIEWED_EXIT_BUTTON_Z, material: STONE_BUTTON}

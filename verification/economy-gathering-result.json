@@ -1,0 +1,33 @@
+{
+  "outcome": "PASS",
+  "unit_tests": 12,
+  "unit_results": "/home/server/hearth-tmp/hearth-economy-gathering.1b0y5z4a/unit-results",
+  "content_preflight": "PASS",
+  "native_workspace": "/home/server/hearth-tmp/hearth-s4-11.axpauak3",
+  "duration_seconds": 54.255,
+  "assertions": 22,
+  "cleanup_errors": [],
+  "final_jar": "/home/server/hearth-tmp/hearth-economy-gathering.1b0y5z4a/Hearth-final.jar",
+  "final_jar_sha256": "9e966f58ca2fa40f7b29321534b357c8721a57b1d728df240f69c0443abcc85a",
+  "unchanged_tested_classes": [
+    "io/github/jesterportfolio/hearth/gathering/GatheringPaths.class",
+    "io/github/jesterportfolio/hearth/gathering/PostgresGatheringStore.class",
+    "io/github/jesterportfolio/hearth/administration/GameplayRuntime.class"
+  ],
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "PG_upgrade_from": 4,
+  "PG_upgrade_to": 5,
+  "actual_minecraft_client": "NOT_RUN",
+  "actual_resource_break_and_drop": "NOT_RUN",
+  "AI_inference": "NOT_RUN",
+  "operating_changes": "NONE"
+}
