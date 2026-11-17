@@ -29,6 +29,11 @@ final class PostgresProgressStoreTest {
         int previous=calls.get();assertEquals("CLOSED",failed(store.module("module_probe",connection->null)).code());assertEquals(previous,calls.get());
     }
 
+    @Test void readOnlyModulePoolDoesNotMigrateOrAcceptForeignContexts() throws Exception {
+        var calls=new AtomicInteger();var access=new ServerProgressAccess();var store=PostgresProgressStore.forReadOnlyModules(new BrokenSource(calls::incrementAndGet),access,f->{});
+        try{assertEquals("MODULE_ONLY",failed(store.migrate()).code());assertEquals("ACCESS_DENIED",failed(store.module("inspect",context(new ServerProgressAccess()),c->null)).code());assertEquals(0,calls.get());}finally{store.closeAsync().toCompletableFuture().get(5,TimeUnit.SECONDS);}
+    }
+
     @Test void foreignContextAndClosedStoreNeverConnect() throws Exception {
         var calls = new AtomicInteger();
         var failures = new CopyOnWriteArrayList<PostgresProgressStore.Failure>();

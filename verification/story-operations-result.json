@@ -1,0 +1,43 @@
+{
+  "outcome": "PASS",
+  "unit_tests": 33,
+  "unit_evidence": "/home/server/hearth-tmp/hearth-story-operations.4fqdkoj9/unit-results",
+  "content_preflight": "PASS",
+  "content_preflight_log": "/home/server/hearth-tmp/hearth-story-operations.4fqdkoj9/content-preflight-fixed.log",
+  "native_workspace": "/home/server/hearth-tmp/hearth-s4-11.qcx0_9ei",
+  "native_duration_seconds": 52.237,
+  "native_normal_assertions": 17,
+  "cleanup_errors": [],
+  "tested_classes_identical": [
+    "io/github/jesterportfolio/hearth/persistence/PostgresProgressStore$Failure.class",
+    "io/github/jesterportfolio/hearth/persistence/PostgresProgressStore$SqlWork.class",
+    "io/github/jesterportfolio/hearth/persistence/PostgresProgressStore.class",
+    "io/github/jesterportfolio/hearth/story/StoryInspectionLinks$Member.class",
+    "io/github/jesterportfolio/hearth/story/StoryInspectionLinks.class",
+    "io/github/jesterportfolio/hearth/story/StoryWorldEffects$Block.class",
+    "io/github/jesterportfolio/hearth/story/StoryWorldEffects$Change.class",
+    "io/github/jesterportfolio/hearth/story/StoryWorldEffects$Position.class",
+    "io/github/jesterportfolio/hearth/story/StoryWorldEffects$Target.class",
+    "io/github/jesterportfolio/hearth/story/StoryWorldEffects.class"
+  ],
+  "final_jar": "/home/server/hearth-tmp/hearth-story-operations.4fqdkoj9/Hearth-content.jar",
+  "final_jar_sha256": "6645991a79b6f6a01f84b2856f7d33932d10dfe6ffdc2ab9bc559baf5b90533f",
+  "preserved_failures": [
+    "/home/server/hearth-tmp/hearth-s4-11.ifon_g8s",
+    "/home/server/hearth-tmp/hearth-s4-11.ckw9rh7z"
+  ],
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "actual_minecraft_client": "NOT_RUN",
+  "actual_process_crash_recovery": "NOT_RUN",
+  "ai_inference": "NOT_RUN",
+  "operating_changes": "NONE"
+}

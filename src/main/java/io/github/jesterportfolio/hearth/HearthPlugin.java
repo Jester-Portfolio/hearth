@@ -36,6 +36,7 @@ public final class HearthPlugin extends JavaPlugin {
             return;
         }
         if(mode.equals("story")){
+            java.util.Objects.requireNonNull(getCommand("hearthrecovery")).setExecutor((sender,command,label,args)->{sender.sendMessage("스토리 복구 진단 설정 보류 · 콘솔에서 확인하세요.");return true;});
             getServer().getPluginManager().registerEvents(new io.github.jesterportfolio.hearth.story.StoryLoginGate(uuid->storyRuntime!=null&&storyRuntime.phase()==io.github.jesterportfolio.hearth.story.StoryRuntime.Phase.READY&&storyRuntime.settings().members().containsKey(uuid)),this);
             java.util.Objects.requireNonNull(getCommand("hearthstoryadmin")).setExecutor((sender,command,label,args)->{sender.sendMessage("스토리 실행 설정 보류 · 서버 콘솔에서 로그/설정을 확인하세요.");return true;});
             try{storyRuntime=new io.github.jesterportfolio.hearth.story.StoryRuntime(this);}

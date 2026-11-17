@@ -39,6 +39,11 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
     }
     /** 경제 전용 프로세스는 스토리 스키마를 생성/준비하지 않고 같은 제한 worker만 사용합니다. */
     public static PostgresProgressStore forModules(DataSource source,Consumer<Failure> failures){return new PostgresProgressStore(source,new ServerProgressAccess(),failures,true);}
+    /** 진단 전용: schema migration 없이 PostgreSQL 세션 자체도 기본 읽기 전용입니다. */
+    public static PostgresProgressStore forReadOnlyModules(DataSource source,ServerProgressAccess access,Consumer<Failure> failures){
+        var store=new PostgresProgressStore(source,access,failures,true);
+        store.pool.setReadOnly(true);store.pool.setConnectionInitSql("SET default_transaction_read_only = on; SET statement_timeout = '3s'");return store;
+    }
     private PostgresProgressStore(DataSource trustedServerDataSource,ServerProgressAccess access,Consumer<Failure> failures,boolean modulesOnly){
         this.modulesOnly=modulesOnly;
         this.access = Objects.requireNonNull(access);

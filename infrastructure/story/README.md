@@ -17,7 +17,7 @@
 
 이 표식을 기존/불명 월드에 임의로 써서 채택하지 않는다. 원래 템플릿 해시는 진행 중 바뀐 지형 해시가 아니며, 준비 산출물과 소유권을 검토한 뒤 고정한다. 경제 소유 표식이 있는 차원은 거부하고 경제 실행도 스토리 소유 차원을 거부한다. 기존 진행을 새 템플릿으로 덮어쓰는 경로는 없다. 새 진행용 템플릿 복제·검증/등록은 별도의 [준비 모드](PREPARATION.md)를 사용한다. 준비 자료를 운영 설정에 자동 적용하거나 서비스를 전환하지 않는다.
 
-`content-file`은 1MiB 이하 단일 UTF-8 YAML이며 `content-sha256`과 일치해야 한다. 최상위 `quests`에는 기존 format 2 NPC/퀘스트 문서, `exploration`·`shared`·`rules`·`scenes`에는 각 기존 탐험/공유 스토리/완료 규칙/컷신 형식의 문서를 넣는다. 공개 합성 시험 파일을 운영 서사·보상 수치로 자동 복사하지 않는다. 정상 실행은 퀘스트/공유 진행·탐험/일지·보상/장 스킵·스마트폰/필수 AI 연결·지도/장면/개인 엔더를 연결한다. 선택형 `modules`에는 기존 정의 형식의 `crafting`, `gathering`, `gathering-facilities`, `travel`, `escort`, `combat`, `field`, `dungeon`, `playthrough`, `preparation`, `course-route`와 채집 목표 퀘스트 ID 목록 `gathering-quests`를 넣는다. 목표에서 참조하는 모듈/시설·준비 안내의 의존성이 없거나 알 수 없는 모듈이면 보류한다. 정상 모드에 verification 플래그/JVM 표식을 켜서 우회하지 않는다. 기존 v1 콘텐츠의 개발 표식은 현재 정의 파서 계약으로 유지하며, 실제 실행 허용은 정상 모드·검토한 내용 해시·소유권으로 결정한다. 범용 정상 월드 스토리 효과는 아직 이 묶음에서 지원하지 않는다.
+`content-file`은 1MiB 이하 단일 UTF-8 YAML이며 `content-sha256`과 일치해야 한다. 최상위 `quests`에는 기존 format 2 NPC/퀘스트 문서, `exploration`·`shared`·`rules`·`scenes`에는 각 기존 탐험/공유 스토리/완료 규칙/컷신 형식의 문서를 넣는다. 공개 합성 시험 파일을 운영 서사·보상 수치로 자동 복사하지 않는다. 정상 실행은 퀘스트/공유 진행·탐험/일지·보상/장 스킵·스마트폰/필수 AI 연결·지도/장면/개인 엔더를 연결한다. 선택형 `modules`에는 기존 정의 형식의 `crafting`, `gathering`, `gathering-facilities`, `travel`, `escort`, `combat`, `field`, `dungeon`, `playthrough`, `preparation`, `course-route`와 채집 목표 퀘스트 ID 목록 `gathering-quests`를 넣는다. 목표에서 참조하는 모듈/시설·준비 안내의 의존성이 없거나 알 수 없는 모듈이면 보류한다. 정상 모드에 verification 플래그/JVM 표식을 켜서 우회하지 않는다. 기존 v1 콘텐츠의 개발 표식은 현재 정의 파서 계약으로 유지하며, 실제 실행 허용은 정상 모드·검토한 내용 해시·소유권으로 결정한다. 선택형 `world-effects`는 검토한 고정 블록 치환을 DB 확정 후 같은 진행에만 적용한다. 정의와 실패/보존 경계는 [효과·읽기 전용 복구](OPERATIONS.md)를 따른다.
 
 시설 블록과 안전한 진입/도착 위치는 준비 월드에 실제로 있어야 한다. 전투는 종료 복귀를 포함한 기존 S4 정의를 검토하고 필드 조우는 같은 인던 규칙을 사용한다. 필드의 재시작 HOLD/자동 재소환 금지와 활성 전투·불명 이동 HOLD는 유지한다. 채집 초기 영역/템플릿·주기는 기존 제한 구역/원본 before 이미지 정책을 따른다. 채집 준비는 개인 복원 뒤 행동 허용 전에 비동기로 합치며, 실패를 빈 초기 상태로 대체하지 않는다. [연결/검증 범위](../../docs/story-modules-verification.md)를 따른다.
 
@@ -30,3 +30,5 @@ PG의 `hearth_runtime`에는 연결/계정 표식만 추가하고 기존 `hearth
 콘솔 `hearthstoryadmin status`·`hearthstoryadmin drain`을 사용한다. drain은 새 접속/행동을 닫고 개인 저장·기능/진행 장벽, WorldGuard/월드 저장·언로드, PG 종료를 순서대로 확인한다. `HEARTH_STORY_RUNTIME_DRAINED PASS` 뒤 승인된 서비스 종료를 수행한다. Bukkit 메인 스레드에서 DB를 기다리지 않는다.
 
 본인 `story-runtime.active` 표식은 정상 drain 후에만 제거한다. 기존/교체/변조 표식이나 중단·commit 불명은 자동 복구하지 않는다. 표식을 지워 성공으로 취급하지 않고 [백업/수동 대응](../backup/README.md)에 따라 원본을 검토한다. hot reload·운영 전환/자원 배정·장기 부하와 실제 클라이언트는 별도 수용 대상이다. 격리용 `verify`는 명시한 새 소유 경로/JVM 표식과 실제 접속자 부재에서만 실행한다.
+
+정상 실행과 기존 실행 표식으로 접속이 차단된 HOLD에서도 `hearthrecovery`로 기존 저장의 읽기 전용 점검을 제공한다. 설정과 PG의 기존 소유권만 사용하며 표식 삭제·행 생성·HOLD 해제는 하지 않는다. [명령·제한](OPERATIONS.md)을 따른다.
