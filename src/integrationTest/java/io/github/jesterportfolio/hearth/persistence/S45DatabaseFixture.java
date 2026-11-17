@@ -60,6 +60,11 @@ public final class S45DatabaseFixture {
                         try (var st=Objects.requireNonNull(admin).createStatement()) {
                             st.setQueryTimeout(3);
                             switch (command) {
+                                case "backup-snapshot" -> {
+                                    if(!lifecycle||lock!=null)throw new IllegalStateException("Lifecycle offline snapshot only");
+                                    var snapshot=BackupDatabaseSnapshot.capture(admin);
+                                    try(var out=Files.newOutputStream(root.resolve("backup-db-snapshot.properties"),StandardOpenOption.CREATE_NEW)){snapshot.store(out,"Table row counts and hashes, no row content");}
+                                }
                                 case "quest-legacy", "explore-legacy", "story-legacy" -> {
                                     // 새 격리 DB에만 V003 상태를 준비해 실제 순차 업그레이드를 시험합니다.
                                     admin.setAutoCommit(false);

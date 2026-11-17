@@ -14,6 +14,7 @@ import shutil
 import time
 import zipfile
 from manual_s4 import ClientPackServer
+import offline_backup
 
 REPO=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('s45',REPO/'scripts/verify-s4-5.py')
@@ -104,6 +105,7 @@ def main():
     parser.add_argument('--betterhud',action='store_true',help='선택형 BetterHud와 표시/관전 경계를 한 JVM에서 검사합니다')
     parser.add_argument('--betterhud-plugin',type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--backup-restore',action='store_true',help='정상 종료 후 Paper/PG 전체 오프라인 백업·새 경로 복원과 복사 PG의 행 해시를 같은 시계에서 검사합니다')
     parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
     parser.add_argument('--boss-areas', action='store_true', help='부채꼴·직선 공격, 예고 좌표 고정과 최신 위치/권한 재검사를 한 JVM에서 검증합니다')
     parser.add_argument('--boss-patterns', action='store_true', help='콘텐츠 보스 패턴·전용 시간·실제 피해 이벤트의 제한된 경계를 한 JVM에서 검사합니다')
@@ -447,7 +449,7 @@ motd=Hearth isolated S4-11 verification
     if args.manual_no_time_limit:monitor.deadline=float('inf')
     monitor.manual_profile=args.profile if args.manual_player else None
     monitor.manual_finish_on_logout=args.manual_finish_on_logout
-    outcome='FAIL'; failure=None; cleanup=[];pack_server=None;pack_downloads=0
+    outcome='FAIL'; failure=None; cleanup=[];pack_server=None;pack_downloads=0;backup_result=None
     try:
         if args.s4_client:pack_server=ClientPackServer(root)
         helper=[str(args.java.resolve()),'-Xmx128m','-XX:ActiveProcessorCount=2','-Djava.io.tmpdir='+str(root),
@@ -748,7 +750,34 @@ motd=Hearth isolated S4-11 verification
             monitor.stop(name,'stop')
             s42.port_free()
             if getattr(monitor,'manual_finish_all',False):break
+        if args.backup_restore:
+            assert not args.manual_player, '백업 복원은 자동 격리 시험 전용'
+            assert all(item['proc'].poll() is not None for key,item in monitor.children.items() if key.startswith('paper')), 'Paper must be closed before snapshot'
+            monitor.db('backup-snapshot')
         monitor.stop('database','finish',10)
+        if args.backup_restore:
+            monitor.guard()
+            # One original 600s clock, existing PG and CPU/RAM guard; no independent retry budget.
+            budget=offline_backup.Budget(guard=monitor.guard)
+            roots={'paper':runtime,'postgres':root/'data'}
+            packed=offline_backup.create(roots,root/'backup',offline_confirmed=True,budget=budget)
+            original=offline_backup.verify(root/'backup',packed['manifest_sha256'],budget=budget)
+            receipt=offline_backup.restore(root/'backup',root/'restored',packed['manifest_sha256'],budget=budget)
+            probe=[str(args.java.resolve()),'-Xmx128m','-XX:ActiveProcessorCount=2',
+                   '-cp',str(root/'fixture-classes')+':'+str(root/'resolved-jars/*'),
+                   'io.github.jesterportfolio.hearth.persistence.OfflineBackupRestoreProbe',str(root)]
+            monitor.launch('restore-database',probe,root)
+            monitor.wait('restore-database','HEARTH_BACKUP_RESTORE_CLOSED PASS',seconds=45)
+            monitor.stop('restore-database','finish',10)
+            restore_port=int((root/'restore-db-port.txt').read_text());s42.port_free(restore_port)
+            offline_backup.verify(root/'backup',packed['manifest_sha256'],budget=budget)
+            # Starting the clone must not change either archived bytes or original stopped files.
+            for label,source in roots.items():
+                before=[r for r in original['files'] if r['path'].startswith(label+'/') and not r['directory']]
+                assert all(offline_backup.file_hash(source/r['path'].split('/',1)[1],budget)==r['sha256'] for r in before), 'Original source changed during restore rehearsal'
+            backup_result=dict(outcome='PASS',**packed,restore=receipt,restored_pg_closed=True,restored_port_closed=True,original_and_archive_preserved=True,
+                               tables_verified=[line for line in monitor.children['restore-database']['lines'] if 'HEARTH_BACKUP_RESTORE_DB PASS' in line])
+
         for library in ['postgresql-42.7.14.jar','HikariCP-7.1.0.jar']:
             loaded=list((runtime/'libraries').rglob(library))
             assert loaded and all(hashlib.sha256(p.read_bytes()).hexdigest()==s44.HASHES[library] for p in loaded), 'Paper libraries 해석/아티팩트 불일치'
@@ -764,10 +793,13 @@ motd=Hearth isolated S4-11 verification
             try:pack_server.close();s42.port_free(25587)
             except Exception as error:pack_cleanup.append(type(error).__name__+': pack server cleanup failed')
         cleanup=pack_cleanup+monitor.finish()
+        if args.backup_restore and (root/'restore-db-port.txt').exists():
+            try:s42.port_free(int((root/'restore-db-port.txt').read_text()))
+            except Exception:cleanup.append('Restored PostgreSQL port remains open')
         if cleanup:
             outcome='FAIL'
         result=dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, workspace=str(root),
-                    duration_seconds=round(time.monotonic()-monitor.started,3), limits=dict(total_seconds=None if args.manual_no_time_limit else 600,work_seconds=None if args.manual_no_time_limit else 550,
+                    duration_seconds=round(time.monotonic()-monitor.started,3), backup_restore=backup_result, limits=dict(total_seconds=None if args.manual_no_time_limit else 600,work_seconds=None if args.manual_no_time_limit else 550,
                     paper_starts_max=2 if args.s4_client or args.s4_completion else 1 if args.gathering_crafting or args.crafting_quests or args.crafting or args.dungeon_play or args.combat_route or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.npc_pages or args.phone_dialog or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),

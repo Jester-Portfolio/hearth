@@ -1,0 +1,68 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "891018a",
+  "outcome": "OFFLINE_BUNDLE_AND_CLONED_POSTGRES_RESTORE_PASS",
+  "operational_deployment": false,
+  "actual_minecraft_client": false,
+  "workspace": "/home/server/hearth-tmp/hearth-offline-backup.2y39gpve",
+  "python_unit_tests": 12,
+  "python_failures": 0,
+  "unit_sweeps": 1,
+  "main_jar_unchanged": true,
+  "prior_phone_and_ai_tests_not_repeated": true,
+  "main_jar_sha256": "690eb380dd58bdc5346924d0c96ba357c97b12c29356a02b1a3a777b099c620e",
+  "native": {
+    "result": "/home/server/hearth-tmp/hearth-s4-11.2qsqoj8o/run-result.json",
+    "sha256": "486e2e2e01f474cf876bc857a503ac32ce7eaa649c4cc1a4e7e27a6131f97fa7",
+    "outcome": "PASS",
+    "duration_seconds": 66.12,
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "backup_restore": {
+      "outcome": "PASS",
+      "manifest_sha256": "85fd56ab8e5135ba7ac1b7c54dfbd2cd2814294352e53e4cd00b776bf5cba7a8",
+      "files": 2326,
+      "bytes": 245011490,
+      "restore": {
+        "format": "hearth-offline-backup-v1",
+        "manifest_sha256": "85fd56ab8e5135ba7ac1b7c54dfbd2cd2814294352e53e4cd00b776bf5cba7a8",
+        "files_restored": 2326,
+        "bytes": 245011490,
+        "services_started": false
+      },
+      "restored_pg_closed": true,
+      "restored_port_closed": true,
+      "original_and_archive_preserved": true,
+      "tables_verified": [
+        "HEARTH_BACKUP_RESTORE_DB PASS tables=23"
+      ]
+    },
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "paper_starts": 1,
+    "postgres_starts": 2,
+    "second_postgres_is_new_copy": true
+  },
+  "source_sha256": {
+    "scripts/offline_backup.py": "fbdedf79140ba645238a2344f3f61808ea6f6061f9171415ca780f26adbd9b61",
+    "scripts/test_offline_backup.py": "fe69f05b1b2dea9eef336f0b58dca7e5b4937b3865f47cbc3742cb76aa9cfdc7",
+    "scripts/verify-lifecycle.py": "45481afeeb2bc110884c89b061fc223c6b1c6190fefb036aa4c8a3eeaa685485",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/persistence/S45DatabaseFixture.java": "6d8378a15bbe4b267d180d6c4b39c9de2ba0afb49bca440cb93abcb94998cc53",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/persistence/BackupDatabaseSnapshot.java": "4ce0b13b7bde41738e7de247fec75ad6b8be2cd66162234b5192d6f49e1d35b1",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/persistence/OfflineBackupRestoreProbe.java": "7fdd72b4f395e4b80d47e3a4101b61682cd46111216feb28471b142538ea8a43"
+  },
+  "remaining": [
+    "No operating service was stopped, started or modified.",
+    "Cold backup requires confirmed clean stop of all writers; no live/shared-cluster partial backup, PITR or tablespaces.",
+    "Restored Paper was not started; real gameplay, deployment paths and rollback cutover not accepted.",
+    "Backup frequency, retention, off-host storage, encryption, RPO/RTO and operating acceptance require decisions."
+  ]
+}
