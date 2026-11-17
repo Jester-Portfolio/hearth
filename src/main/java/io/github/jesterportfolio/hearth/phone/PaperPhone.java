@@ -28,6 +28,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private record Screen(PlayerSessions.Session session,Object nonce,PhoneChat chat,PhoneCalculator calculator){}
     @FunctionalInterface public interface CompletionAction{java.util.concurrent.CompletionStage<Void> execute(Player player,PlayerSessions.Session session,PhoneCompletion.Choice choice);}
     private final PhoneReferences references=new PhoneReferences();
+    private final PhoneTelemetry telemetry=new PhoneTelemetry();
+    private final Map<PlayerSessions.Session,PhoneTelemetry.Flow> preflights=new IdentityHashMap<>();
     private final PhoneFollowup followups=new PhoneFollowup();
     private final Map<PlayerSessions.Session,String> contextModes=new IdentityHashMap<>();
     private final Map<PlayerSessions.Session,PhoneHelp.Selection> helpSelections=new IdentityHashMap<>();
@@ -62,10 +64,10 @@ public final class PaperPhone implements Listener,AutoCloseable {
         this.plugin=plugin;this.players=players;this.journal=journal;this.catalog=catalog;this.owner=owner;device=new NamespacedKey(plugin,"dev_phone");
         String mode=plugin.getConfig().getString("phone-ai-mode","mock");
         assistant=new MeasuredAssistant(LocalAssistant.configured(mode,plugin.getConfig().getString("phone-ai-endpoint","http://127.0.0.1:11435/ask")));
-        Objects.requireNonNull(plugin.getCommand("hearthai")).setExecutor((sender,command,label,args)->{AssistantConsole.execute(sender instanceof org.bukkit.command.ConsoleCommandSender,args,mode,assistant,owner,()->!closed,sender::sendMessage);return true;});
+        Objects.requireNonNull(plugin.getCommand("hearthai")).setExecutor((sender,command,label,args)->{AssistantConsole.execute(sender instanceof org.bukkit.command.ConsoleCommandSender,args,mode,assistant,telemetry::snapshot,owner,()->!closed,sender::sendMessage);return true;});
         Bukkit.getPluginManager().registerEvents(this,plugin);
     }
-    private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();old.calculator().close();contextModes.remove(old.session());helpSelections.remove(old.session());researchSelections.remove(old.session());learning.forget(old.session());completionFlow.forget(old.session());completionReturns.remove(old.session());references.remove(old.session());followups.forget(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner),new PhoneCalculator());screens.put(p.getUniqueId(),next);return next;}
+    private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();old.calculator().close();contextModes.remove(old.session());helpSelections.remove(old.session());researchSelections.remove(old.session());learning.forget(old.session());completionFlow.forget(old.session());completionReturns.remove(old.session());references.remove(old.session());followups.forget(old.session());retirePreflight(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner,telemetry),new PhoneCalculator());screens.put(p.getUniqueId(),next);return next;}
     private boolean valid(Player p,Screen s){return !closed&&p.isOnline()&&players.current(p)==s.session()&&screens.get(p.getUniqueId())==s;}
     private Screen advance(Player p){var old=screen(p);var s=new Screen(old.session(),new Object(),old.chat(),old.calculator());screens.put(p.getUniqueId(),s);return s;}
     private ClickCallback.Options options(){return ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(2)).build();}
@@ -767,17 +769,19 @@ public final class PaperPhone implements Listener,AutoCloseable {
             actions.add(button(p,s,"자료 선택으로",()->previewContext(p,advance(p),view,plan,shown,1)));actions.add(button(p,s,"전송 취소",()->chat(p)));show(p,s,detail.title(),List.of(DialogBody.plainMessage(Component.text(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1)))),List.of(),actions);
         }catch(RuntimeException stale){info(p,s,"자료 상태 변경",List.of("현재 자료로 다시 선택하세요."));}
     }
+    private void retirePreflight(PlayerSessions.Session session){var flow=preflights.remove(session);if(flow!=null)flow.complete(PhoneTelemetry.Outcome.CLOSED);}
     private void submitGrounded(Player p,Screen s,PhoneGrounding.Plan expected,PhoneChat.GroundedPreview shown){
-        var next=advance(p);var following=followups.get(next.session());
+        var next=advance(p);var following=followups.get(next.session());retirePreflight(next.session());var flow=telemetry.begin();preflights.put(next.session(),flow);flow.start(PhoneTelemetry.Phase.PREFLIGHT);
         java.util.function.BooleanSupplier sessionCurrent=()->!closed&&players.current(p)==next.session()&&followups.matches(next.session(),following)&&contextModes.getOrDefault(next.session(),"none").equals(expected.mode())&&(following!=null?helpSelections.get(next.session())==null:expected.single()?PhoneHelp.same(helpSelections.get(next.session()),expected.materials().getFirst().item()):helpSelections.get(next.session())==null);
         journal.load(next.session().context(),next.session(),()->valid(p,next)&&sessionCurrent.getAsBoolean()).whenCompleteAsync((view,error)->{
-            if(!valid(p,next)||!sessionCurrent.getAsBoolean())return;if(error!=null){info(p,next,"전송 자료 확인 실패",List.of("최신 자료를 확인하지 못해 전송하지 않았습니다. 질문 초안은 유지합니다."));return;}
+            flow.finish(PhoneTelemetry.Phase.PREFLIGHT);if(preflights.get(next.session())==flow)preflights.remove(next.session());
+            if(!flow.active()||!valid(p,next)||!sessionCurrent.getAsBoolean()){flow.complete(PhoneTelemetry.Outcome.STALE);return;}if(error!=null){flow.complete(PhoneTelemetry.Outcome.PREFLIGHT_FAILED);info(p,next,"전송 자료 확인 실패",List.of("최신 자료를 확인하지 못해 전송하지 않았습니다. 질문 초안은 유지합니다."));return;}
             try{var plan=PhoneGrounding.refresh(catalog,view,information(p,next,view),expected.sent());if(!next.chat().groundedPreviewCurrent(shown,plan))throw new IllegalStateException("STALE_GROUNDED_PREVIEW");var refs=references.begin(next.session(),plan);
                 long[] stamp={-1};java.util.function.BooleanSupplier approved=()->{if(!sessionCurrent.getAsBoolean())return false;try{journal.projectInformation(next.session().context(),view,sessionCurrent);return stamp[0]<0||stamp[0]==journal.informationStamp(next.session().context());}catch(RuntimeException stale){return false;}};
                 next.chat().submitGroundedPreview(shown,plan,approved,()->journal.load(next.session().context(),next.session(),sessionCurrent).thenApplyAsync(latest->{
                     try{var current=PhoneGrounding.refresh(catalog,latest,journal.projectInformation(next.session().context(),latest,sessionCurrent),plan);stamp[0]=journal.informationStamp(next.session().context());references.update(refs,current);return true;}catch(RuntimeException changed){followups.forget(next.session(),following);throw changed;}
-                },owner)).exceptionally(failure->null);chat(p);
-            }catch(RuntimeException stale){followups.forget(next.session(),following);info(p,next,"선택 자료 변경",List.of("자료가 변경됐거나 공개 상태를 확인할 수 없습니다. 현재 자료로 다시 선택해 주세요. 질문 초안은 유지합니다."));}
+                },owner),flow).exceptionally(failure->null);chat(p);
+            }catch(RuntimeException stale){flow.complete(PhoneTelemetry.Outcome.PREFLIGHT_REJECTED);followups.forget(next.session(),following);info(p,next,"선택 자료 변경",List.of("자료가 변경됐거나 공개 상태를 확인할 수 없습니다. 현재 자료로 다시 선택해 주세요. 질문 초안은 유지합니다."));}
         },owner);
     }
     private void referenceList(Player p,Screen s){reference(p,s,null,1);}
@@ -822,6 +826,6 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private boolean deviceAllowed(Player p,ItemStack item){var s=players.current(p);if(s==null)return false;var data=item.getItemMeta().getPersistentDataContainer();String owner=data.get(new NamespacedKey(plugin,"phone_owner"),PersistentDataType.STRING);return owner==null?!plugin.getConfig().getBoolean("s4-features-enabled")&&p.hasPermission("hearth.verify"):p.getUniqueId().toString().equals(owner)&&s.context().storyRunId().toString().equals(data.get(new NamespacedKey(plugin,"phone_run"),PersistentDataType.STRING));}
     @EventHandler(priority=EventPriority.HIGHEST) public void use(PlayerInteractEvent e){if(device(e.getItem())&&e.getAction().isRightClick()){e.setCancelled(true);if(e.getHand()==EquipmentSlot.HAND&&deviceAllowed(e.getPlayer(),e.getItem())&&players.current(e.getPlayer())!=null)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(e.getPlayer())!=null&&!closed)home(e.getPlayer());},1);}}
     @EventHandler public void drop(PlayerDropItemEvent e){if(device(e.getItemDrop().getItemStack()))e.setCancelled(true);}
-    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();s.calculator().close();completionFlow.forget(s.session());completionReturns.remove(s.session());pendingActions.remove(s.session());contextModes.remove(s.session());helpSelections.remove(s.session());researchSelections.remove(s.session());learning.forget(s.session());references.remove(s.session());followups.forget(s.session());}}
-    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->{s.chat().close();s.calculator().close();});screens.clear();pendingActions.clear();completionFlow.clear();completionReturns.clear();contextModes.clear();helpSelections.clear();researchSelections.clear();learning.clear();references.clear();followups.clear();assistant.close();}
+    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();s.calculator().close();completionFlow.forget(s.session());completionReturns.remove(s.session());pendingActions.remove(s.session());contextModes.remove(s.session());helpSelections.remove(s.session());researchSelections.remove(s.session());learning.forget(s.session());references.remove(s.session());followups.forget(s.session());retirePreflight(s.session());}}
+    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->{s.chat().close();s.calculator().close();});screens.clear();preflights.values().forEach(flow->flow.complete(PhoneTelemetry.Outcome.CLOSED));preflights.clear();pendingActions.clear();completionFlow.clear();completionReturns.clear();contextModes.clear();helpSelections.clear();researchSelections.clear();learning.clear();references.clear();followups.clear();assistant.close();}
 }

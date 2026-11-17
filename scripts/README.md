@@ -183,3 +183,5 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 `--focused`는 긴 합성 공개 본문의 같은 자료로 다른 질문·방금 답변 참조·자료 4개/제외 후 번호 재지정·이력 전송 제외/캐시와 게임 상태 부재를 같은 승인 예산에서 검사한다. 실제 전송 미리보기/고정 자료 Plan을 사용하며 [이어 묻기 배치의 최신 관측](../docs/s5-grounded-followup-verification.md)을 따른다. `--grounded`와 상호 배타적이며 모델/자원·시간/정리 한도는 유지한다. [질문 관련 도움 검증](../docs/s5-focused-help-verification.md)을 따른다.
 
 `--knowledge`는 일반 지식 목적의 준비/질의와 기본 과학 계산·후속 대화·게임 자료 분리를 같은 승인 한도에서 관측한다. 다른 품질 probe와 상호 배타적이다. [일반 지식 경계 검증](../docs/s5-knowledge-boundary-verification.md)의 실제 과학 수용 실패와 최종 코드의 원문 수식 모순 거부를 구분한다. `OllamaArithmeticReplay`는 기록 원문을 표시 검사에 재생할 뿐 새 모델 추론/정답 판정이 아니다.
+
+`--concurrent`는 다른 AI 프로필과 배타적으로 준비 후 순차 기준·두 논리 요청의 겹침/자료 분리·취소 후 재요청·캐시 수용/검증 거부와 서버 수용 집계를 같은 고정 예산에서 검사한다. [최종 계측·실제 모델 관측](../docs/s5-ai-observation-verification.md)을 따른다. 논리 Chat 객체이며 실제 4명 접속이나 Paper/PG/AI 합동 부하가 아니다.

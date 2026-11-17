@@ -1,0 +1,274 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "e643e6f",
+  "outcome": "BOUNDED_FLOW_TELEMETRY_AND_TWO_LOGICAL_AI_REQUESTS_PASS",
+  "whole_s5_complete": false,
+  "actual_minecraft_client": false,
+  "four_player_capacity_pass": false,
+  "mixed_paper_pg_ai_load": false,
+  "operational_deployment": false,
+  "workspace": "/home/server/hearth-tmp/hearth-ai-observation.lqx7yi2s",
+  "final_artifact": {
+    "path": "/home/server/hearth-tmp/hearth-ai-observation.lqx7yi2s/Hearth-final.jar",
+    "sha256": "690eb380dd58bdc5346924d0c96ba357c97b12c29356a02b1a3a777b099c620e",
+    "same_jar_in_native_and_actual_model": true
+  },
+  "execution": {
+    "phone_unit_tests": 260,
+    "new_telemetry_tests": 13,
+    "python_control_tests": 13,
+    "unit_sweeps": 1,
+    "native_paper_starts": 1,
+    "postgres_instances": 1,
+    "actual_model_trials": 1,
+    "same_clock_reviews": 0,
+    "source_changes_after_final_build": false,
+    "second_jvm": false,
+    "reason": "Persistence, restore and inventory contracts unchanged."
+  },
+  "native": {
+    "result": "/home/server/hearth-tmp/hearth-s4-11.q63rupdl/run-result.json",
+    "sha256": "40e1ed3a7739438c7baad9c894acde425143dfdfbd25c44025d17b939c1c1eef",
+    "assertions": 163,
+    "outcome": "PASS",
+    "duration_seconds": 65.554,
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "new_checks": [
+      "telemetry_actual_PG_acceptance_cache_and_validation_refusal_separate",
+      "telemetry_actual_PG_preflight_in_shared_total"
+    ]
+  },
+  "actual_ai": {
+    "result": "/home/server/hearth-tmp/hearth-s5-trial.doiy0q1u/run-result.json",
+    "sha256": "7e1915a9b7a85523660fa4e222b52d3eaf3608740d798501b6e201ad389b922c",
+    "probe_result": "/home/server/hearth-tmp/hearth-s5-trial.doiy0q1u/probe-result.json",
+    "probe_sha256": "73409c34265d3197a804faf344e39dec2dc84705f0703e73715dcaea4f0d5716",
+    "outcome": "PASS",
+    "duration_seconds": 107.828,
+    "cleanup_errors": [],
+    "concurrent_answers": [
+      "자료의 표식은 황색이다. [자료 1]",
+      "자료의 표식은 흑색이다. [자료 1]"
+    ],
+    "concurrent_elapsed_ms": [
+      1076,
+      2128
+    ],
+    "logical_request_intervals_overlap": true,
+    "flow_telemetry": {
+      "timings": [
+        {
+          "phase": "TOTAL",
+          "started": 7,
+          "completed": 7,
+          "active": 0,
+          "totalMillis": 5614,
+          "maxMillis": 2128,
+          "buckets": [
+            3,
+            0,
+            0,
+            4,
+            0,
+            0
+          ]
+        },
+        {
+          "phase": "PREFLIGHT",
+          "started": 0,
+          "completed": 0,
+          "active": 0,
+          "totalMillis": 0,
+          "maxMillis": 0,
+          "buckets": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "phase": "ANSWER_WAIT",
+          "started": 7,
+          "completed": 7,
+          "active": 0,
+          "totalMillis": 5603,
+          "maxMillis": 2128,
+          "buckets": [
+            3,
+            0,
+            0,
+            4,
+            0,
+            0
+          ]
+        },
+        {
+          "phase": "VALIDATION",
+          "started": 6,
+          "completed": 6,
+          "active": 0,
+          "totalMillis": 5,
+          "maxMillis": 5,
+          "buckets": [
+            6,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "outcomes": {
+        "CACHED": 1,
+        "ANSWER_REJECTED": 0,
+        "CLOSED": 0,
+        "PREFLIGHT_REJECTED": 0,
+        "STALE": 0,
+        "BUSY": 0,
+        "INPUT_REJECTED": 0,
+        "CANCELLED": 1,
+        "BACKEND_FAILED": 0,
+        "VALIDATION_FAILED": 1,
+        "PREVIEW_REJECTED": 0,
+        "ACCEPTED": 4,
+        "PREFLIGHT_FAILED": 0
+      }
+    },
+    "backend_usage": {
+      "closed": false,
+      "usage": [
+        {
+          "kind": "GENERATION",
+          "started": 5,
+          "succeeded": 4,
+          "failed": 0,
+          "cancelled": 1,
+          "active": 0,
+          "totalMillis": 5580,
+          "maxMillis": 2128,
+          "latencyBuckets": [
+            1,
+            0,
+            0,
+            4,
+            0,
+            0
+          ],
+          "failures": {}
+        },
+        {
+          "kind": "PREPARATION",
+          "started": 1,
+          "succeeded": 1,
+          "failed": 0,
+          "cancelled": 0,
+          "active": 0,
+          "totalMillis": 3036,
+          "maxMillis": 3036,
+          "latencyBuckets": [
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          "failures": {}
+        },
+        {
+          "kind": "CACHE_CONFIRMATION",
+          "started": 2,
+          "succeeded": 2,
+          "failed": 0,
+          "cancelled": 0,
+          "active": 0,
+          "totalMillis": 10,
+          "maxMillis": 6,
+          "latencyBuckets": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": {}
+        }
+      ]
+    },
+    "cases": [
+      {
+        "name": "prepared_sequential_baseline",
+        "outcome": "PASS"
+      },
+      {
+        "name": "two_overlapping_requests_both_accepted_and_isolated",
+        "outcome": "PASS"
+      },
+      {
+        "name": "cancel_preserves_draft_and_rejects_late_acceptance",
+        "outcome": "PASS"
+      },
+      {
+        "name": "new_question_after_cancel",
+        "outcome": "PASS"
+      },
+      {
+        "name": "cache_is_accepted_without_new_generation",
+        "outcome": "PASS"
+      },
+      {
+        "name": "cached_result_requires_validation_and_keeps_history",
+        "outcome": "PASS"
+      },
+      {
+        "name": "stage_and_terminal_counts_are_separate_and_closed",
+        "outcome": "PASS"
+      },
+      {
+        "name": "no_internal_scope_keys_in_model_payload",
+        "outcome": "PASS"
+      }
+    ],
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "max_sampled_rss_kib": 3336556,
+    "max_sampled_gpu_mib": 3132,
+    "min_host_available_kib": 12636060
+  },
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "individual_seconds": 90,
+    "cpu": 2,
+    "ai_rss_gib": 4,
+    "gpu_gib": 5,
+    "host_minimum_available_gib": 6,
+    "request_seconds": 6,
+    "answer_wait_seconds": 8,
+    "validation_wait_seconds": 8,
+    "context_tokens": 4096,
+    "output_tokens": 128
+  },
+  "source_sha256": {
+    "scripts/s5_ai_trial.py": "cd207f1bc5b2d4fed3f16f6996363ed7f23b2fc0f584347107d1eca487eefab1",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantConsole.java": "a87cd5ffb137d6d38e2ff4379629d32de120a42530f88b001045f9c236f3006f",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PaperPhone.java": "89195601d6361dd084a06682782db2d5b6145636ab57dcb72dbeb427f8c13df9",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneChat.java": "951a291983498c085ff3de680eeb5e90f3b83e074b5bd2f54319d75390f5e40f",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneTelemetry.java": "0a91376f1a20bd11ec2cf02dcb9bd6ee18498b3c3900ee315db3a2594f7b756b",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java": "f55daf87c3f1e72be57582ff615fca60cd949c32f17eef878cbaad929ddd4203",
+    "src/test/java/io/github/jesterportfolio/hearth/phone/PhoneTelemetryTest.java": "c35ff0524c1f9cc82c4be9062bc4f33414eac03d9b50ffa6f2002a1a1aa91df8",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaConcurrentProbe.java": "533621cc53fc31009a608abee4cd8094328685a74afdf021fee7844b2e3f0689"
+  },
+  "remaining": [
+    "Actual Minecraft clients and four-player capacity not tested.",
+    "Paper/PG and AI were sequential, no joint runtime or aggregate budget approval.",
+    "Independent model queue wait and exact percentiles not measured.",
+    "General science correctness, operating budget/SLO and deployment remain open."
+  ]
+}
