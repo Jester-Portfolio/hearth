@@ -15,6 +15,7 @@ import time
 import zipfile
 from manual_s4 import ClientPackServer
 import offline_backup
+from joint_ai import JointAI
 
 REPO=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('s45',REPO/'scripts/verify-s4-5.py')
@@ -22,6 +23,10 @@ s45=importlib.util.module_from_spec(spec);spec.loader.exec_module(s45)
 s42=s45.s42; s44=s45.s44
 
 class Monitor(s45.Monitor):
+    def guard(self):
+        super().guard()
+        joint=getattr(self,'joint',None)
+        if joint is not None and not self.stopping:joint.trial.guard()
     def manual_session(self,name):
         print(name+': 수동 시험 준비 완료. 접속/행동 후 클라이언트를 종료하고 stop을 입력하세요. '+('이번 시험은 전체 시간 제한이 없습니다.' if getattr(self,'manual_no_time_limit',False) else '기본 시간 한도를 유지합니다.'),flush=True)
         next_status=time.monotonic()
@@ -105,6 +110,8 @@ def main():
     parser.add_argument('--betterhud',action='store_true',help='선택형 BetterHud와 표시/관전 경계를 한 JVM에서 검사합니다')
     parser.add_argument('--betterhud-plugin',type=Path)
     parser.add_argument('--accept-eula', action='store_true')
+    parser.add_argument('--joint-ai',action='store_true',help='같은 최초 시계·합산 RSS 6GiB에서 한 진행 네 논리 세션·실제 모델 두 요청과 Paper/PG를 함께 관측합니다')
+    parser.add_argument('--ai-artifact-source',type=Path)
     parser.add_argument('--backup-restore',action='store_true',help='정상 종료 후 Paper/PG 전체 오프라인 백업·새 경로 복원과 복사 PG의 행 해시를 같은 시계에서 검사합니다')
     parser.add_argument('--world-effects', action='store_true', help='Issue #1 단일 블록 효과·충돌·두 JVM 복원에 필요한 축소 시나리오만 실행합니다')
     parser.add_argument('--boss-areas', action='store_true', help='부채꼴·직선 공격, 예고 좌표 고정과 최신 위치/권한 재검사를 한 JVM에서 검증합니다')
@@ -192,6 +199,9 @@ def main():
         parser.error('--combat-departures는 자동 --combat-players 모드에서 단독 시나리오로 실행합니다')
     if args.combat_paths and (not args.combat_players or args.manual_player):
         parser.error('--combat-paths는 자동 --combat-players 모드와 함께 실행합니다')
+    if args.joint_ai and any(isinstance(value,bool) and value and name not in {'joint_ai','sessions','quests','story_batch','accept_eula'} for name,value in vars(args).items()):parser.error('--joint-ai does not combine with other feature/manual profiles')
+    if args.joint_ai and (not all([args.sessions,args.quests,args.story_batch]) or args.ai_artifact_source is None or any([args.manual_player,args.phone_dialog,args.combat_players,args.economy,args.quest_navigation,args.backup_restore])):parser.error('--joint-ai requires standalone --sessions --quests --story-batch and --ai-artifact-source')
+    if args.ai_artifact_source is not None and not args.joint_ai:parser.error('--ai-artifact-source requires --joint-ai')
     if args.economy_runtime_recheck and not args.economy_runtime:parser.error("--economy-runtime-recheck requires --economy-runtime")
     if args.economy_runtime and (not args.economy or args.manual_player or any([args.economy_supply,args.economy_flows,args.economy_quote,args.economy_merchants,args.economy_report,args.economy_desk])):parser.error('--economy-runtime은 자동 --sessions --economy 기본 두 JVM에서 실행합니다')
     if args.combat_players and (not args.story_batch or any([args.combat_state,args.field_encounters,args.branch_progression,args.quest_completion,args.playthrough,args.general_npcs,args.npc_topics,args.quest_interactions,args.npc_pages,args.quest_locations,args.quest_navigation,args.game_information,args.npc_views,args.player_interactions,args.gameplay_guide,args.world_effects])):
@@ -453,8 +463,10 @@ motd=Hearth isolated S4-11 verification
     if args.manual_no_time_limit:monitor.deadline=float('inf')
     monitor.manual_profile=args.profile if args.manual_player else None
     monitor.manual_finish_on_logout=args.manual_finish_on_logout
-    outcome='FAIL'; failure=None; cleanup=[];pack_server=None;pack_downloads=0;backup_result=None
+    outcome='FAIL'; failure=None; cleanup=[];pack_server=None;pack_downloads=0;backup_result=None;monitor.joint=None
     try:
+        if args.joint_ai:
+            monitor.joint=JointAI(monitor,args.ai_artifact_source);monitor.joint.prepare_artifacts()
         if args.s4_client:pack_server=ClientPackServer(root)
         helper=[str(args.java.resolve()),'-Xmx128m','-XX:ActiveProcessorCount=2','-Djava.io.tmpdir='+str(root),
                 '-cp',str(root/'fixture-classes')+':'+str(root/'resolved-jars/*'),
@@ -511,8 +523,9 @@ motd=Hearth isolated S4-11 verification
             paper.insert(-3,'-Dhearth.verification.dungeonPlay=true')
         if args.combat_players:
             paper.insert(-3,'-Dhearth.verification.combatPlayers=true')
+        if args.joint_ai:paper.insert(-3,'-Dhearth.verification.jointAI=true')
         if args.economy_runtime:paper.insert(-3,'-Dhearth.verification.economyRuntime=true')
-        for phase in (['prepare','resume'] if args.s4_client or args.s4_completion or args.combat_paths else ['prepare'] if args.gathering_crafting or args.crafting_quests or args.crafting or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions and not args.inventory_workspaces or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
+        for phase in (['prepare','resume'] if args.s4_client or args.s4_completion or args.combat_paths else ['prepare'] if args.joint_ai or args.gathering_crafting or args.crafting_quests or args.crafting or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.phone_dialog or args.combat_players or args.combat_state or args.field_encounters or args.npc_pages or args.quest_locations or args.quest_navigation or args.game_information or args.npc_views or args.player_interactions and not args.inventory_workspaces or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else ['prepare','resume']):
             s42.port_free()
             if phase=='resume' and args.economy_runtime:
                 endpoint=dict(line.split('=',1) for line in (root/'db-endpoint.properties').read_text().splitlines())
@@ -579,6 +592,9 @@ motd=Hearth isolated S4-11 verification
                             monitor.action(name,'crafting-play')
                         elif args.fast_travel:
                             monitor.action(name,'travel-play')
+                        elif args.joint_ai:
+                            monitor.joint.start();monitor.action(name,'joint-ai-prepare');monitor.delay(10)
+                            monitor.action(name,'joint-ai-play');monitor.delay(10);monitor.action(name,'joint-ai-report')
                         elif args.economy:
                             monitor.action(name,'economy-runtime-seed' if args.economy_runtime_recheck else 'economy-supply' if args.economy_supply else 'economy-flow-start' if args.economy_flows else 'economy-quote' if args.economy_quote else 'economy-merchants' if args.economy_merchants else 'economy-report' if args.economy_report else 'economy-desk' if args.economy_desk else 'economy-start')
                             if args.economy_flows:
@@ -817,15 +833,21 @@ motd=Hearth isolated S4-11 verification
             pack_downloads=pack_server.downloads
             try:pack_server.close();s42.port_free(25587)
             except Exception as error:pack_cleanup.append(type(error).__name__+': pack server cleanup failed')
-        cleanup=pack_cleanup+monitor.finish()
+        joint_cleanup=[]
+        if monitor.joint is not None:
+            try:joint_cleanup=monitor.joint.cleanup()
+            except Exception:joint_cleanup=['Joint AI cleanup failed']
+        cleanup=pack_cleanup+joint_cleanup+monitor.finish()
         if args.backup_restore and (root/'restore-db-port.txt').exists():
             try:s42.port_free(int((root/'restore-db-port.txt').read_text()))
             except Exception:cleanup.append('Restored PostgreSQL port remains open')
         if cleanup:
             outcome='FAIL'
-        result=dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, workspace=str(root),
+        joint_result=monitor.joint.result(outcome) if monitor.joint is not None else None
+        if joint_result is not None and joint_result['outcome']!='PASS':outcome='FAIL'
+        result=dict(joint_ai=joint_result,outcome=outcome, failure=failure, cleanup_errors=cleanup, workspace=str(root),
                     duration_seconds=round(time.monotonic()-monitor.started,3), backup_restore=backup_result, limits=dict(total_seconds=None if args.manual_no_time_limit else 600,work_seconds=None if args.manual_no_time_limit else 550,
-                    paper_starts_max=2 if args.s4_client or args.s4_completion else 1 if args.gathering_crafting or args.crafting_quests or args.crafting or args.dungeon_play or args.combat_route or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.npc_pages or args.phone_dialog or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
+                    paper_starts_max=1 if args.joint_ai else 2 if args.s4_client or args.s4_completion else 1 if args.gathering_crafting or args.crafting_quests or args.crafting or args.dungeon_play or args.combat_route or args.fast_travel or args.economy_supply or args.economy_quote or args.economy_merchants or args.economy_report or args.economy_desk or args.npc_pages or args.phone_dialog or args.gameplay_guide or args.quest_info or args.quest_auto or args.quest_npc or args.quest_start or args.quest_requires else 2,paper_heap_mib=1536,paper_rss_stop_mib=2560,host_available_min_mib=6144,nice=10,active_processors=2),
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],

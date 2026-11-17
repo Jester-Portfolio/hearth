@@ -1,0 +1,389 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "bb31cc5",
+  "outcome": "BOUNDED_JOINT_PAPER_PG_FIXED_MODEL_OBSERVATION_PASS",
+  "whole_s5_complete": false,
+  "four_player_capacity_pass": false,
+  "actual_minecraft_client": false,
+  "operational_deployment": false,
+  "workspace": "/home/server/hearth-tmp/hearth-joint-ai.p87tsm3g",
+  "final_artifact": {
+    "path": "/home/server/hearth-tmp/hearth-joint-ai.p87tsm3g/Hearth-final.jar",
+    "sha256": "af66742d3194cf0082781f26af32fb5a6975570eb12bfba6a2ce379906a07ab8",
+    "native_installed_same_jar": true
+  },
+  "checks": {
+    "tick_unit_tests": 3,
+    "python_resource_tests": 6,
+    "additional_root_pid_reuse_test": 1,
+    "failures_errors_skips": 0,
+    "unit_sweeps": 1,
+    "main_source_changes_after_build": false,
+    "whole_phone_and_economy_units_not_repeated": true,
+    "actual_model_trials": 1,
+    "native_paper_starts": 1,
+    "postgres_instances": 1,
+    "same_clock_reviews": 0,
+    "second_jvm": false,
+    "post_trial_controller_only_change": "Exclude reaped/reused root PID from ownership discovery. One focused test added after actual observation; no protocol, game, timer or resource cap change, model not rerun."
+  },
+  "native": {
+    "result": "/home/server/hearth-tmp/hearth-s4-11.7887xnxg/run-result.json",
+    "sha256": "8c0724c91333c4cc7123a80303580c01ef1b69a46e6e3107aadbc83528641ad9",
+    "assertions": 18,
+    "checks": [
+      "fixture_prepared_no_login_provisioning",
+      "joint_AI_four_logical_sessions_one_active_progress_no_Player",
+      "joint_AI_own_PG_source_0",
+      "joint_AI_own_PG_source_1",
+      "joint_AI_own_PG_source_2",
+      "joint_AI_own_PG_source_3",
+      "joint_AI_explicit_fixed_model_preparation",
+      "joint_AI_model_request_intervals_overlap",
+      "joint_AI_cancel_keeps_draft_no_acceptance",
+      "joint_AI_cache_checks_model_and_real_PG_without_generation",
+      "joint_AI_real_PG_version_change_rejects_cached_answer",
+      "joint_AI_inventory_and_revision_preserved_0",
+      "joint_AI_inventory_and_revision_preserved_1",
+      "joint_AI_inventory_and_revision_preserved_2",
+      "joint_AI_inventory_and_revision_preserved_3",
+      "joint_AI_shared_progress_unchanged",
+      "joint_AI_terminal_counts_only_after_real_PG_acceptance",
+      "joint_AI_bounded_fixed_model_quality"
+    ],
+    "outcome": "PASS",
+    "duration_seconds": 181.443,
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true
+  },
+  "joint_ai": {
+    "result": "/home/server/hearth-tmp/hearth-s5-trial.54bmxvk3/run-result.json",
+    "outcome": "PASS",
+    "runtime_ready": true,
+    "real_model": true,
+    "profile": "joint-paper-pg-ai",
+    "actual_minecraft_client": false,
+    "four_player_capacity_pass": false,
+    "shared_native_workspace": "/home/server/hearth-tmp/hearth-s4-11.7887xnxg",
+    "shared_clock": true,
+    "duration_seconds": 181.442,
+    "guard_failure": null,
+    "cleanup_errors": [],
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "receipts": [
+      {
+        "file": "models/blobs/sha256-b72accf9724e93698c57cbd3b1af2d3341b3d05ec2089d86d273d97964853cd2",
+        "bytes": 487,
+        "sha256": "b72accf9724e93698c57cbd3b1af2d3341b3d05ec2089d86d273d97964853cd2",
+        "verified": true,
+        "reused": true
+      },
+      {
+        "file": "ollama.tar.zst",
+        "bytes": 1545767640,
+        "sha256": "87bfafb2acbc89b2e6a1be0a9043de6aa75fb450696f86bc426e65fc448f788d",
+        "verified": true,
+        "reused": true
+      },
+      {
+        "file": "models/blobs/sha256-eade0a07cac7712787bbce23d12f9306adb4781d873d1df6e16f7840fa37afec",
+        "bytes": 1379,
+        "sha256": "eade0a07cac7712787bbce23d12f9306adb4781d873d1df6e16f7840fa37afec",
+        "verified": true,
+        "reused": true
+      },
+      {
+        "file": "models/blobs/sha256-d18a5cc71b84bc4af394a31116bd3932b42241de70c77d2b76d69a314ec8aa12",
+        "bytes": 11338,
+        "sha256": "d18a5cc71b84bc4af394a31116bd3932b42241de70c77d2b76d69a314ec8aa12",
+        "verified": true,
+        "reused": true
+      },
+      {
+        "file": "models/blobs/sha256-0914c7781e001948488d937994217538375b4fd8c1466c5e7a625221abd3ea7a",
+        "bytes": 119,
+        "sha256": "0914c7781e001948488d937994217538375b4fd8c1466c5e7a625221abd3ea7a",
+        "verified": true,
+        "reused": true
+      },
+      {
+        "file": "models/blobs/sha256-85e4a5b7b8ef0e48af0e8658f5aaab9c2324c76c1641493f4d1e25fce54b18b9",
+        "bytes": 2497280480,
+        "sha256": "85e4a5b7b8ef0e48af0e8658f5aaab9c2324c76c1641493f4d1e25fce54b18b9",
+        "verified": true,
+        "reused": true
+      }
+    ],
+    "parent_home_unchanged": true,
+    "max_combined_rss_kib": 4526252,
+    "max_ai_rss_kib": 2891304,
+    "max_gpu_mib": 3130,
+    "min_host_available_kib": 11682328,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "ai_rss_gib": 4,
+      "combined_rss_gib": 6,
+      "gpu_gib": 5,
+      "host_available_gib": 6,
+      "cpu": 2,
+      "nice": 10
+    }
+  },
+  "raw_joint_ai_sha256": "1aeb7695f28a88f84065768f94ebf49dd8ea5ad7924d03af7e9e844621679f44",
+  "probe_result": {
+    "path": "/home/server/hearth-tmp/hearth-s4-11.7887xnxg/joint-phone-result.json",
+    "sha256": "46551d95ac4e5e6577d3f91bc63d02eee91e0440abbba4094b736eaee2913a61",
+    "logical_sessions": 4,
+    "active_story_runs": 1,
+    "concurrent_AI_requests": 2,
+    "answers": [
+      "자료의 표식 한 단어는 \"청색\"입니다. [자료 1]",
+      "자료의 표식은 황색이다. [자료 1]",
+      "자료의 표식 한 단어는 흑색이다. [자료 1]",
+      "자료의 표식 한 단어는 백색이다. [자료 1]"
+    ],
+    "concurrent_elapsed_millis": [
+      2548,
+      3648
+    ],
+    "PG_read_millis": [
+      757,
+      746,
+      750,
+      750,
+      798,
+      750,
+      748,
+      748,
+      747,
+      750,
+      749,
+      748,
+      750,
+      743,
+      750,
+      749,
+      750
+    ],
+    "tick_windows": [
+      {
+        "phase": "PREPARATION",
+        "wallMillis": 79149,
+        "ticks": 1585,
+        "meanMillis": 0.2590573589905363,
+        "maxMillis": 103.560091,
+        "p95Millis": 0.245711,
+        "gcCount": 1,
+        "gcMillis": 7
+      },
+      {
+        "phase": "BASELINE",
+        "wallMillis": 10050,
+        "ticks": 201,
+        "meanMillis": 0.1361428606965174,
+        "maxMillis": 2.252277,
+        "p95Millis": 0.165796,
+        "gcCount": 0,
+        "gcMillis": 0
+      },
+      {
+        "phase": "REQUESTS",
+        "wallMillis": 14000,
+        "ticks": 280,
+        "meanMillis": 0.2571452964285714,
+        "maxMillis": 9.912343,
+        "p95Millis": 0.957311,
+        "gcCount": 0,
+        "gcMillis": 0
+      },
+      {
+        "phase": "AFTER",
+        "wallMillis": 10048,
+        "ticks": 201,
+        "meanMillis": 0.11304833333333333,
+        "maxMillis": 1.470571,
+        "p95Millis": 0.143106,
+        "gcCount": 1,
+        "gcMillis": 7
+      }
+    ],
+    "flow_telemetry": {
+      "timings": [
+        {
+          "phase": "TOTAL",
+          "started": 7,
+          "completed": 7,
+          "active": 0,
+          "totalMillis": 16287,
+          "maxMillis": 3648,
+          "buckets": [
+            0,
+            0,
+            1,
+            4,
+            2,
+            0
+          ]
+        },
+        {
+          "phase": "PREFLIGHT",
+          "started": 7,
+          "completed": 7,
+          "active": 0,
+          "totalMillis": 5286,
+          "maxMillis": 800,
+          "buckets": [
+            0,
+            0,
+            7,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "phase": "ANSWER_WAIT",
+          "started": 7,
+          "completed": 7,
+          "active": 0,
+          "totalMillis": 6441,
+          "maxMillis": 2148,
+          "buckets": [
+            3,
+            0,
+            0,
+            4,
+            0,
+            0
+          ]
+        },
+        {
+          "phase": "VALIDATION",
+          "started": 6,
+          "completed": 6,
+          "active": 0,
+          "totalMillis": 4548,
+          "maxMillis": 800,
+          "buckets": [
+            0,
+            0,
+            6,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "outcomes": {
+        "PREVIEW_REJECTED": 0,
+        "CACHED": 1,
+        "ANSWER_REJECTED": 0,
+        "CANCELLED": 1,
+        "CLOSED": 0,
+        "STALE": 0,
+        "INPUT_REJECTED": 0,
+        "PREFLIGHT_FAILED": 0,
+        "VALIDATION_FAILED": 1,
+        "ACCEPTED": 4,
+        "BUSY": 0,
+        "PREFLIGHT_REJECTED": 0,
+        "BACKEND_FAILED": 0
+      }
+    },
+    "backend_usage": {
+      "closed": false,
+      "usage": [
+        {
+          "kind": "GENERATION",
+          "started": 5,
+          "succeeded": 4,
+          "failed": 0,
+          "cancelled": 1,
+          "active": 0,
+          "totalMillis": 6279,
+          "maxMillis": 2146,
+          "latencyBuckets": [
+            1,
+            0,
+            0,
+            4,
+            0,
+            0
+          ],
+          "failures": {}
+        },
+        {
+          "kind": "PREPARATION",
+          "started": 1,
+          "succeeded": 1,
+          "failed": 0,
+          "cancelled": 0,
+          "active": 0,
+          "totalMillis": 75649,
+          "maxMillis": 75649,
+          "latencyBuckets": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "failures": {}
+        },
+        {
+          "kind": "CACHE_CONFIRMATION",
+          "started": 2,
+          "succeeded": 2,
+          "failed": 0,
+          "cancelled": 0,
+          "active": 0,
+          "totalMillis": 7,
+          "maxMillis": 4,
+          "latencyBuckets": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": {}
+        }
+      ]
+    },
+    "cases": [
+      {
+        "outcome": "PASS",
+        "name": "prepared_PG_baseline"
+      },
+      {
+        "outcome": "PASS",
+        "name": "two_real_PG_sources_accepted_separately"
+      },
+      {
+        "outcome": "PASS",
+        "name": "new_PG_question_after_cancel"
+      }
+    ]
+  },
+  "interpretation": {
+    "pg_read_is_application_view_load_including_owner_delivery_not_raw_SQL": true,
+    "tick_percentiles_are_observed_tick_samples_not_AI_latency": true,
+    "no_real_player_entity_chunk_inventory_interactions": true,
+    "operating_SLO_question_rate_resource_allocation_not_defined": true
+  },
+  "source_sha256": {
+    "scripts/joint_ai.py": "32365e24530bba32354dbec0232cf86be0d50d8b84a9b4adcec76458f1d21df6",
+    "scripts/test_joint_ai.py": "702213d05a3f7ccd7f7493df010edefe6b03e1dad20431cdf330cf0c6aaa3500",
+    "scripts/verify-lifecycle.py": "8dc074e5379a421258d99af19ecb40867207dc7520285939eea1984bb3777063",
+    "scripts/verify-s4-5.py": "b757829009516844b0baab37accfc467f9de89a5c90aaa29414c08788e15ccb4",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/TickObservation.java": "586cbc01e269b4b3ae8f262a46f61a2c3af278ca8962d091ec4e98366d11fc7d",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/JointPhoneVerification.java": "2434a027c8c3caf1f1db1cfbbfaba157f0982f329bd334a3706389ca94b89604",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java": "5e377685988c363eada816224748d73119cda9c6dacc6e21930bf258569ac764",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/LifecycleVerification.java": "a32161681556dac68b33f1c7777c37abc8e8add6427e10d8614e891177c01c9b",
+    "src/test/java/io/github/jesterportfolio/hearth/verification/TickObservationTest.java": "c2cad745995f90ba12559d2e8b966d67a32e64abec61fc46897fa54de0333796"
+  }
+}

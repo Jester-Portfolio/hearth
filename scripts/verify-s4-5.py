@@ -43,7 +43,7 @@ class Monitor:
         self.guard()
         started = time.monotonic()
         proc = subprocess.Popen(isolated_paths.java_command(command,self.root), cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, start_new_session=True, preexec_fn=lambda: os.nice(10))
+                                stderr=subprocess.STDOUT, start_new_session=True, preexec_fn=lambda: os.nice(max(0,10-os.getpriority(os.PRIO_PROCESS,0))))
         item = dict(proc=proc, started=started, lines=[], pending=b'', log=(self.root / (name + '-console.log')).open('wb'),
                     samples=[], ready=None, stop_at=None, exit_at=None)
         self.children[name] = item

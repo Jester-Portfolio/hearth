@@ -32,6 +32,7 @@ public final class SessionVerification implements AutoCloseable {
     private CompletionStage<Void> manualStatus=CompletableFuture.completedFuture(null);
     private final Map<String,String> manualQuestStatus=new HashMap<>();
     private ManualS4Support manualS4;
+    private JointPhoneVerification jointAI;
     private FeatureStore featureStore;private PersonalStorage personalStorage;private S4Features features;
     private final JavaPlugin plugin;
     private final PostgresProgressStore store;
@@ -382,6 +383,9 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "joint-ai-prepare" -> jointPrepare();
+        case "joint-ai-play" -> Objects.requireNonNull(jointAI).play();
+        case "joint-ai-report" -> {try{Objects.requireNonNull(jointAI).report();yield CompletableFuture.completedFuture(null);}catch(Exception error){yield CompletableFuture.failedFuture(error);}}
         case "economy-runtime-seed" -> {if(economy!=null)throw new IllegalStateException("Economy initialized");adapter.close();autosave.close();try{economy=new EconomyVerification(plugin,store,owner,codec,false);}catch(Exception error){throw new CompletionException(error);}yield EconomyRuntimeVerification.seed(plugin,store,economy.economy,codec,owner);}
         case "economy-runtime-prepare" -> EconomyRuntimeVerification.prepare(plugin,store,Objects.requireNonNull(economy).economy,codec,owner);
         case "economy-start", "economy-resume", "economy-desk", "economy-report", "economy-supply", "economy-flow-start", "economy-flow-restored", "economy-quote", "economy-merchants" -> {if(economy!=null)throw new IllegalStateException("Economy already initialized");adapter.close();autosave.close();try{economy=new EconomyVerification(plugin,store,owner,codec,(phase.equals("economy-resume")||phase.equals("economy-flow-restored")));}catch(Exception e){throw new CompletionException(e);}yield switch(phase){case "economy-supply"->economy.runSupply();case "economy-flow-start","economy-flow-restored"->economy.runFlows();case "economy-quote"->economy.runQuote();case "economy-desk"->economy.runDesk();case "economy-report"->economy.runReport();case "economy-merchants"->economy.runMerchants();default->economy.run();};}
@@ -638,6 +642,12 @@ public final class SessionVerification implements AutoCloseable {
     }
     private CompletionStage<Void> travelWriteFailure(){return mainResult(store.readInventory(a1)).thenCompose(before->{var p=new TravelPort(s1,one);p.saving=store.saveInventory(a1,0,fixture.apply(1)).thenApply(v->(Void)null).toCompletableFuture();var t=new io.github.jesterportfolio.hearth.travel.FastTravel(paperTravel.content,owner,SessionVerification::main);return rejectQuest(t.start(p,"village_station","outpost_station",UUID.randomUUID())).thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(after->{check(before.equals(after)&&p.moves==0&&!p.frozen&&t.phase(p)==io.github.jesterportfolio.hearth.travel.FastTravel.Phase.HOLD,"travel_real_DB_revision_failure_preserves_original_and_no_move");t.close();});});}
     private CompletionStage<Void> travelStale(){var p=new TravelPort(s1,one);p.saving=new CompletableFuture<>();var t=new io.github.jesterportfolio.hearth.travel.FastTravel(paperTravel.content,owner,SessionVerification::main);var result=t.start(p,"village_station","outpost_station",UUID.randomUUID());return until(()->t.phase(p)==io.github.jesterportfolio.hearth.travel.FastTravel.Phase.SAVING).thenCompose(v->{p.extraGeneration++;p.saving.complete(null);return rejectQuest(result);}).thenRun(()->{check(p.moves==0&&t.phase(p)==io.github.jesterportfolio.hearth.travel.FastTravel.Phase.HOLD&&!p.frozen,"travel_stale_generation_after_real_read_rejects_apply");t.close();});}
+    private CompletionStage<Void> jointPrepare(){
+        if(!Boolean.getBoolean("hearth.verification.jointAI")||jointAI!=null||journal==null)throw new IllegalStateException("JOINT_AI_GATE");
+        CompletionStage<Void> setup=CompletableFuture.completedFuture(null);
+        for(int n:List.of(3,4)){var context=ctx(a,n);setup=setup.thenCompose(v->mainResult(store.createPlayer(context,"joint"))).thenCompose(v->mainResult(store.createInventory(context,codec.encode(new ItemStack[41]))).thenApply(x->null));}
+        return setup.thenCompose(v->{var clients=new ArrayList<JointPhoneVerification.Client>();var ready=new ArrayList<CompletableFuture<?>>();for(int n=1;n<=4;n++){var context=ctx(a,n);var port=new Controlled();var session=connect(context,port);if(n==1){one=port;s1=session;}else if(n==2){two=port;s2=session;}clients.add(new JointPhoneVerification.Client(context,session,port::capture));ready.add(session.ready().toCompletableFuture());}return CompletableFuture.allOf(ready.toArray(CompletableFuture[]::new)).thenComposeAsync(x->{check(worlds.get(a).participantCount()==4&&worlds.get(b).participantCount()==0,"joint_AI_four_logical_sessions_one_active_progress_no_Player");try{jointAI=new JointPhoneVerification(plugin,store,journal,catalog,coordinator,clients,owner);}catch(Exception error){return CompletableFuture.failedFuture(error);}return jointAI.prepare();},owner);});
+    }
     private CompletionStage<Void> openAll(){
         one=new Controlled();two=new Controlled();three=new Controlled();s1=connect(a1,one);s2=connect(a2,two);s3=connect(b3,three);
         check(one.applies==0 && two.applies==0 && worlds.get(a).participantCount()==0,"no_apply_or_admission_before_prepare");
@@ -3205,6 +3215,7 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> restoreStoryWorld(UUID run){if(manualS4!=null){prepareCourse(run);prepareManualS4(run);}if(gathering!=null)gathering.ensureFacilities(run);if(paperTravel!=null)paperTravel.ensureRegions(run);if(blockEffect==null)return CompletableFuture.completedFuture(null);blockEffect.prepared(run);var context=ctx(run,1);return sharedStory.load(context).thenComposeAsync(s->sharedStory.reconcile(context),owner).thenAccept(ok->{});}
     public void releaseQuests(UUID run){if(dungeonPlay!=null)dungeonPlay.unloaded(run);if(gathering!=null)gathering.unloaded(run);if(quests!=null)quests.release(run);if(blockEffect!=null){blockEffect.unloaded(run);sharedStory.worldUnloaded(run);}}
     public CompletionStage<Void> shutdown(){
+        if(jointAI!=null)jointAI.close();
         if(manual && !Bukkit.getOnlinePlayers().isEmpty())return CompletableFuture.failedFuture(new LifecycleFailure("MANUAL_PLAYER_STILL_ONLINE"));
         if(recoveryConsole!=null)recoveryConsole.close();if(escort!=null)escort.close();if(dungeonPlay!=null)dungeonPlay.close();if(gathering!=null)gathering.close();if(paperTravel!=null)paperTravel.close();if(combatPlayers!=null)combatPlayers.close();if(combatTrials!=null)combatTrials.close();if(fieldEncounters!=null)fieldEncounters.close();if(paperStory!=null)paperStory.close();if(questAdapter!=null)questAdapter.stopUi();autosave.close();adapter.close();
         CompletionStage<Void> other=s3==null ? CompletableFuture.completedFuture(null) : coordinator.disconnect(s3);
@@ -3244,6 +3255,6 @@ public final class SessionVerification implements AutoCloseable {
             .exceptionally(error->{log("MANUAL_QUERY_ERROR "+LifecycleFailure.code(error));return null;});
     }
     @Override public void close(){if(crafting!=null)crafting.close();if(paperTravel!=null)paperTravel.close();
-        io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(manualS4,recoveryConsole,features,escort,dungeonPlay,gathering,economy,combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
+        io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(jointAI,manualS4,recoveryConsole,features,escort,dungeonPlay,gathering,economy,combatPlayers,combatTrials,fieldEncounters,questAdapter,autosave,adapter);
     }
 }
