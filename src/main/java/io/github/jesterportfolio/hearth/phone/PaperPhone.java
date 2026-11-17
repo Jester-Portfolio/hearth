@@ -60,7 +60,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         this.plugin=plugin;this.players=players;this.journal=journal;this.catalog=catalog;this.owner=owner;device=new NamespacedKey(plugin,"dev_phone");
         String mode=plugin.getConfig().getString("phone-ai-mode","mock");
         assistant=new MeasuredAssistant(LocalAssistant.configured(mode,plugin.getConfig().getString("phone-ai-endpoint","http://127.0.0.1:11435/ask")));
-        Objects.requireNonNull(plugin.getCommand("hearthai")).setExecutor((sender,command,label,args)->{AssistantDiagnostics.lines(sender instanceof org.bukkit.command.ConsoleCommandSender,args,mode,assistant::snapshot).forEach(sender::sendMessage);return true;});
+        Objects.requireNonNull(plugin.getCommand("hearthai")).setExecutor((sender,command,label,args)->{AssistantConsole.execute(sender instanceof org.bukkit.command.ConsoleCommandSender,args,mode,assistant,owner,()->!closed,sender::sendMessage);return true;});
         Bukkit.getPluginManager().registerEvents(this,plugin);
     }
     private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();old.calculator().close();contextModes.remove(old.session());helpSelections.remove(old.session());researchSelections.remove(old.session());learning.forget(old.session());completionFlow.forget(old.session());completionReturns.remove(old.session());references.remove(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner),new PhoneCalculator());screens.put(p.getUniqueId(),next);return next;}

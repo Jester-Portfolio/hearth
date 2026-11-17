@@ -13,6 +13,7 @@ public final class OllamaKnowledgeProbe {
         if(args.length!=2||!args[0].equals("http://127.0.0.1:11435/api/generate"))throw new IllegalArgumentException("TRIAL_ENDPOINT");
         var rows=new JsonArray();var report=new JsonObject();var owner=Executors.newSingleThreadExecutor();var requests=new ArrayList<AssistantRequest>();
         try(var backend=new MeasuredAssistant(new OllamaAssistant(args[0]))){
+            backend.prepare().toCompletableFuture().get(85,TimeUnit.SECONDS);
             var service=new AssistantService(){public boolean allowsCache(){return true;}public CompletionStage<String> confirmCached(String answer){return backend.confirmCached(answer);}public CompletionStage<String> ask(String text){throw new AssertionError();}public CompletionStage<String> ask(AssistantRequest request){requests.add(request);return backend.ask(request);}};
             var chat=new PhoneChat(service,owner);String mechanics="https://openstax.org/books/physics/pages/9-3-simple-machines";
             run(rows,"lever_100N",owner,chat,()->chat.submit("마찰 없는 지렛대의 작용 팔 2 m, 하중 팔 0.5 m, 하중 400 N이다. 필요한 힘을 식과 N 단위로 짧게 답해."),a->a.matches("(?s).*100\\s*(N|뉴턴).*"),mechanics);

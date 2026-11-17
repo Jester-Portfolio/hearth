@@ -14,6 +14,7 @@ public final class OllamaGroundingProbe {
         if(args.length!=2||!args[0].equals("http://127.0.0.1:11435/api/generate"))throw new IllegalArgumentException("TRIAL_ENDPOINT");
         var owner=Executors.newSingleThreadExecutor();var rows=new JsonArray();var report=new JsonObject();
         try(var service=new MeasuredAssistant(new OllamaAssistant(args[0]))){
+            service.prepare().toCompletableFuture().get(85,TimeUnit.SECONDS);
             var a=new PhoneChat(service,owner);var b=new PhoneChat(service,owner);var same=new PhoneChat(service,owner);var none=new PhoneChat(service,owner);
             String question="상점 이름과 자료 번호만 적어.",context="[자료 1] 공개 상점 기록\n현재 진행의 상점 이름은 느티상점이다.";var identity=scope("private_A");
             for(int i=0;i<8;i++)run(rows,"repeat_"+i,owner,a,()->a.submit(question,context,"diary",()->true,()->CompletableFuture.completedFuture(true),identity),"느티상점",null);

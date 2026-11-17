@@ -164,9 +164,13 @@
 
 ## S5 고정 로컬 AI 격리 시험
 
+선택형 `ollama` 어댑터의 `hearthai prepare`는 서버 콘솔의 명시적 준비 요청이며 `hearthai status`는 계속 집계 조회만 한다. 준비는 같은 고정 모델/공개 노트의 초기 연산까지 최대 90초로 확인하고, 질문은 준비 성공 표식/적재 상태가 있어야 기존 6초 안에서 처리한다. 설치/운영 배포·자동 준비/keep-alive 연장이 아니다. [최종 구현과 첫 콜드 실패·재시험 경계](../docs/s5-ai-preparation-verification.md)를 따른다.
+
 `s5_ai_trial.py`는 [ADR-0018](../docs/decisions/0018-local-ai-runtime-and-trial-budget.md)의 명시적 모델/예산 승인이 있는 새 사용자 소유 `/home/server/hearth-tmp/hearth-s5-trial.*`·전용 표식 경로만 사용한다. 실제 파일 해시·manifest 검증, libzstd 안전 해제, 독립 프로필/모델·루프백/클라우드 비활성·소유 프로세스 트리와 GPU/RAM/디스크/시간 감시를 수행한다. `--java`와 고정 JAR/fixture/Gson의 `--classpath`를 받는다. 일반 실행이 모델 설치/운영 변경 승인을 대신하지 않는다.
 
 `--research`는 `--grounded`/`--focused`/`--knowledge`와 배타적인 고정 과학 노트 질의다. 같은 노트의 후속·다른 노트/일반 게임 상태 부재·이력 제외/캐시를 기존 시간·자원 한도 안에서 관측한다. 답변의 키워드 assertion 외에 원문을 검토하며, [고정 노트 범위 성공과 일반 과학 계산 보류](../docs/s5-science-reading-verification.md)를 구분한다. 런타임에 웹/원문을 가져오지 않고 앱과 같은 고정 노트를 사용한다.
+
+`--preparation`도 위 품질 모드와 배타적이며 기존 사전 예열을 생략한다. 새 소유 런타임에서 준비 전 질문의 로딩 금지→명시적 준비→질문/캐시→시험 소유 모델 해제 후 진입을 개별 90초 probe 안에서 관측한다. 운영 서버/다른 모델에 해제 요청을 보내지 않는다. 실패한 시간/HTTP 시험을 새 경로/시계로 자동 재시도하는 예외는 추가하지 않았다.
 
 `--continue-after-review`는 실패 원본을 보존하고 같은 최초 600초의 남은 시간만 사용하는 한 번의 관련 재확인이다. 새 시간 예산·모델/상한 확대가 아니며 원래 아티팩트 해시를 다시 확인하고 모델/프로필/로그/결과는 분리한다. 최초 표식의 경과 시간이 450초 이상이거나 재확인 결과가 이미 있으면 거부한다. 준비는 `OllamaTrialWarmup`, 실제 제한 흐름은 `OllamaTrialProbe`를 사용하며 Minecraft Player를 생성하지 않는다. [실제 결과·실패·최종 코드 미재실행 범위](../docs/s5-local-ai-verification.md)를 반드시 구분한다.
 

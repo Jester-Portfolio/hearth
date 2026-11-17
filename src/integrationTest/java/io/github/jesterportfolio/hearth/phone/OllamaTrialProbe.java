@@ -12,6 +12,7 @@ public final class OllamaTrialProbe {
         var report=new JsonObject();var cases=new JsonArray();report.add("cases",cases);
         var owner=Executors.newSingleThreadExecutor();
         try(var service=new OllamaAssistant(args[0])){
+            service.prepare().toCompletableFuture().get(85,TimeUnit.SECONDS);
             var first=new PhoneChat(service,owner);var second=new PhoneChat(service,owner);
             run(cases,"korean_short",owner,first,()->first.submit("한국어로 준비 완료 라는 말만 답해."),"준비 완료",null);
             run(cases,"personal_A",owner,first,()->first.submit("자료 속 상점 이름만 답해.","현재 공개 기록: 이 진행의 상점 이름은 느티상점이다.","diary",()->true),"느티상점","바람상점");

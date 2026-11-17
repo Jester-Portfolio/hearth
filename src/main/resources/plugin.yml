@@ -10,8 +10,8 @@ libraries:
 description: Hearth S4 isolated multiworld verification foundation
 commands:
   hearthai:
-    description: Console-only read-only AI backend usage totals
-    usage: /hearthai status
+    description: Console-only AI usage totals and explicit model preparation
+    usage: /hearthai status|prepare
     permission: hearth.ai.inspect
   hearthrecovery:
     description: Console-only read-only story recovery inspection

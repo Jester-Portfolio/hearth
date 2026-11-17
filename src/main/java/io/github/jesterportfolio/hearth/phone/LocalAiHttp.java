@@ -21,16 +21,23 @@ final class LocalAiHttp implements AutoCloseable {
         client=HttpClient.newBuilder().executor(worker).connectTimeout(Duration.ofSeconds(2)).followRedirects(HttpClient.Redirect.NEVER).build();
     }
     synchronized CompletableFuture<String> exchange(URI target,String method,String contentType,String body,Function<HttpResponse<String>,String> decode){
+        return exchange(target,method,contentType,body,decode,timeout);
+    }
+    synchronized CompletableFuture<String> preparation(String body,Function<HttpResponse<String>,String> decode,Duration budget){
+        if(budget.isZero()||budget.isNegative()||budget.compareTo(Duration.ofSeconds(90))>0)throw new IllegalArgumentException("LOCAL_AI_PREPARATION_TIMEOUT");
+        return exchange(endpoint.resolve("/api/generate"),"POST","application/json; charset=utf-8",body,decode,budget);
+    }
+    private synchronized CompletableFuture<String> exchange(URI target,String method,String contentType,String body,Function<HttpResponse<String>,String> decode,Duration requestTimeout){
         if(closed)return CompletableFuture.failedFuture(new AssistantFailure(AssistantFailure.Reason.CLOSED));
         if(!Objects.equals(target.getHost(),endpoint.getHost())||target.getPort()!=endpoint.getPort()||!target.getScheme().equals(endpoint.getScheme()))throw new IllegalArgumentException("LOCAL_AI_ORIGIN");
         requests.removeIf(CompletableFuture::isDone);
         if(requests.size()>=4)return CompletableFuture.failedFuture(new AssistantFailure(AssistantFailure.Reason.BUSY));
         final CompletableFuture<HttpResponse<String>> response;
         try{
-            var request=HttpRequest.newBuilder(target).timeout(timeout).header("Content-Type",contentType).method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(body)).build();
+            var request=HttpRequest.newBuilder(target).timeout(requestTimeout).header("Content-Type",contentType).method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(body)).build();
             response=client.sendAsync(request,info->new LocalAssistant.LimitedBody());
         }catch(RuntimeException failure){return CompletableFuture.failedFuture(new AssistantFailure(AssistantFailure.reason(failure)));}
-        var timed=response.copy().orTimeout(timeout.toMillis(),TimeUnit.MILLISECONDS);var result=new CompletableFuture<String>();requests.add(result);
+        var timed=response.copy().orTimeout(requestTimeout.toMillis(),TimeUnit.MILLISECONDS);var result=new CompletableFuture<String>();requests.add(result);
         result.whenComplete((value,error)->{synchronized(this){requests.remove(result);}if(error!=null){timed.cancel(true);response.cancel(true);}});
         timed.whenComplete((value,error)->{
             if(error!=null)result.completeExceptionally(new AssistantFailure(AssistantFailure.reason(error)));

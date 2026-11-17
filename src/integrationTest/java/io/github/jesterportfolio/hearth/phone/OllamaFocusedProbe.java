@@ -16,6 +16,7 @@ public final class OllamaFocusedProbe {
         var found=PhoneRetrieval.find(data,"diary",question);var full=PhoneRetrieval.present(found.sources());var reduced=PhoneRetrieval.present(List.of(found.sources().get(0),found.sources().get(2)));
         var report=new JsonObject();var rows=new JsonArray();var owner=Executors.newSingleThreadExecutor();var sentHistory=new ArrayList<Integer>();
         try(var backend=new MeasuredAssistant(new OllamaAssistant(args[0]))){
+            backend.prepare().toCompletableFuture().get(85,TimeUnit.SECONDS);
             var service=new AssistantService(){
                 public boolean allowsCache(){return true;}public CompletionStage<String> confirmCached(String answer){return backend.confirmCached(answer);}
                 public CompletionStage<String> ask(String prompt){throw new AssertionError();}

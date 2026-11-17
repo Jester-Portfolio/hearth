@@ -6,7 +6,7 @@ import java.util.function.*;
 
 /** 현재 서버 수명의 백엔드 집계만 보관합니다. 질문/응답/개인/주소는 기록하지 않습니다. */
 public final class MeasuredAssistant implements AssistantService {
-    public enum Kind { GENERATION, CACHE_CONFIRMATION }
+    public enum Kind { GENERATION, PREPARATION, CACHE_CONFIRMATION }
     public record Usage(Kind kind,long started,long succeeded,long failed,long cancelled,int active,long totalMillis,long maxMillis,List<Long> latencyBuckets,Map<AssistantFailure.Reason,Long> failures){
         public Usage{latencyBuckets=List.copyOf(latencyBuckets);failures=Map.copyOf(failures);}
     }
@@ -29,6 +29,7 @@ public final class MeasuredAssistant implements AssistantService {
     @Override public CompletionStage<String> ask(AssistantRequest request){return measure(Kind.GENERATION,()->delegate.ask(request));}
     @Override public boolean allowsCache(){return delegate.allowsCache();}
     @Override public CompletionStage<String> confirmCached(String answer){return measure(Kind.CACHE_CONFIRMATION,()->delegate.confirmCached(answer));}
+    @Override public CompletionStage<String> prepare(){return measure(Kind.PREPARATION,delegate::prepare);}
     private synchronized CompletionStage<String> measure(Kind kind,Supplier<CompletionStage<String>> start){
         if(closed)return CompletableFuture.failedFuture(new AssistantFailure(AssistantFailure.Reason.CLOSED));
         var work=new Work(kind,clock.getAsLong());pending.add(work);var count=totals.get(kind);count.started++;count.active++;

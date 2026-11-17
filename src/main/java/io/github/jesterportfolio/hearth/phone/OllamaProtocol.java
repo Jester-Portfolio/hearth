@@ -32,6 +32,18 @@ final class OllamaProtocol {
         for(var element:root.getAsJsonArray("models")){if(!element.isJsonObject())throw invalid();var model=element.getAsJsonObject();if(MODEL.equals(string(model,"name"))){if(!DIGEST.equals(string(model,"digest").replaceFirst("^sha256:","")))throw failure(AssistantFailure.Reason.MODEL_MISMATCH);matches++;}}
         if(matches!=1)throw failure(AssistantFailure.Reason.MODEL_MISMATCH);
     }
+    static boolean loaded(String body){
+        var root=object(body);if(!root.has("models")||!root.get("models").isJsonArray())throw invalid();var models=root.getAsJsonArray("models");if(models.isEmpty())return false;
+        if(models.size()!=1)throw failure(AssistantFailure.Reason.MODEL_MISMATCH);if(!models.get(0).isJsonObject())throw invalid();var model=models.get(0).getAsJsonObject();
+        if(!MODEL.equals(string(model,"name"))||!DIGEST.equals(string(model,"digest").replaceFirst("^sha256:",""))||integer(model,"context_length")!=CONTEXT)throw failure(AssistantFailure.Reason.MODEL_MISMATCH);return true;
+    }
+    static String preparation(){
+        return request(preparationRequest());
+    }
+    private static AssistantRequest preparationRequest(){return AssistantRequest.science("Hearth AI 준비용 고정 요청: 작용 팔이 길어질 때 필요한 힘의 변화를 짧게 설명해.",List.of(),ScienceReading.LEVER);}
+    static void prepared(String body){
+        AssistantAnswer.present(preparationRequest(),answer(body));
+    }
     static String answer(String body){
         var root=object(body);if(root.has("error")||!MODEL.equals(string(root,"model")))throw invalid();
         if(!root.has("done")||!root.get("done").isJsonPrimitive()||!root.getAsJsonPrimitive("done").isBoolean()||!root.get("done").getAsBoolean())throw invalid();

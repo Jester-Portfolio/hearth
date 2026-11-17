@@ -12,6 +12,7 @@ public final class OllamaResearchProbe {
         if(args.length!=2||!args[0].equals("http://127.0.0.1:11435/api/generate"))throw new IllegalArgumentException("TRIAL_ENDPOINT");
         var rows=new JsonArray();var report=new JsonObject();var owner=Executors.newSingleThreadExecutor();var requests=new ArrayList<AssistantRequest>();
         try(var backend=new MeasuredAssistant(new OllamaAssistant(args[0]))){
+            backend.prepare().toCompletableFuture().get(85,TimeUnit.SECONDS);
             var service=new AssistantService(){public boolean allowsCache(){return true;}public CompletionStage<String> confirmCached(String answer){return backend.confirmCached(answer);}public CompletionStage<String> ask(String text){throw new AssertionError();}public CompletionStage<String> ask(AssistantRequest request){requests.add(request);return backend.ask(request);}};
             var chat=new PhoneChat(service,owner);
             run(rows,"lever_principle",owner,chat,ScienceReading.LEVER,"하중과 하중 팔이 같을 때 작용 팔을 길게 하면 필요한 힘은 어떻게 달라지는가?",a->a.contains("작아")||a.contains("줄어")||a.contains("감소"));

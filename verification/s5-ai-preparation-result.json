@@ -1,0 +1,222 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "2459dc0",
+  "outcome": "FINAL_INTERNAL_AND_EXPLICITLY_APPROVED_COLD_TRIAL_PASS",
+  "whole_s5_complete": false,
+  "operational_acceptance": false,
+  "actual_minecraft_client": false,
+  "workspace": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns",
+  "final_artifact": {
+    "path": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns/Hearth-ai-preparation-r1.jar",
+    "sha256": "0e72dcd20c4bed78118a1857cb0f7fbd716e43985d6ebc3f5cff1484c202d9b7"
+  },
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/phone/OllamaAssistant.java": "cf9028e9b48cd5a3402ef440f591b85cb713816d4167af268f7d024be6c7245e",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/OllamaProtocol.java": "b4836e80f239e9ae9a74dba066c0efed12f7f46738810178b3cb179f390c049a",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/LocalAiHttp.java": "bf71bb65a20fe50a72136ff7ca71db6c1b3331a83de7e1f38ca177dbbfed68ea",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantService.java": "964a174e1df1e7d53264c18068ed499ec2d89f1681a63e6e137fd1332397575e",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantFailure.java": "0e779816b19ae3141ba42ae51d5062d85620400c9b520437ce6e1cc13d23835d",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantConsole.java": "a2d07503218ec356d941e1971cb3f2b2deb4ad1737370010aa100868b1b7a4d7",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantDiagnostics.java": "18272a7c95a4b1fb93118fa799c3f0b29ff0a7c4ffe0b4019498f73cca06f854",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/MeasuredAssistant.java": "828282684e4594b08b7a45a45080af4dcdfb7fe8739f678bcee8e4c54b626dad",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PaperPhone.java": "a8c3527944935f089387f019a066accb039e8455e2757c1697eb9dd5fd673dc7",
+    "src/main/resources/plugin.yml": "604f55fa45a8ddee33c5200ddfb39a21907cad08eb33db11c96bd6ea8a2801a4",
+    "scripts/s5_ai_trial.py": "9e82d41ea8fe9cdfe806334ec5b6782926034e15c36adc797bc915e8f43760cd",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaPreparationProbe.java": "b0c2f68f1fcdce67a2b43c89dd47045f55d8d8a7a5800d28601c330553150598",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaTrialProbe.java": "c9f9b8dc7520c55eeb4daae78922110677d0e3cc0dc083c3cc617d19f28da0aa",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaGroundingProbe.java": "e87aabc8318eb407310b8759c62036cd96166eb2912210cb51d8849507114f14",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaFocusedProbe.java": "ca7312961b448ecb88337d6330e4ad633de222b6bbde3e51fc1ed215a51363cc",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaKnowledgeProbe.java": "7f806fe083f5e7c089bf2b2b19df12168c45be27337e1a4d1199f7588f730fec",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaResearchProbe.java": "e1c60ba03a824c135bec3c1148066be7394974145f033901545bf17a06592309"
+  },
+  "checks": {
+    "final_phone_tests": 193,
+    "failures_errors_skips": 0,
+    "console_text_followup_tests": 2,
+    "python_trial_tests": 12,
+    "xml": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns/unit-results-warmup-fix",
+    "console_xml": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns/unit-results-console-text",
+    "build_log": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns/warmup-fix-build.log",
+    "console_build_log": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns/console-text-build.log",
+    "paper_pg_repeated": false
+  },
+  "actual_first_trial": {
+    "result": "/home/server/hearth-tmp/hearth-s5-trial.16unb2yp/run-result.json",
+    "result_sha256": "5da59a7deb2e146869c1408e334518fad82b5b86453e3df1517252e761375511",
+    "outcome": "FAIL",
+    "duration_seconds": 75.827,
+    "cleanup_errors": [],
+    "probe_error": "LOCAL_AI_TIMEOUT on first actual question after empty-prompt loading",
+    "earlier_jar": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns/Hearth-ai-preparation.jar",
+    "final_code_retested": true,
+    "reviewable_under_existing_rules": false,
+    "original_result_overwritten": false
+  },
+  "final_contract": {
+    "operator_console_prepare_only": true,
+    "status_does_not_call_http": true,
+    "fixed_public_note_warmup_with_normal_completion_and_source_validation": true,
+    "successful_preparation_future_receipt_required": true,
+    "weights_loaded_alone_does_not_admit_questions": true,
+    "other_loaded_model_digest_or_context_rejected_without_forced_reconfiguration": true,
+    "request_timeout_seconds": 6,
+    "chat_timeout_seconds": 8,
+    "explicit_preparation_timeout_seconds": 90,
+    "same_http_slots": 4,
+    "context_tokens": 4096,
+    "output_tokens": 128,
+    "keep_alive_seconds": 60,
+    "model_and_default_mock_disabled_unchanged": true,
+    "automatic_preparation_retry_keepalive_or_deployment": false
+  },
+  "approved_final_trial": {
+    "approval": "동일 상한으로 새 시험 1회 승인",
+    "same_limits_preserved": true,
+    "attempts_in_new_budget": 1,
+    "result": "/home/server/hearth-tmp/hearth-s5-trial.0t8_njo3/run-result.json",
+    "result_sha256": "f28c3eef15b629e4f97a3a5321a152484492e69e0e418d9453ee9c6cf7629c3c",
+    "probe": "/home/server/hearth-tmp/hearth-s5-trial.0t8_njo3/probe-result.json",
+    "probe_sha256": "23fe7472b612c5f196db8859ad1854b18621065376918159339a01ae599ac5ee",
+    "outcome": "PASS",
+    "duration_seconds": 103.27,
+    "preparation_milliseconds": 76402,
+    "question_milliseconds": 1022,
+    "checks": [
+      {
+        "name": "fresh_runtime_not_loaded",
+        "passed": true
+      },
+      {
+        "name": "cold_question_not_ready_draft_preserved",
+        "passed": true
+      },
+      {
+        "name": "cold_question_did_not_load",
+        "passed": true
+      },
+      {
+        "name": "question_during_preparation_not_queued",
+        "passed": true
+      },
+      {
+        "name": "pinned_model_loaded_with_approved_context",
+        "passed": true
+      },
+      {
+        "name": "already_ready_prepare_succeeds",
+        "passed": true
+      },
+      {
+        "name": "ready_science_answer",
+        "passed": true
+      },
+      {
+        "name": "prepared_cache_no_new_generation",
+        "passed": true
+      },
+      {
+        "name": "owned_model_unloaded",
+        "passed": true
+      },
+      {
+        "name": "identity_checked_cache_works_without_reloading",
+        "passed": true
+      },
+      {
+        "name": "new_question_after_unload_not_ready",
+        "passed": true
+      },
+      {
+        "name": "session_history_cache_clear",
+        "passed": true
+      }
+    ],
+    "backend_usage": {
+      "closed": false,
+      "usage": [
+        {
+          "kind": "GENERATION",
+          "started": 4,
+          "succeeded": 1,
+          "failed": 3,
+          "cancelled": 0,
+          "active": 0,
+          "totalMillis": 1057,
+          "maxMillis": 1017,
+          "latencyBuckets": [
+            3,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "failures": {
+            "PREPARING": 1,
+            "NOT_READY": 2
+          }
+        },
+        {
+          "kind": "PREPARATION",
+          "started": 2,
+          "succeeded": 2,
+          "failed": 0,
+          "cancelled": 0,
+          "active": 0,
+          "totalMillis": 76404,
+          "maxMillis": 76401,
+          "latencyBuckets": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "failures": {}
+        },
+        {
+          "kind": "CACHE_CONFIRMATION",
+          "started": 2,
+          "succeeded": 2,
+          "failed": 0,
+          "cancelled": 0,
+          "active": 0,
+          "totalMillis": 10,
+          "maxMillis": 6,
+          "latencyBuckets": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": {}
+        }
+      ]
+    },
+    "answer": "작용 팔이 길어지면 같은 하중을 지탱하기 위해 필요한 힘은 작아진다. [자료 1]",
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "max_sampled_rss_kib": 3281140,
+    "max_sampled_gpu_mib": 3130,
+    "min_host_available_kib": 12735368,
+    "cleanup_errors": [],
+    "same_final_main_jar": true
+  },
+  "fixture_compatibility": {
+    "other_model_probes_explicitly_prepare_same_adapter": true,
+    "compile_log": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns/compatibility-probe-build.log",
+    "other_profiles_live_repeated": false,
+    "ownership_guard_negative_log": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns/ownership-guard.log",
+    "ownership_guard_added_after_actual_pass": true,
+    "actual_probe_class": "/home/server/hearth-tmp/hearth-ai-preparation.atauuqns/probe-classes-final/io/github/jesterportfolio/hearth/phone/OllamaPreparationProbe.class",
+    "actual_probe_class_sha256": "e5bf49dfdff114aff8a7272623d706701d63fc621978d7d77ef09101ea5285d2"
+  },
+  "not_executed": [
+    "Actual Minecraft input or operator ConsoleCommandSender execution",
+    "Target concurrency, operating budget or persistent service deployment",
+    "Whole S5 or unrestricted science correctness acceptance"
+  ]
+}
