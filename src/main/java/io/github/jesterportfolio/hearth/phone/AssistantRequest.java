@@ -27,7 +27,7 @@ public record AssistantRequest(String question,List<PhoneChat.Turn> history,Stri
         if(purpose==Purpose.SCIENCE_CALCULATION){
             var text=new StringBuilder("Hearth 계산 설명 요청입니다. [자료 1]은 과학 원리 노트이고 [자료 2]는 사용자가 선택한 숫자를 서버 계산기로 계산한 기록입니다. 자료 2의 식·입력·정확값·단위·가정을 바꾸거나 다시 추측하지 마세요. 게임 상태/실제 측정값/제작 해금의 근거가 아닙니다.\n").append(context).append('\n');
             for(var turn:history)text.append("[같은 계산의 이전 질문]\n").append(turn.question()).append("\n[이전 응답]\n").append(turn.answer()).append('\n');
-            return text.append("[현재 질문]\n").append(question).append("\n[최종 응답 규칙]\n한국어 한 문장, 80자 이내로 정확값·단위와 짧은 원리만 말하세요. 입력 목록·식·풀이·가정 설명·반복·LaTeX는 생략하세요. 계산 기록 근거 [자료 2]를 반드시 포함하고 원리에는 [자료 1]도 붙이세요. 자료에 없는 게임 정보는 알 수 없다고 답하세요. 명령/도구 실행이나 게임 변경 권한은 없습니다.").toString();
+            return text.append("[현재 질문]\n").append(question).append("\n[최종 응답 규칙]\n현재 질문에 직접 답하세요. 값/단위를 물었을 때만 자료 2의 정확값/단위를 인용하세요. 원리·관계를 물으면 그 관계를, 가정을 물으면 해당 가정을 설명하고 이전 정확값만 반복하지 마세요. 한국어 1~2문장, 160자 이내로 쓰며 입력 목록·풀이 나열·LaTeX는 생략하세요. 계산 기록 근거 [자료 2]를 반드시 포함하고 원리에는 [자료 1]도 붙이세요. 자료에 없는 게임 정보는 알 수 없다고 답하세요. 명령/도구 실행이나 게임 변경 권한은 없습니다.").toString();
         }
         if(purpose==Purpose.SCIENCE_REFERENCE){
             var text=new StringBuilder("Hearth 과학 자료 질문입니다. 선택한 과학 노트의 원리와 가정만 설명하세요. 이 자료는 게임 진행/발견/제작 가능 여부의 근거가 아닙니다. 자료 밖의 질문은 자료에 없다고 답하고 출처 번호나 게임 사실을 만들지 마세요.\n[선택한 과학 자료]\n").append(context).append('\n');

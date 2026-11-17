@@ -23,16 +23,16 @@ public final class OllamaAssistant implements AssistantService {
     }
     @Override public synchronized CompletionStage<String> ask(String prompt){
         final String payload;try{payload=OllamaProtocol.request(prompt);}catch(RuntimeException invalid){return CompletableFuture.failedFuture(invalid);}
-        return operation(payload,null,false);
+        return operation(payload,null,false,null);
     }
     @Override public synchronized CompletionStage<String> ask(AssistantRequest request){
         final String payload;try{payload=OllamaProtocol.request(request);}catch(RuntimeException invalid){return CompletableFuture.failedFuture(invalid);}
-        return operation(payload,null,false);
+        return operation(payload,null,false,request);
     }
     @Override public boolean allowsCache(){return true;}
-    @Override public CompletionStage<String> confirmCached(String answer){return operation(null,Objects.requireNonNull(answer),false);}
-    @Override public CompletionStage<String> prepare(){return operation(null,null,true);}
-    private synchronized CompletionStage<String> operation(String payload,String cached,boolean preparation){
+    @Override public CompletionStage<String> confirmCached(String answer){return operation(null,Objects.requireNonNull(answer),false,null);}
+    @Override public CompletionStage<String> prepare(){return operation(null,null,true,null);}
+    private synchronized CompletionStage<String> operation(String payload,String cached,boolean preparation,AssistantRequest request){
         if(closed)return CompletableFuture.failedFuture(OllamaProtocol.failure(AssistantFailure.Reason.CLOSED));
         requests.removeIf(w->w.result.isDone());if(requests.stream().anyMatch(w->w.preparation))return CompletableFuture.failedFuture(OllamaProtocol.failure(AssistantFailure.Reason.PREPARING));
         if(requests.size()>=4||preparation&&!requests.isEmpty())return CompletableFuture.failedFuture(OllamaProtocol.failure(AssistantFailure.Reason.BUSY));
@@ -45,7 +45,7 @@ public final class OllamaAssistant implements AssistantService {
             if(preparation){
                 if(ready&&prepared())work.result.complete("PREPARED");
                 else step(work,"/api/generate","POST",OllamaProtocol.preparation(),answer->{OllamaProtocol.prepared(answer);step(work,"/api/ps","GET",null,latest->{if(!OllamaProtocol.loaded(latest))throw OllamaProtocol.failure(AssistantFailure.Reason.NOT_READY);step(work,"/api/version","GET",null,currentVersion->{OllamaProtocol.version(currentVersion);step(work,"/api/tags","GET",null,currentModels->{OllamaProtocol.model(currentModels);preparedBy=work;work.result.complete("PREPARED");});});});});
-            }else{if(!ready||!prepared())throw OllamaProtocol.failure(AssistantFailure.Reason.NOT_READY);step(work,"/api/generate","POST",payload,answer->work.result.complete(OllamaProtocol.answer(answer)));}
+            }else{if(!ready||!prepared())throw OllamaProtocol.failure(AssistantFailure.Reason.NOT_READY);step(work,"/api/generate","POST",payload,answer->work.result.complete(request==null?OllamaProtocol.answer(answer):OllamaProtocol.answer(answer,request)));}
         });});});return work.result;
     }
     private boolean prepared(){var receipt=preparedBy;return receipt!=null&&receipt.result.isDone()&&!receipt.result.isCompletedExceptionally();}

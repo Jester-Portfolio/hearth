@@ -1,0 +1,74 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "e44802f",
+  "outcome": "INTERNAL_CONTRACT_PASS_REAL_MODEL_QUALITY_HOLD",
+  "whole_s5_complete": false,
+  "actual_minecraft_client": false,
+  "actual_model_inference_performed": false,
+  "operational_deployment": false,
+  "workspace": "/home/server/hearth-tmp/hearth-calculation-reply.joqwpo_h",
+  "final_artifact": {
+    "path": "/home/server/hearth-tmp/hearth-calculation-reply.joqwpo_h/Hearth-calculation-reply.jar",
+    "sha256": "5a6a6736cc4e018a2c69a3f80d29fb8cd341095c0a582f3600e070a48ea66fea"
+  },
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantRequest.java": "bca1c8d218a67c90eab86cea4518391006ffacf9141afabcd9997db154450a41",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/OllamaAssistant.java": "787d233edf7005d6482889240ce9f5f4bb1670396c7fdfb6d2f54c45130addd8",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/OllamaProtocol.java": "623e77e22b10b38c234f0cc049a3112f4d373202c6cf35f1a9407bd5eabf2609",
+    "src/test/java/io/github/jesterportfolio/hearth/phone/OllamaCalculationReplyTest.java": "8636d1c49620d24b800f807232b56b0bf72a319c879f01c3d00e097ae9334686"
+  },
+  "checks": {
+    "existing_phone_regression_tests_passed": 210,
+    "new_reply_tests_final_passed": 8,
+    "first_sweep": {
+      "tests": 218,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "xml": "/home/server/hearth-tmp/hearth-calculation-reply.joqwpo_h/unit-results-first",
+      "log": "/home/server/hearth-tmp/hearth-calculation-reply.joqwpo_h/build.log",
+      "failure": "New HTTP fixture prefixed an arithmetic line with Korean prose; the existing limited standalone-equation checker intentionally does not parse it."
+    },
+    "affected_recheck": {
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml": "/home/server/hearth-tmp/hearth-calculation-reply.joqwpo_h/unit-results-final-reply",
+      "log": "/home/server/hearth-tmp/hearth-calculation-reply.joqwpo_h/fixture-fix-build.log",
+      "fix": "Use the supported standalone equation 1+1=3 and assert no version/tags/ps traffic through the production quality gate. No production change after first sweep."
+    },
+    "jar_and_integration_fixture_compile": "PASS",
+    "paper_pg_repeated": false,
+    "python_repeated": false
+  },
+  "contract": {
+    "typed_calculation_only_json_schema": true,
+    "required_only_field": "answer",
+    "decoded_answer_max_codepoints": 160,
+    "blank_duplicate_unknown_nonstring_malformed_or_trailing_body_rejected": true,
+    "citation_must_be_in_model_answer_not_server_added": true,
+    "citation_and_arithmetic_checked_before_history_and_cache": true,
+    "outer_model_done_reason_token_unicode_body_limits_preserved": true,
+    "no_plaintext_or_markdown_repair_fallback_or_retry": true,
+    "current_question_instruction_replaces_always_repeating_exact_value": true,
+    "normal_general_game_reading_string_and_preparation_format_unchanged": true,
+    "production_calculation_help_still_disabled_for_local_and_ollama": true,
+    "user_request_seconds": 6,
+    "chat_seconds": 8,
+    "preparation_seconds": 90,
+    "context_tokens": 4096,
+    "output_tokens": 128,
+    "model_changed": false
+  },
+  "sources": [
+    "https://docs.ollama.com/capabilities/structured-outputs",
+    "https://github.com/ollama/ollama/blob/v0.40.16/api/types.go#L85",
+    "https://github.com/ollama/ollama/blob/v0.40.16/server/routes.go#L693"
+  ],
+  "remaining": [
+    "No actual model quality acceptance; previous two failed observations remain unchanged.",
+    "Schema correctness and prompt tests do not prove semantic fidelity, short-answer completion or general science accuracy.",
+    "No actual Minecraft or operating acceptance."
+  ]
+}
