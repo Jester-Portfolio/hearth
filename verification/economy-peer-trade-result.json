@@ -1,0 +1,35 @@
+{
+  "outcome": "PASS",
+  "unit_tests": 11,
+  "unit_results": [
+    "/home/server/hearth-tmp/hearth-peer-trade.8m4sy4co/unit-results",
+    "/home/server/hearth-tmp/hearth-peer-trade.8m4sy4co/refusal-unit-results",
+    "/home/server/hearth-tmp/hearth-peer-trade.8m4sy4co/ownership-unit-results"
+  ],
+  "native_workspace": "/home/server/hearth-tmp/hearth-s4-11.ckgnl25b",
+  "duration_seconds": 53.902,
+  "assertions": 26,
+  "cleanup_errors": [],
+  "final_jar": "/home/server/hearth-tmp/hearth-peer-trade.8m4sy4co/Hearth-consolidated.jar",
+  "final_jar_sha256": "9210f9499486eab74b9ba59fe478fb184a93fceb47dcdcaded8d8232a392a539",
+  "preserved_failures": [
+    "/home/server/hearth-tmp/hearth-s4-11.ql_jbs5_",
+    "/home/server/hearth-tmp/hearth-s4-11.h2oisg85"
+  ],
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "PG_upgrade_from": 3,
+  "PG_upgrade_to": 4,
+  "actual_minecraft_client": "NOT_RUN",
+  "real_client_partial_application": "NOT_RUN",
+  "ai_inference": "NOT_RUN",
+  "operating_changes": "NONE"
+}

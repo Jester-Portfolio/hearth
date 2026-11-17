@@ -25,7 +25,7 @@ public final class EconomyRuntimeVerification {
     }
     private static void check(JavaPlugin plugin,boolean value,String label){if(!value)throw new IllegalStateException("ECON_RUNTIME_CHECK_FAILED_"+label);plugin.getLogger().info("HEARTH_SESSION_CHECK PASS economy_runtime_"+label);}
     private static String account(EconomyStore.Account a){return a.balance()+"/"+a.inventory().revision()+"/"+Base64.getEncoder().encodeToString(a.inventory().payload().bytes());}
-    private static String progress(Connection connection)throws Exception{
+    static String progress(Connection connection)throws Exception{
         var digest=MessageDigest.getInstance("SHA-256");var tables=new ArrayList<String>();try(var st=connection.createStatement();var rows=st.executeQuery("SELECT table_name FROM information_schema.tables WHERE table_schema='hearth_progress' AND table_type='BASE TABLE' ORDER BY table_name")){while(rows.next())tables.add(rows.getString(1));}
         for(String table:tables){if(!table.matches("[a-z_]+"))throw new IllegalStateException("Invalid fixture table");digest.update(table.getBytes(java.nio.charset.StandardCharsets.UTF_8));try(var st=connection.createStatement();var rows=st.executeQuery("SELECT row_to_json(t)::text FROM hearth_progress."+table+" t ORDER BY row_to_json(t)::text COLLATE \"C\"")){while(rows.next()){digest.update(rows.getString(1).getBytes(java.nio.charset.StandardCharsets.UTF_8));digest.update((byte)'\n');}}}return HexFormat.of().formatHex(digest.digest());
     }
@@ -76,6 +76,7 @@ public final class EconomyRuntimeVerification {
         });return done;
     }
     public static CompletionStage<Void> run(JavaPlugin plugin,EconomyRuntime runtime){
+        if(Boolean.getBoolean("hearth.verification.peerTrade"))return PeerTradeVerification.restored(plugin,runtime);
         final Path root;final Properties expected=new Properties();try{root=root(plugin);try(var input=Files.newInputStream(root.resolve("economy-runtime-expected.properties"))){expected.load(input);}var endpoint=new Properties();try(var input=Files.newInputStream(root.resolve("db-endpoint.properties"))){endpoint.load(input);}var pid=Files.readAllLines(root.resolve("data/postmaster.pid"));if(!runtime.settings().dbHost().equals("127.0.0.1")||runtime.settings().dbPort()!=Integer.parseInt(endpoint.getProperty("port"))||!runtime.settings().dbName().equals("hearth_s4_11")||!Path.of(pid.get(1)).toRealPath().equals(root.resolve("data")))throw new IllegalStateException("ECON_RUNTIME_PROBE_DB_GATE");}catch(Exception error){return CompletableFuture.failedFuture(error);}
         var economy=runtime.economy();economy.pinFixtureChunks();var owner=runtime.owner();var codec=new PaperInventoryCodec();var empty=codec.encode(new ItemStack[41]);var saved=economy.store.context(economy.realm,SAVED);var fresh=economy.store.context(economy.realm,NEW);var baseline=new java.util.concurrent.atomic.AtomicReference<EconomyEngine.State>();
         check(plugin,runtime.phase()==EconomyRuntime.Phase.READY&&!plugin.getConfig().getBoolean("verification-enabled")&&!plugin.getConfig().getBoolean("lifecycle-verification-enabled")&&!plugin.getConfig().getBoolean("economy-verification-enabled"),"normal_mode_without_story_or_verification_runtime");

@@ -27,3 +27,5 @@ DB 비밀번호는 `password-environment`로 지정한 환경 변수에서만 �
 관리 진단은 같은 콘솔의 `pending <player_uuid>`, `history <player_uuid> [cursor]`, `inspect <player_uuid> <request_uuid>`, `recover <player_uuid> <request_uuid> <observed_revision>`으로 기존 영수증/오프라인 HOLD 임대 대응을 사용한다. recover는 DB 보정/재거래·잔액 변경이나 월드 HOLD 해제가 아니다. 온라인 상태·revision/근거가 불명하면 거부한다. 실행 표식을 지워 복구됐다고 취급하지 않는다. [백업·수동 대응](../backup/README.md)을 따른다.
 
 실제 클라이언트·다인 상인 거래/장기 부하와 운영 배포는 별도 수용 대상이다. 자동 시험의 `heartheconomy verify`는 새 소유 격리 경로/JVM 표식·localhost PG와 실제 접속자 부재가 모두 맞을 때만 허용되며 일반 서버 검사/복구 명령이 아니다.
+
+직접 상품 거래는 [요청·확인·영수증/보존 경계](PEER_TRADES.md)를 따른다. 같은 경제 월드의 기존 등록 상품과 PG 화폐를 사용하며 실제 다인 행동·운영 적용은 별도다.

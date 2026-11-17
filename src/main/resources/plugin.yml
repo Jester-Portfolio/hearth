@@ -9,6 +9,9 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth story foundations and optional dedicated economy runtime
 commands:
+  hearthtrade:
+    description: 같은 경제 월드의 상호 확인 플레이어 거래
+    usage: /hearthtrade request <이름> | accept | show | cancel
   hearthstoryadmin:
     description: Console-only story runtime status and asynchronous save drain
     usage: /hearthstoryadmin status|prepare|drain

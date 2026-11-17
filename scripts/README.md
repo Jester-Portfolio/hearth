@@ -201,3 +201,5 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 `verify-lifecycle.py --story-preparation --template-source <완료한 소유 S4-11 증거>`는 verification을 끈 준비/스토리 두 JVM에서 템플릿·WorldGuard 복제/새 UUID·등록 경합/실패 HOLD와 저장 복원을 검사한다. 템플릿 입력은 비활성 PASS 원본에서 새 경로로 복사하며 원본에 쓰지 않는다. `--story-preparation-recheck`는 통과한 SQL 경합/실패를 생략하고 변경된 준비/다음 JVM 경로만 확인한다. 실제 접속/AI 추론·운영 변경은 없다. [구현/검증 기록](../docs/story-preparation-verification.md)을 따른다.
 
 `verify-lifecycle.py --sessions --story-runtime --story-runtime-recheck --story-operations`는 기존 등록 경합을 반복하지 않고 두 JVM의 정상 스토리 효과·저장/재로드·다른 진행/충돌 보존과 읽기 전용 PG/복구 콘솔/HOLD 초기화를 함께 검사한다. 실제 계정·클라이언트 동작이나 운영 장애 수용으로 해석하지 않는다. [검증 기록](../docs/story-operations-verification.md)을 따른다.
+
+`verify-lifecycle.py --sessions --economy --economy-runtime --economy-runtime-recheck --peer-trades`는 기존 전체 NPC 거래 시나리오를 반복하지 않고 E003 보존 업그레이드·직접 거래 경합/실패/영수증과 다음 정상 경제 JVM의 저장 복원을 묶어 검사한다. 실제 Player는 만들지 않는다. [결과/미검증](../docs/economy-peer-trade-verification.md)을 따른다.
