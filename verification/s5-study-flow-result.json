@@ -1,0 +1,83 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "e58eca5",
+  "outcome": "STUDY_NAVIGATION_REVIEW_AND_PUBLIC_COURSE_PASS",
+  "whole_s5_complete": false,
+  "operational_acceptance": false,
+  "actual_minecraft_client": false,
+  "actual_model_inference_run": false,
+  "workspace": "/home/server/hearth-tmp/hearth-study-flow.q2xpxvqn",
+  "artifact": {
+    "path": "/home/server/hearth-tmp/hearth-study-flow.q2xpxvqn/Hearth-study-flow-r1.jar",
+    "sha256": "0d205ae4fe50ee939261d7a3c4912ed5b19f6aaca99a3456296161ac8772059e"
+  },
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneLearning.java": "ba5e3e71473d7b09bb543af18efd75077fa491cd5fdf03505640c082d5aeaf24",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneChat.java": "71cf974ad64e0dd487df3f2ab90fb5ab9c9324abef63e20d2a46e681f7f40c9c",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PaperPhone.java": "b5d14f17e1df80fb40ca6b494b3c8871f4507d369a662b9621ac0c5b317442a0",
+    "src/main/java/io/github/jesterportfolio/hearth/crafting/PaperCrafting.java": "b9b4ba1bd5a383abfea6b26550e4a1e4a61cfbf1cbdd79f0ecde7e1e8629fb44",
+    "src/main/java/io/github/jesterportfolio/hearth/quest/PaperQuestAdapter.java": "72232c2f4bd33c5cb20b02cedf7b7f9709b9e8df89e304b0dbec99aa3c0adfab",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java": "0804bd006fa25cc1a94a9be6ef78bdef1a73a830464e8feee31f8c131524c037"
+  },
+  "unit": {
+    "tests": 224,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "new_learning_tests": 6,
+    "new_review_preview_tests": 8,
+    "xml": "/home/server/hearth-tmp/hearth-study-flow.q2xpxvqn/unit-results",
+    "build_log": "/home/server/hearth-tmp/hearth-study-flow.q2xpxvqn/build.log",
+    "fixture_only_rebuild_log": "/home/server/hearth-tmp/hearth-study-flow.q2xpxvqn/fixture-fix-build.log"
+  },
+  "native": {
+    "result": "/home/server/hearth-tmp/hearth-s4-11.v69x8cn2/run-result.json",
+    "result_sha256": "653d9263a38a1245d123f6352ec9f845f474c0ac1e6e405517221b08f9e61d30",
+    "outcome": "PASS",
+    "assertions": 337,
+    "study_checks": [
+      "study_return_other_session_cannot_consume_origin",
+      "study_return_revalidates_and_consumes_once",
+      "study_return_reads_current_personal_PG_quest_view",
+      "study_actual_Paper_learning_icon_does_not_fill_craft_confirmation",
+      "study_preview_contains_exact_bounded_note_history",
+      "study_rewind_evicts_and_stale_preview_cannot_send_or_restore_history",
+      "study_refreshed_preview_matches_backend_without_removed_dialogue",
+      "study_other_personal_PG_journal_preserved",
+      "study_return_review_own_PG_inventory_revision_preserved"
+    ],
+    "duration_seconds": 106.557,
+    "paper_jvms": 1,
+    "postgres_instances": 1,
+    "all_owned_processes_and_ports_closed": true,
+    "cleanup_errors": [],
+    "restore_jvm_repeated": false
+  },
+  "first_failed_run": {
+    "result": "/home/server/hearth-tmp/hearth-s4-11.1091sfr0/run-result.json",
+    "failure": "grounding_real_PG_goal_change_rejects_late_answer_keeps_question",
+    "cause": "Synthetic delayed response omitted required citation, so display validation rejected before the intended PG validation",
+    "cleanup_error_preserved": "DB pool closure marker missing",
+    "stop_audit": "/home/server/hearth-tmp/hearth-study-flow.q2xpxvqn/failed-run-stop-audit.json",
+    "old_jar": "/home/server/hearth-tmp/hearth-study-flow.q2xpxvqn/Hearth-study-flow.jar",
+    "retry_change": "Only native fixture response adds [자료 1]",
+    "production_rules_weakened": false
+  },
+  "contract": {
+    "explicit_player_topic_selection": true,
+    "automatic_topic_inference": false,
+    "origin_one_shot_session_identity_and_current_gate": true,
+    "return_uses_fresh_quest_preparation_or_workbench_data": true,
+    "old_crafting_confirmation_reused": false,
+    "rewind_removes_selected_and_following_turns_and_evicts_cache": true,
+    "draft_preserved_unless_explicit_reuse": true,
+    "preview_DTO_must_equal_submission_DTO": true,
+    "prompt_note_limits_unchanged": true,
+    "game_progress_rewards_or_storage_contract_changed": false
+  },
+  "not_executed": [
+    "Authenticated client clicks, movement and observed screens",
+    "New actual model inference; prompt/notes/options unchanged",
+    "Operating deployment and whole S5 acceptance"
+  ]
+}

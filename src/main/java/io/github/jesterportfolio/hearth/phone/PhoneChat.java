@@ -7,8 +7,13 @@ import java.util.concurrent.*;
 public final class PhoneChat {
     public record Turn(String question,String answer){}
     public record DisplayTurn(Turn turn,String basis){}
+    public static final class HistoryChoice {
+        private final Exchange exchange;private final long revision;private final String basis;
+        private HistoryChoice(Exchange exchange,long revision,String basis){this.exchange=exchange;this.revision=revision;this.basis=basis;}
+        public Turn turn(){return exchange.turn();}public String basis(){return basis;}
+    }
     private final AssistantService service;private final Executor owner;private final PhoneAnswerCache cache;private record Scope(String mode,String context,Object material){}private record Exchange(Turn turn,Scope scope){}
-    private final List<Exchange> history=new ArrayList<>();private String lastMode="none";private String draft="";private long draftVersion;
+    private final List<Exchange> history=new ArrayList<>();private String lastMode="none";private String draft="";private long draftVersion,historyRevision;
     private static final class Work {
         final CompletableFuture<String> source,answer;final CompletableFuture<Void> result=new CompletableFuture<>();CompletableFuture<Boolean> validation;
         Work(CompletableFuture<String> source,long timeout){this.source=source;answer=source.copy().orTimeout(timeout,TimeUnit.MILLISECONDS);}
@@ -25,10 +30,29 @@ public final class PhoneChat {
     public void draft(String value){if(closed||value==null||value.codePointCount(0,value.length())>256)throw new IllegalArgumentException("CHAT_DRAFT_LENGTH");draft=value;draftVersion++;}
     public String question(){return question;}
     public List<Turn> history(){return history.stream().map(Exchange::turn).toList();}public boolean busy(){return pending!=null;}public String error(){return error;}
-    public List<DisplayTurn> displayHistory(){return history.stream().map(e->new DisplayTurn(e.turn(),e.scope().material() instanceof ScienceReading reading?"과학 자료 · "+reading.title():PhoneContext.MODES.get(e.scope().mode()))).toList();}
+    private static String basis(Exchange e){return e.scope().material() instanceof ScienceReading reading?"과학 자료 · "+reading.title():PhoneContext.MODES.get(e.scope().mode());}
+    public List<DisplayTurn> displayHistory(){return history.stream().map(e->new DisplayTurn(e.turn(),basis(e))).toList();}
+    public List<HistoryChoice> review(){return history.stream().map(e->new HistoryChoice(e,historyRevision,basis(e))).toList();}
+    public void rewind(HistoryChoice choice,boolean reuseQuestion){
+        if(closed||busy())throw new IllegalStateException("CHAT_BUSY_OR_CLOSED");
+        int index=-1;if(choice!=null&&choice.revision==historyRevision)for(int i=0;i<history.size();i++)if(history.get(i)==choice.exchange){index=i;break;}
+        if(index<0)throw new IllegalStateException("STALE_CHAT_HISTORY");
+        history.subList(index,history.size()).clear();historyRevision++;cache.invalidate();error=null;retryable=false;question=null;
+        if(reuseQuestion)draft(choice.turn().question());
+    }
+    private List<Turn> recent(Scope scope){return includeHistory?history.stream().filter(e->e.scope().equals(scope)).map(Exchange::turn).toList():List.of();}
     public CompletionStage<Void> submit(String input){return submit(input,"",()->true);}
     public CompletionStage<Void> submitScience(String input,ScienceReading reading,java.util.function.BooleanSupplier current){
         return submit(input,Objects.requireNonNull(reading).context(),"research",current,()->CompletableFuture.completedFuture(true),reading);
+    }
+    public AssistantRequest previewScience(String input,ScienceReading reading){
+        if(closed||busy())throw new IllegalStateException("CHAT_BUSY_OR_CLOSED");Objects.requireNonNull(reading);
+        return AssistantRequest.science(input,recent(new Scope("research",reading.context(),reading)),reading);
+    }
+    public CompletionStage<Void> submitSciencePreview(AssistantRequest shown,ScienceReading reading,java.util.function.BooleanSupplier current){
+        if(closed||busy())return CompletableFuture.failedFuture(new IllegalStateException("CHAT_BUSY_OR_CLOSED"));
+        if(shown==null||!shown.equals(previewScience(shown.question(),reading))){error="대화나 선택한 자료가 변경됐습니다. 전송 내용을 다시 확인해 주세요.";retryable=false;return CompletableFuture.failedFuture(new IllegalStateException("STALE_SCIENCE_PREVIEW"));}
+        return submitScience(shown.question(),reading,current);
     }
     public CompletionStage<Void> submit(String input,String context,java.util.function.BooleanSupplier current){return submit(input,context,context.isEmpty()?"none":"quests",current);}
     public CompletionStage<Void> submit(String input,String context,String mode,java.util.function.BooleanSupplier current){return submit(input,context,mode,current,()->CompletableFuture.completedFuture(true));}
@@ -37,7 +61,7 @@ public final class PhoneChat {
     }
     /** materialScope는 서버 내부의 불변 식별 표식이며 요청 프롬프트에는 포함하지 않습니다. */
     public CompletionStage<Void> submit(String input,String context,String mode,java.util.function.BooleanSupplier current,java.util.function.Supplier<CompletionStage<Boolean>> validate,Object materialScope){
-        if(!PhoneContext.MODES.containsKey(mode)&&!mode.equals("research"))return CompletableFuture.failedFuture(new IllegalArgumentException("UNKNOWN_AI_CONTEXT"));
+        if(!PhoneContext.MODES.containsKey(mode)&&!"research".equals(mode))return CompletableFuture.failedFuture(new IllegalArgumentException("UNKNOWN_AI_CONTEXT"));
         if(closed||busy())return CompletableFuture.failedFuture(new IllegalStateException("CHAT_BUSY_OR_CLOSED"));
         if(input==null||input.isBlank()||input.codePointCount(0,input.length())>256){retryable=false;error="질문은 1~256자로 입력해 주세요.";return CompletableFuture.failedFuture(new IllegalArgumentException("CHAT_INPUT_LENGTH"));}
         var scope=mode.equals("none")?new Scope("none","",null):new Scope(mode,context,materialScope);
@@ -46,7 +70,7 @@ public final class PhoneChat {
         try{
             if(!current.getAsBoolean())throw new IllegalStateException("STALE_AI_CONTEXT");
             int sources=materialScope instanceof PhoneGrounding.Scope materials?materials.items().size():-1;
-            var recent=includeHistory?history.stream().filter(e->e.scope().equals(scope)).map(Exchange::turn).toList():List.<Turn>of();
+            var recent=recent(scope);
             if(mode.equals("none")&&(!context.isEmpty()||materialScope!=null))throw new IllegalArgumentException("GENERAL_KNOWLEDGE_HAS_GAME_CONTEXT");
             if(mode.equals("research")){
                 if(!(materialScope instanceof ScienceReading reading)||!reading.context().equals(context))throw new IllegalArgumentException("UNAPPROVED_SCIENCE_REFERENCE");
@@ -73,7 +97,7 @@ public final class PhoneChat {
                 if(service.allowsCache()&&!fromCache)cache.put(request,answer);
                 pending=null;
                 if(draftVersion==expectedDraftVersion)draft("");
-                history.add(new Exchange(new Turn(question,response),scope));while(history.size()>4)history.removeFirst();result.complete(null);
+                history.add(new Exchange(new Turn(question,response),scope));while(history.size()>4)history.removeFirst();historyRevision++;result.complete(null);
             },owner);
         },owner);return result;
     }
@@ -81,9 +105,9 @@ public final class PhoneChat {
     private void finishRejected(Work work,CompletableFuture<Void> result,String code,String message){cache.invalidate();if(pending==work)pending=null;retryable=true;error=message;work.cancel();result.completeExceptionally(new IllegalStateException(code));}
     public boolean canRetry(){return !closed&&!busy()&&retryable&&question!=null;}
     public CompletionStage<Void> retry(){return canRetry()&&lastMode.equals("none")?submit(question):CompletableFuture.failedFuture(new IllegalStateException("CHAT_RETRY_UNAVAILABLE"));}
-    public void clear(){if(closed||busy())throw new IllegalStateException("CHAT_BUSY_OR_CLOSED");cache.clear();history.clear();question=null;error=null;retryable=false;draft("");}
+    public void clear(){if(closed||busy())throw new IllegalStateException("CHAT_BUSY_OR_CLOSED");cache.clear();history.clear();historyRevision++;question=null;error=null;retryable=false;draft("");}
     public void cancel(){
         if(closed||pending==null)return;var work=pending;pending=null;cache.invalidate();retryable=true;error="요청을 취소했습니다. 늦은 응답은 표시하지 않습니다.";work.result.cancel(false);work.cancel();
     }
-    public void close(){closed=true;var work=pending;pending=null;cache.clear();if(work!=null){work.result.cancel(false);work.cancel();}history.clear();draft="";draftVersion++;}
+    public void close(){closed=true;var work=pending;pending=null;cache.clear();if(work!=null){work.result.cancel(false);work.cancel();}history.clear();historyRevision++;draft="";draftVersion++;}
 }

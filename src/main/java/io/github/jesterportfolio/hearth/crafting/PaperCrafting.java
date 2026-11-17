@@ -35,6 +35,9 @@ public final class PaperCrafting implements Listener,AutoCloseable {
     private Consumer<Player> journey;
     public void journey(Consumer<Player> reader){main();journey=Objects.requireNonNull(reader);}
     private Consumer<Player> preparationGuide;
+    @FunctionalInterface public interface LearningGuide {void open(Player player,BooleanSupplier current,Runnable back);}
+    private LearningGuide learning;
+    public void learning(LearningGuide guide){main();learning=Objects.requireNonNull(guide);}
     public void preparationGuide(Consumer<Player> reader){main();preparationGuide=Objects.requireNonNull(reader);}
     @FunctionalInterface public interface OrderReader {CompletionStage<CraftingOrders.Board> read(Player player,String facility,BooleanSupplier current);}
     private OrderReader orderReader;
@@ -63,6 +66,7 @@ public final class PaperCrafting implements Listener,AutoCloseable {
             }
             if(journey!=null)inventory.setItem(50,item(new ItemStack(Material.WRITABLE_BOOK),"다음 의뢰와 보고 안내",List.of("현재 개인 목표와 담당 NPC를 확인합니다")));
             if(preparationGuide!=null)inventory.setItem(51,item(new ItemStack(Material.MAP),"조달 장소·전체 준비 안내",List.of("현재 공개된 시설과 개인 준비 상태를 확인합니다")));
+            if(learning!=null)inventory.setItem(53,learningIcon());
             if(orderReader!=null&&board==null)inventory.setItem(52,item(new ItemStack(Material.KNOWLEDGE_BOOK),"내 제작 의뢰",List.of("현재 개인 목표와 보고 대기 상태를 확인합니다","같은 쪽 목표의 재료와 제작 순서를 함께 준비합니다")));
             if(origin!=null&&board==null)inventory.setItem(47,item(new ItemStack(Material.ARROW),"내 제작 의뢰로",List.of("현재 개인 목표를 다시 조회합니다")));
         }
@@ -168,6 +172,12 @@ public final class PaperCrafting implements Listener,AutoCloseable {
         if(!eligible(origin.player,origin.session,origin.facility,origin.generation))return;
         show(origin.player,origin.session,origin.facility,null);var screen=screens.get(origin.player.getUniqueId());if(screen!=null&&valid(screen))showOrders(screen,origin.orderPage,null);
     }
+    private void returnLearning(Screen origin){
+        if(!eligible(origin.player,origin.session,origin.facility,origin.generation))return;
+        if(origin.orderBoard!=null){returnOrders(origin);return;}
+        show(origin.player,origin.session,origin.facility,origin.recipe,origin.times,origin.goal,origin.preparing,origin.orderOrigin,null,1);
+    }
+    public static ItemStack learningIcon(){return item(new ItemStack(Material.BOOK),"과학 자료·계산 도구",List.of("공개 과학 노트나 계산 도구를 직접 선택합니다","학습 후 현재 시설 상태를 확인해 작업대로 돌아옵니다","새 제작법·재료·보상을 지급하지 않습니다"));}
     private void showOrders(Screen screen,int number,CraftingOrders.Board expected){readOrders(screen,expected,board->show(screen.player,screen.session,screen.facility,null,1,null,false,null,board,Math.min(number,board.pages())));}
     private CraftingAction.Port port(Screen s){return new CraftingAction.Port(){
         public UUID run(){return s.session.context().storyRunId();}public UUID player(){return s.player.getUniqueId();}public String source(){return "craft:"+s.facility.id()+":"+s.recipe;}public boolean valid(){return PaperCrafting.this.valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory&&(s.prepared==null||questBinding.valid(s.prepared));}
@@ -175,6 +185,7 @@ public final class PaperCrafting implements Listener,AutoCloseable {
         public void apply(InventoryPayload after){codec.apply(s.player.getInventory(),after);}public void changed(){sessions.crafted(s.player,s.session);}public void hold(){sessions.craftingHold(s.session);}
     };}
     @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){if(!(e.getView().getTopInventory().getHolder() instanceof Screen s))return;e.setCancelled(true);if(e.getWhoClicked()!=s.player||!valid(s)||s.used||e.getClickedInventory()!=s.inventory||e.getClick()!=ClickType.LEFT)return;
+        if(e.getSlot()==53&&learning!=null){s.used=true;Bukkit.getScheduler().runTaskLater(plugin,()->{if(valid(s)&&s.player.getOpenInventory().getTopInventory()==s.inventory)learning.open(s.player,()->eligible(s.player,s.session,s.facility,s.generation),()->returnLearning(s));},1);return;}
         if(s.orderBoard!=null){
             int slot=e.getSlot();var selected=s.orderRecipes.get(slot);boolean row=slot>=0&&slot<s.orderBoard.page(s.orderPage).orders().size();
             if(selected!=null||row){s.used=true;readOrders(s,s.orderBoard,fresh->{if(selected!=null)show(s.player,s.session,s.facility,selected.recipe(),selected.times(),null,false,new OrderOrigin(s.orderPage),null,1);else orderGuide.open(s.player,fresh.page(s.orderPage).orders().get(slot).quest(),()->eligible(s.player,s.session,s.facility,s.generation),()->returnOrders(s));});return;}
