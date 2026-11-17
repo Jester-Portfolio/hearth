@@ -9,6 +9,10 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth story foundations and optional dedicated economy runtime
 commands:
+  hearthstoryadmin:
+    description: Console-only story runtime status and asynchronous save drain
+    usage: /hearthstoryadmin status|drain
+    permission: hearth.story.manage
   heartheconomy:
     description: Console-only economy status, asynchronous drain and receipt inspection
     usage: /heartheconomy status|drain|pending|history|inspect|recover
@@ -55,6 +59,8 @@ commands:
     description: Console-only isolated S4 verification
     permission: hearth.verify
 permissions:
+  hearth.story.manage:
+    default: op
   hearth.economy.manage:
     default: op
   hearth.ai.inspect:

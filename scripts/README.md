@@ -191,3 +191,7 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 `--sessions --economy --economy-runtime`은 첫 경제 fixture 준비 후 둘째 JVM에서 verification을 끈 경제 전용 정상 기동·계정/기존 저장 복원·drain을 검사한다. `--economy-runtime-recheck`는 실패 보완 때 새 최소 복원 입력만 만들고 이미 통과한 전체 거래 시나리오를 반복하지 않는다. [최초 실패와 최종 영향 검사](../docs/economy-runtime-verification.md)를 따른다. 실제 플레이어 로그인/상인 클릭은 판정하지 않는다.
 
 `--sessions --quests --story-batch --joint-ai --ai-artifact-source <검증된_S5_원본>`은 Paper/PG와 고정 모델을 하나의 최초 시계·합산 RSS 6GiB 감시에서 실행한다. `joint_ai.py`는 기존 해시 검증 복사/해제·AI 정리를 재사용하고 AI 트리/전체 트리·PID 세대를 구분한다. [실제 합동 관측과 한계](../docs/s5-joint-observation-verification.md)를 따른다. 네 논리 세션이며 실제 네 플레이어 접속/용량 시험이 아니다.
+
+### 정식 스토리 실행의 영향 검사
+
+`verify-lifecycle.py --sessions --story-runtime`은 기존 CPU/RAM/시간 한도에서 불변 PG 연결·계정 경합/실패·두 JVM의 정상 스토리 초기화/복원과 저장 종료를 검사한다. 실제 Player/AI 추론은 생성하지 않는다. `--story-runtime-recheck`는 성공한 SQL 시나리오를 반복하지 않고 새 최소 복원 입력·수정된 정상 월드 준비/종료만 검사한다. 같은 workspace/이전 증거에 재실행하지 않는다. [범위·실패 원본과 제어기 로그 재검사](../docs/story-runtime-verification.md)를 따른다.

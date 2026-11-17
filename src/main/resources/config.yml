@@ -1,4 +1,4 @@
-# disabled는 기존 기본값입니다. economy는 별도 설정/기존 경제 차원·PG가 필요합니다.
+# disabled는 기본값입니다. story/economy는 각각 별도 설정/준비된 전용 차원·PG가 필요합니다.
 # 시험 verification-enabled와 동시에 켜지 않습니다. 운영 적용은 별도 승인 후 수행합니다.
 runtime-mode: disabled
 # Never enable this in a production server. A matching JVM gate and marker are also required.

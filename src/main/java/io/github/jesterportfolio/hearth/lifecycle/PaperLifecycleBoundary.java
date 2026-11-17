@@ -24,7 +24,8 @@ public final class PaperLifecycleBoundary implements WorldPersistence.Boundary {
     private final JavaPlugin plugin;
     private final WorldBackend.Placement placement;
     private final String metadataHash;
-    private final PaperWorldBackend backend;
+    private final WorldBackend backend;
+    private Supplier<CompletionStage<Void>> mappingCheck;
     private final Executor io, owner;
     private final LongSupplier generation;
     private final Data data;
@@ -38,6 +39,12 @@ public final class PaperLifecycleBoundary implements WorldPersistence.Boundary {
         this.plugin=Objects.requireNonNull(plugin); this.placement=Objects.requireNonNull(placement); this.metadataHash=Objects.requireNonNull(metadataHash);
         this.backend=Objects.requireNonNull(backend); this.io=Objects.requireNonNull(io); this.owner=Objects.requireNonNull(owner); this.generation=Objects.requireNonNull(generation);
         this.data=Objects.requireNonNull(data); this.validateRegions=Objects.requireNonNull(validateRegions); this.before=Objects.requireNonNull(before);
+    }
+    /** 정식 실행의 저장된 PG 연결/준비 표식 검사를 기존 저장·언로드 파이프라인에 연결합니다. */
+    public PaperLifecycleBoundary(JavaPlugin plugin,WorldBackend.Placement placement,Supplier<CompletionStage<Void>> mappingCheck,WorldBackend backend,Executor io,Executor owner,
+            LongSupplier generation,Data data,Consumer<RegionManager> validateRegions,Consumer<String> before) {
+        this.plugin=Objects.requireNonNull(plugin);this.placement=Objects.requireNonNull(placement);this.metadataHash=null;this.mappingCheck=Objects.requireNonNull(mappingCheck);
+        this.backend=Objects.requireNonNull(backend);this.io=Objects.requireNonNull(io);this.owner=Objects.requireNonNull(owner);this.generation=Objects.requireNonNull(generation);this.data=Objects.requireNonNull(data);this.validateRegions=Objects.requireNonNull(validateRegions);this.before=Objects.requireNonNull(before);
     }
     private <T> CompletionStage<T> safe(String stage,Callable<T> call) {
         if (!Bukkit.isPrimaryThread()) return CompletableFuture.failedFuture(new LifecycleFailure("NOT_MAIN"));
@@ -62,6 +69,7 @@ public final class PaperLifecycleBoundary implements WorldPersistence.Boundary {
         },io);
     }
     @Override public CompletionStage<Void> verifyStoredMapping() {
+        if(mappingCheck!=null)return mappingCheck.get();
         return file("mapping",() -> {
             Path directory=placement.directory();
             if (!directory.toRealPath().equals(directory)) throw new LifecycleFailure("WORLD_PATH_ALIAS");

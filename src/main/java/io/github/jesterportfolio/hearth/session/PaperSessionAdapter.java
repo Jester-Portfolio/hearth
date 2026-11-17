@@ -136,7 +136,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         prepared.toCompletableFuture().copy().orTimeout(8,TimeUnit.SECONDS).whenCompleteAsync((link,error)->{
             if(!current.getAsBoolean())return;admissions.remove(player.getUniqueId(),nonce);
             try{if(error!=null||link==null||!link.context().playerId().equals(player.getUniqueId()))throw new IllegalStateException("SESSION_PROVISION_REJECTED");links.put(player.getUniqueId(),link);connectPlayer(player);}
-            catch(RuntimeException failure){player.kick(Component.text("경제 접속 준비를 완료하지 못했습니다. 기존 아이템은 보존됩니다."));plugin.getLogger().warning("HEARTH_ECONOMY_ADMISSION_HOLD");}
+            catch(RuntimeException failure){player.kick(Component.text("접속 준비를 완료하지 못했습니다. 기존 아이템은 보존됩니다."));plugin.getLogger().warning("HEARTH_SESSION_ADMISSION_HOLD");}
         },owner);
     }
     private void connectPlayer(Player player) {

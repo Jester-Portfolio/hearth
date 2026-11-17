@@ -147,7 +147,8 @@ class Monitor:
         self.pump()
         assert proc.returncode == 0, name+': 비정상 종료'
         if name.startswith('paper'):
-            assert any(('HEARTH_ECONOMY_DISABLE_CLOSE PASS' if name=='paper-economy-runtime' else self.prefix+'_DISABLE_CLOSE PASS') in line for line in item['lines']), 'DB 풀 종료 확인 누락'
+            marker={'paper-economy-runtime':'HEARTH_ECONOMY_DISABLE_CLOSE PASS','paper-story-runtime':'HEARTH_STORY_DISABLE_CLOSE PASS'}.get(name,self.prefix+'_DISABLE_CLOSE PASS')
+            assert any(marker in line for line in item['lines']), 'DB 풀 종료 확인 누락'
 
     def finish(self):
         self.stopping = True

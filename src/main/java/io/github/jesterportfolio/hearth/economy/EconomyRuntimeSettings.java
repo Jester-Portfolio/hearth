@@ -4,7 +4,7 @@ import java.util.*;
 
 /** 비밀 값은 포함하지 않는 명시적 실행 설정. DB 비밀번호는 환경 변수에서만 받습니다. */
 public record EconomyRuntimeSettings(UUID realm,String worldKey,UUID worldId,double x,double y,double z,float yaw,float pitch,long idleSeconds,Set<String> regions,String contentFile,String dbHost,int dbPort,String dbName,String dbUser,String passwordEnvironment){
-    public static String mode(String value,boolean verification){if(value==null||!Set.of("disabled","economy").contains(value)||verification&&!value.equals("disabled"))throw new IllegalArgumentException("RUNTIME_MODE_CONFLICT");return value;}
+    public static String mode(String value,boolean verification){if(value==null||!Set.of("disabled","economy","story").contains(value)||verification&&!value.equals("disabled"))throw new IllegalArgumentException("RUNTIME_MODE_CONFLICT");return value;}
     public EconomyRuntimeSettings{
         Objects.requireNonNull(realm);Objects.requireNonNull(worldId);regions=Set.copyOf(regions);
         if(worldKey==null||!worldKey.matches("[a-z0-9_]+:[a-z0-9_]+")||worldKey.startsWith("minecraft:")||!Double.isFinite(x)||!Double.isFinite(y)||!Double.isFinite(z)||!Float.isFinite(yaw)||!Float.isFinite(pitch)||Math.abs(pitch)>90||Math.abs(x)>29_999_000||Math.abs(z)>29_999_000||idleSeconds<1||idleSeconds>3600||regions.isEmpty()||regions.size()>64||regions.stream().anyMatch(s->!s.matches("[A-Za-z0-9_-]{1,64}")))throw new IllegalArgumentException("ECON_RUNTIME_WORLD_CONFIG");

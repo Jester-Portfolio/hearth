@@ -16,6 +16,7 @@ public final class EconomyWorldBackend implements WorldBackend {
     public Placement placement(){return expected;}
     private void main(){if(!Bukkit.isPrimaryThread()||Bukkit.isTickingWorlds())throw new IllegalStateException("ECON_WORLD_SAFE_POINT");}
     private void stored(){try{
+        if(Files.exists(expected.directory().resolve(".hearth-story-world"),LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException("ECON_WORLD_OWNER_CONFLICT");
         var dir=expected.directory();if(!dir.toRealPath().equals(dir)||!Files.isRegularFile(dir.resolve("data/paper/metadata.dat"),LinkOption.NOFOLLOW_LINKS)||!Files.isRegularFile(dir.resolve("region/r."+(((int)Math.floor(settings.x()))>>9)+"."+(((int)Math.floor(settings.z()))>>9)+".mca"),LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException("ECON_WORLD_NOT_PREPARED");
         String identity=expected.storyRunId()+"/"+expected.key()+"/"+expected.physicalId();
         for(String name:List.of(".hearth-s4-spatial-ready",".hearth-economy-world")){var marker=dir.resolve(name);if(Files.exists(marker,LinkOption.NOFOLLOW_LINKS)&&(!Files.isRegularFile(marker,LinkOption.NOFOLLOW_LINKS)||!Files.readString(marker).trim().equals(identity)))throw new IllegalStateException("ECON_WORLD_OWNER_CONFLICT");}

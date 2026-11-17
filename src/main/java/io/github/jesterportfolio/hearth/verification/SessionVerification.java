@@ -383,6 +383,7 @@ public final class SessionVerification implements AutoCloseable {
     public CompletionStage<Void> run(String phase){
         if(manual)throw new IllegalStateException("자동 실패 시험은 수동 프로필 환경에서 금지합니다");
         return switch(phase){
+        case "story-runtime-seed" -> StoryRuntimeVerification.seed(plugin,store,access,worlds,codec,owner);
         case "joint-ai-prepare" -> jointPrepare();
         case "joint-ai-play" -> Objects.requireNonNull(jointAI).play();
         case "joint-ai-report" -> {try{Objects.requireNonNull(jointAI).report();yield CompletableFuture.completedFuture(null);}catch(Exception error){yield CompletableFuture.failedFuture(error);}}

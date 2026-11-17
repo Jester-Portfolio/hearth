@@ -1,0 +1,144 @@
+{
+  "date": "2026-11-17",
+  "scope": "normal story bootstrap, immutable binding/admission, prepared-world restore and clean drain; no actual clients or model inference",
+  "outcome": "PASS_AFTER_CONTROLLER_LOG_REPLAY",
+  "evidence": "/home/server/hearth-tmp/hearth-story-runtime.7th06xr8",
+  "final_jar_sha256": "eb91632d90b9c87f9e31b191ecc69c0dc1bc1cde3447520e365f7763128dad72",
+  "units": {
+    "passed": 19,
+    "new": 13,
+    "xml_preserved": true
+  },
+  "python_controller_tests": {
+    "passed": 5
+  },
+  "native_attempts": [
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.jori7kay",
+      "outcome": "FAIL",
+      "duration_seconds": 33.248,
+      "failure": "RuntimeError: 통합 시험/플러그인 오류: paper-prepare",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "checks": 1
+    },
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.g122oz3v",
+      "outcome": "FAIL",
+      "duration_seconds": 101.565,
+      "failure": "RuntimeError: paper-story-runtime: 대기 한도 초과: HEARTH_STORY_RUNTIME_PROBE PASS",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "checks": 18
+    },
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.a1yr2us4",
+      "outcome": "FAIL",
+      "duration_seconds": 51.162,
+      "failure": "AssertionError: DB 풀 종료 확인 누락",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "checks": 8
+    }
+  ],
+  "final_controlled_runtime": {
+    "outcome": "PASS_AFTER_CONTROLLER_LOG_REPLAY",
+    "native_raw_outcome": "FAIL",
+    "native_raw_failure": "AssertionError: DB 풀 종료 확인 누락",
+    "raw_result_preserved": "/home/server/hearth-tmp/hearth-s4-11.a1yr2us4/run-result.json",
+    "duration_seconds": 51.162,
+    "corrected_stop_checks": [
+      "paper-prepare",
+      "paper-story-runtime"
+    ],
+    "all_owned_processes_exited_zero_and_recorded_ports_free": true,
+    "runtime_drained_and_active_marker_removed": true,
+    "actual_client_or_AI_inference": "NOT_RUN",
+    "unchanged_core_class_count": 28,
+    "unchanged_core_classes": [
+      "io/github/jesterportfolio/hearth/economy/EconomyWorldBackend.class",
+      "io/github/jesterportfolio/hearth/features/S4Features$Display.class",
+      "io/github/jesterportfolio/hearth/features/S4Features.class",
+      "io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary$1.class",
+      "io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary$Data.class",
+      "io/github/jesterportfolio/hearth/lifecycle/PaperLifecycleBoundary.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$1.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$2$1.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$2.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$3.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$4.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$CombatControls.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$Entry.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$Link.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$Move.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter$Window.class",
+      "io/github/jesterportfolio/hearth/session/PaperSessionAdapter.class",
+      "io/github/jesterportfolio/hearth/story/StoryAdmission$Accounts.class",
+      "io/github/jesterportfolio/hearth/story/StoryAdmission.class",
+      "io/github/jesterportfolio/hearth/story/StoryBinding.class",
+      "io/github/jesterportfolio/hearth/story/StoryContentBundle.class",
+      "io/github/jesterportfolio/hearth/story/StoryRegistry.class",
+      "io/github/jesterportfolio/hearth/story/StoryRuntime$Phase.class",
+      "io/github/jesterportfolio/hearth/story/StoryRuntime$Scope.class",
+      "io/github/jesterportfolio/hearth/story/StoryRuntime.class",
+      "io/github/jesterportfolio/hearth/story/StoryRuntimeSettings$Run.class",
+      "io/github/jesterportfolio/hearth/story/StoryRuntimeSettings.class",
+      "io/github/jesterportfolio/hearth/story/StoryWorldBackend.class"
+    ],
+    "prior_PG_and_admission_checks": [
+      "story_runtime_concurrent_identical_world_binding_preserved",
+      "story_runtime_content_change_rejected_without_rebinding",
+      "story_runtime_physical_world_cannot_belong_to_two_runs",
+      "story_runtime_legacy_saved_inventory_not_replaced_with_empty",
+      "story_runtime_account_cross_run_race_has_one_owner",
+      "story_runtime_missing_legacy_inventory_is_HOLD_not_empty_recreation",
+      "story_runtime_real_SQL_inventory_failure_refused",
+      "story_runtime_failed_admission_transaction_keeps_no_partial_member_or_progress",
+      "story_runtime_binding_original_preserved_after_conflicts",
+      "story_runtime_existing_shared_progress_preserved",
+      "story_runtime_new_JVM_normal_story_bootstrap_without_fixture_runtime",
+      "story_runtime_new_JVM_original_member_slots_and_revision_preserved",
+      "story_runtime_normal_unmanaged_items_preserved",
+      "story_runtime_normal_foreign_inventory_owner_refused",
+      "story_runtime_normal_new_empty_member_created_once",
+      "story_runtime_new_JVM_shared_progress_preserved",
+      "story_runtime_normal_session_restores_only_saved_personal_slots"
+    ],
+    "final_Paper_checks": [
+      "fixture_prepared_no_login_provisioning",
+      "story_runtime_new_JVM_normal_story_bootstrap_without_fixture_runtime",
+      "story_runtime_economy_rejects_story_owned_world",
+      "story_runtime_story_rejects_conflicting_economy_marker",
+      "story_runtime_world_ownership_conflicts_preserve_original_marker",
+      "story_runtime_normal_session_restores_only_saved_personal_slots",
+      "story_runtime_normal_controlled_session_world_active",
+      "story_runtime_normal_WorldGuard_and_NPC_prepared"
+    ],
+    "final_jar_sha256": "eb91632d90b9c87f9e31b191ecc69c0dc1bc1cde3447520e365f7763128dad72",
+    "notes": [
+      "Only the controller close-marker classifier changed after this native run; the corrected stop method was replayed against its original complete logs and exit codes.",
+      "The prior raw run remains FAIL at NPC readiness; successful SQL/admission assertions are supported by byte-identical final core classes.",
+      "No successful native scenario was repeated solely for the controller marker correction."
+    ]
+  },
+  "policy": {
+    "default_disabled": true,
+    "no_operating_changes": true,
+    "fixed_server_side_members": true,
+    "new_members_empty_inventory": true,
+    "missing_legacy_inventory_HOLD": true,
+    "no_world_generation_or_template_replacement": true,
+    "mandatory_ollama_configuration": true,
+    "explicit_AI_prepare_unchanged": true
+  },
+  "remaining": [
+    "normal content wiring for crafting/gathering/escort/dungeon/combat/travel/world effects",
+    "new-run template provisioning automation",
+    "full content compatibility migration",
+    "actual authenticated client acceptance",
+    "deployment/resource allocation and general AI quality acceptance"
+  ]
+}

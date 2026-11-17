@@ -1,0 +1,32 @@
+# 준비한 전용 Paper 데이터 폴더에서만 검토합니다. 운영 적용 값이 아닙니다.
+runtime-mode: story
+verification-enabled: false
+phone-dialog-enabled: true
+phone-ai-mode: ollama
+phone-ai-endpoint: http://127.0.0.1:11435/api/generate
+inventory-autosave-seconds: 30
+story-runtime:
+  content-file: story-content.yml
+  content-sha256: REPLACE_WITH_REVIEWED_FILE_SHA256
+  idle-seconds: 300
+  capacity: 4
+  db-host: 127.0.0.1
+  db-port: 5432
+  db-name: hearth_story
+  db-user: hearth
+  password-environment: HEARTH_STORY_DB_PASSWORD
+  runs:
+    - run: 00000000-0000-0000-0000-000000000001
+      world-key: hearth_story:prepared_one
+      world-uuid: 00000000-0000-0000-0000-000000000002
+      template-version: reviewed-v1
+      template-sha256: REPLACE_WITH_ORIGINAL_TEMPLATE_SHA256
+      entry-x: 2.5
+      entry-y: 64
+      entry-z: 2.5
+      entry-yaw: 0
+      entry-pitch: 0
+      required-regions: [protected]
+  members:
+    - player: 00000000-0000-0000-0000-000000000003
+      run: 00000000-0000-0000-0000-000000000001
