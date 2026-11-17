@@ -95,7 +95,7 @@ class Monitor:
                     item['ready'] = round(time.monotonic()-item['started'], 3)
                 if any(token in line for token in [self.prefix+'_RESULT', 'HEARTH_S4_2_RESULT', 'HEARTH_S45_DB OK', 'HEARTH_S45_DB READY', self.prefix+'_DISABLE_CLOSE']):
                     print(key.data + ': ' + line, flush=True)
-                if not self.stopping and any(token in line for token in [self.prefix+'_RESULT FAIL', 'HEARTH_ECONOMY_RUNTIME_PROBE FAIL', 'HEARTH_S4_2_RESULT FAIL', 'Error occurred while', 'Could not load', 'Unknown or incomplete command']):
+                if not self.stopping and any(token in line for token in [self.prefix+'_RESULT FAIL', 'HEARTH_ECONOMY_RUNTIME_PROBE FAIL', 'HEARTH_STORY_RUNTIME_PROBE FAIL', 'HEARTH_S4_2_RESULT FAIL', 'Error occurred while', 'Could not load', 'Unknown or incomplete command']):
                     raise RuntimeError('통합 시험/플러그인 오류: ' + key.data)
 
     def wait(self, name, token, since=0, seconds=90):

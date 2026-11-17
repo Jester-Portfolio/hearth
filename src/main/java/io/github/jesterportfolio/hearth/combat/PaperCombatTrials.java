@@ -28,10 +28,10 @@ public final class PaperCombatTrials implements Listener,AutoCloseable {
     private final Map<UUID,Replacement> replacements=new HashMap<>();
     private final Map<UUID,Trial> trials=new HashMap<>();private final Set<UUID> retired=new HashSet<>();private final JavaPlugin plugin;private final Executor owner;private final LongSupplier clock;private final CombatContent content;private final BukkitTask timer;private boolean closed;
     public PaperCombatTrials(JavaPlugin plugin,CombatContent content,Executor owner,LongSupplier clock){
-        main();if(!plugin.getConfig().getBoolean("combat-state-verification-enabled")||!Boolean.getBoolean("hearth.verification.combatState"))throw new IllegalStateException("Combat gate missing");
+        main();if(!io.github.jesterportfolio.hearth.administration.GameplayRuntime.allowed(plugin,"combat-state-verification-enabled","hearth.verification.combatState"))throw new IllegalStateException("Combat gate missing");
         this.plugin=plugin;this.content=content;this.owner=owner;this.clock=clock;
         var marker=plugin.getDataFolder().toPath().resolve("combat-trials.started");
-        try{Files.createFile(marker);}catch(java.nio.file.FileAlreadyExistsException e){if(!plugin.getConfig().getBoolean("s4-features-enabled")||!Boolean.getBoolean("hearth.verification.s4Features")||content.exit()==null||!Files.isRegularFile(marker,java.nio.file.LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException("COMBAT_RESTART_REVIEW_REQUIRED",e);}catch(java.io.IOException e){throw new IllegalStateException("COMBAT_RESTART_REVIEW_REQUIRED",e);}
+        try{Files.createFile(marker);}catch(java.nio.file.FileAlreadyExistsException e){if((!io.github.jesterportfolio.hearth.administration.GameplayRuntime.story(plugin)&&(!plugin.getConfig().getBoolean("s4-features-enabled")||!Boolean.getBoolean("hearth.verification.s4Features")))||content.exit()==null||!Files.isRegularFile(marker,java.nio.file.LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException("COMBAT_RESTART_REVIEW_REQUIRED",e);}catch(java.io.IOException e){throw new IllegalStateException("COMBAT_RESTART_REVIEW_REQUIRED",e);}
         Bukkit.getPluginManager().registerEvents(this,plugin);timer=Bukkit.getScheduler().runTaskTimer(plugin,this::poll,1,1);
     }
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("Not main thread");}

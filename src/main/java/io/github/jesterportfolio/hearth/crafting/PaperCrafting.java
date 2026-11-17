@@ -73,7 +73,7 @@ public final class PaperCrafting implements Listener,AutoCloseable {
         public Inventory getInventory(){return inventory;}
     }
     public PaperCrafting(JavaPlugin plugin,PaperSessionAdapter sessions,Map<UUID,WorldLifecycle> worlds,CraftContent content,PaperInventoryCodec codec,BiPredicate<ServerProgressAccess.Context,CraftContent.Facility> access,Executor owner){
-        if(!plugin.getConfig().getBoolean("crafting-verification-enabled")||!Boolean.getBoolean("hearth.verification.crafting"))throw new IllegalStateException("CRAFT_ISOLATED_GATE");
+        if(!io.github.jesterportfolio.hearth.administration.GameplayRuntime.allowed(plugin,"crafting-verification-enabled","hearth.verification.crafting"))throw new IllegalStateException("CRAFT_ISOLATED_GATE");
         this.plugin=plugin;this.sessions=sessions;this.worlds=worlds;this.content=content;this.codec=codec;this.access=access;this.owner=owner;planner=new PaperCraftingPlan(codec);
         for(var recipe:content.recipes().values())planner.result(Bukkit.getWorlds().getFirst(),recipe);
         actions=new CraftingAction(r->Bukkit.getScheduler().runTaskLater(plugin,r,1),PaperCrafting::main,codec::equivalent);

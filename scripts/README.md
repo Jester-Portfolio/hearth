@@ -195,3 +195,5 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 ### 정식 스토리 실행의 영향 검사
 
 `verify-lifecycle.py --sessions --story-runtime`은 기존 CPU/RAM/시간 한도에서 불변 PG 연결·계정 경합/실패·두 JVM의 정상 스토리 초기화/복원과 저장 종료를 검사한다. 실제 Player/AI 추론은 생성하지 않는다. `--story-runtime-recheck`는 성공한 SQL 시나리오를 반복하지 않고 새 최소 복원 입력·수정된 정상 월드 준비/종료만 검사한다. 같은 workspace/이전 증거에 재실행하지 않는다. [범위·실패 원본과 제어기 로그 재검사](../docs/story-runtime-verification.md)를 따른다.
+
+`--story-runtime --story-runtime-recheck --story-modules --sessions`는 같은 검토 콘텐츠로 제작/채집/호위/던전/전투·거점/준비 안내를 정상 모드에 구성하고, 채집 준비 단일 작업·실제 INSERT 실패/개인 원본 보존·미로드 다른 진행 거부와 저장 종료를 묶어 확인한다. 기존 계정 SQL 시나리오는 반복하지 않는다. [정식 모듈 통합 결과](../docs/story-modules-verification.md)를 따른다.

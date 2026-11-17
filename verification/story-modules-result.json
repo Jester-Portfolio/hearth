@@ -1,0 +1,145 @@
+{
+  "date": "2026-11-17",
+  "scope": "normal story gameplay module wiring and gathering preparation boundary",
+  "outcome": "PASS",
+  "evidence": "/home/server/hearth-tmp/hearth-story-modules.p9yxhret",
+  "final_jar_sha256": "38b2c37d8a00f45a101cc6e9b909739194c9b44a6cb1ee208216468450e5211a",
+  "units": {
+    "passed": 23,
+    "new": 7,
+    "runs": 1,
+    "unchanged_test_subject_class_count": 8,
+    "unchanged_test_subject_classes": [
+      "io/github/jesterportfolio/hearth/administration/GameplayRuntime.class",
+      "io/github/jesterportfolio/hearth/gathering/GatheringDungeon$Arrival.class",
+      "io/github/jesterportfolio/hearth/gathering/GatheringDungeon$Boundary.class",
+      "io/github/jesterportfolio/hearth/gathering/GatheringDungeon$Lease.class",
+      "io/github/jesterportfolio/hearth/gathering/GatheringDungeon$Member.class",
+      "io/github/jesterportfolio/hearth/gathering/GatheringDungeon$Reservation.class",
+      "io/github/jesterportfolio/hearth/gathering/GatheringDungeon.class",
+      "io/github/jesterportfolio/hearth/story/StoryModuleContent.class"
+    ]
+  },
+  "native_attempts": [
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.ivr5ojif",
+      "outcome": "FAIL",
+      "duration_seconds": 103.637,
+      "failure": "RuntimeError: paper-story-runtime: 대기 한도 초과: HEARTH_STORY_RUNTIME_PROBE PASS",
+      "cleanup_errors": [
+        "AssertionError: DB 풀 종료 확인 누락"
+      ],
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "story_runtime_new_JVM_normal_story_bootstrap_without_fixture_runtime",
+        "story_runtime_economy_rejects_story_owned_world",
+        "story_runtime_story_rejects_conflicting_economy_marker",
+        "story_runtime_world_ownership_conflicts_preserve_original_marker"
+      ],
+      "all_owned_processes_and_ports_closed": false,
+      "plugin_sha256": "ab345a41f6f9cce90e0d24a5a9592ff4f20c4d1bec21a14043a6b72a89d7206a"
+    },
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.624aa_pe",
+      "outcome": "PASS",
+      "duration_seconds": 48.012,
+      "failure": null,
+      "cleanup_errors": [],
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "story_runtime_new_JVM_normal_story_bootstrap_without_fixture_runtime",
+        "story_runtime_economy_rejects_story_owned_world",
+        "story_runtime_story_rejects_conflicting_economy_marker",
+        "story_runtime_world_ownership_conflicts_preserve_original_marker",
+        "story_runtime_normal_session_restores_only_saved_personal_slots",
+        "story_runtime_normal_controlled_session_world_active",
+        "story_runtime_normal_WorldGuard_and_NPC_prepared",
+        "story_runtime_normal_all_gameplay_modules_connected_without_verification_flags",
+        "story_runtime_normal_preparation_course_and_facility_guides_connected",
+        "story_runtime_normal_existing_crafting_facility_preserved",
+        "story_runtime_normal_existing_travel_station_prepared",
+        "story_runtime_normal_existing_travel_station_prepared",
+        "story_runtime_normal_async_gathering_binding_and_protected_area_prepared"
+      ],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "bbde807a7528db15202fd51f7a9aa2343dfbce908400ad507e8e2d7a8749a5f2"
+    },
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.21gasgxu",
+      "outcome": "PASS",
+      "duration_seconds": 50.438,
+      "failure": null,
+      "cleanup_errors": [],
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "story_runtime_new_JVM_normal_story_bootstrap_without_fixture_runtime",
+        "story_runtime_economy_rejects_story_owned_world",
+        "story_runtime_story_rejects_conflicting_economy_marker",
+        "story_runtime_world_ownership_conflicts_preserve_original_marker",
+        "story_runtime_normal_session_restores_only_saved_personal_slots",
+        "story_runtime_normal_controlled_session_world_active",
+        "story_runtime_normal_WorldGuard_and_NPC_prepared",
+        "story_runtime_normal_all_gameplay_modules_connected_without_verification_flags",
+        "story_runtime_unloaded_other_run_rejected_before_gathering_creation",
+        "story_runtime_concurrent_gathering_preparation_shares_one_job",
+        "story_runtime_real_gathering_INSERT_failure_is_preserved_not_reinitialized",
+        "story_runtime_failed_or_unloaded_preparation_keeps_all_run_rows_absent",
+        "story_runtime_gathering_preparation_failure_preserves_original_personal_slots_revision",
+        "story_runtime_normal_preparation_course_and_facility_guides_connected",
+        "story_runtime_normal_existing_crafting_facility_preserved",
+        "story_runtime_normal_existing_travel_station_prepared",
+        "story_runtime_normal_existing_travel_station_prepared",
+        "story_runtime_normal_async_gathering_binding_and_protected_area_prepared"
+      ],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "371a35ca02c0fd9c2cff5e027c012e06f010460251abc0150d59f1f6db039198"
+    },
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.1va4750n",
+      "outcome": "PASS",
+      "duration_seconds": 52.236,
+      "failure": null,
+      "cleanup_errors": [],
+      "session_checks": [
+        "fixture_prepared_no_login_provisioning",
+        "story_runtime_new_JVM_normal_story_bootstrap_without_fixture_runtime",
+        "story_runtime_economy_rejects_story_owned_world",
+        "story_runtime_story_rejects_conflicting_economy_marker",
+        "story_runtime_world_ownership_conflicts_preserve_original_marker",
+        "story_runtime_normal_session_restores_only_saved_personal_slots",
+        "story_runtime_normal_controlled_session_world_active",
+        "story_runtime_normal_WorldGuard_and_NPC_prepared",
+        "story_runtime_normal_all_gameplay_modules_connected_without_verification_flags",
+        "story_runtime_unloaded_other_run_rejected_before_gathering_creation",
+        "story_runtime_concurrent_gathering_preparation_shares_one_job",
+        "story_runtime_real_gathering_INSERT_failure_is_preserved_not_reinitialized",
+        "story_runtime_failed_or_unloaded_preparation_keeps_all_run_rows_absent",
+        "story_runtime_gathering_preparation_failure_preserves_original_personal_slots_revision",
+        "story_runtime_normal_preparation_course_and_facility_guides_connected",
+        "story_runtime_normal_existing_crafting_facility_preserved",
+        "story_runtime_normal_existing_travel_station_prepared",
+        "story_runtime_normal_existing_travel_station_prepared",
+        "story_runtime_normal_async_gathering_binding_and_protected_area_prepared",
+        "story_runtime_normal_gathering_timer_completed_real_initial_reset",
+        "story_runtime_saving_world_does_not_start_new_periodic_gathering_reset",
+        "story_runtime_automatic_IDLE_save_unload_releases_gathering_state_and_own_tickets"
+      ],
+      "all_owned_processes_and_ports_closed": true,
+      "plugin_sha256": "38b2c37d8a00f45a101cc6e9b909739194c9b44a6cb1ee208216468450e5211a"
+    }
+  ],
+  "final_assertions": 22,
+  "actual_client_actions": "NOT_RUN",
+  "new_AI_inference": "NOT_RUN",
+  "operating_changes": false,
+  "remaining": [
+    "general normal-world story effects",
+    "new-run template preparation automation",
+    "content migration compatibility",
+    "actual authenticated acceptance",
+    "economy direct-player trade and gathering integration",
+    "operating deployment/budgets/SLO"
+  ],
+  "final_native_seconds": 52.236,
+  "idle_regression": "real timer reset, blocked registry read in SAVING, stable reset generation/revision/no pending reset, unlock and automatic IDLE unload"
+}
