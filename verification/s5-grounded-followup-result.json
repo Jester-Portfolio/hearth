@@ -1,0 +1,187 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "159e8d0",
+  "outcome": "FINAL_BATCH_INTERNAL_NATIVE_AND_FIXED_MODEL_PASS",
+  "whole_s5_complete": false,
+  "actual_minecraft_client": false,
+  "operational_deployment": false,
+  "workspace": "/home/server/hearth-tmp/hearth-grounded-followup.ttjz5ecm",
+  "final_artifact": {
+    "path": "/home/server/hearth-tmp/hearth-grounded-followup.ttjz5ecm/Hearth-final.jar",
+    "sha256": "00af6c31cb605d4edeb735a1fc4e9e0d6794590b716c0eab44e8c1b6cacf2606",
+    "built_from_final_unit_tested_main_classes": true,
+    "same_jar_used_for_native_install_and_actual_model": true
+  },
+  "batch_execution": {
+    "unit_sweeps": 1,
+    "native_paper_starts": 1,
+    "postgres_instances": 1,
+    "actual_model_trials": 1,
+    "same_clock_model_reviews": 0,
+    "source_changes_after_final_build": false,
+    "preflight_setup_failures": [
+      {
+        "log": "/home/server/hearth-tmp/hearth-grounded-followup.ttjz5ecm/paper.log",
+        "reason": "Missing new disposable workspace marker. No server or database started."
+      },
+      {
+        "log": "/home/server/hearth-tmp/hearth-grounded-followup.ttjz5ecm/paper-run.log",
+        "reason": "Test dependency staging omitted. No server or database started."
+      }
+    ],
+    "staging_log": "/home/server/hearth-tmp/hearth-grounded-followup.ttjz5ecm/stage.log",
+    "python_control_tests_repeated": false,
+    "second_paper_jvm": false,
+    "reason_for_no_second_jvm": "No persistence/restore, inventory, schema or world event contract change."
+  },
+  "checks": {
+    "phone_tests": 247,
+    "failures_errors_skips": 0,
+    "new_followup_tests": 15,
+    "xml": "/home/server/hearth-tmp/hearth-grounded-followup.ttjz5ecm/unit-results",
+    "build_and_fixture_compile_log": "/home/server/hearth-tmp/hearth-grounded-followup.ttjz5ecm/build.log"
+  },
+  "native": {
+    "result": "/home/server/hearth-tmp/hearth-s4-11.aqa36j_5/run-result.json",
+    "sha256": "804a18e1e9122c4204ffbc8e4b919dc6482120f993164352e5da55e5b945df9d",
+    "outcome": "PASS",
+    "assertions": 161,
+    "new_checks": [
+      "followup_actual_PG_keeps_original_excerpts_numbers_and_anchor",
+      "followup_actual_bounded_history_visible_before_send",
+      "followup_other_personal_PG_cannot_reuse_private_bundle",
+      "followup_cache_still_reads_actual_PG_without_new_generation",
+      "followup_actual_PG_changed_full_record_blocks_preflight_without_generation",
+      "focused_AI_change_outside_excerpt_rejects_PG_cached_followup_without_history"
+    ],
+    "duration_seconds": 62.791,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 1,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    },
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "player_actions_verdict": "NOT_RUN",
+    "log": "/home/server/hearth-tmp/hearth-grounded-followup.ttjz5ecm/paper-final.log"
+  },
+  "actual_ai": {
+    "result": "/home/server/hearth-tmp/hearth-s5-trial.3mauehiv/run-result.json",
+    "sha256": "9a5521eb701fcf453a315c1b8d84e431daf5dea15e88e06d53498fdc88aef437",
+    "probe_result": "/home/server/hearth-tmp/hearth-s5-trial.3mauehiv/probe-result.json",
+    "probe_sha256": "c81108060ba05c0bfbbd29f632e4ce595b387fea5d39c387b1a04b55651fe1af",
+    "outcome": "PASS",
+    "duration_seconds": 116.045,
+    "cleanup_errors": [],
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "max_sampled_rss_kib": 3365440,
+    "max_sampled_gpu_mib": 3132,
+    "min_host_available_kib": 12341836,
+    "cases": [
+      {
+        "name": "four_sources_initial",
+        "outcome": "PASS",
+        "milliseconds": 2934
+      },
+      {
+        "name": "same_bundle_new_question",
+        "outcome": "PASS",
+        "milliseconds": 1663
+      },
+      {
+        "name": "same_bundle_followup_refers_to_previous_answer",
+        "outcome": "PASS",
+        "milliseconds": 1617
+      },
+      {
+        "name": "same_bundle_other_two_sources",
+        "outcome": "PASS",
+        "milliseconds": 1628
+      },
+      {
+        "name": "reduced_bundle_resets_history_and_renumbers",
+        "outcome": "PASS",
+        "milliseconds": 1587
+      },
+      {
+        "name": "followup_history_off",
+        "outcome": "PASS",
+        "milliseconds": 1180
+      },
+      {
+        "name": "followup_history_off_cached",
+        "outcome": "PASS",
+        "milliseconds": 5
+      },
+      {
+        "name": "bundle_does_not_confirm_crafting_state",
+        "outcome": "PASS",
+        "milliseconds": 1317
+      }
+    ],
+    "sent_history_sizes": [
+      0,
+      1,
+      2,
+      3,
+      0,
+      0,
+      0
+    ],
+    "fixed_bundle_context_unchanged_for_new_questions": true,
+    "only_selected_public_materials_no_internal_keys": true,
+    "history_off_cached_without_generation": true,
+    "cache_cleared_on_close": true,
+    "generations": 7,
+    "cache_confirmations": 1,
+    "log": "/home/server/hearth-tmp/hearth-grounded-followup.ttjz5ecm/ai.log",
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "individual_seconds": 90,
+      "cpu": 2,
+      "rss_gib": 4,
+      "gpu_gib": 5,
+      "host_minimum_available_gib": 6,
+      "request_seconds": 6,
+      "chat_seconds": 8,
+      "context_tokens": 4096,
+      "output_tokens": 128
+    }
+  },
+  "contract": {
+    "explicit_latest_reference_bundle_choice_only": true,
+    "single_and_multi_source_serialization_preserved": true,
+    "original_retrieval_question_kept_separate_from_followup_question": true,
+    "no_new_search_or_excerpt_replacement_during_followup": true,
+    "selected_keys_order_numbers_whole_dto_and_versions_checked": true,
+    "opaque_preview_bound_to_chat_revision_history_choice_and_scope": true,
+    "exact_transmitted_bounded_history_and_context_in_preview": true,
+    "source_change_rejects_preflight_and_cached_response_after_fresh_pg_read": true,
+    "other_personal_bundle_rejected_by_fresh_pg": true,
+    "stale_choice_cannot_clear_newer_choice": true,
+    "current_session_replacement_quit_close_retire_choice": true,
+    "normal_search_single_help_science_and_calculator_modes_preserved": true,
+    "no_automatic_send_retry_summary_or_budget_change": true
+  },
+  "remaining": [
+    "Actual Minecraft GUI, click and cooperative acceptance not run.",
+    "This is a synthetic fixed-data partial quality acceptance, not unrestricted science or all dialogue correctness.",
+    "Different-excerpt conversation merging, unlimited memory, target usage/long-run performance and operating budget/deployment remain unaccepted."
+  ],
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneGrounding.java": "02a3683b36c4281fb05d7a96cb9f2a2c49f799407c3ae4b43f387e4196ef48d0",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneFollowup.java": "d57e173e40c6f9923b08d2ff7cea47b14b11a2876341511e9f08093331beedaf",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneChat.java": "ad42c722ccf61559664c6a145b6ea9f76854cb065a6d5808ee29d602f5963579",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PaperPhone.java": "ab484b646175c1234a0032d348861e0281a7099ab90467107764c99b49b71f3b",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java": "a2ba9ecfda477411ca90cd7da154433a954739a957af3ab3b7588156e0f4bee9",
+    "src/test/java/io/github/jesterportfolio/hearth/phone/PhoneGroundedFollowupTest.java": "2ff0d17598a03c899496813707ec5d6c8e2f9bf1b8c975ae742af41300e483e8",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaFocusedProbe.java": "c21c4b91824d01b9ff4bf01ebbfbef272535db5f4b6e3462443ad1d5ba03d865"
+  }
+}

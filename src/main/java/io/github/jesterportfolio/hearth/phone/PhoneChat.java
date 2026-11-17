@@ -8,6 +8,12 @@ public final class PhoneChat {
     public record Turn(String question,String answer){}
     public record DisplayTurn(Turn turn,String basis){}
     public record ScienceReference(String title,String context,int sources){}
+    public static final class GroundedPreview {
+        private final PhoneChat owner;private final PhoneGrounding.Scope scope;private final AssistantRequest request;private final long revision;private final boolean withHistory;
+        private GroundedPreview(PhoneChat owner,PhoneGrounding.Scope scope,AssistantRequest request){this.owner=owner;this.scope=scope;this.request=request;revision=owner.historyRevision;withHistory=owner.includeHistory;}
+        public AssistantRequest request(){return request;}
+        public List<String> lines(){var lines=new ArrayList<String>();lines.add("질문: "+request.question());lines.add("이번에 전송할 이전 대화: "+request.history().size()+"개. 아래는 길이 제한을 적용한 실제 내용입니다.");for(var turn:request.history()){lines.add("이전 질문: "+turn.question());lines.add("이전 응답: "+turn.answer());}lines.add(request.context());return List.copyOf(lines);}
+    }
     public static final class HistoryChoice {
         private final Exchange exchange;private final long revision;private final String basis;
         private HistoryChoice(Exchange exchange,long revision,String basis){this.exchange=exchange;this.revision=revision;this.basis=basis;}
@@ -50,6 +56,18 @@ public final class PhoneChat {
         if(reuseQuestion)draft(choice.turn().question());
     }
     private List<Turn> recent(Scope scope){return includeHistory?history.stream().filter(e->e.scope().equals(scope)).map(Exchange::turn).toList():List.of();}
+    public GroundedPreview previewGrounded(PhoneGrounding.Plan plan){
+        if(closed||busy())throw new IllegalStateException("CHAT_BUSY_OR_CLOSED");var selected=plan.sent();var context=selected.result();var scope=selected.scope();
+        return new GroundedPreview(this,scope,new AssistantRequest(selected.question(),recent(new Scope(selected.mode(),context.context(),scope)),context.context(),context.sources().size()));
+    }
+    public boolean groundedPreviewCurrent(GroundedPreview shown,PhoneGrounding.Plan plan){
+        if(closed||busy()||shown==null||shown.owner!=this||shown.revision!=historyRevision||shown.withHistory!=includeHistory)return false;var actual=previewGrounded(plan);return shown.scope.equals(actual.scope)&&shown.request.equals(actual.request);
+    }
+    public CompletionStage<Void> submitGroundedPreview(GroundedPreview shown,PhoneGrounding.Plan plan,java.util.function.BooleanSupplier current,java.util.function.Supplier<CompletionStage<Boolean>> validate){
+        if(closed||busy())return CompletableFuture.failedFuture(new IllegalStateException("CHAT_BUSY_OR_CLOSED"));
+        if(!groundedPreviewCurrent(shown,plan)){error="전송할 대화나 자료가 변경됐습니다. 미리보기를 다시 확인해 주세요.";retryable=false;return CompletableFuture.failedFuture(new IllegalStateException("STALE_GROUNDED_PREVIEW"));}
+        return submit(plan.question(),shown.request.context(),plan.mode(),current,validate,plan.scope());
+    }
     public CompletionStage<Void> submit(String input){return submit(input,"",()->true);}
     public CompletionStage<Void> submitScience(String input,ScienceReading reading,java.util.function.BooleanSupplier current){
         return submit(input,Objects.requireNonNull(reading).context(),"research",current,()->CompletableFuture.completedFuture(true),reading);
