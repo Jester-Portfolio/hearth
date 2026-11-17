@@ -21,6 +21,7 @@ import io.github.jesterportfolio.hearth.escort.*;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Mob;
 import org.bukkit.inventory.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -1258,7 +1259,30 @@ public final class SessionVerification implements AutoCloseable {
                 var next=new FieldContent.Point(37,64,29);fieldEncounters.enter(binding,a1.playerId(),new FieldContent.Point(24,64,29),next,List.of(new FieldEncounters.Presence(binding,a1.playerId(),next)));var fresh=fieldEncounters.entities(a).stream().map(Entity::getUniqueId).toList();
                 return fieldEncounters.reset(a,request,fieldEncounters.resetPolicy(),()->coordinator.saveRunBoundary(a),()->true,owner).thenRun(()->check(fieldEncounters.entities(a).stream().map(Entity::getUniqueId).toList().equals(fresh)&&fieldEncounters.entities(b).stream().map(Entity::getUniqueId).toList().equals(other),"field_duplicate_reset_preserves_new_encounter_and_other_run"));
             });
-        }).thenRun(()->{for(UUID run:List.of(a,b))for(int x:List.of(1,2))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(x,1,plugin);});
+        }).thenCompose(v->fieldCombatCheck()).thenRun(()->{for(UUID run:List.of(a,b))for(int x:List.of(1,2))Objects.requireNonNull(Bukkit.getWorld(worlds.get(run).mapping().physicalId())).removePluginChunkTicket(x,1,plugin);});
+    }
+    private CompletionStage<Void> fieldCombatCheck(){
+        var world=worlds.get(a);var binding=fieldEncounters.binding(a);var beforeOther=fieldEncounters.entities(b).stream().map(Entity::getUniqueId).toList();
+        var zone=fieldEncounters.content().zones().getFirst();var definition=FieldCombat.definition(zone,combatContent);
+        var actor=new CombatBody(s1,new CombatContent.Pose(world.mapping().physicalId(),3.5,64,3.5,0,0));
+        var bridge=new CombatPlayers(a,world.mapping().physicalId(),world.generation(),world::generation,owner,SessionVerification::main);
+        var attempt=new CombatAttempt(a,world.mapping().physicalId(),world.generation(),definition,List.of(new CombatAttempt.Entrant(a1,s1,actor.position)),new CombatAttempt.Port(){
+            public void freeze(boolean pause){fieldEncounters.freeze(a,pause);bridge.freeze(pause);}public void camera(UUID p,UUID target){bridge.camera(p,target);}public boolean safe(CombatContent.Pose p){return bridge.safe(p);}public CompletionStage<Boolean> revive(UUID p,CombatContent.Pose at,double hp,List<CombatContent.Effect> effects,java.util.function.BooleanSupplier current){return bridge.revive(p,at,hp,effects,current);}
+        },owner,SessionVerification::main,System::currentTimeMillis);bridge.attach(attempt,List.of(actor));
+        check(definition.revival().equals(combatContent.revival())&&definition.exit().equals(combatContent.exit())&&definition.path()==null&&definition.retry()==null,"field_combat_reuses_dungeon_death_revival_return_without_boss_spawn_or_retry");
+        var own=fieldEncounters.entities(a);check(own.size()==2&&fieldEncounters.managed(a,own.getFirst())&&!fieldEncounters.managed(b,own.getFirst()),"field_combat_actual_mob_damage_source_has_run_and_generation");
+        bridge.died(actor);bridge.project();check(actor.spectator&&!bridge.actions(actor)&&attempt.snapshot().phase()==CombatAttempt.Phase.WIPE_WAIT&&own.stream().allMatch(m->m instanceof Mob mob&&!mob.hasAI())&&fieldEncounters.entities(b).stream().allMatch(m->m instanceof Mob mob&&mob.hasAI()),"field_combat_wipe_spectator_freezes_only_own_real_mobs");
+        return mainResult(attempt.revive(a1,s1,UUID.randomUUID(),combatContent.revival().condition())).thenRun(()->{
+            bridge.project();check(bridge.actions(actor)&&!actor.spectator&&actor.health==combatContent.revival().healthFraction()&&attempt.snapshot().sharedUsed()==1&&own.stream().allMatch(m->m instanceof Mob mob&&mob.hasAI()),"field_combat_condition_revive_confirms_budget_then_resumes_real_mob_AI");
+            check(!FieldCombat.joinable(attempt,binding,Set.of(a2.playerId())),"field_combat_late_prepared_person_cannot_join_fixed_roster");
+        }).thenCompose(v->mainResult(store.readInventory(a1))).thenCompose(before->{
+            attempt.failedCondition(true);var failed=new InventorySaveSession(store,a1,before.revision()+1,before::payload,owner,SessionVerification::main,()->true,code->{});failed.markDirty();int applied=actor.applications;
+            var probe=new CombatReturn(attempt,definition.exit(),actor,failed::flush,()->{throw new AssertionError("Failed field return removed mobs");},owner,SessionVerification::main,()->true);
+            return rejectQuest(probe.begin()).thenCompose(v->mainResult(store.readInventory(a1))).thenAccept(after->{check(before.equals(after)&&failed.dirty()&&probe.phase()==CombatReturn.Phase.HOLD&&actor.applications==applied&&fieldEncounters.entities(a).stream().map(Entity::getUniqueId).toList().equals(own.stream().map(Entity::getUniqueId).toList()),"field_combat_actual_PG_CAS_failure_preserves_inventory_mobs_and_return_source");probe.close();});
+        }).thenCompose(v->{
+            var returned=new CombatReturn(attempt,definition.exit(),actor,()->coordinator.saveRunBoundary(a).thenComposeAsync(x->quests.barrier(a),owner),()->{bridge.leave(actor);fieldEncounters.engine().settle(binding,Set.of("public_field_one","public_field_two"));},owner,SessionVerification::main,()->coordinator.playable(s1));
+            return mainResult(returned.begin()).thenRun(()->{check(returned.phase()==CombatReturn.Phase.DONE&&fieldEncounters.count(a)==0&&fieldEncounters.entities(b).stream().map(Entity::getUniqueId).toList().equals(beforeOther)&&fieldEncounters.engine().state(a,"public_field_one").orElseThrow().phase()==FieldEncounters.Phase.RETIRED,"field_combat_saved_return_then_actual_mob_cleanup_preserves_other_run_and_requires_reset");bridge.close();});
+        });
     }
     private CompletionStage<Void> fieldEncounters(){return openAll().thenCompose(v->{
         CompletionStage<Void> ready=CompletableFuture.completedFuture(null);

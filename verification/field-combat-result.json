@@ -1,0 +1,66 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "cdc6d19",
+  "outcome": "FIELD_DUNGEON_CONTROLLER_INTERNAL_AND_NATIVE_PASS",
+  "whole_s4_complete": false,
+  "actual_minecraft_client": false,
+  "operational_deployment": false,
+  "workspace": "/home/server/hearth-tmp/hearth-field-combat.30hqoftk",
+  "final_artifact": {
+    "path": "/home/server/hearth-tmp/hearth-field-combat.30hqoftk/Hearth-final.jar",
+    "sha256": "fa07c6873874632d130e05f0e9e4059b34ce863218432140078de62437de939f",
+    "native_installed_same_jar": true
+  },
+  "checks": {
+    "combat_unit_tests": 187,
+    "new_field_tests": 10,
+    "failures_errors_skips": 0,
+    "unit_sweeps": 1,
+    "native_paper_starts": 1,
+    "postgres_instances": 1,
+    "source_changes_after_final_build": false,
+    "second_jvm": false,
+    "reason": "Uses existing combat/return persistence contracts; no new schema or restore format."
+  },
+  "native": {
+    "result": "/home/server/hearth-tmp/hearth-s4-11.uyzx32fo/run-result.json",
+    "sha256": "3079dbb018d615061e56865f13d5d4f147eae231d91602a0cbd58d56cd1deb2f",
+    "assertions": 100,
+    "new_checks": [
+      "field_combat_reuses_dungeon_death_revival_return_without_boss_spawn_or_retry",
+      "field_combat_actual_mob_damage_source_has_run_and_generation",
+      "field_combat_wipe_spectator_freezes_only_own_real_mobs",
+      "field_combat_condition_revive_confirms_budget_then_resumes_real_mob_AI",
+      "field_combat_late_prepared_person_cannot_join_fixed_roster",
+      "field_combat_actual_PG_CAS_failure_preserves_inventory_mobs_and_return_source",
+      "field_combat_saved_return_then_actual_mob_cleanup_preserves_other_run_and_requires_reset"
+    ],
+    "outcome": "PASS",
+    "duration_seconds": 38.858,
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144,
+      "nice": 10,
+      "active_processors": 2
+    }
+  },
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/combat/FieldCombat.java": "602e248573087d9f3d348fd4d25bf6902d4064d2f8314f3dbf8a4fc03ad95725",
+    "src/main/java/io/github/jesterportfolio/hearth/combat/FieldEncounters.java": "de60ab0f189b8668af173b33c8a456f600e4656d633a8e55b9f0c041994546c3",
+    "src/main/java/io/github/jesterportfolio/hearth/combat/PaperCombatPlayers.java": "aaa7d2f6021e2477c7fcf247a20589b489f311e154b68a3e7500f68c68ffa410",
+    "src/main/java/io/github/jesterportfolio/hearth/combat/PaperFieldEncounters.java": "505fccfabede59d33ea35d01cbb4f7af114e8a2859ab555f9b274aee2ae13287",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java": "760fb7e5a6bf52fb1847e41ca1910b95964233c747a457631a48021fa736f3f8",
+    "src/test/java/io/github/jesterportfolio/hearth/combat/FieldCombatTest.java": "e9fbc426fa37fc64154be3d4f9e97580d2736fda4a0ec78748c50c107092dfec"
+  },
+  "remaining": [
+    "Actual authenticated movement, hit, camera, revival interaction and co-op acceptance not run.",
+    "Fixed roster and cleanly ended return use existing policies; active process-restart combat remains HOLD.",
+    "No automatic field respawn, terrain/container reset, boss-credit or operating deployment."
+  ]
+}

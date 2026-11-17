@@ -26,6 +26,7 @@
 | [ADR-0020: 일반 지식과 게임 자료의 질의 경계](0020-general-knowledge-and-game-context-boundaries.md) | 승인된 S5 후속 범위의 구현 결정·과학 품질 보류 | 서버 선택 목적·일반 모드 정보 비전송·raw 역할 분리·수식 모순 응답 거부 |
 | [ADR-0021: 공개 과학 노트와 자료 기반 질문](0021-science-reading-and-reference-questions.md) | 승인된 S5 후속 보완의 구현 결정 | 읽기 전용 과학 노트·선택 확인·노트별 대화/출처·계산기 연결 |
 | [ADR-0022: 명시적 AI 준비와 요청 진입](0022-explicit-ai-preparation-and-admission.md) | 내부 검사·별도 승인한 콜드 시험 통과 | 콘솔 준비·초기 연산 확인·질의 6초 유지·준비 성공 표식/적재 상태 확인 |
+| [ADR-0023: 필드 전투의 인던 제어 규칙 재사용](0023-field-combat-dungeon-rules.md) | 승인 | 고정 명단·사망/관전·조건부 부활·저장/복귀 재사용, 자동 재소환 금지 |
 
 각 기록에는 다음 내용을 포함합니다.
 

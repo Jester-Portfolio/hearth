@@ -54,6 +54,11 @@ public final class FieldEncounters {
             selected.forEach(id->{var selectedKey=new Key(binding.run(),id);events.remove(selectedKey);resettable.remove(selectedKey);});resets.put(key,new ResetRecord(binding,selected,true));resetting.remove(binding.run());
         }catch(RuntimeException failure){throw new IllegalStateException("FIELD_RESET_HOLD",failure);}
     }
+    /** 확정 종료·저장/복귀 뒤 남은 관리 몹만 정리합니다. 재소환은 명시적 저장/리셋 전까지 보류합니다. */
+    public void settle(Binding binding,Set<String> zones){
+        check.run();if(!current(binding)||resetting.contains(binding.run()))throw new IllegalStateException("FIELD_SETTLE_STALE");
+        for(String zone:zones){var key=new Key(binding.run(),zone);var old=Objects.requireNonNull(events.get(key),"FIELD_SETTLE_MISSING");if(old.phase()==Phase.CLEARED||old.phase()==Phase.RETIRED&&resettable.contains(key))continue;if(old.phase()!=Phase.ACTIVE)throw new IllegalStateException("FIELD_SETTLE_HOLD");var left=new HashSet<>(old.mobs());try{for(UUID id:old.mobs()){port.remove(id);left.remove(id);}events.put(key,new Snapshot(Phase.RETIRED,old.players(),old.difficulty(),Set.of()));resettable.add(key);}catch(RuntimeException failure){events.put(key,new Snapshot(Phase.ERROR_HOLD,old.players(),old.difficulty(),left));throw failure;}}
+    }
     /** 같은 JVM의 정상 언로드입니다. 완료 기록은 보존하며 미완료 조우는 명시적 저장/리셋 전까지 재소환하지 않습니다. */
     public void suspend(UUID run){check.run();var binding=bindings.remove(run);if(binding==null)return;suspended.put(run,binding);var failures=new ArrayList<RuntimeException>();
         events.replaceAll((key,old)->{if(!key.run().equals(run))return old;if(old.phase()==Phase.CLEARED)return old;var left=new HashSet<UUID>();for(UUID id:old.mobs())try{port.remove(id);}catch(RuntimeException error){left.add(id);failures.add(error);}boolean safe=left.isEmpty()&&old.phase()!=Phase.ERROR_HOLD&&old.phase()!=Phase.SPAWNING&&!resetting.contains(run);if(safe)resettable.add(key);return new Snapshot(safe?Phase.RETIRED:Phase.ERROR_HOLD,old.players(),old.difficulty(),left);});
