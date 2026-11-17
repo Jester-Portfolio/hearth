@@ -90,8 +90,8 @@ final class ScienceCalculationHelpTest {
             assertEquals(1,calls.get());assertEquals(1,service.snapshot().usage().getFirst().started());assertEquals(before,chat.history());assertEquals("보존할 계산 질문",chat.draft());assertFalse(chat.busy());assertEquals(0,chat.cacheStats().entries());assertTrue(chat.error().contains("품질"));assertTrue(chat.retry().toCompletableFuture().isCompletedExceptionally());
         }
     }
-    @Test void onlyMockConfigurationEnablesCalculationExplanationAndMeasurementKeepsTheGate(){
-        for(String mode:List.of("mock","local","ollama"))try(var service=new MeasuredAssistant(LocalAssistant.configured(mode,"http://127.0.0.1:11435/api/generate"))){assertEquals(mode.equals("mock"),service.allowsCalculationHelp());assertEquals(mode.equals("mock"),new PhoneChat(service,Runnable::run).calculationHelpAvailable());}
+    @Test void onlyQualifiedFixedOllamaAndMockEnableCalculationExplanationAndMeasurementKeepsTheGate(){
+        for(String mode:List.of("mock","local","ollama"))try(var service=new MeasuredAssistant(LocalAssistant.configured(mode,"http://127.0.0.1:11435/api/generate"))){assertEquals(!mode.equals("local"),service.allowsCalculationHelp());assertEquals(!mode.equals("local"),new PhoneChat(service,Runnable::run).calculationHelpAvailable());}
     }
     private static AssistantService recording(List<AssistantRequest> sent){return new AssistantService(){public boolean allowsCalculationHelp(){return true;}public CompletionStage<String> ask(String text){throw new AssertionError();}public CompletionStage<String> ask(AssistantRequest request){sent.add(request);return CompletableFuture.completedFuture(request.purpose()==AssistantRequest.Purpose.SCIENCE_CALCULATION?"계산 설명 [자료 2]":request.purpose()==AssistantRequest.Purpose.GENERAL_KNOWLEDGE?"일반 설명":"공개 노트 설명 [자료 1]");}};}
 }

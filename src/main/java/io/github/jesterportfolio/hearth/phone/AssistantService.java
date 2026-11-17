@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 public interface AssistantService extends AutoCloseable {
     CompletionStage<String> ask(String question);
     default CompletionStage<String> ask(AssistantRequest request){return ask(request.prompt());}
-    /** 계산 설명은 품질 수용 전 기본 거부합니다. 현재 제품 경로는 명시적 Mock만 허용합니다. */
+    /** 계산 설명은 품질 수용 전 기본 거부합니다. 현재 제품 경로는 Mock과 품질을 부분 확인한 고정 Ollama만 명시적으로 허용합니다. */
     default boolean allowsCalculationHelp(){return false;}
     /** 세션 소유 캐시만 허용하며, 재사용 전 백엔드의 현재 신원을 확인합니다. */
     default boolean allowsCache(){return false;}

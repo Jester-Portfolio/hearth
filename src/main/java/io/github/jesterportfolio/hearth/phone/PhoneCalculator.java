@@ -24,6 +24,14 @@ public final class PhoneCalculator implements AutoCloseable {
         requireOpen();if(entry==null||entry.science()==null||!current(entry))throw new IllegalStateException("STALE_CALCULATION_SELECTION");
         return ScienceCalculationSnapshot.from(entry.science());
     }
+    public List<Entry> comparisons(Entry baseline){
+        requireStructured(baseline);return history.stream().filter(entry->entry!=baseline&&entry.science()!=null&&entry.science().topic()==baseline.science().topic()).toList();
+    }
+    public ScienceComparison compare(Entry baseline,Entry compared){
+        requireStructured(baseline);requireStructured(compared);if(baseline==compared)throw new IllegalArgumentException("COMPARISON_DISTINCT_ENTRIES_REQUIRED");
+        return ScienceComparison.of(select(baseline),select(compared));
+    }
+    private void requireStructured(Entry entry){requireOpen();if(!current(entry)||entry.science()==null)throw new IllegalStateException("STALE_CALCULATION_SELECTION");}
     private boolean calculate(String expression,ScienceCalculation.Plan science){
         requireOpen();if(science==null&&expression!=null&&expression.length()<=128)draft=expression;
         try{

@@ -1,0 +1,247 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "4513cc3",
+  "outcome": "COMPARISON_AND_FIXED_MODEL_CALCULATION_HELP_PARTIAL_ACCEPTANCE_PASS",
+  "whole_s5_complete": false,
+  "unrestricted_science_quality_pass": false,
+  "actual_minecraft_client": false,
+  "operational_deployment": false,
+  "workspace": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26",
+  "final_artifact": {
+    "path": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/Hearth-calculation-comparison-final.jar",
+    "sha256": "40aace987b9bad845f3aa8927a0ee62f1646b847aabdc76610358a45df23c389"
+  },
+  "checks": {
+    "initial_related_tests": 52,
+    "final_phone_tests": 232,
+    "failures_errors_skips": 0,
+    "initial_xml": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/unit-results",
+    "final_xml": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/unit-results-final",
+    "final_build_log": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/final-build.log",
+    "citation_tests_xml": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/unit-results-citation",
+    "final_fixture_compile_log": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/final-probe-build.log",
+    "paper_pg_repeated": false,
+    "python_repeated": false
+  },
+  "authorization_context": {
+    "user_message": "다음 작업 고",
+    "preceding_report_next_step": "실제 모델의 질문 충실도·응답 완결성 확인",
+    "interpretation": "The next-step instruction was used to run one new isolated fixed-model trial with the previously approved limits, plus one eligible review within that original clock. No model/resource/time-limit expansion."
+  },
+  "actual_first": {
+    "path": "/home/server/hearth-tmp/hearth-s5-trial.dccou_1h/run-result.json",
+    "sha256": "4e8a7539d97e077df01fec8cd97dc06749941aa3ba5485ddd4f145bfaf253b8c",
+    "outcome": "ACTUAL_MODEL_ACCEPTANCE_FAILED",
+    "duration_seconds": 128.246,
+    "cleanup_errors": [],
+    "max_sampled_rss_kib": 3290940,
+    "max_sampled_gpu_mib": 3140,
+    "min_host_available_kib": 12245996,
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "artifact": {
+      "path": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/Hearth-calculation-comparison.jar",
+      "sha256": "263777451df1b4db46c803938d918e22671e82a8a231a045a7731d6a15d8892f"
+    }
+  },
+  "actual_same_clock_review": {
+    "path": "/home/server/hearth-tmp/hearth-s5-trial.dccou_1h/run-result-reviewed.json",
+    "sha256": "bef70d8c9d3f3ca3262758ac3174034a686c36a64953de89f0a5df4140a4b62a",
+    "outcome": "PASS",
+    "duration_seconds": 470.743,
+    "cleanup_errors": [],
+    "max_sampled_rss_kib": 2997468,
+    "max_sampled_gpu_mib": 3140,
+    "min_host_available_kib": 12638556,
+    "downloaded_bytes": 0,
+    "locally_reused_bytes": 4043062302,
+    "artifact": {
+      "path": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/Hearth-calculation-comparison-r1.jar",
+      "sha256": "59e07a68992c9496c1c1abd779b8fd3ac245b3913bbddf06fc96ae8762123e05"
+    }
+  },
+  "actual_results": {
+    "first": {
+      "path": "/home/server/hearth-tmp/hearth-s5-trial.dccou_1h/probe-result.json",
+      "sha256": "e19a9734602963def828adf235a005e83b6d892c4ba211d9c2b3d50a3bd8614a",
+      "required_checks_passed": false,
+      "cases": [
+        {
+          "name": "lever_100N",
+          "outcome": "PASS",
+          "milliseconds": 5514
+        },
+        {
+          "name": "changed_arm_200N",
+          "outcome": "PASS",
+          "milliseconds": 2729
+        },
+        {
+          "name": "same_calculation_followup",
+          "outcome": "PASS",
+          "milliseconds": 3342
+        },
+        {
+          "name": "energy_500J",
+          "outcome": "INVALID_REFERENCE",
+          "milliseconds": 4305
+        },
+        {
+          "name": "series_5ohm",
+          "outcome": "PASS",
+          "milliseconds": 3323
+        },
+        {
+          "name": "does_not_confirm_game_state",
+          "outcome": "PASS",
+          "milliseconds": 2054
+        },
+        {
+          "name": "independent_calculation",
+          "outcome": "PASS",
+          "milliseconds": 1973
+        },
+        {
+          "name": "calculation_cache",
+          "outcome": "PASS",
+          "milliseconds": 11
+        }
+      ],
+      "history_sizes": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      "same_calculation_cache_no_new_generation": true,
+      "deleted_original_rejected_before_backend": true,
+      "only_two_typed_sources": true
+    },
+    "same_clock_review": {
+      "path": "/home/server/hearth-tmp/hearth-s5-trial.dccou_1h/probe-result-reviewed.json",
+      "sha256": "ad40476fbf5ab794df95a1275f21497a50ffd29e2d15d4a7c8c694e90eaa58f6",
+      "required_checks_passed": true,
+      "cases": [
+        {
+          "name": "lever_100N",
+          "outcome": "PASS",
+          "milliseconds": 5011
+        },
+        {
+          "name": "changed_arm_200N",
+          "outcome": "PASS",
+          "milliseconds": 1947
+        },
+        {
+          "name": "same_calculation_followup",
+          "outcome": "PASS",
+          "milliseconds": 2490
+        },
+        {
+          "name": "energy_500J",
+          "outcome": "PASS",
+          "milliseconds": 3848
+        },
+        {
+          "name": "series_5ohm",
+          "outcome": "PASS",
+          "milliseconds": 2925
+        },
+        {
+          "name": "does_not_confirm_game_state",
+          "outcome": "PASS",
+          "milliseconds": 1736
+        },
+        {
+          "name": "independent_calculation",
+          "outcome": "PASS",
+          "milliseconds": 1316
+        },
+        {
+          "name": "calculation_cache",
+          "outcome": "PASS",
+          "milliseconds": 10
+        }
+      ],
+      "history_sizes": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      "same_calculation_cache_no_new_generation": true,
+      "deleted_original_rejected_before_backend": true,
+      "only_two_typed_sources": true
+    }
+  },
+  "final_artifact_difference": {
+    "live_inference_used": "Hearth-calculation-comparison-r1.jar",
+    "final_main_change_after_live": "Enable allowsCalculationHelp for the same pinned Ollama adapter; prompts, schema and decoder unchanged. No further GPU inference.",
+    "final_fixture_change_after_live": "Recording fixture now delegates the qualified backend capability instead of test-only opt-in; compiled only. Actual frozen fixture classes retained.",
+    "actual_probe_classes": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/probe-classes",
+    "final_probe_classes": "/home/server/hearth-tmp/hearth-calculation-comparison.1wiigl26/probe-classes-final",
+    "identical_live_and_final_protocol_and_calculation_class_bytes": {
+      "OllamaProtocol": true,
+      "AssistantRequest": true,
+      "AssistantAnswer": true,
+      "PhoneChat": true,
+      "ScienceCalculationSnapshot": true,
+      "ScienceComparison": true,
+      "PhoneCalculator": true,
+      "ExactArithmetic": true
+    }
+  },
+  "contract": {
+    "comparison_own_current_distinct_structured_entries_only": true,
+    "same_topic_only": true,
+    "equality_not_used_as_owner_identity": true,
+    "exact_difference_and_dimensionless_ratio": true,
+    "zero_baseline_ratio_undefined": true,
+    "comparison_limit_preserves_originals_and_previous_draft_error": true,
+    "comparison_does_not_mutate_or_send_ai_state": true,
+    "json_answer_ends_with_model_emitted_source_2": true,
+    "json_answer_max_codepoints": 160,
+    "no_double_quotes_cr_or_lf_in_calculation_answer": true,
+    "no_server_added_citation_or_repair_retry": true,
+    "mock_and_pinned_ollama_calculation_help_allowed": true,
+    "unqualified_default_and_textplain_local_rejected": true,
+    "explicit_preparation_and_version_manifest_loaded_checks_unchanged": true
+  },
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "individual_seconds": 90,
+    "cpu": 2,
+    "rss_gib": 4,
+    "gpu_gib": 5,
+    "host_minimum_available_gib": 6,
+    "user_request_seconds": 6,
+    "chat_seconds": 8,
+    "context_tokens": 4096,
+    "output_tokens": 128
+  },
+  "remaining": [
+    "General science accuracy and unrestricted natural-language calculations remain HOLD.",
+    "Only selected fixed-form calculations were partially accepted in synthetic isolated model requests.",
+    "Actual Minecraft GUI/clicks, long-term load/capacity, operating budget and deployment remain unaccepted."
+  ],
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/phone/ScienceComparison.java": "d43397a8ba0743c1272ddd83787bae9ab1691b62f132a369fcbb9265134fab13",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneCalculator.java": "b1b6e388c103acfc82c6aa8783401f55ab3387b79cf0a8b06a6d8e841e613390",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PaperPhone.java": "dc646301f05be6b041a79737b9b1b993d8d1cf4f170e69c1218f72b2f4d9b2d5",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/OllamaProtocol.java": "b19bfe0259cad2ad297009883a09deda956c2ce78352b329189d1fb372beafcc",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/OllamaAssistant.java": "3b72b9a25b753c9efcd4fa759c22a649d5222fcfa697def8dccd783e2529dd97",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantService.java": "07474129c1ae4d803ff853fa06d72e0b161e8e159880df8a1adc753a5ebd9f10",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantRequest.java": "15ba29b905e63ef96e72eba77171eed2bb4098a31b82960a4bfca78f2bedbc86",
+    "src/test/java/io/github/jesterportfolio/hearth/phone/ScienceComparisonTest.java": "be3fc232b3bf015068fc64e4487d72a27ffafdc16f3ec6d5c4191f0b12f9434b",
+    "src/test/java/io/github/jesterportfolio/hearth/phone/OllamaCalculationReplyTest.java": "6176b2998ace48a9f26937cedc7058bd70e7e6e6dd8f945d9b18e50e53b97df9",
+    "src/test/java/io/github/jesterportfolio/hearth/phone/ScienceCalculationHelpTest.java": "26b3f4d8ade513b748336e4fcbf6b4c4f66d6675c0f65281cd03a0113784bf8d",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaCalculationProbe.java": "8ac34c199e2a86898101eefd0e28aef87cc95ec8697acdb531c8b27ad1c2cd61"
+  }
+}

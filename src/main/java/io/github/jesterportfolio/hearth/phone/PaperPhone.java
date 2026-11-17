@@ -630,10 +630,29 @@ public final class PaperPhone implements Listener,AutoCloseable {
         var snapshot=s.calculator().select(entry);var pages=PhonePages.text("선택한 계산 근거",List.of(snapshot.context()));var actions=new ArrayList<ActionButton>();
         if(page>1)actions.add(button(p,s,"앞 내용",()->calculationDetail(p,advance(p),entry,page-1)));if(page<pages.pages().size())actions.add(button(p,s,"다음 내용",()->calculationDetail(p,advance(p),entry,page+1)));
         actions.add(button(p,s,"값 바꿔 다시 계산",()->scienceCalculator(p,snapshot.plan().topic(),snapshot.plan().inputs(),null)));actions.add(button(p,s,"과학 노트 읽기",()->research(p,advance(p),snapshot.reading())));
+        actions.add(button(p,s,"다른 계산과 비교",()->comparisonChoices(p,advance(p),entry)));
         if(s.chat().calculationHelpAvailable()&&!s.chat().busy())actions.add(button(p,s,"이 계산 설명 요청",()->selectStudy(p,s,ScienceQuestion.calculation(snapshot),entry)));
         learningReturn(p,s,actions);actions.add(button(p,s,"AI 대화로",()->chat(p)));actions.add(button(p,s,"계산기로",()->calculator(p)));
         String note=s.chat().calculationHelpAvailable()?"계산 설명 전송은 직접 선택·미리보기 확인 후 진행합니다.":"AI 계산 설명은 품질 확인 중입니다. 정확값·입력값과 과학 노트는 여기서 확인할 수 있습니다.";
         show(p,s,"선택한 계산 근거",List.of(DialogBody.plainMessage(Component.text(page+" / "+pages.pages().size()+"\n"+note+"\n\n"+pages.pages().get(page-1)))),List.of(),actions);
+    }
+    private void comparisonChoices(Player p,Screen s,PhoneCalculator.Entry baseline){
+        if(!s.calculator().current(baseline)){info(p,s,"계산 기록 변경",List.of("기준 계산이 지워졌습니다. 계산기에서 다시 선택하세요."));return;}
+        var body=new ArrayList<DialogBody>();var actions=new ArrayList<ActionButton>();body.add(DialogBody.plainMessage(Component.text("기준: "+s.calculator().select(baseline).label()+"\n같은 원리의 현재 접속 기록 하나를 비교 대상으로 선택하세요.")));
+        var candidates=s.calculator().comparisons(baseline);int index=0;
+        for(var entry:s.calculator().history()){
+            int number=++index;if(candidates.stream().noneMatch(candidate->candidate==entry))continue;
+            body.add(DialogBody.plainMessage(Component.text(number+"번: "+s.calculator().select(entry).label())));actions.add(button(p,s,number+"번 계산과 비교",()->calculationComparison(p,advance(p),baseline,entry,1)));
+        }
+        if(candidates.isEmpty())body.add(DialogBody.plainMessage(Component.text("같은 원리의 다른 계산이 없습니다. 기준 값으로 수치 화면을 열어 값을 바꿔 계산한 뒤 다시 선택하세요. 최근 기록은 최대 4개이며 일반 수식은 비교 대상이 아닙니다.")));
+        actions.add(button(p,s,"기준 값으로 계산",()->scienceCalculator(p,baseline.science().topic(),baseline.science().inputs(),null)));actions.add(button(p,s,"기준 계산 근거",()->calculationDetail(p,advance(p),baseline,1)));learningReturn(p,s,actions);actions.add(button(p,s,"계산기로",()->calculator(p)));show(p,s,"계산 비교 대상",body,List.of(),actions);
+    }
+    private void calculationComparison(Player p,Screen s,PhoneCalculator.Entry baseline,PhoneCalculator.Entry compared,int page){
+        if(!s.calculator().current(baseline)||!s.calculator().current(compared)){info(p,s,"계산 기록 변경",List.of("비교에 사용한 계산이 지워졌습니다. 계산기에서 두 기록을 다시 선택하세요."));return;}
+        var comparison=s.calculator().compare(baseline,compared);var pages=PhonePages.text("과학 계산 비교",comparison.lines());var actions=new ArrayList<ActionButton>();
+        if(page>1)actions.add(button(p,s,"앞 내용",()->calculationComparison(p,advance(p),baseline,compared,page-1)));if(page<pages.pages().size())actions.add(button(p,s,"다음 내용",()->calculationComparison(p,advance(p),baseline,compared,page+1)));
+        actions.add(button(p,s,"기준·비교 맞바꾸기",()->calculationComparison(p,advance(p),compared,baseline,1)));actions.add(button(p,s,"기준 계산 근거",()->calculationDetail(p,advance(p),baseline,1)));actions.add(button(p,s,"비교 계산 근거",()->calculationDetail(p,advance(p),compared,1)));actions.add(button(p,s,"다른 비교 대상",()->comparisonChoices(p,advance(p),baseline)));actions.add(button(p,s,"과학 노트 읽기",()->research(p,advance(p),comparison.baseline().reading())));learningReturn(p,s,actions);actions.add(button(p,s,"계산기로",()->calculator(p)));
+        show(p,s,"과학 계산 비교",List.of(DialogBody.plainMessage(Component.text(page+" / "+pages.pages().size()+"\n\n"+pages.pages().get(page-1)))),List.of(),actions);
     }
     private void previewScience(Player p,Screen s,StudySelection selected,String question){previewScience(p,s,selected,s.chat().previewStudy(question,selected.source()),1);}
     private void previewScience(Player p,Screen s,StudySelection selected,AssistantRequest shown,int page){
