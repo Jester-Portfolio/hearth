@@ -27,6 +27,7 @@ public final class MeasuredAssistant implements AssistantService {
     MeasuredAssistant(AssistantService delegate,LongSupplier clock){this.delegate=Objects.requireNonNull(delegate);this.clock=Objects.requireNonNull(clock);for(var kind:Kind.values())totals.put(kind,new Totals());}
     @Override public CompletionStage<String> ask(String question){return measure(Kind.GENERATION,()->delegate.ask(question));}
     @Override public CompletionStage<String> ask(AssistantRequest request){return measure(Kind.GENERATION,()->delegate.ask(request));}
+    @Override public boolean allowsCalculationHelp(){return delegate.allowsCalculationHelp();}
     @Override public boolean allowsCache(){return delegate.allowsCache();}
     @Override public CompletionStage<String> confirmCached(String answer){return measure(Kind.CACHE_CONFIRMATION,()->delegate.confirmCached(answer));}
     @Override public CompletionStage<String> prepare(){return measure(Kind.PREPARATION,delegate::prepare);}

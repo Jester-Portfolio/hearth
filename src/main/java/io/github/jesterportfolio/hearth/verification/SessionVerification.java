@@ -1975,7 +1975,7 @@ public final class SessionVerification implements AutoCloseable {
         var inventory=one.capture();long revision=s1.save().revision();var sent=new ArrayList<io.github.jesterportfolio.hearth.phone.AssistantRequest>();
         var service=new io.github.jesterportfolio.hearth.phone.AssistantService(){
             public CompletionStage<String> ask(String prompt){throw new AssertionError("Typed purpose required");}
-            public CompletionStage<String> ask(io.github.jesterportfolio.hearth.phone.AssistantRequest request){sent.add(request);return CompletableFuture.completedFuture(switch(request.purpose()){case GENERAL_KNOWLEDGE->"합성 원리 설명: 100 N";case PUBLIC_GAME->"게임 전용 응답 [자료 1]";case SCIENCE_REFERENCE->"합성 과학 자료 응답 [자료 1]";});}
+            public CompletionStage<String> ask(io.github.jesterportfolio.hearth.phone.AssistantRequest request){sent.add(request);return CompletableFuture.completedFuture(switch(request.purpose()){case GENERAL_KNOWLEDGE->"합성 원리 설명: 100 N";case PUBLIC_GAME->"게임 전용 응답 [자료 1]";case SCIENCE_REFERENCE->"합성 과학 자료 응답 [자료 1]";case SCIENCE_CALCULATION->"합성 계산 설명 [자료 2]";});}
         };
         var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(service,owner);
         return mainResult(store.readJournal(a1)).thenCompose(before->mainResult(store.readExploration(a2)).thenCompose(other->journal.load(a1,s1,()->coordinator.playable(s1)).thenCompose(view->{

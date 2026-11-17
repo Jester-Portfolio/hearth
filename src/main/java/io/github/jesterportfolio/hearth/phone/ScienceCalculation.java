@@ -15,19 +15,19 @@ public final class ScienceCalculation {
         public String title(){return title;}public String unit(){return unit;}public List<Field> fields(){return fields;}public String assumption(){return assumption;}public String formula(){return formula;}
     }
     public static final class Plan {
-        private final Topic topic;private final String expression;
-        private Plan(Topic topic,String expression){this.topic=topic;this.expression=expression;}
-        public Topic topic(){return topic;}public String expression(){return expression;}
+        private final Topic topic;private final String expression;private final List<String> inputs;
+        private Plan(Topic topic,String expression,List<String> inputs){this.topic=topic;this.expression=expression;this.inputs=List.copyOf(inputs);}
+        public Topic topic(){return topic;}public String expression(){return expression;}public List<String> inputs(){return inputs;}
     }
     public static Plan prepare(Topic topic,List<String> inputs){
         Objects.requireNonNull(topic);if(inputs==null||inputs.size()!=topic.fields().size())throw new IllegalArgumentException("모든 수치를 입력해 주세요.");
-        var values=new ArrayList<String>();
+        var values=new ArrayList<String>();var entered=new ArrayList<String>();
         for(int i=0;i<inputs.size();i++){
             String value=inputs.get(i);value=value==null?"":value.strip();
             if(value.length()>32||!value.matches("[+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]{1,2})?"))throw new IllegalArgumentException(topic.fields().get(i).label()+": 단위 없이 32자 이내의 양수 또는 허용된 0을 입력해 주세요.");
-            var number=ExactArithmetic.evaluate(value,null).value();if(number.numerator().signum()==0&&!topic.fields().get(i).allowZero())throw new IllegalArgumentException(topic.fields().get(i).label()+": 0보다 큰 값을 입력해 주세요.");values.add("("+value+")");
+            var number=ExactArithmetic.evaluate(value,null).value();if(number.numerator().signum()==0&&!topic.fields().get(i).allowZero())throw new IllegalArgumentException(topic.fields().get(i).label()+": 0보다 큰 값을 입력해 주세요.");values.add("("+value+")");entered.add(value);
         }
         String expression=switch(topic){case LEVER->values.get(0)+"*"+values.get(1)+"/"+values.get(2);case ENERGY->values.get(0)+"*"+values.get(2)+"*"+values.get(1);case SERIES->values.get(0)+"+"+values.get(1);};
-        return new Plan(topic,expression);
+        return new Plan(topic,expression,entered);
     }
 }

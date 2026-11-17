@@ -14,6 +14,13 @@ import s5_ai_trial as trial
 
 
 class TrialSafetyTests(unittest.TestCase):
+    def test_quality_verdict_cannot_hide_transport_or_runtime_failure(self):
+        result=dict(outcome='ACTUAL_MODEL_ACCEPTANCE_FAILED',cleanup_errors=[],probe=dict(cases=[dict(outcome='QUALITY_REVIEW_REQUIRED')]))
+        root=isolated_paths.require_base();self.assertTrue(trial.reviewable_result(root,result))
+        for outcome in ['TIMEOUT','UNAVAILABLE','BUSY','CLOSED','MODEL_MISMATCH','INVALID_RESPONSE','NOT_READY','PREPARING','QUALITY_UNVERIFIED','UNKNOWN_FAILURE']:
+            changed=dict(result,probe=dict(cases=[dict(outcome='QUALITY_REVIEW_REQUIRED'),dict(outcome=outcome)]));self.assertFalse(trial.reviewable_result(root,changed))
+        self.assertFalse(trial.reviewable_result(root,dict(result,probe=dict(cases=[dict(outcome='PASS')]))))
+        self.assertFalse(trial.reviewable_result(root,dict(result,probe=None)))
     def test_review_output_length_requires_completed_pinned_bounded_reply(self):
         with tempfile.TemporaryDirectory(dir=isolated_paths.require_base()) as directory:
             root=Path(directory);result=dict(outcome='FAIL',failure='AssertionError: Actual-format warmup failed',cleanup_errors=[])

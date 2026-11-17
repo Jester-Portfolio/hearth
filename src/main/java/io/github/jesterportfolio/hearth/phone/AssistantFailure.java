@@ -5,7 +5,7 @@ import java.util.concurrent.*;
 
 /** 응답 본문·주소·예외 원문을 UI에 노출하지 않는 요청 실패 분류입니다. */
 public final class AssistantFailure extends IllegalStateException {
-    public enum Reason { BUSY, TIMEOUT, UNAVAILABLE, INVALID_RESPONSE, CLOSED, CONTEXT_LIMIT, MODEL_MISMATCH, OUTPUT_LIMIT, INVALID_REFERENCE, INVALID_CALCULATION, NOT_READY, PREPARING }
+    public enum Reason { BUSY, TIMEOUT, UNAVAILABLE, INVALID_RESPONSE, CLOSED, CONTEXT_LIMIT, MODEL_MISMATCH, OUTPUT_LIMIT, INVALID_REFERENCE, INVALID_CALCULATION, NOT_READY, PREPARING, QUALITY_UNVERIFIED }
     private final Reason reason;
     public AssistantFailure(Reason reason){super("LOCAL_AI_"+reason.name());this.reason=reason;}
     public Reason reason(){return reason;}
@@ -26,6 +26,7 @@ public final class AssistantFailure extends IllegalStateException {
         case INVALID_REFERENCE -> "AI 답변의 참고자료 표시를 확인하지 못했습니다. 자료를 다시 확인한 뒤 요청해 주세요.";
         case INVALID_CALCULATION -> "AI 답변의 수식이 서로 맞지 않아 표시하지 않았습니다. 식과 조건을 확인한 뒤 다시 요청해 주세요.";
         case NOT_READY -> "AI 모델이 준비되지 않았습니다. 서버 관리자의 준비 확인 후 다시 요청해 주세요. 질문 초안은 유지합니다.";
+        case QUALITY_UNVERIFIED -> "계산 설명의 AI 품질을 아직 확인하지 못해 전송하지 않습니다. 계산기 정확값과 과학 노트를 확인해 주세요. 질문 초안은 유지합니다.";
         case PREPARING -> "AI 모델을 준비 중입니다. 완료 후 다시 요청해 주세요. 질문 초안은 유지합니다.";
     };}
 }

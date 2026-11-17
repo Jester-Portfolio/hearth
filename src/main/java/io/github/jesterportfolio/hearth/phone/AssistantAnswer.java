@@ -15,7 +15,8 @@ public final class AssistantAnswer {
             if(request.sources()>0&&!CITATION.matcher(visible).find())throw invalid();
         }
         if(request.purpose()==AssistantRequest.Purpose.GENERAL_KNOWLEDGE)ArithmeticConsistency.check(visible);
-        if(request.purpose()==AssistantRequest.Purpose.SCIENCE_REFERENCE)ArithmeticConsistency.check(CITATION.matcher(visible).replaceAll(""));
+        if(request.purpose()==AssistantRequest.Purpose.SCIENCE_CALCULATION){var markers=CITATION.matcher(visible);boolean calculation=false;while(markers.find())if(markers.group(1).strip().equals("2"))calculation=true;if(!calculation)throw invalid();}
+        if(request.purpose()==AssistantRequest.Purpose.SCIENCE_REFERENCE||request.purpose()==AssistantRequest.Purpose.SCIENCE_CALCULATION)ArithmeticConsistency.check(CITATION.matcher(visible).replaceAll(""));
         return visible;
     }
     private static boolean permitted(String value,int count){try{if(!value.matches("[0-9]+"))return false;int id=Integer.parseInt(value);return id>=1&&id<=count;}catch(NumberFormatException invalid){return false;}}

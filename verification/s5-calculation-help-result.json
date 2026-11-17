@@ -1,0 +1,206 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "41af14f",
+  "outcome": "READ_ONLY_AND_MOCK_FEATURE_CHECKS_PASS_REAL_CALCULATION_EXPLANATION_DISABLED",
+  "whole_s5_complete": false,
+  "actual_minecraft_client": false,
+  "operational_acceptance": false,
+  "workspace": "/home/server/hearth-tmp/hearth-calculation-help.0efvmgpj",
+  "final_artifact": {
+    "path": "/home/server/hearth-tmp/hearth-calculation-help.0efvmgpj/Hearth-calculation-help-gated.jar",
+    "sha256": "844db762508b1ac2656c30a4bc515483e7bfd306e422082b4d12e2c79cab291e",
+    "live_model_retest": false,
+    "live_calculation_disabled": true
+  },
+  "checks": {
+    "phone_tests": 210,
+    "failures_errors_skips": 0,
+    "xml": "/home/server/hearth-tmp/hearth-calculation-help.0efvmgpj/unit-results-quality-gate",
+    "build_log": "/home/server/hearth-tmp/hearth-calculation-help.0efvmgpj/quality-gate-build.log",
+    "integration_fixture_compiled": true,
+    "python_trial_tests": 13,
+    "python_log": "/home/server/hearth-tmp/hearth-calculation-help.0efvmgpj/python-final.log",
+    "paper_pg_repeated": false,
+    "reason": "Pure structured math, immutable DTO, in-session chat/data display and capability gate; no persistence, game permissions or world event contract change."
+  },
+  "actual_first": {
+    "path": "/home/server/hearth-tmp/hearth-s5-trial.7e4brrzx/run-result.json",
+    "sha256": "52296b8d05d7dd133236b0bbeecae9078912e76452ad0fcdd88072ff633d33a4",
+    "outcome": "ACTUAL_MODEL_ACCEPTANCE_FAILED",
+    "duration_since_original_marker_seconds": 116.257,
+    "cleanup_errors": [],
+    "max_sampled_rss_kib": 3443776,
+    "max_sampled_gpu_mib": 3132,
+    "min_host_available_kib": 12119544,
+    "jar": "/home/server/hearth-tmp/hearth-calculation-help.0efvmgpj/Hearth-calculation-help.jar",
+    "jar_sha256": "9803a78a4d01156e2ecbeaa4fcc4247ca1b529116839f1ea9d17475bf04cccb4"
+  },
+  "actual_same_clock_review": {
+    "path": "/home/server/hearth-tmp/hearth-s5-trial.7e4brrzx/run-result-reviewed.json",
+    "sha256": "f3a06ef6059779e088329f7f4e4d412951adc69bd134a776cab604697974ccea",
+    "outcome": "ACTUAL_MODEL_ACCEPTANCE_FAILED",
+    "duration_since_original_marker_seconds": 531.13,
+    "cleanup_errors": [],
+    "max_sampled_rss_kib": 2213364,
+    "max_sampled_gpu_mib": 3140,
+    "min_host_available_kib": 12667848,
+    "jar": "/home/server/hearth-tmp/hearth-calculation-help.0efvmgpj/Hearth-calculation-help-r1.jar",
+    "jar_sha256": "c18d7caae8c7976cdeb2fc8e659416bf21017bc8f44c6661a27edfdccdf71b54"
+  },
+  "actual_checks": {
+    "first": {
+      "path": "/home/server/hearth-tmp/hearth-s5-trial.7e4brrzx/probe-result.json",
+      "sha256": "69575ff2e0ea8cf535ee38ae696949eaa6d617e235511714dcd144e60fc89dd4",
+      "required_checks_passed": false,
+      "cases": [
+        {
+          "name": "lever_100N",
+          "outcome": "PASS"
+        },
+        {
+          "name": "changed_arm_200N",
+          "outcome": "PASS"
+        },
+        {
+          "name": "same_calculation_followup",
+          "outcome": "OUTPUT_LIMIT"
+        },
+        {
+          "name": "energy_500J",
+          "outcome": "PASS"
+        },
+        {
+          "name": "series_5ohm",
+          "outcome": "OUTPUT_LIMIT"
+        },
+        {
+          "name": "does_not_confirm_game_state",
+          "outcome": "PASS"
+        },
+        {
+          "name": "independent_calculation",
+          "outcome": "PASS"
+        },
+        {
+          "name": "calculation_cache",
+          "outcome": "PASS"
+        }
+      ],
+      "history_sizes": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "cache_no_new_generation": true,
+      "deleted_source_rejects_before_backend": true,
+      "only_two_typed_sources": true
+    },
+    "same_clock_review": {
+      "path": "/home/server/hearth-tmp/hearth-s5-trial.7e4brrzx/probe-result-reviewed.json",
+      "sha256": "2ce5aa3c4c14c3a21c1367d1f9e9e230b73b91445c517f94fb7dde5580d87f26",
+      "required_checks_passed": false,
+      "cases": [
+        {
+          "name": "lever_100N",
+          "outcome": "INVALID_REFERENCE"
+        },
+        {
+          "name": "changed_arm_200N",
+          "outcome": "PASS"
+        },
+        {
+          "name": "same_calculation_followup",
+          "outcome": "QUALITY_REVIEW_REQUIRED"
+        },
+        {
+          "name": "energy_500J",
+          "outcome": "INVALID_REFERENCE"
+        },
+        {
+          "name": "series_5ohm",
+          "outcome": "PASS"
+        },
+        {
+          "name": "does_not_confirm_game_state",
+          "outcome": "QUALITY_REVIEW_REQUIRED"
+        },
+        {
+          "name": "independent_calculation",
+          "outcome": "PASS"
+        },
+        {
+          "name": "calculation_cache",
+          "outcome": "PASS"
+        }
+      ],
+      "history_sizes": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      "cache_no_new_generation": true,
+      "deleted_source_rejects_before_backend": true,
+      "only_two_typed_sources": true
+    }
+  },
+  "contract": {
+    "own_current_structured_calculation_only": true,
+    "manual_arithmetic_not_shareable": true,
+    "input_plan_immutable": true,
+    "snapshot_recomputes_exact_value": true,
+    "two_sources_note_and_selected_calculation": true,
+    "no_game_or_other_calculation_data": true,
+    "preview_matches_actual_request": true,
+    "history_cache_scoped_by_purpose_and_entire_snapshot": true,
+    "cleared_evicted_or_cross_owner_entries_rejected": true,
+    "revoked_selection_rejects_late_answer_and_cache": true,
+    "per_answer_original_science_reference_view_only": true,
+    "game_and_general_context_not_exposed_by_science_history": true,
+    "unqualified_chat_rejects_before_generation_and_cache_preserves_draft": true,
+    "configured_mock_only_allows_calculation_help": true,
+    "default_local_and_ollama_calculation_help": false,
+    "automatic_retry_model_change_or_deployment": false
+  },
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "individual_seconds": 90,
+    "cpu": 2,
+    "rss_gib": 4,
+    "gpu_gib": 5,
+    "context_tokens": 4096,
+    "output_tokens": 128,
+    "user_request_seconds": 6
+  },
+  "remaining": [
+    "Actual calculation explanation failed quality acceptance; gated off for real configured backends.",
+    "General scientific correctness remains HOLD.",
+    "Actual Minecraft clicks/screens not tested.",
+    "Long-term performance, operating budget and deployment not accepted."
+  ],
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantService.java": "2c17b987e2840f76190726a946da52f409d39b986350c3c0c8869d0f1dc80409",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneChat.java": "438bb085394bcb646cba8a4b72eff2874348c4c55474272a312addeb04f8e120",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/LocalAssistant.java": "b096955ddea9f959e334ae4a91a0ef1a2481f88cc787e47923e8b2e1cb41669b",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PaperPhone.java": "0a254589c1b27d25ba8f90b056b1f3beefe00e4f8915325992a539724651dcf9",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantRequest.java": "9053d64d1580d6e1f4e4350e2c671ae6cfe3ab1feac4f067a5611314c0d6ad46",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantFailure.java": "d55beda9d86ef95f892b4d655aa68951d30946aa178ffff8c5c2ff64430ac54c",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/OllamaProtocol.java": "3707012b788d8d1addde4c88570814961610ecad0f9927a687f7cf6b76f398ff",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantAnswer.java": "5cf978d7980f0431f74dd8a18b5aa2f6f9eebfc711425dc94335828b78df77c3",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/MeasuredAssistant.java": "000522d44d26825f9df5bbdfa19cfbfb5eb2ec8dc006bd488a5b80d4ceff1e0e",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneCalculator.java": "12295817a81958d675bd006a31e1e3ac770bc8447a81a0bf8fdfe6054607fa5d",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/ScienceCalculation.java": "7875e322a5c8a17d4e704bb3f32733fd025c2ab73a7671e0b1e5e624c0e9282b",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/ScienceCalculationSnapshot.java": "113fd05b5715b6260e9df4141903905f446269a33e06c04d108aef36c4f5d82a",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/ScienceQuestion.java": "96f84f2a9b4f95db442535323ede357bfcdb940e5f2d5fe80f0b49108c868389",
+    "scripts/s5_ai_trial.py": "13f921491997dc51639f8e0e22da73d72f80fce8bd39fb8c00630f8cedbc7d33",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaCalculationProbe.java": "49c9a8c5693f9ebf2928ccf5a327da2d237071014923e463b571ab023cd608e7"
+  }
+}

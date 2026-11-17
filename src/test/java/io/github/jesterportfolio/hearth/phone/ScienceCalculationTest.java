@@ -36,6 +36,6 @@ final class ScienceCalculationTest {
     }
     @Test void formInputsAreSnapshottedAndNumericResultHasNoImplicitUnitConversion(){
         var values=new ArrayList<>(List.of("1","1","3"));var plan=ScienceCalculation.prepare(LEVER,values);values.set(0,"999");var calculator=new PhoneCalculator();assertTrue(calculator.calculateScience(plan));assertEquals("1/3",calculator.history().getLast().exact());
-        assertEquals(LEVER,calculator.history().getLast().science());assertTrue(calculator.calculate("ans*3"));var continued=calculator.history().getLast();assertEquals("1/3",continued.previous());assertNull(continued.science());assertEquals("1",continued.exact());
+        assertEquals(LEVER,calculator.history().getLast().science().topic());assertTrue(calculator.calculate("ans*3"));var continued=calculator.history().getLast();assertEquals("1/3",continued.previous());assertNull(continued.science());assertEquals("1",continued.exact());
     }
 }

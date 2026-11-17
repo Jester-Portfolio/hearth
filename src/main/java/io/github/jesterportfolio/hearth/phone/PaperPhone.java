@@ -30,7 +30,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private final PhoneReferences references=new PhoneReferences();
     private final Map<PlayerSessions.Session,String> contextModes=new IdentityHashMap<>();
     private final Map<PlayerSessions.Session,PhoneHelp.Selection> helpSelections=new IdentityHashMap<>();
-    private final Map<PlayerSessions.Session,ScienceReading> researchSelections=new IdentityHashMap<>();
+    private record StudySelection(ScienceQuestion source,PhoneCalculator.Entry calculation){}
+    private final Map<PlayerSessions.Session,StudySelection> researchSelections=new IdentityHashMap<>();
     private final PhoneLearning learning=new PhoneLearning();
     private CompletionAction completion=(p,s,c)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("COMPLETION_DISABLED"));
     public void completion(CompletionAction handler){completion=handler;}
@@ -567,12 +568,14 @@ public final class PaperPhone implements Listener,AutoCloseable {
     }
     private void calculator(Player p){
         var s=advance(p);var calculator=s.calculator();var body=new ArrayList<DialogBody>();
+        var selected=researchSelections.get(s.session());if(selected!=null&&selected.calculation()!=null&&!calculator.current(selected.calculation()))researchSelections.remove(s.session());
         body.add(DialogBody.plainMessage(Component.text("서버 계산기 · AI 추론 없이 입력한 식만 계산합니다.\n단위와 질문 뜻은 해석하지 않습니다. 물리식·단위는 직접 확인해 주세요.")));
-        body.add(DialogBody.plainMessage(Component.text("예: 400*0.5/2 → 100\n+ - * / ^, 괄호, 소수·1e3 표기 지원. 지수는 -12~12 정수.\n이전값 또는 ans는 직전 정확값의 숫자만 사용합니다. 단위는 직접 확인하세요. 계산 기록은 이 접속에서만 유지되며 AI에 보내지 않습니다.")));
+        body.add(DialogBody.plainMessage(Component.text("예: 400*0.5/2 → 100\n+ - * / ^, 괄호, 소수·1e3 표기 지원. 지수는 -12~12 정수.\n이전값 또는 ans는 직전 정확값의 숫자만 사용합니다. 단위는 직접 확인하세요. 계산 기록은 자동 전송하지 않습니다. 과학 계산 하나의 입력값·식·근거를 다시 보고 값을 바꿔 계산할 수 있습니다.")));
         for(var entry:calculator.history())body.add(DialogBody.plainMessage(Component.text(String.join("\n",entry.lines()))));
         if(calculator.error()!=null)body.add(DialogBody.plainMessage(Component.text(calculator.error())));
         var actions=new ArrayList<ActionButton>();
         actions.add(calculatorButton(p,s,"계산",()->{s.calculator().calculate(s.calculator().draft());calculator(p);}));
+        {int index=1;for(var entry:calculator.history()){int number=index++;if(entry.science()!=null)actions.add(calculatorButton(p,s,number+". 계산 근거",()->calculationDetail(p,advance(p),entry,1)));}}
         if(calculator.hasPrevious())actions.add(calculatorButton(p,s,"이전값으로 계속",()->{s.calculator().continuePrevious();calculator(p);}));
         for(var topic:ScienceCalculation.Topic.values())actions.add(calculatorButton(p,s,topic.title(),()->scienceCalculator(p,topic,Collections.nCopies(topic.fields().size(),""),null)));
         actions.add(calculatorButton(p,s,"입력 지우기",()->{s.calculator().draft("");calculator(p);}));
@@ -602,32 +605,52 @@ public final class PaperPhone implements Listener,AutoCloseable {
             body.add(DialogBody.plainMessage(Component.text("검토 출처: OpenStax 원문").clickEvent(ClickEvent.openUrl(reading.url()))));
             actions.add(button(p,s,"이 원리로 계산",()->scienceCalculator(p,reading.calculation(),Collections.nCopies(reading.calculation().fields().size(),""),null)));
             if(!s.chat().busy())actions.add(button(p,s,"이 자료로 AI 질문",()->{
-                researchSelections.put(s.session(),reading);contextModes.put(s.session(),"none");helpSelections.remove(s.session());references.remove(s.session());
-                if(s.chat().draft().isBlank())s.chat().draft("이 자료의 핵심 원리와 적용할 때의 가정을 짧게 설명해 줘.");chat(p);
+                selectStudy(p,s,ScienceQuestion.reading(reading),null);
             }));
             actions.add(button(p,s,"과학 자료 목록",()->research(p,advance(p),null)));
         }
         actions.add(button(p,s,"계산기",()->calculator(p)));learningReturn(p,s,actions);actions.add(button(p,s,"AI 어시스턴트",()->chat(p)));actions.add(button(p,s,"홈",()->home(p)));
         show(p,s,reading==null?"연구 · 과학 자료":reading.title(),body,List.of(),actions);
     }
-    private void previewScience(Player p,Screen s,ScienceReading reading,String question){
-        previewScience(p,s,reading,s.chat().previewScience(question,reading),1);
+    private void selectStudy(Player p,Screen s,ScienceQuestion source,PhoneCalculator.Entry calculation){
+        if(!valid(p,s)||s.chat().busy())return;
+        if(calculation!=null&&!s.chat().calculationHelpAvailable())throw new AssistantFailure(AssistantFailure.Reason.QUALITY_UNVERIFIED);
+        if(calculation!=null&&!s.calculator().current(calculation))throw new IllegalStateException("STALE_CALCULATION_SELECTION");
+        researchSelections.put(s.session(),new StudySelection(source,calculation));contextModes.put(s.session(),"none");helpSelections.remove(s.session());references.remove(s.session());
+        if(s.chat().draft().isBlank())s.chat().draft(calculation==null?"이 자료의 핵심 원리와 적용할 때의 가정을 짧게 설명해 줘.":"이 계산의 정확값과 단위를 확인하고 적용한 원리와 가정을 짧게 설명해 줘.");chat(p);
     }
-    private void previewScience(Player p,Screen s,ScienceReading reading,AssistantRequest shown,int page){
+    private boolean studyCurrent(Screen s,StudySelection selected){return researchSelections.get(s.session())==selected&&(selected.calculation()==null||s.calculator().current(selected.calculation()));}
+    private void studyMaterial(Player p,Screen s,StudySelection selected,int page){
+        if(!studyCurrent(s,selected)){info(p,s,"계산 자료 변경",List.of("선택한 계산이 지워졌거나 변경됐습니다. 계산기에서 다시 선택하세요."));return;}
+        if(selected.source().calculation()==null){research(p,s,selected.source().reading());return;}
+        calculationDetail(p,s,selected.calculation(),page);
+    }
+    private void calculationDetail(Player p,Screen s,PhoneCalculator.Entry entry,int page){
+        if(!s.calculator().current(entry)){info(p,s,"계산 기록 변경",List.of("원본 계산이 지워졌습니다. 계산기에서 다시 확인하세요."));return;}
+        var snapshot=s.calculator().select(entry);var pages=PhonePages.text("선택한 계산 근거",List.of(snapshot.context()));var actions=new ArrayList<ActionButton>();
+        if(page>1)actions.add(button(p,s,"앞 내용",()->calculationDetail(p,advance(p),entry,page-1)));if(page<pages.pages().size())actions.add(button(p,s,"다음 내용",()->calculationDetail(p,advance(p),entry,page+1)));
+        actions.add(button(p,s,"값 바꿔 다시 계산",()->scienceCalculator(p,snapshot.plan().topic(),snapshot.plan().inputs(),null)));actions.add(button(p,s,"과학 노트 읽기",()->research(p,advance(p),snapshot.reading())));
+        if(s.chat().calculationHelpAvailable()&&!s.chat().busy())actions.add(button(p,s,"이 계산 설명 요청",()->selectStudy(p,s,ScienceQuestion.calculation(snapshot),entry)));
+        learningReturn(p,s,actions);actions.add(button(p,s,"AI 대화로",()->chat(p)));actions.add(button(p,s,"계산기로",()->calculator(p)));
+        String note=s.chat().calculationHelpAvailable()?"계산 설명 전송은 직접 선택·미리보기 확인 후 진행합니다.":"AI 계산 설명은 품질 확인 중입니다. 정확값·입력값과 과학 노트는 여기서 확인할 수 있습니다.";
+        show(p,s,"선택한 계산 근거",List.of(DialogBody.plainMessage(Component.text(page+" / "+pages.pages().size()+"\n"+note+"\n\n"+pages.pages().get(page-1)))),List.of(),actions);
+    }
+    private void previewScience(Player p,Screen s,StudySelection selected,String question){previewScience(p,s,selected,s.chat().previewStudy(question,selected.source()),1);}
+    private void previewScience(Player p,Screen s,StudySelection selected,AssistantRequest shown,int page){
         var lines=new ArrayList<String>();lines.add("질문: "+shown.question());lines.add("이번에 보낼 이전 대화: "+shown.history().size()+"개. 아래는 길이 제한을 적용한 실제 전송 내용입니다.");
         for(var turn:shown.history()){lines.add("이전 질문: "+turn.question());lines.add("이전 응답: "+turn.answer());}lines.add(shown.context());var pages=PhonePages.text("과학 자료 전송 확인",lines);
         var body=List.of(DialogBody.plainMessage(Component.text(page+" / "+pages.pages().size()+"\n\n"+pages.pages().get(page-1))));
         var send=button(p,s,"이 자료로 전송",()->{
-            if(s.chat().busy()||researchSelections.get(s.session())!=reading)return;
-            references.remove(s.session());s.chat().submitSciencePreview(shown,reading,()->!closed&&players.current(p)==s.session()&&researchSelections.get(s.session())==reading).exceptionally(error->null);chat(p);
+            if(s.chat().busy())return;if(!studyCurrent(s,selected)){info(p,advance(p),"계산 자료 변경",List.of("원본 계산이 지워졌거나 선택이 바뀌었습니다. 계산기에서 다시 선택한 뒤 전송해 주세요."));return;}
+            references.remove(s.session());s.chat().submitStudyPreview(shown,selected.source(),()->!closed&&players.current(p)==s.session()&&studyCurrent(s,selected)).exceptionally(error->null);chat(p);
         });
-        var actions=new ArrayList<ActionButton>();if(page>1)actions.add(button(p,s,"앞 내용",()->previewScience(p,advance(p),reading,shown,page-1)));if(page<pages.pages().size())actions.add(button(p,s,"다음 내용",()->previewScience(p,advance(p),reading,shown,page+1)));
+        var actions=new ArrayList<ActionButton>();if(page>1)actions.add(button(p,s,"앞 내용",()->previewScience(p,advance(p),selected,shown,page-1)));if(page<pages.pages().size())actions.add(button(p,s,"다음 내용",()->previewScience(p,advance(p),selected,shown,page+1)));
         actions.add(send);actions.add(button(p,s,"전송 취소",()->chat(p)));show(p,s,"과학 자료 전송 확인",body,List.of(),actions);
     }
     private void chat(Player p){
-        var s=advance(p);var body=new ArrayList<DialogBody>();body.add(DialogBody.plainMessage(Component.text("최근 대화 · 현재 접속 세션에서만 유지\n"+(researchSelections.containsKey(s.session())?"과학 자료 도움 · "+researchSelections.get(s.session()).title():PhoneContext.MODES.get(contextModes.getOrDefault(s.session(),"none"))))));
+        var s=advance(p);var body=new ArrayList<DialogBody>();body.add(DialogBody.plainMessage(Component.text("최근 대화 · 현재 접속 세션에서만 유지\n"+(researchSelections.containsKey(s.session())?"과학 자료 도움 · "+researchSelections.get(s.session()).source().label():PhoneContext.MODES.get(contextModes.getOrDefault(s.session(),"none"))))));
         if(!researchSelections.containsKey(s.session())&&contextModes.getOrDefault(s.session(),"none").equals("none"))body.add(DialogBody.plainMessage(Component.text("일반 과학·기술 원리를 질문할 수 있습니다. 현재 게임 진행·좌표·보상 정보는 전달하지 않습니다.")));
-        var reading=researchSelections.get(s.session());if(reading!=null)body.add(DialogBody.plainMessage(Component.text("선택한 과학 노트만 전송합니다. 게임 진행·개인 기록은 읽지 않습니다. 자료 번호는 해당 노트의 출처를 가리키며 답변의 정답 보증이 아닙니다.")));
+        var reading=researchSelections.get(s.session());if(reading!=null){body.add(DialogBody.plainMessage(Component.text(reading.calculation()==null?"선택한 과학 노트만 전송합니다. 게임 진행·개인 기록은 읽지 않습니다.":"선택한 과학 노트 [자료 1]과 계산기 기록 [자료 2]만 전송합니다. 계산값과 AI 설명은 구분해서 확인하세요.")));if(reading.source().calculation()!=null)body.add(DialogBody.plainMessage(Component.text("계산기 정확값: "+reading.source().calculation().exact()+" "+reading.source().calculation().plan().topic().unit())));}
         var selected=helpSelections.get(s.session());if(selected!=null)body.add(DialogBody.plainMessage(Component.text("선택한 자료 한 항목: "+selected.source().title())));
         if(references.containsKey(s.session()))body.add(DialogBody.plainMessage(Component.text("답변의 자료 번호는 ‘최근 요청 참고자료’에서 확인할 수 있습니다.")));
         body.add(DialogBody.plainMessage(Component.text(s.chat().includeHistory()?"같은 자료 범위의 최근 대화 일부를 함께 보냅니다.":"이전 대화를 보내지 않고 질문합니다. 화면의 대화 기록은 유지합니다.")));
@@ -645,7 +668,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
         if(!s.chat().busy())actions.add(chatButton(p,s,"도움 범위 선택",()->contextMenu(p)));
         if(!s.chat().busy())actions.add(chatButton(p,s,"이전 대화 함께 보내기: "+(s.chat().includeHistory()?"켬":"끔"),()->{s.chat().includeHistory(!s.chat().includeHistory());chat(p);}));
         if(selected!=null){actions.add(chatButton(p,s,"원래 정보",()->returnHelp(p,s)));if(!s.chat().busy())actions.add(chatButton(p,s,"항목 선택 해제",()->{helpSelections.remove(s.session());researchSelections.remove(s.session());references.remove(s.session());contextModes.put(s.session(),"none");chat(p);}));}
-        if(reading!=null)actions.add(chatButton(p,s,"선택한 과학 자료 읽기",()->research(p,advance(p),reading)));
+        if(reading!=null)actions.add(chatButton(p,s,"선택한 과학 자료 읽기",()->studyMaterial(p,advance(p),reading,1)));
+        if(reading!=null&&!s.chat().busy())actions.add(chatButton(p,s,"과학 자료 선택 해제",()->{researchSelections.remove(s.session());references.remove(s.session());contextModes.put(s.session(),"none");chat(p);}));
         if(references.containsKey(s.session()))actions.add(chatButton(p,s,"최근 요청 참고자료",()->referenceList(p,advance(p))));
         learningReturn(p,s,actions,"question");actions.add(chatButton(p,s,"계산기",()->calculator(p)));
         actions.add(chatButton(p,s,"응답 확인",()->chat(p)));actions.add(chatButton(p,s,"홈",()->home(p)));
@@ -668,15 +692,21 @@ public final class PaperPhone implements Listener,AutoCloseable {
             body.add(DialogBody.plainMessage(Component.text(page+" / "+detail.pages().size()+"\n\n"+detail.pages().get(page-1))));
             if(page>1)actions.add(button(p,s,"앞 내용",()->historyReview(p,advance(p),selected,page-1)));if(page<detail.pages().size())actions.add(button(p,s,"다음 내용",()->historyReview(p,advance(p),selected,page+1)));
             actions.add(button(p,s,"여기부터 지우기",()->{s.chat().rewind(selected,false);references.remove(s.session());chat(p);}));actions.add(button(p,s,"지우고 질문 다시쓰기",()->{s.chat().rewind(selected,true);references.remove(s.session());chat(p);}));
+            if(s.chat().scienceReference(selected).isPresent())actions.add(button(p,s,"이 답변의 과학 근거",()->historyReference(p,advance(p),selected,1)));
             actions.add(button(p,s,"대화 선택으로",()->historyReview(p,advance(p),null,1)));
         }
         learningReturn(p,s,actions);actions.add(button(p,s,"대화로",()->chat(p)));show(p,s,"대화 검토·일부 정리",body,List.of(),actions);
+    }
+    private void historyReference(Player p,Screen s,PhoneChat.HistoryChoice selected,int page){
+        var source=s.chat().scienceReference(selected).orElseThrow(()->new IllegalStateException("SCIENCE_REFERENCE_UNAVAILABLE"));var pages=PhonePages.text(source.title(),List.of("이 답변에 실제로 보냈던 과학/계산 자료입니다. 현재 선택 자료와 다를 수 있습니다. 게임 자료는 현재 권한으로 별도 조회하세요.",source.context()));var actions=new ArrayList<ActionButton>();
+        if(page>1)actions.add(button(p,s,"앞 내용",()->historyReference(p,advance(p),selected,page-1)));if(page<pages.pages().size())actions.add(button(p,s,"다음 내용",()->historyReference(p,advance(p),selected,page+1)));actions.add(button(p,s,"선택한 대화로",()->historyReview(p,advance(p),selected,1)));learningReturn(p,s,actions);actions.add(button(p,s,"대화로",()->chat(p)));
+        show(p,s,"이 답변의 과학 근거",List.of(DialogBody.plainMessage(Component.text(page+" / "+pages.pages().size()+"\n\n"+pages.pages().get(page-1)))),List.of(),actions);
     }
     private void submitChat(Player p,Screen s,String question){
         if(!valid(p,s)||s.chat().busy())return;
         if(question==null||question.isBlank()||question.codePointCount(0,question.length())>256){s.chat().submit(question).exceptionally(error->null);chat(p);return;}
         s.chat().draft(question);
-        var reading=researchSelections.get(s.session());if(reading!=null){previewScience(p,advance(p),reading,question);return;}
+        var reading=researchSelections.get(s.session());if(reading!=null){if(!studyCurrent(s,reading))throw new IllegalStateException("STALE_CALCULATION_SELECTION");previewScience(p,advance(p),reading,question);return;}
         String mode=contextModes.getOrDefault(s.session(),"none");
         if(mode.equals("none")){references.remove(s.session());s.chat().submit(question,"",()->!closed&&players.current(p)==s.session()).exceptionally(error->null);chat(p);return;}
         var next=advance(p);

@@ -42,7 +42,10 @@ def reviewable_result(root, result):
     if result.get('cleanup_errors') or result.get('guard_failure'):
         return False
     if result.get('outcome') == 'ACTUAL_MODEL_ACCEPTANCE_FAILED':
-        return True
+        probe=result.get('probe');cases=probe.get('cases') if isinstance(probe,dict) else None
+        quality={'QUALITY_REVIEW_REQUIRED','INVALID_REFERENCE','INVALID_CALCULATION','OUTPUT_LIMIT'}
+        return (isinstance(cases,list) and any(isinstance(case,dict) and case.get('outcome') in quality for case in cases)
+                and not any(not isinstance(case,dict) or case.get('outcome') not in quality|{'PASS'} for case in cases))
     # 완료된 준비 응답의 번호/출력 길이 거부만 복구 허용. 자원/HTTP/시간 실패는 재개하지 않습니다.
     eligible=(result.get('outcome') == 'FAIL'
             and result.get('failure') == 'AssertionError: Actual-format warmup failed'
@@ -380,6 +383,7 @@ def main():
     quality.add_argument('--knowledge',action='store_true',help='일반 과학 지식·후속 대화·게임 자료 경계 probe를 사용합니다')
     quality.add_argument('--research',action='store_true',help='고정 과학 노트의 근거·후속 대화·범위 부재 probe를 사용합니다')
     quality.add_argument('--preparation',action='store_true',help='사전 예열 없이 명시적 준비·질문 제한·해제 후 경계를 검사합니다')
+    quality.add_argument('--calculation',action='store_true',help='선택한 검산 기록·노트·값 변경/이력·원본 폐기를 검사합니다')
     parser.add_argument('--continue-after-review', action='store_true', help='원본 결과/파일을 보존하고 같은 최초 600초 예산의 남은 시간만 사용합니다')
     args = parser.parse_args()
     root = isolated_paths.workspace(args.workspace,'hearth-s5-trial.')
@@ -509,7 +513,7 @@ def main():
             print('S5 runtime ready; bounded model warmup started', flush=True)
             warm_file=root/('warmup'+suffix+'.json')
             warm_command=[str(args.java),'-Xmx192m','-XX:ActiveProcessorCount=2','-cp',args.classpath,'io.github.jesterportfolio.hearth.phone.OllamaTrialWarmup',HOST+'/api/generate',str(warm_file)]
-            if args.research:warm_command.append('research')
+            if args.research or args.calculation:warm_command.append('research')
             elif args.knowledge:warm_command.append('knowledge')
             elif args.grounded or args.focused:warm_command.append('grounded')
             warm=trial.launch(warm_command,os.environ.copy(),'warmup'+suffix)
@@ -517,12 +521,12 @@ def main():
             report['warmup']=json.loads(warm_file.read_text())
             report['model_processes'] = trial.api('/api/ps')
         probe_file=root/('probe-result'+suffix+'.json')
-        command=[str(args.java), '-Xmx192m', '-XX:ActiveProcessorCount=2', '-cp', args.classpath, 'io.github.jesterportfolio.hearth.phone.'+('OllamaPreparationProbe' if args.preparation else 'OllamaResearchProbe' if args.research else 'OllamaKnowledgeProbe' if args.knowledge else 'OllamaFocusedProbe' if args.focused else 'OllamaGroundingProbe' if args.grounded else 'OllamaTrialProbe'), HOST+'/api/generate', str(probe_file)]
+        command=[str(args.java), '-Xmx192m', '-XX:ActiveProcessorCount=2', '-cp', args.classpath, 'io.github.jesterportfolio.hearth.phone.'+('OllamaCalculationProbe' if args.calculation else 'OllamaPreparationProbe' if args.preparation else 'OllamaResearchProbe' if args.research else 'OllamaKnowledgeProbe' if args.knowledge else 'OllamaFocusedProbe' if args.focused else 'OllamaGroundingProbe' if args.grounded else 'OllamaTrialProbe'), HOST+'/api/generate', str(probe_file)]
         probe = trial.launch(command, os.environ.copy(), 'probe'+suffix)
         assert trial.wait(probe, 90) == 0, 'Java adapter probe failed'
         report['probe'] = json.loads(probe_file.read_text())
         report['real_model'] = True
-        if args.grounded or args.focused or args.knowledge or args.research or args.preparation:
+        if args.grounded or args.focused or args.knowledge or args.research or args.preparation or args.calculation:
             report['required_checks_passed']=report['probe']['required_checks_passed']
             report['outcome']='PASS' if report['required_checks_passed'] else 'ACTUAL_MODEL_ACCEPTANCE_FAILED'
         else:
