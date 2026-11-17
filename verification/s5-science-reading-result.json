@@ -1,0 +1,184 @@
+{
+  "checked_on": "2026-11-17",
+  "baseline_commit": "d30b9dd",
+  "outcome": "IMPLEMENTATION_NATIVE_AND_FIXED_SCIENCE_NOTE_ANSWERS_PASS",
+  "whole_s5_complete": false,
+  "unrestricted_science_quality_hold_preserved": true,
+  "actual_minecraft_client_test_run": false,
+  "operational_acceptance": false,
+  "production_changes": false,
+  "workspace": "/home/server/hearth-tmp/hearth-research.4qgh5a3o",
+  "artifact": {
+    "path": "/home/server/hearth-tmp/hearth-research.4qgh5a3o/Hearth-research.jar",
+    "sha256": "49cca9c46867dfc55feccda4937c5b717b8fb05a8c479a56e57a6277f448ef5d",
+    "same_jar_used_by_native_and_actual_model": true
+  },
+  "source_sha256": {
+    "src/main/java/io/github/jesterportfolio/hearth/phone/ScienceReading.java": "b2c14ab9534f9a5b6858f93fe2899d04a1d28949d407a6072fa9dad5ed1fd5cf",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantRequest.java": "d564af4d9fd6074eb5aa02680e288446a562b6b9ac57eff8028c7ea47349d214",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/AssistantAnswer.java": "59c9bc7925e37fd25b32f214efda7c08a734f7c0c11522cb4301331611fc69a3",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/OllamaProtocol.java": "7515b55dc2dff9ddd6b2d0876541d7ac9e3b20ee3cd47c1f2aaa3016b2089b8e",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PhoneChat.java": "f4c3667683255881f9682ca43cdc538d09e4ab695f0e4f1142cbcf63d7285b0c",
+    "src/main/java/io/github/jesterportfolio/hearth/phone/PaperPhone.java": "9142c561f0771f2e4f34e6cd68d122258591d904f14097c4867dbf129e273f2f",
+    "src/main/java/io/github/jesterportfolio/hearth/verification/SessionVerification.java": "6e4230edfee2664df0d1bf1d897350f3703805a018a6a71173c8634e639fd34e",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaResearchProbe.java": "3c168af8d8cb2fd99f8cf9973024763446c4a0c4c180b8ceaf9343094a5d95b8",
+    "src/integrationTest/java/io/github/jesterportfolio/hearth/phone/OllamaTrialWarmup.java": "b51f2ba16478607a068307162ff152960c6eca83adf06441fd7d7bf2d46851fb",
+    "scripts/s5_ai_trial.py": "e35c39f2ae7fa8adffae8d7500ee4be4c1342fe82df38c43d2c076ced66cdce9"
+  },
+  "checks": {
+    "java_related_unit_regression": {
+      "tests": 166,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "new_science_reading_tests": 10,
+    "main_test_jar_compilation": "PASS",
+    "integration_fixture_compilation": "PASS",
+    "python_trial_regression_tests": 12,
+    "build_log": "/home/server/hearth-tmp/hearth-research.4qgh5a3o/build.log",
+    "probe_build_log": "/home/server/hearth-tmp/hearth-research.4qgh5a3o/probe-build.log",
+    "python_log": "/home/server/hearth-tmp/hearth-research.4qgh5a3o/python-tests.log",
+    "unit_xml": "/home/server/hearth-tmp/hearth-research.4qgh5a3o/unit-results"
+  },
+  "contract": {
+    "science_note_count": 3,
+    "purpose": "SCIENCE_REFERENCE",
+    "approved_context_only": true,
+    "sources_per_question": 1,
+    "general_game_and_other_note_history_excluded": true,
+    "reference_marker_required": "[자료 1]",
+    "existing_context_output_timeout_cache_limits_unchanged": true,
+    "model_tools_or_runtime_web_or_new_db": false,
+    "game_progression_or_rewards_changed": false,
+    "calculator_results_auto_sent": false
+  },
+  "native": {
+    "outcome": "PASS",
+    "result": "/home/server/hearth-tmp/hearth-s4-11.fdp7nkn5/run-result.json",
+    "result_sha256": "a06454f6a7ac8ea3c0f9d69c2f89b20e29cacf9648a09a720c124554e8a3435f",
+    "assertions": 146,
+    "paper_jvms": 1,
+    "postgres_instances": 1,
+    "duration_seconds": 57.557,
+    "cleanup_errors": [],
+    "all_owned_processes_and_ports_closed": true,
+    "new_research_checks": [
+      "research_AI_note_followups_exclude_real_PG_game_and_other_note_history",
+      "research_AI_history_labels_match_original_note",
+      "research_AI_actual_Paper_Dialog_factory_LEVER",
+      "research_AI_actual_Paper_Dialog_factory_ENERGY",
+      "research_AI_actual_Paper_Dialog_factory_SERIES",
+      "research_AI_cited_arithmetic_contradiction_blocks_history_and_cache"
+    ],
+    "first_preflight_failure": {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.iew37cu1",
+      "log": "/home/server/hearth-tmp/hearth-research.4qgh5a3o/native.log",
+      "cause": "Completed prior source contained resolved pgJDBC; pristine library resolution guard rejected it before database/Paper start",
+      "data_overwritten_or_removed": false,
+      "database_or_paper_started": false
+    },
+    "restore_jvm_repeated": false,
+    "restore_reason": "No persistent storage or restore contract change"
+  },
+  "actual_model": {
+    "outcome": "PASS",
+    "result": "/home/server/hearth-tmp/hearth-s5-trial.arjaukkx/run-result.json",
+    "result_sha256": "023aa0d358b49c0566f3f8a0a42f73521d1214c04176e2e6286b9f1a53fbe667",
+    "probe": "/home/server/hearth-tmp/hearth-s5-trial.arjaukkx/probe-result.json",
+    "probe_sha256": "e000a0310d78f43d218f12308166fcdbd79041871556d36cdee78ea41044a730",
+    "runtime_model": "Ollama 0.40.16 / qwen3:4b-instruct-2507-q4_K_M",
+    "attempts": 1,
+    "reviewed_retry_used": false,
+    "duration_seconds": 103.027,
+    "downloaded_bytes": 0,
+    "verified_reused_bytes": 4043062302,
+    "max_sampled_rss_kib": 2844028,
+    "max_sampled_gpu_mib": 3130,
+    "min_host_available_kib": 12234880,
+    "cleanup_errors": [],
+    "warmup": {
+      "done": true,
+      "done_reason": "stop",
+      "eval_count": 36,
+      "prompt_eval_count": 633,
+      "total_duration": 72878541594
+    },
+    "generated_probe_responses": 6,
+    "cache_confirmations": 1,
+    "history_sizes": [
+      0,
+      1,
+      0,
+      0,
+      1,
+      0
+    ],
+    "cases": [
+      {
+        "name": "lever_principle",
+        "note": "LEVER",
+        "source": "https://openstax.org/books/physics/pages/9-3-simple-machines",
+        "answer": "작용 팔을 길게 하면 같은 하중을 지탱하기 위해 필요한 힘은 줄어든다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 1147
+      },
+      {
+        "name": "lever_followup",
+        "note": "LEVER",
+        "source": "https://openstax.org/books/physics/pages/9-3-simple-machines",
+        "answer": "작용 팔을 절반으로 하면 필요한 힘은 두 배가 된다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 1247
+      },
+      {
+        "name": "energy_inputs_units",
+        "note": "ENERGY",
+        "source": "https://openstax.org/books/college-physics/pages/7-3-gravitational-potential-energy",
+        "answer": "질량(kg), 중력 가속도(m/s²), 높이 증가(m)가 필요하며, 결과 단위는 줄(J)이다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 2058
+      },
+      {
+        "name": "series_principle",
+        "note": "SERIES",
+        "source": "https://openstax.org/books/college-physics/pages/21-1-resistors-in-series-and-parallel",
+        "answer": "직렬로 연결한 두 저항의 합성 저항은 첫 번째 저항과 두 번째 저항의 값을 더한다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 1820
+      },
+      {
+        "name": "game_state_absent",
+        "note": "SERIES",
+        "source": "https://openstax.org/books/college-physics/pages/21-1-resistors-in-series-and-parallel",
+        "answer": "이 자료에는 창고 이름이 포함되어 있지 않아 알 수 없습니다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 1180
+      },
+      {
+        "name": "independent_scope_question",
+        "note": "SERIES",
+        "source": "https://openstax.org/books/college-physics/pages/21-1-resistors-in-series-and-parallel",
+        "answer": "이 과학 노트는 게임의 제작 해금 여부를 알려 주지 않습니다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 930
+      },
+      {
+        "name": "research_cache",
+        "note": "SERIES",
+        "source": "https://openstax.org/books/college-physics/pages/21-1-resistors-in-series-and-parallel",
+        "answer": "이 과학 노트는 게임의 제작 해금 여부를 알려 주지 않습니다. [자료 1]",
+        "outcome": "PASS",
+        "milliseconds": 6
+      }
+    ],
+    "raw_case_meanings_manually_reviewed": true,
+    "scope": "Only supplied fixed note principles, followup, absent game facts and cache; not unrestricted scientific calculations"
+  },
+  "not_executed": [
+    "Minecraft reading/link/dialog input/click or reconnect acceptance",
+    "Unrestricted scientific calculation/problem interpretation accuracy retest",
+    "Target concurrency, long running load or operating budget acceptance",
+    "Operational deployment"
+  ]
+}

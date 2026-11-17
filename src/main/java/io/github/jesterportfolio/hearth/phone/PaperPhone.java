@@ -30,6 +30,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private final PhoneReferences references=new PhoneReferences();
     private final Map<PlayerSessions.Session,String> contextModes=new IdentityHashMap<>();
     private final Map<PlayerSessions.Session,PhoneHelp.Selection> helpSelections=new IdentityHashMap<>();
+    private final Map<PlayerSessions.Session,ScienceReading> researchSelections=new IdentityHashMap<>();
     private CompletionAction completion=(p,s,c)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("COMPLETION_DISABLED"));
     public void completion(CompletionAction handler){completion=handler;}
     public void completion(CompletionAction handler,CompletionFlow flow){completion=handler;completionFlow=flow;}
@@ -61,7 +62,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         Objects.requireNonNull(plugin.getCommand("hearthai")).setExecutor((sender,command,label,args)->{AssistantDiagnostics.lines(sender instanceof org.bukkit.command.ConsoleCommandSender,args,mode,assistant::snapshot).forEach(sender::sendMessage);return true;});
         Bukkit.getPluginManager().registerEvents(this,plugin);
     }
-    private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();old.calculator().close();contextModes.remove(old.session());helpSelections.remove(old.session());completionFlow.forget(old.session());completionReturns.remove(old.session());references.remove(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner),new PhoneCalculator());screens.put(p.getUniqueId(),next);return next;}
+    private Screen screen(Player p){var session=players.current(p);if(session==null)throw new IllegalStateException("PHONE_SESSION_REQUIRED");var old=screens.get(p.getUniqueId());if(old!=null&&old.session()==session)return old;if(old!=null){old.chat().close();old.calculator().close();contextModes.remove(old.session());helpSelections.remove(old.session());researchSelections.remove(old.session());completionFlow.forget(old.session());completionReturns.remove(old.session());references.remove(old.session());}var next=new Screen(session,new Object(),new PhoneChat(assistant,owner),new PhoneCalculator());screens.put(p.getUniqueId(),next);return next;}
     private boolean valid(Player p,Screen s){return !closed&&p.isOnline()&&players.current(p)==s.session()&&screens.get(p.getUniqueId())==s;}
     private Screen advance(Player p){var old=screen(p);var s=new Screen(old.session(),new Object(),old.chat(),old.calculator());screens.put(p.getUniqueId(),s);return s;}
     private ClickCallback.Options options(){return ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(2)).build();}
@@ -92,7 +93,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         if(app==0){chat(p);return;}var s=advance(p);
         if(app==5){settings(p,s);return;}
         if(app==4){libraryMenu(p,s,"diary");return;}
-        if(app==2){info(p,s,"연구",List.of("연구 기능은 아직 구현되지 않았습니다."));return;}
+        if(app==2){research(p,s,null);return;}
         String section=app==1?"quests":app==3?"map":"diary";
         browse(p,s,section,1);
     }
@@ -539,7 +540,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private ActionButton chatButton(Player p,Screen s,String label,Runnable action){boolean hasInput=!s.chat().busy();return ActionButton.builder(Component.text(label)).width(110).action(DialogAction.customClick((response,audience)->{if(audience instanceof Player who&&who.getUniqueId().equals(p.getUniqueId())){String draft=hasInput?response.getText("question"):null;dispatch(p,s,()->{if(!s.chat().busy()&&draft!=null)s.chat().draft(draft);action.run();});}},options())).build();}
     private void help(Player p,Screen s,PhoneHelp.Selection selection){
         if(!valid(p,s))return;if(s.chat().busy()){info(p,s,"AI 요청 처리 중",List.of("기존 요청을 취소하거나 완료한 뒤 다른 항목을 선택해 주세요."));return;}
-        helpSelections.put(s.session(),selection);contextModes.put(s.session(),selection.section());references.remove(s.session());if(s.chat().draft().isBlank())s.chat().draft(PhoneHelp.question());chat(p);
+        researchSelections.remove(s.session());helpSelections.put(s.session(),selection);contextModes.put(s.session(),selection.section());references.remove(s.session());if(s.chat().draft().isBlank())s.chat().draft(PhoneHelp.question());chat(p);
     }
     private void returnHelp(Player p,Screen s){
         var selected=helpSelections.get(s.session());if(selected==null){chat(p);return;}
@@ -580,13 +581,40 @@ public final class PaperPhone implements Listener,AutoCloseable {
         },options())).build();
         show(p,s,topic.title(),body,inputs,List.of(calculate,button(p,s,"계산기로",()->calculator(p))));
     }
+    private void research(Player p,Screen s,ScienceReading reading){
+        var body=new ArrayList<DialogBody>();var actions=new ArrayList<ActionButton>();
+        body.add(DialogBody.plainMessage(Component.text("공개 과학 자료 · 기본 원리와 가정\n게임의 발견·연구 완료·제작 해금을 뜻하지 않습니다.")));
+        if(reading==null){
+            for(var note:ScienceReading.values())actions.add(button(p,s,note.title(),()->research(p,advance(p),note)));
+        }else{
+            for(String paragraph:reading.paragraphs())body.add(DialogBody.plainMessage(Component.text(paragraph)));
+            body.add(DialogBody.plainMessage(Component.text("검토 출처: OpenStax 원문").clickEvent(ClickEvent.openUrl(reading.url()))));
+            actions.add(button(p,s,"이 원리로 계산",()->scienceCalculator(p,reading.calculation(),Collections.nCopies(reading.calculation().fields().size(),""),null)));
+            if(!s.chat().busy())actions.add(button(p,s,"이 자료로 AI 질문",()->{
+                researchSelections.put(s.session(),reading);contextModes.put(s.session(),"none");helpSelections.remove(s.session());references.remove(s.session());
+                if(s.chat().draft().isBlank())s.chat().draft("이 자료의 핵심 원리와 적용할 때의 가정을 짧게 설명해 줘.");chat(p);
+            }));
+            actions.add(button(p,s,"과학 자료 목록",()->research(p,advance(p),null)));
+        }
+        actions.add(button(p,s,"AI 어시스턴트",()->chat(p)));actions.add(button(p,s,"홈",()->home(p)));
+        show(p,s,reading==null?"연구 · 과학 자료":reading.title(),body,List.of(),actions);
+    }
+    private void previewScience(Player p,Screen s,ScienceReading reading,String question){
+        var body=List.of(DialogBody.plainMessage(Component.text("질문: "+question+"\n"+(s.chat().includeHistory()?"같은 과학 노트의 최근 대화 일부도 함께 보냅니다.":"이전 대화는 보내지 않습니다.")+"\n\n"+reading.context())));
+        var send=button(p,s,"이 자료로 전송",()->{
+            if(s.chat().busy()||researchSelections.get(s.session())!=reading)return;
+            references.remove(s.session());s.chat().submitScience(question,reading,()->!closed&&players.current(p)==s.session()&&researchSelections.get(s.session())==reading).exceptionally(error->null);chat(p);
+        });
+        show(p,s,"과학 자료 전송 확인",body,List.of(),List.of(send,button(p,s,"전송 취소",()->chat(p))));
+    }
     private void chat(Player p){
-        var s=advance(p);var body=new ArrayList<DialogBody>();body.add(DialogBody.plainMessage(Component.text("최근 대화 · 현재 접속 세션에서만 유지\n"+PhoneContext.MODES.get(contextModes.getOrDefault(s.session(),"none")))));
-        if(contextModes.getOrDefault(s.session(),"none").equals("none"))body.add(DialogBody.plainMessage(Component.text("일반 과학·기술 원리를 질문할 수 있습니다. 현재 게임 진행·좌표·보상 정보는 전달하지 않습니다.")));
+        var s=advance(p);var body=new ArrayList<DialogBody>();body.add(DialogBody.plainMessage(Component.text("최근 대화 · 현재 접속 세션에서만 유지\n"+(researchSelections.containsKey(s.session())?"과학 자료 도움 · "+researchSelections.get(s.session()).title():PhoneContext.MODES.get(contextModes.getOrDefault(s.session(),"none"))))));
+        if(!researchSelections.containsKey(s.session())&&contextModes.getOrDefault(s.session(),"none").equals("none"))body.add(DialogBody.plainMessage(Component.text("일반 과학·기술 원리를 질문할 수 있습니다. 현재 게임 진행·좌표·보상 정보는 전달하지 않습니다.")));
+        var reading=researchSelections.get(s.session());if(reading!=null)body.add(DialogBody.plainMessage(Component.text("선택한 과학 노트만 전송합니다. 게임 진행·개인 기록은 읽지 않습니다. 자료 번호는 해당 노트의 출처를 가리키며 답변의 정답 보증이 아닙니다.")));
         var selected=helpSelections.get(s.session());if(selected!=null)body.add(DialogBody.plainMessage(Component.text("선택한 자료 한 항목: "+selected.source().title())));
         if(references.containsKey(s.session()))body.add(DialogBody.plainMessage(Component.text("답변의 자료 번호는 ‘최근 요청 참고자료’에서 확인할 수 있습니다.")));
         body.add(DialogBody.plainMessage(Component.text(s.chat().includeHistory()?"같은 자료 범위의 최근 대화 일부를 함께 보냅니다.":"이전 대화를 보내지 않고 질문합니다. 화면의 대화 기록은 유지합니다.")));
-        for(var turn:s.chat().history()){body.add(DialogBody.plainMessage(Component.text("나: "+turn.question())));body.add(DialogBody.plainMessage(Component.text("AI: "+turn.answer())));}
+        for(var displayed:s.chat().displayHistory()){var turn=displayed.turn();body.add(DialogBody.plainMessage(Component.text("나: "+turn.question())));body.add(DialogBody.plainMessage(Component.text("AI ("+displayed.basis()+"): "+turn.answer())));}
         if(s.chat().error()!=null)body.add(DialogBody.plainMessage(Component.text(s.chat().error())));
         if(s.chat().busy())body.add(DialogBody.plainMessage(Component.text("나: "+s.chat().question()+"\n응답 대기 중입니다. 잠시 후 응답 확인을 눌러 주세요.")));
         var actions=new ArrayList<ActionButton>();
@@ -598,7 +626,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
         if(s.chat().busy())actions.add(chatButton(p,s,"요청 취소",()->{s.chat().cancel();references.remove(s.session());chat(p);}));
         if(!s.chat().busy())actions.add(chatButton(p,s,"도움 범위 선택",()->contextMenu(p)));
         if(!s.chat().busy())actions.add(chatButton(p,s,"이전 대화 함께 보내기: "+(s.chat().includeHistory()?"켬":"끔"),()->{s.chat().includeHistory(!s.chat().includeHistory());chat(p);}));
-        if(selected!=null){actions.add(chatButton(p,s,"원래 정보",()->returnHelp(p,s)));if(!s.chat().busy())actions.add(chatButton(p,s,"항목 선택 해제",()->{helpSelections.remove(s.session());references.remove(s.session());contextModes.put(s.session(),"none");chat(p);}));}
+        if(selected!=null){actions.add(chatButton(p,s,"원래 정보",()->returnHelp(p,s)));if(!s.chat().busy())actions.add(chatButton(p,s,"항목 선택 해제",()->{helpSelections.remove(s.session());researchSelections.remove(s.session());references.remove(s.session());contextModes.put(s.session(),"none");chat(p);}));}
+        if(reading!=null)actions.add(chatButton(p,s,"선택한 과학 자료 읽기",()->research(p,advance(p),reading)));
         if(references.containsKey(s.session()))actions.add(chatButton(p,s,"최근 요청 참고자료",()->referenceList(p,advance(p))));
         actions.add(chatButton(p,s,"계산기",()->calculator(p)));
         actions.add(chatButton(p,s,"응답 확인",()->chat(p)));actions.add(chatButton(p,s,"홈",()->home(p)));
@@ -606,7 +635,8 @@ public final class PaperPhone implements Listener,AutoCloseable {
     }
     private void contextMenu(Player p){
         var s=advance(p);var actions=new ArrayList<ActionButton>();
-        PhoneContext.MODES.forEach((mode,label)->actions.add(button(p,s,label,()->{if(!s.chat().busy()){contextModes.put(s.session(),mode);helpSelections.remove(s.session());references.remove(s.session());chat(p);}})));
+        PhoneContext.MODES.forEach((mode,label)->actions.add(button(p,s,label,()->{if(!s.chat().busy()){contextModes.put(s.session(),mode);helpSelections.remove(s.session());researchSelections.remove(s.session());references.remove(s.session());chat(p);}})));
+        actions.add(button(p,s,"과학 자료 선택",()->research(p,advance(p),null)));
         actions.add(button(p,s,"취소",()->chat(p)));
         show(p,s,"AI 도움 범위",List.of(DialogBody.plainMessage(Component.text("선택한 범위의 본인 공개 정보만 요청 시 읽습니다. 다른 사람의 개인 정보·미발견 비밀·원본 콘텐츠는 전달하지 않습니다. 최근 대화 일부도 포함되며 실제 AI는 게임 상태를 변경할 수 없습니다."))),List.of(),actions);
     }
@@ -614,6 +644,7 @@ public final class PaperPhone implements Listener,AutoCloseable {
         if(!valid(p,s)||s.chat().busy())return;
         if(question==null||question.isBlank()||question.codePointCount(0,question.length())>256){s.chat().submit(question).exceptionally(error->null);chat(p);return;}
         s.chat().draft(question);
+        var reading=researchSelections.get(s.session());if(reading!=null){previewScience(p,advance(p),reading,question);return;}
         String mode=contextModes.getOrDefault(s.session(),"none");
         if(mode.equals("none")){references.remove(s.session());s.chat().submit(question,"",()->!closed&&players.current(p)==s.session()).exceptionally(error->null);chat(p);return;}
         var next=advance(p);
@@ -704,6 +735,6 @@ public final class PaperPhone implements Listener,AutoCloseable {
     private boolean deviceAllowed(Player p,ItemStack item){var s=players.current(p);if(s==null)return false;var data=item.getItemMeta().getPersistentDataContainer();String owner=data.get(new NamespacedKey(plugin,"phone_owner"),PersistentDataType.STRING);return owner==null?!plugin.getConfig().getBoolean("s4-features-enabled")&&p.hasPermission("hearth.verify"):p.getUniqueId().toString().equals(owner)&&s.context().storyRunId().toString().equals(data.get(new NamespacedKey(plugin,"phone_run"),PersistentDataType.STRING));}
     @EventHandler(priority=EventPriority.HIGHEST) public void use(PlayerInteractEvent e){if(device(e.getItem())&&e.getAction().isRightClick()){e.setCancelled(true);if(e.getHand()==EquipmentSlot.HAND&&deviceAllowed(e.getPlayer(),e.getItem())&&players.current(e.getPlayer())!=null)Bukkit.getScheduler().runTaskLater(plugin,()->{if(players.current(e.getPlayer())!=null&&!closed)home(e.getPlayer());},1);}}
     @EventHandler public void drop(PlayerDropItemEvent e){if(device(e.getItemDrop().getItemStack()))e.setCancelled(true);}
-    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();s.calculator().close();completionFlow.forget(s.session());completionReturns.remove(s.session());pendingActions.remove(s.session());contextModes.remove(s.session());helpSelections.remove(s.session());references.remove(s.session());}}
-    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->{s.chat().close();s.calculator().close();});screens.clear();pendingActions.clear();completionFlow.clear();completionReturns.clear();contextModes.clear();helpSelections.clear();references.clear();assistant.close();}
+    @EventHandler public void quit(PlayerQuitEvent e){var s=screens.remove(e.getPlayer().getUniqueId());if(s!=null){s.chat().close();s.calculator().close();completionFlow.forget(s.session());completionReturns.remove(s.session());pendingActions.remove(s.session());contextModes.remove(s.session());helpSelections.remove(s.session());researchSelections.remove(s.session());references.remove(s.session());}}
+    @Override public void close(){closed=true;HandlerList.unregisterAll(this);screens.values().forEach(s->{s.chat().close();s.calculator().close();});screens.clear();pendingActions.clear();completionFlow.clear();completionReturns.clear();contextModes.clear();helpSelections.clear();researchSelections.clear();references.clear();assistant.close();}
 }

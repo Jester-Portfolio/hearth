@@ -24,6 +24,7 @@
 | [ADR-0018: 로컬 AI 런타임·격리 예산](0018-local-ai-runtime-and-trial-budget.md) | 승인·구현/격리 실제 추론 범위 | 고정 Ollama/Qwen3 조합·정보/요청 한도·다운로드/CPU/RAM/GPU/시간·소유 자원 정리 |
 | [ADR-0019: 접속별 AI 캐시·참고자료 계약](0019-session-ai-cache-and-reference-contract.md) | 승인된 후속 범위의 구현 결정 | 접속/자료 버전별 유한 캐시·백엔드/최신 권한 재확인·자료 번호와 표시 정합성 |
 | [ADR-0020: 일반 지식과 게임 자료의 질의 경계](0020-general-knowledge-and-game-context-boundaries.md) | 승인된 S5 후속 범위의 구현 결정·과학 품질 보류 | 서버 선택 목적·일반 모드 정보 비전송·raw 역할 분리·수식 모순 응답 거부 |
+| [ADR-0021: 공개 과학 노트와 자료 기반 질문](0021-science-reading-and-reference-questions.md) | 승인된 S5 후속 보완의 구현 결정 | 읽기 전용 과학 노트·선택 확인·노트별 대화/출처·계산기 연결 |
 
 각 기록에는 다음 내용을 포함합니다.
 

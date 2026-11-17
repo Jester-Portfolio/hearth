@@ -378,6 +378,7 @@ def main():
     quality.add_argument('--grounded',action='store_true',help='자료 번호·세션 캐시·최신성 확인 probe를 사용합니다')
     quality.add_argument('--focused',action='store_true',help='긴 공개 자료 발췌·복수 자료·이전 대화 선택 probe를 사용합니다')
     quality.add_argument('--knowledge',action='store_true',help='일반 과학 지식·후속 대화·게임 자료 경계 probe를 사용합니다')
+    quality.add_argument('--research',action='store_true',help='고정 과학 노트의 근거·후속 대화·범위 부재 probe를 사용합니다')
     parser.add_argument('--continue-after-review', action='store_true', help='원본 결과/파일을 보존하고 같은 최초 600초 예산의 남은 시간만 사용합니다')
     args = parser.parse_args()
     root = isolated_paths.workspace(args.workspace,'hearth-s5-trial.')
@@ -502,19 +503,20 @@ def main():
         print('S5 runtime ready; bounded model warmup started', flush=True)
         warm_file=root/('warmup'+suffix+'.json')
         warm_command=[str(args.java),'-Xmx192m','-XX:ActiveProcessorCount=2','-cp',args.classpath,'io.github.jesterportfolio.hearth.phone.OllamaTrialWarmup',HOST+'/api/generate',str(warm_file)]
-        if args.knowledge:warm_command.append('knowledge')
+        if args.research:warm_command.append('research')
+        elif args.knowledge:warm_command.append('knowledge')
         elif args.grounded or args.focused:warm_command.append('grounded')
         warm=trial.launch(warm_command,os.environ.copy(),'warmup'+suffix)
         assert trial.wait(warm,90)==0,'Actual-format warmup failed'
         report['warmup']=json.loads(warm_file.read_text())
         report['model_processes'] = trial.api('/api/ps')
         probe_file=root/('probe-result'+suffix+'.json')
-        command=[str(args.java), '-Xmx192m', '-XX:ActiveProcessorCount=2', '-cp', args.classpath, 'io.github.jesterportfolio.hearth.phone.'+('OllamaKnowledgeProbe' if args.knowledge else 'OllamaFocusedProbe' if args.focused else 'OllamaGroundingProbe' if args.grounded else 'OllamaTrialProbe'), HOST+'/api/generate', str(probe_file)]
+        command=[str(args.java), '-Xmx192m', '-XX:ActiveProcessorCount=2', '-cp', args.classpath, 'io.github.jesterportfolio.hearth.phone.'+('OllamaResearchProbe' if args.research else 'OllamaKnowledgeProbe' if args.knowledge else 'OllamaFocusedProbe' if args.focused else 'OllamaGroundingProbe' if args.grounded else 'OllamaTrialProbe'), HOST+'/api/generate', str(probe_file)]
         probe = trial.launch(command, os.environ.copy(), 'probe'+suffix)
         assert trial.wait(probe, 90) == 0, 'Java adapter probe failed'
         report['probe'] = json.loads(probe_file.read_text())
         report['real_model'] = True
-        if args.grounded or args.focused or args.knowledge:
+        if args.grounded or args.focused or args.knowledge or args.research:
             report['required_checks_passed']=report['probe']['required_checks_passed']
             report['outcome']='PASS' if report['required_checks_passed'] else 'ACTUAL_MODEL_ACCEPTANCE_FAILED'
         else:

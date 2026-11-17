@@ -6,6 +6,7 @@ import java.util.concurrent.*;
 /** owner 스레드에서만 사용하며 화면 종료와 AI 작업 수명을 분리합니다. 기록은 세션 메모리에만 둡니다. */
 public final class PhoneChat {
     public record Turn(String question,String answer){}
+    public record DisplayTurn(Turn turn,String basis){}
     private final AssistantService service;private final Executor owner;private final PhoneAnswerCache cache;private record Scope(String mode,String context,Object material){}private record Exchange(Turn turn,Scope scope){}
     private final List<Exchange> history=new ArrayList<>();private String lastMode="none";private String draft="";private long draftVersion;
     private static final class Work {
@@ -24,7 +25,11 @@ public final class PhoneChat {
     public void draft(String value){if(closed||value==null||value.codePointCount(0,value.length())>256)throw new IllegalArgumentException("CHAT_DRAFT_LENGTH");draft=value;draftVersion++;}
     public String question(){return question;}
     public List<Turn> history(){return history.stream().map(Exchange::turn).toList();}public boolean busy(){return pending!=null;}public String error(){return error;}
+    public List<DisplayTurn> displayHistory(){return history.stream().map(e->new DisplayTurn(e.turn(),e.scope().material() instanceof ScienceReading reading?"과학 자료 · "+reading.title():PhoneContext.MODES.get(e.scope().mode()))).toList();}
     public CompletionStage<Void> submit(String input){return submit(input,"",()->true);}
+    public CompletionStage<Void> submitScience(String input,ScienceReading reading,java.util.function.BooleanSupplier current){
+        return submit(input,Objects.requireNonNull(reading).context(),"research",current,()->CompletableFuture.completedFuture(true),reading);
+    }
     public CompletionStage<Void> submit(String input,String context,java.util.function.BooleanSupplier current){return submit(input,context,context.isEmpty()?"none":"quests",current);}
     public CompletionStage<Void> submit(String input,String context,String mode,java.util.function.BooleanSupplier current){return submit(input,context,mode,current,()->CompletableFuture.completedFuture(true));}
     public CompletionStage<Void> submit(String input,String context,String mode,java.util.function.BooleanSupplier current,java.util.function.Supplier<CompletionStage<Boolean>> validate){
@@ -32,7 +37,7 @@ public final class PhoneChat {
     }
     /** materialScope는 서버 내부의 불변 식별 표식이며 요청 프롬프트에는 포함하지 않습니다. */
     public CompletionStage<Void> submit(String input,String context,String mode,java.util.function.BooleanSupplier current,java.util.function.Supplier<CompletionStage<Boolean>> validate,Object materialScope){
-        if(!PhoneContext.MODES.containsKey(mode))return CompletableFuture.failedFuture(new IllegalArgumentException("UNKNOWN_AI_CONTEXT"));
+        if(!PhoneContext.MODES.containsKey(mode)&&!mode.equals("research"))return CompletableFuture.failedFuture(new IllegalArgumentException("UNKNOWN_AI_CONTEXT"));
         if(closed||busy())return CompletableFuture.failedFuture(new IllegalStateException("CHAT_BUSY_OR_CLOSED"));
         if(input==null||input.isBlank()||input.codePointCount(0,input.length())>256){retryable=false;error="질문은 1~256자로 입력해 주세요.";return CompletableFuture.failedFuture(new IllegalArgumentException("CHAT_INPUT_LENGTH"));}
         var scope=mode.equals("none")?new Scope("none","",null):new Scope(mode,context,materialScope);
@@ -43,7 +48,10 @@ public final class PhoneChat {
             int sources=materialScope instanceof PhoneGrounding.Scope materials?materials.items().size():-1;
             var recent=includeHistory?history.stream().filter(e->e.scope().equals(scope)).map(Exchange::turn).toList():List.<Turn>of();
             if(mode.equals("none")&&(!context.isEmpty()||materialScope!=null))throw new IllegalArgumentException("GENERAL_KNOWLEDGE_HAS_GAME_CONTEXT");
-            request=mode.equals("none")?AssistantRequest.general(question,recent):new AssistantRequest(question,recent,context,sources);
+            if(mode.equals("research")){
+                if(!(materialScope instanceof ScienceReading reading)||!reading.context().equals(context))throw new IllegalArgumentException("UNAPPROVED_SCIENCE_REFERENCE");
+                request=AssistantRequest.science(question,recent,reading);
+            }else request=mode.equals("none")?AssistantRequest.general(question,recent):new AssistantRequest(question,recent,context,sources);
             cache.select(scope);var saved=service.allowsCache()?cache.find(request):Optional.<String>empty();
             fromCache=saved.isPresent();
             pending=new Work((saved.isPresent()?service.confirmCached(saved.orElseThrow()):service.ask(request)).toCompletableFuture(),timeoutMillis);

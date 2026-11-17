@@ -4,13 +4,15 @@ import java.util.*;
 
 /** 서버에서 승인한 문자열만 담는 유한 요청. UUID·월드·DB·도구 실행 권한을 포함하지 않습니다. */
 public record AssistantRequest(String question,List<PhoneChat.Turn> history,String context,int sources,Purpose purpose){
-    public enum Purpose { PUBLIC_GAME, GENERAL_KNOWLEDGE }
+    public enum Purpose { PUBLIC_GAME, GENERAL_KNOWLEDGE, SCIENCE_REFERENCE }
     public AssistantRequest(String question,List<PhoneChat.Turn> history,String context){this(question,history,context,-1,Purpose.PUBLIC_GAME);}
     public AssistantRequest(String question,List<PhoneChat.Turn> history,String context,int sources){this(question,history,context,sources,Purpose.PUBLIC_GAME);}
     public static AssistantRequest general(String question,List<PhoneChat.Turn> history){return new AssistantRequest(question,history,"",0,Purpose.GENERAL_KNOWLEDGE);}
+    public static AssistantRequest science(String question,List<PhoneChat.Turn> history,ScienceReading reading){return new AssistantRequest(question,history,Objects.requireNonNull(reading).context(),1,Purpose.SCIENCE_REFERENCE);}
     public AssistantRequest{
         Objects.requireNonNull(purpose);Objects.requireNonNull(context);
         if(purpose==Purpose.GENERAL_KNOWLEDGE&&(!context.isEmpty()||sources!=0))throw new IllegalArgumentException("GENERAL_KNOWLEDGE_HAS_GAME_CONTEXT");
+        if(purpose==Purpose.SCIENCE_REFERENCE&&(sources!=1||!ScienceReading.approvedContext(context)))throw new IllegalArgumentException("UNAPPROVED_SCIENCE_REFERENCE");
         if(sources < -1||sources>4||sources>0&&(context==null||context.isBlank()))throw new IllegalArgumentException("AI_SOURCE_COUNT");
         if(question==null||question.isBlank()||question.codePointCount(0,question.length())>256)throw new IllegalArgumentException("AI_QUESTION_LENGTH");
         question=question.strip();context=limit(Objects.requireNonNull(context),2400);
@@ -18,6 +20,11 @@ public record AssistantRequest(String question,List<PhoneChat.Turn> history,Stri
     }
     public static String limit(String text,int length){return text.codePointCount(0,text.length())<=length?text:text.substring(0,text.offsetByCodePoints(0,length));}
     public String prompt(){
+        if(purpose==Purpose.SCIENCE_REFERENCE){
+            var text=new StringBuilder("Hearth 과학 자료 질문입니다. 선택한 과학 노트의 원리와 가정만 설명하세요. 이 자료는 게임 진행/발견/제작 가능 여부의 근거가 아닙니다. 자료 밖의 질문은 자료에 없다고 답하고 출처 번호나 게임 사실을 만들지 마세요.\n[선택한 과학 자료]\n").append(context).append('\n');
+            for(var turn:history)text.append("[같은 과학 자료의 이전 질문]\n").append(turn.question()).append("\n[이전 응답]\n").append(turn.answer()).append('\n');
+            return text.append("[현재 질문]\n").append(question).append("\n[최종 응답 규칙]\n핵심만 한국어 1~2문장으로 답하고, 답변 본문에 근거 표시 [자료 1]을 반드시 포함하세요. 자료 밖의 판단에도 이 표시를 쓰세요. 숫자 계산의 검산은 별도 계산기를 사용하며 임의의 계산 결과를 보증하지 마세요.").toString();
+        }
         if(purpose==Purpose.GENERAL_KNOWLEDGE){
             var text=new StringBuilder("Hearth 일반 지식 질문입니다. 과학·기술·수학의 일반 원리를 설명하고 계산의 가정과 단위를 확인하세요. 현재 게임 상태나 공개 자료는 전달되지 않았습니다. 진행·좌표·보상·미발견 정보는 알 수 없다고 답하세요. 자료 번호나 출처를 만들지 마세요.\n");
             for(var turn:history)text.append("[이전 질문]\n").append(turn.question()).append("\n[이전 응답]\n").append(turn.answer()).append('\n');

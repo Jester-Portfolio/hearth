@@ -1975,7 +1975,7 @@ public final class SessionVerification implements AutoCloseable {
         var inventory=one.capture();long revision=s1.save().revision();var sent=new ArrayList<io.github.jesterportfolio.hearth.phone.AssistantRequest>();
         var service=new io.github.jesterportfolio.hearth.phone.AssistantService(){
             public CompletionStage<String> ask(String prompt){throw new AssertionError("Typed purpose required");}
-            public CompletionStage<String> ask(io.github.jesterportfolio.hearth.phone.AssistantRequest request){sent.add(request);return CompletableFuture.completedFuture(request.purpose()==io.github.jesterportfolio.hearth.phone.AssistantRequest.Purpose.GENERAL_KNOWLEDGE?"합성 원리 설명: 100 N":"게임 전용 응답 [자료 1]");}
+            public CompletionStage<String> ask(io.github.jesterportfolio.hearth.phone.AssistantRequest request){sent.add(request);return CompletableFuture.completedFuture(switch(request.purpose()){case GENERAL_KNOWLEDGE->"합성 원리 설명: 100 N";case PUBLIC_GAME->"게임 전용 응답 [자료 1]";case SCIENCE_REFERENCE->"합성 과학 자료 응답 [자료 1]";});}
         };
         var chat=new io.github.jesterportfolio.hearth.phone.PhoneChat(service,owner);
         return mainResult(store.readJournal(a1)).thenCompose(before->mainResult(store.readExploration(a2)).thenCompose(other->journal.load(a1,s1,()->coordinator.playable(s1)).thenCompose(view->{
@@ -1988,9 +1988,23 @@ public final class SessionVerification implements AutoCloseable {
                     check(sent.subList(1,3).stream().allMatch(r->r.context().isEmpty()&&r.sources()==0&&!r.prompt().contains("게임 전용 응답")&&!r.prompt().contains("phone_personal_note")&&!r.prompt().contains(a1.playerId().toString()))&&sent.get(1).history().isEmpty()&&sent.get(2).history().size()==1,"knowledge_AI_general_followup_excludes_game_data_history_and_identity");
                 }).thenCompose(v->rejectQuest(chat.submit("거부할 일반 질문",plan.result().context(),"none",()->coordinator.playable(s1))))
                 .thenRun(()->check(sent.size()==3&&chat.draft().equals("거부할 일반 질문")&&chat.history().size()==3,"knowledge_AI_general_game_context_misuse_rejected_before_backend"))
+                .thenCompose(v->chat.submitScience("지렛대 원리",io.github.jesterportfolio.hearth.phone.ScienceReading.LEVER,()->coordinator.playable(s1)))
+                .thenCompose(v->chat.submitScience("작용 팔이 절반이면?",io.github.jesterportfolio.hearth.phone.ScienceReading.LEVER,()->coordinator.playable(s1)))
+                .thenCompose(v->chat.submitScience("에너지 원리",io.github.jesterportfolio.hearth.phone.ScienceReading.ENERGY,()->coordinator.playable(s1)))
+                .thenRun(()->{
+                    check(sent.subList(3,6).stream().allMatch(r->r.purpose()==io.github.jesterportfolio.hearth.phone.AssistantRequest.Purpose.SCIENCE_REFERENCE&&r.sources()==1&&!r.prompt().contains("게임 전용 응답")&&!r.prompt().contains(a1.playerId().toString()))&&sent.get(3).history().isEmpty()&&sent.get(4).history().size()==1&&sent.get(5).history().isEmpty(),"research_AI_note_followups_exclude_real_PG_game_and_other_note_history");
+                    check(chat.displayHistory().getLast().basis().contains(io.github.jesterportfolio.hearth.phone.ScienceReading.ENERGY.title()),"research_AI_history_labels_match_original_note");
+                    for(var note:io.github.jesterportfolio.hearth.phone.ScienceReading.values()){
+                        var dialog=io.github.jesterportfolio.hearth.phone.PaperPhone.compose(note.title(),note.paragraphs().stream().map(text->io.papermc.paper.registry.data.dialog.body.DialogBody.plainMessage(Component.text(text))).toList(),List.of(),List.of(io.papermc.paper.registry.data.dialog.ActionButton.builder(Component.text("이 자료로 질문")).build()));
+                        check(dialog!=null&&note.context().codePointCount(0,note.context().length())<=2400,"research_AI_actual_Paper_Dialog_factory_"+note.name());
+                    }
+                })
                 .thenCompose(v->{
                     var bad=new io.github.jesterportfolio.hearth.phone.PhoneChat(prompt->CompletableFuture.completedFuture("F × 2 = 400 × 0.5 → F = 200 N"),owner);
                     return rejectQuest(bad.submit("지렛대 계산","","none",()->coordinator.playable(s1))).thenRun(()->check(bad.history().isEmpty()&&bad.cacheStats().entries()==0&&bad.draft().equals("지렛대 계산")&&bad.error().contains("수식"),"knowledge_AI_observed_arithmetic_contradiction_blocks_display_history_and_cache")).whenCompleteAsync((value,error)->bad.close(),owner);
+                }).thenCompose(v->{
+                    var bad=new io.github.jesterportfolio.hearth.phone.PhoneChat(prompt->CompletableFuture.completedFuture("F × 2 = 400 × 0.5 → F = 200 N [자료 1]"),owner);
+                    return rejectQuest(bad.submitScience("지렛대 계산",io.github.jesterportfolio.hearth.phone.ScienceReading.LEVER,()->coordinator.playable(s1))).thenRun(()->check(bad.history().isEmpty()&&bad.cacheStats().entries()==0&&bad.draft().equals("지렛대 계산")&&bad.error().contains("수식"),"research_AI_cited_arithmetic_contradiction_blocks_history_and_cache")).whenCompleteAsync((value,error)->bad.close(),owner);
                 });
         }).thenCompose(v->mainResult(store.readExploration(a2))).thenAccept(latest->check(latest.equals(other),"knowledge_AI_other_personal_PG_unchanged"))
             .thenCompose(v->mainResult(store.readJournal(a1))).thenAccept(latest->check(latest.equals(before)&&codec.equivalent(inventory,one.capture())&&s1.save().revision()==revision,"knowledge_AI_journal_inventory_revision_unchanged"))))
