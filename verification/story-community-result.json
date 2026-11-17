@@ -1,0 +1,29 @@
+{
+  "outcome": "PASS",
+  "unit_tests": 20,
+  "unit_results": [
+    "/home/server/hearth-tmp/hearth-story-community.emh98g02/admission-community-units",
+    "/home/server/hearth-tmp/hearth-story-community.emh98g02/roster-units",
+    "/home/server/hearth-tmp/hearth-story-community.emh98g02/name-unit"
+  ],
+  "native_workspace": "/home/server/hearth-tmp/hearth-s4-11.i5783ixx",
+  "duration_seconds": 46.764,
+  "assertions": 19,
+  "cleanup_errors": [],
+  "final_jar": "/home/server/hearth-tmp/hearth-story-community.emh98g02/Hearth-final.jar",
+  "final_jar_sha256": "ed0b131ca16d6135d45a53696460960f7156062941e8c621b3a140adda15cb06",
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144,
+    "nice": 10,
+    "active_processors": 2
+  },
+  "actual_minecraft_client": "NOT_RUN",
+  "actual_online_sort_and_vote": "NOT_RUN",
+  "AI_inference": "NOT_RUN",
+  "operating_changes": "NONE"
+}

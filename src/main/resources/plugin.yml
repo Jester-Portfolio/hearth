@@ -14,7 +14,7 @@ commands:
     usage: /hearthtrade request <이름> | accept | show | cancel
   hearthstoryadmin:
     description: Console-only story runtime status and asynchronous save drain
-    usage: /hearthstoryadmin status|prepare|drain
+    usage: /hearthstoryadmin status|prepare|drain|members
     permission: hearth.story.manage
   heartheconomy:
     description: Console-only economy status, asynchronous drain and receipt inspection

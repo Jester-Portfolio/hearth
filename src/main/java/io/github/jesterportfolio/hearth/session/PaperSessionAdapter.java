@@ -65,7 +65,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private BiPredicate<ServerProgressAccess.Context,Location> entryAccess=(c,l)->true;
     public void onlineChanged(Consumer<ServerProgressAccess.Context> listener){main();onlineChanged=listener;}
     public void entryAccess(BiPredicate<ServerProgressAccess.Context,Location> access){main();entryAccess=access;}
-    public Map<UUID,Object> onlineContexts(ServerProgressAccess.Context ctx){main();var found=new HashMap<UUID,Object>();for(var e:entries.values())if(e.player().isOnline()&&e.link().context().storyRunId().equals(ctx.storyRunId()))found.put(e.player().getUniqueId(),e.session());return Map.copyOf(found);}
+    public Map<UUID,Object> onlineContexts(ServerProgressAccess.Context ctx){main();var found=new HashMap<UUID,Object>();for(var e:entries.values())if(e.player().isOnline()&&Bukkit.getPlayer(e.player().getUniqueId())==e.player()&&e.link().context().playerId().equals(e.player().getUniqueId())&&e.link().context().storyRunId().equals(ctx.storyRunId()))found.put(e.player().getUniqueId(),e.session());return Map.copyOf(found);}
     private BiPredicate<Player,Location> gatheringEntry=(p,l)->true;private BiPredicate<Player,org.bukkit.block.Block> gatheringChange=(p,b)->true;private BiPredicate<Player,String> gatheringCommand=(p,c)->false;
     public void gathering(BiPredicate<Player,Location> entry,BiPredicate<Player,org.bukkit.block.Block> change,BiPredicate<Player,String> command){main();gatheringEntry=entry;gatheringChange=change;gatheringCommand=command;}
     private BiPredicate<Player,Inventory> gatheringInventory=(p,i)->false;
@@ -117,11 +117,12 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     }
     /** 관리 진단은 등록된 서버 발급 문맥만 사용합니다. */
     public List<ServerProgressAccess.Context> verifiedContexts(){main();return links.values().stream().map(Link::context).toList();}
-    /** 현재 서버가 검증한 연결 범위입니다. 저장된 전체 구성원 명단으로 취급하지 않습니다. */
+    private Supplier<List<CommunityBoundary.Ref>> communityRoster;
+    public void communityRoster(Supplier<List<CommunityBoundary.Ref>> registered){main();communityRoster=Objects.requireNonNull(registered);}
+    /** 정상 스토리의 저장 명단과 실제 연결을 결합합니다. 미공급 개발 경로는 기존 검증 연결만 표시합니다. */
     public List<CommunityBoundary.Ref> community(ServerProgressAccess.Context ctx){
-        main();return links.values().stream().filter(l->l.context().storyRunId().equals(ctx.storyRunId())).map(l->{
-            UUID id=l.context().playerId();var e=entries.get(id);return new CommunityBoundary.Ref(l.context().storyRunId(),id,knownNames.get(id),e!=null&&e.player().isOnline());
-        }).toList();
+        main();var online=onlineContexts(ctx);var connected=links.values().stream().filter(l->l.context().storyRunId().equals(ctx.storyRunId())).map(l->{UUID id=l.context().playerId();var e=entries.get(id);return new CommunityBoundary.Ref(l.context().storyRunId(),id,knownNames.get(id),e!=null&&e.link()==l&&online.get(id)==e.session());}).toList();
+        return communityRoster==null?connected:io.github.jesterportfolio.hearth.exploration.CommunityRoster.merge(ctx.storyRunId(),communityRoster.get(),connected);
     }
     private static void main(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("Not main thread");}
     @EventHandler public void spawn(AsyncPlayerSpawnLocationEvent e) {

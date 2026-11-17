@@ -32,3 +32,5 @@ PG의 `hearth_runtime`에는 연결/계정 표식만 추가하고 기존 `hearth
 본인 `story-runtime.active` 표식은 정상 drain 후에만 제거한다. 기존/교체/변조 표식이나 중단·commit 불명은 자동 복구하지 않는다. 표식을 지워 성공으로 취급하지 않고 [백업/수동 대응](../backup/README.md)에 따라 원본을 검토한다. hot reload·운영 전환/자원 배정·장기 부하와 실제 클라이언트는 별도 수용 대상이다. 격리용 `verify`는 명시한 새 소유 경로/JVM 표식과 실제 접속자 부재에서만 실행한다.
 
 정상 실행과 기존 실행 표식으로 접속이 차단된 HOLD에서도 `hearthrecovery`로 기존 저장의 읽기 전용 점검을 제공한다. 설정과 PG의 기존 소유권만 사용하며 표식 삭제·행 생성·HOLD 해제는 하지 않는다. [명령·제한](OPERATIONS.md)을 따른다.
+
+공동체는 기동 시 선언한 진행의 실제 PG 명단 전체를 복원하고 현재 연결에서 온라인 상태를 합친다. 과거 구성원을 접속 허용 설정에서 제외해도 저장 명단을 지우지 않으며, 미가입 설정 계정을 멤버로 만들지 않는다. 이름은 whitelist 캐시/현재 접속 정보를 사용한다. `hearthstoryadmin members <run UUID> [page]`는 명단 캐시만 읽는다. [구현·검사·미검증](../../docs/story-community-verification.md)을 따른다.

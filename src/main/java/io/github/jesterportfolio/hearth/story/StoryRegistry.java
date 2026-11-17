@@ -59,6 +59,15 @@ public final class StoryRegistry {
             c.commit();return null;
         }catch(Exception failure){c.rollback();throw failure;}finally{c.setAutoCommit(true);}
     });}
+    public record Member(UUID run,UUID player){}
+    /** 2개의 제한 SELECT로 고정 진행의 전체 구성원만 복원합니다. 개인 데이터/행 생성은 없습니다. */
+    public CompletionStage<List<Member>> members(Collection<StoryBinding> expected){
+        var bindings=new HashMap<UUID,StoryBinding>();for(var binding:expected)if(bindings.putIfAbsent(binding.run(),binding)!=null)throw new IllegalArgumentException("STORY_DUPLICATE_BINDING");if(bindings.isEmpty()||bindings.size()>64)throw new IllegalArgumentException("STORY_MEMBER_SCOPE");
+        return database.module("story_community_members",c->{c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);var array=c.createArrayOf("uuid",bindings.keySet().toArray(UUID[]::new));try{
+            var found=new HashSet<UUID>();try(var st=c.prepareStatement("SELECT story_run_id,world_key,world_uuid,template_version,template_hash,content_hash FROM hearth_runtime.story_binding WHERE story_run_id=ANY(?) LIMIT 65")){st.setArray(1,array);st.setQueryTimeout(3);try(var rows=st.executeQuery()){while(rows.next()){var id=rows.getObject(1,UUID.class);var actual=new StoryBinding(id,rows.getString(2),rows.getObject(3,UUID.class),rows.getString(4),rows.getString(5),rows.getString(6));if(!actual.equals(bindings.get(id))||!found.add(id))throw new IllegalStateException("STORY_BINDING_CONFLICT");}}}if(found.size()!=bindings.size())throw new IllegalStateException("STORY_BINDING_MISSING");
+            var members=new ArrayList<Member>();try(var st=c.prepareStatement("SELECT story_run_id,player_uuid FROM hearth_runtime.story_member WHERE story_run_id=ANY(?) ORDER BY story_run_id,player_uuid LIMIT 4097")){st.setArray(1,array);st.setQueryTimeout(3);try(var rows=st.executeQuery()){while(rows.next()){members.add(new Member(rows.getObject(1,UUID.class),rows.getObject(2,UUID.class)));if(members.size()>4096)throw new IllegalStateException("COMMUNITY_MEMBER_LIMIT");}}}c.commit();return List.copyOf(members);
+        }catch(Exception error){c.rollback();throw error;}finally{array.free();c.setAutoCommit(true);}});
+    }
     public CompletionStage<StoryBinding> read(UUID run){return database.module("story_registry_read",c->read(c,run));}
     private static StoryBinding read(Connection c,UUID run)throws SQLException{
         try(var st=c.prepareStatement("SELECT world_key,world_uuid,template_version,template_hash,content_hash FROM hearth_runtime.story_binding WHERE story_run_id=?")){
