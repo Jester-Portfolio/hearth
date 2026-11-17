@@ -49,6 +49,7 @@ public final class OllamaAssistant implements AssistantService {
             }else{if(!ready||!prepared())throw OllamaProtocol.failure(AssistantFailure.Reason.NOT_READY);step(work,"/api/generate","POST",payload,answer->work.result.complete(request==null?OllamaProtocol.answer(answer):OllamaProtocol.answer(answer,request)));}
         });});});return work.result;
     }
+    @Override public synchronized boolean preparationRecorded(){return !closed&&prepared();}
     private boolean prepared(){var receipt=preparedBy;return receipt!=null&&receipt.result.isDone()&&!receipt.result.isCompletedExceptionally();}
     private synchronized void step(Work work,String path,String method,String payload,Consumer<String> accept){
         if(work.result.isDone())return;

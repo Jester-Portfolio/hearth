@@ -13,5 +13,7 @@ public interface AssistantService extends AutoCloseable {
     default CompletionStage<String> confirmCached(String answer){return CompletableFuture.failedFuture(new IllegalStateException("AI_CACHE_UNSUPPORTED"));}
     /** 콘솔의 명시적 준비에만 사용합니다. 사용자 질문이나 자동 재시도에서 호출하지 않습니다. */
     default CompletionStage<String> prepare(){return CompletableFuture.failedFuture(new IllegalStateException("AI_PREPARATION_UNSUPPORTED"));}
+    /** 현재 연결 수명의 준비 성공 기록만 조회합니다. 서버 적재 상태 조회/모델 실행이 아닙니다. */
+    default boolean preparationRecorded(){return false;}
     @Override default void close(){}
 }

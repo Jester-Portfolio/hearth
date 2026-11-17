@@ -68,6 +68,7 @@ public final class StoryRegistry {
             var members=new ArrayList<Member>();try(var st=c.prepareStatement("SELECT story_run_id,player_uuid FROM hearth_runtime.story_member WHERE story_run_id=ANY(?) ORDER BY story_run_id,player_uuid LIMIT 4097")){st.setArray(1,array);st.setQueryTimeout(3);try(var rows=st.executeQuery()){while(rows.next()){members.add(new Member(rows.getObject(1,UUID.class),rows.getObject(2,UUID.class)));if(members.size()>4096)throw new IllegalStateException("COMMUNITY_MEMBER_LIMIT");}}}c.commit();return List.copyOf(members);
         }catch(Exception error){c.rollback();throw error;}finally{array.free();c.setAutoCommit(true);}});
     }
+    public CompletionStage<Void> verify(StoryBinding expected){return read(expected.run()).thenAccept(actual->{if(!expected.equals(actual))throw new IllegalStateException("STORY_BINDING_CONFLICT");});}
     public CompletionStage<StoryBinding> read(UUID run){return database.module("story_registry_read",c->read(c,run));}
     private static StoryBinding read(Connection c,UUID run)throws SQLException{
         try(var st=c.prepareStatement("SELECT world_key,world_uuid,template_version,template_hash,content_hash FROM hearth_runtime.story_binding WHERE story_run_id=?")){

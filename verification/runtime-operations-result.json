@@ -1,0 +1,83 @@
+{
+  "outcome": "PASS",
+  "date": "2026-11-18",
+  "java_unit_tests": 11,
+  "python_unit_tests": 9,
+  "offline_audit_assertions": 13,
+  "native": [
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.tsn13qf2",
+      "outcome": "PASS",
+      "duration_seconds": 46.108,
+      "assertions": 15,
+      "cleanup_errors": [],
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "plugin_sha256": "cb914bcae6807557b5362ab6ebd7be63a67e10f57d1610fe93a5b82f0d01ea82"
+    },
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.pk72h4r6",
+      "outcome": "PASS",
+      "duration_seconds": 48.442,
+      "assertions": 20,
+      "cleanup_errors": [],
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144,
+        "nice": 10,
+        "active_processors": 2
+      },
+      "plugin_sha256": "cb914bcae6807557b5362ab6ebd7be63a67e10f57d1610fe93a5b82f0d01ea82"
+    }
+  ],
+  "preserved_failures": [
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.obnukwlp",
+      "outcome": "FAIL",
+      "duration_seconds": 33.032,
+      "reason": "fixture expected error code did not match storage boundary"
+    },
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-s4-11.k0lmjzyr",
+      "outcome": "FAIL",
+      "duration_seconds": 32.763,
+      "reason": "fixture expected error code did not match storage boundary"
+    }
+  ],
+  "artifact_root": "/home/server/hearth-tmp/hearth-runtime-safety.qo69wcaj",
+  "java_results": [
+    "/home/server/hearth-tmp/hearth-runtime-safety.qo69wcaj/unit-results",
+    "/home/server/hearth-tmp/hearth-runtime-safety.qo69wcaj/launch-unit-results"
+  ],
+  "python_logs": [
+    "/home/server/hearth-tmp/hearth-runtime-safety.qo69wcaj/health-tests.log",
+    "/home/server/hearth-tmp/hearth-runtime-safety.qo69wcaj/health-malformed-test.log"
+  ],
+  "offline_audit_logs": [
+    "/home/server/hearth-tmp/hearth-runtime-safety.qo69wcaj/audit-probe.log",
+    "/home/server/hearth-tmp/hearth-runtime-safety.qo69wcaj/economy-audit-probe.log"
+  ],
+  "compose_cli": "v5.5.0",
+  "compose_config": "PASS_STATIC_ONLY",
+  "shell_syntax": "PASS",
+  "unapproved_shell_guards": "PASS_REFUSED",
+  "final_jar": "/home/server/hearth-tmp/hearth-runtime-safety.qo69wcaj/Hearth-reviewed.jar",
+  "final_jar_sha256": "cb914bcae6807557b5362ab6ebd7be63a67e10f57d1610fe93a5b82f0d01ea82",
+  "actual_minecraft_client": "NOT_RUN",
+  "AI_inference": "NOT_RUN",
+  "docker_image_build_and_run": "NOT_RUN",
+  "actual_zabbix": "NOT_RUN",
+  "operating_changes": "NONE"
+}

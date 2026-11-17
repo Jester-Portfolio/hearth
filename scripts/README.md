@@ -207,3 +207,5 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 `verify-lifecycle.py --sessions --economy --economy-runtime --economy-runtime-recheck --economy-gathering`은 E004 보존 업그레이드와 경제/스토리 채집의 같은 UUID·ID 분리, 실제 제한 초기화/저장·정상 경제 타이머/IDLE 언로드와 원본 보존을 두 JVM에서 확인한다. 기존 엔진/직접 거래의 성공 행렬을 반복하지 않으며 실제 채굴/시설 클릭 검사가 아니다. [결과](../docs/economy-gathering-verification.md)를 따른다.
 
 `verify-lifecycle.py --sessions --story-runtime --story-runtime-recheck --story-community`는 기존 등록 경합 행렬을 반복하지 않고 전체 저장 명단의 정상 기동 복원·다른 진행/미가입 제외·새 admission 확정/실패·읽기 실패와 원본 보존을 두 JVM에서 확인한다. 실제 접속/투표를 만들지 않는다. [결과](../docs/story-community-verification.md)를 따른다.
+
+`runtime_health.py --log <고정 로그> --boot-file <현재 기동 nonce 파일> --mode story|economy --max-age <초>`는 읽기 전용 집계 관측이다. 현재 READY/비준비/관측 불가를 각각 종료 코드 0/1/2로 구분하며 모델/DB 호출을 하지 않는다. `--runtime-safety`는 `--sessions --story-runtime --story-runtime-recheck`의 새 두 JVM에서 소유 누락/원본/관측을, `--owned-economy-world`는 `--sessions --economy --economy-runtime --economy-runtime-recheck`에서 기존 소유 표식의 정상 복원을 확인한다. 실제 플레이·운영 수용을 대체하지 않는다. [검증 기록](../docs/runtime-operations-verification.md), [오프라인 감사/배포 후보 사용법](../infrastructure/deployment/README.md)을 따른다.

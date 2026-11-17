@@ -34,3 +34,5 @@ PG의 `hearth_runtime`에는 연결/계정 표식만 추가하고 기존 `hearth
 정상 실행과 기존 실행 표식으로 접속이 차단된 HOLD에서도 `hearthrecovery`로 기존 저장의 읽기 전용 점검을 제공한다. 설정과 PG의 기존 소유권만 사용하며 표식 삭제·행 생성·HOLD 해제는 하지 않는다. [명령·제한](OPERATIONS.md)을 따른다.
 
 공동체는 기동 시 선언한 진행의 실제 PG 명단 전체를 복원하고 현재 연결에서 온라인 상태를 합친다. 과거 구성원을 접속 허용 설정에서 제외해도 저장 명단을 지우지 않으며, 미가입 설정 계정을 멤버로 만들지 않는다. 이름은 whitelist 캐시/현재 접속 정보를 사용한다. `hearthstoryadmin members <run UUID> [page]`는 명단 캐시만 읽는다. [구현·검사·미검증](../../docs/story-community-verification.md)을 따른다.
+
+정상 기동은 준비 시 등록한 PG 불변 연결을 확인만 한다. 연결 누락/불일치는 HOLD이며 기존 월드의 자동 채택·진행 재생성을 하지 않는다. [기동 보호/운영 점검](../../docs/runtime-operations-verification.md)과 [미적용 운영 구성](../deployment/README.md)을 따른다.

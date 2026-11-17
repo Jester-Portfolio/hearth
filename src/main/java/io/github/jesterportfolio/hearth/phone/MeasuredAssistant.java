@@ -30,6 +30,7 @@ public final class MeasuredAssistant implements AssistantService {
     @Override public boolean allowsCalculationHelp(){return delegate.allowsCalculationHelp();}
     @Override public boolean allowsCache(){return delegate.allowsCache();}
     @Override public CompletionStage<String> confirmCached(String answer){return measure(Kind.CACHE_CONFIRMATION,()->delegate.confirmCached(answer));}
+    @Override public boolean preparationRecorded(){synchronized(this){if(closed)return false;}return delegate.preparationRecorded();}
     @Override public CompletionStage<String> prepare(){return measure(Kind.PREPARATION,delegate::prepare);}
     private synchronized CompletionStage<String> measure(Kind kind,Supplier<CompletionStage<String>> start){
         if(closed)return CompletableFuture.failedFuture(new AssistantFailure(AssistantFailure.Reason.CLOSED));

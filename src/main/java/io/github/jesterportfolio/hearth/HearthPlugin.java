@@ -11,6 +11,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class HearthPlugin extends JavaPlugin {
+    private io.github.jesterportfolio.hearth.administration.RuntimeObservation observation;
     private volatile io.github.jesterportfolio.hearth.story.StoryPreparationRuntime storyPreparation;
     public io.github.jesterportfolio.hearth.story.StoryPreparationRuntime storyPreparation(){return java.util.Objects.requireNonNull(storyPreparation);}
     private volatile io.github.jesterportfolio.hearth.story.StoryRuntime storyRuntime;
@@ -33,6 +34,7 @@ public final class HearthPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new io.github.jesterportfolio.hearth.story.StoryLoginGate(uuid->false),this);
             java.util.Objects.requireNonNull(getCommand("hearthstoryadmin")).setExecutor((sender,command,label,args)->{sender.sendMessage("스토리 준비 설정 보류 · 서버 콘솔에서 확인하세요.");return true;});
             try{storyPreparation=new io.github.jesterportfolio.hearth.story.StoryPreparationRuntime(this);}catch(Exception error){getLogger().severe("HEARTH_STORY_PREPARATION_REFUSED; admissions remain closed");}
+            observe("story-prepare");
             return;
         }
         if(mode.equals("story")){
@@ -41,6 +43,7 @@ public final class HearthPlugin extends JavaPlugin {
             java.util.Objects.requireNonNull(getCommand("hearthstoryadmin")).setExecutor((sender,command,label,args)->{sender.sendMessage("스토리 실행 설정 보류 · 서버 콘솔에서 로그/설정을 확인하세요.");return true;});
             try{storyRuntime=new io.github.jesterportfolio.hearth.story.StoryRuntime(this);}
             catch(Exception error){getLogger().severe("HEARTH_STORY_RUNTIME_REFUSED; admissions remain closed");}
+            observe("story");
             return;
         }
         if(mode.equals("economy")){
@@ -48,6 +51,7 @@ public final class HearthPlugin extends JavaPlugin {
             java.util.Objects.requireNonNull(getCommand("heartheconomy")).setExecutor((sender,command,label,args)->{sender.sendMessage("경제 실행 설정 보류 · 서버 콘솔에서 로그/설정을 확인하세요.");return true;});
             try{economyRuntime=new io.github.jesterportfolio.hearth.economy.EconomyRuntime(this);}
             catch(Exception error){getLogger().severe("HEARTH_ECONOMY_RUNTIME_REFUSED; admissions remain closed");}
+            observe("economy");
             return;
         }
         getLogger().info("Hearth enabled; gameplay is inactive unless an explicit runtime or isolated verification mode is configured.");
@@ -147,8 +151,16 @@ public final class HearthPlugin extends JavaPlugin {
         });
     }
 
+    private void observe(String mode){try{observation=io.github.jesterportfolio.hearth.administration.RuntimeObservation.start(this,mode,()->{
+        String phase="REFUSED";int worlds=0,held=0;boolean ai=false;
+        if(mode.equals("story")&&storyRuntime!=null){phase=storyRuntime.phase().name();ai=storyRuntime.aiPreparationRecorded();var values=storyRuntime.worlds().values();worlds=values.size();for(var world:values)if(world.state()==io.github.jesterportfolio.hearth.lifecycle.WorldLifecycle.State.ERROR_HOLD||world.state()==io.github.jesterportfolio.hearth.lifecycle.WorldLifecycle.State.RECOVERY_REQUIRED)held++;}
+        else if(mode.equals("economy")&&economyRuntime!=null){phase=economyRuntime.phase().name();try{var world=economyRuntime.economy().world;worlds=1;if(world.state()==io.github.jesterportfolio.hearth.lifecycle.WorldLifecycle.State.ERROR_HOLD||world.state()==io.github.jesterportfolio.hearth.lifecycle.WorldLifecycle.State.RECOVERY_REQUIRED)held=1;}catch(NullPointerException unavailable){}}
+        else if(mode.equals("story-prepare")&&storyPreparation!=null)phase=storyPreparation.phase().name();
+        return new io.github.jesterportfolio.hearth.administration.RuntimeObservation.State(phase,worlds,held,ai);
+    });}catch(RuntimeException invalid){getLogger().warning("HEARTH_RUNTIME_OBSERVATION_REFUSED");}}
+
     @Override public void onDisable() {
-        try{io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(storyPreparation,storyRuntime,economyRuntime,lifecycleVerification,inventoryVerification,databaseVerification,verification,restartVerification);}
+        try{io.github.jesterportfolio.hearth.util.ShutdownCleanup.close(storyPreparation,storyRuntime,economyRuntime,observation,lifecycleVerification,inventoryVerification,databaseVerification,verification,restartVerification);}
         catch(RuntimeException error){getLogger().log(java.util.logging.Level.SEVERE,"HEARTH_DISABLE_CLEANUP_FAILED",error);}
     }
 }

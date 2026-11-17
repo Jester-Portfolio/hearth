@@ -7,12 +7,13 @@ import org.bukkit.*;
 
 /** 명시한 기존 경제 차원만 연결합니다. 지형·보호 구역·UUID를 새로 생성/교체하지 않습니다. */
 public final class EconomyWorldBackend implements WorldBackend {
-    private final Placement expected;private final EconomyRuntimeSettings settings;private boolean registered;
+    private final Placement expected;private final EconomyRuntimeSettings settings;private boolean registered;private final boolean previouslyOwned;
     public EconomyWorldBackend(EconomyRuntimeSettings settings){
         this.settings=settings;var key=Objects.requireNonNull(NamespacedKey.fromString(settings.worldKey()));
         var directory=Bukkit.getServer().getLevelDirectory().resolve("dimensions").resolve(key.getNamespace()).resolve(key.getKey()).toAbsolutePath().normalize();
-        expected=new Placement(settings.realm(),key,settings.worldId(),directory);
+        expected=new Placement(settings.realm(),key,settings.worldId(),directory);previouslyOwned=Files.exists(directory.resolve(".hearth-economy-world"),LinkOption.NOFOLLOW_LINKS);
     }
+    public boolean previouslyOwned(){return previouslyOwned;}
     public Placement placement(){return expected;}
     private void main(){if(!Bukkit.isPrimaryThread()||Bukkit.isTickingWorlds())throw new IllegalStateException("ECON_WORLD_SAFE_POINT");}
     private void stored(){try{

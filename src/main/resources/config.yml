@@ -1,6 +1,8 @@
 # disabled는 기본값입니다. story/economy는 각각 별도 설정/준비된 전용 차원·PG가 필요합니다.
 # 시험 verification-enabled와 동시에 켜지 않습니다. 운영 적용은 별도 승인 후 수행합니다.
 runtime-mode: disabled
+# 집계 로그 관측: 0 비활성, 1~3600초. AI 준비 기록은 현재 모델 적재/품질 보증이 아닙니다.
+runtime-observation-seconds: 0
 # Never enable this in a production server. A matching JVM gate and marker are also required.
 verification-enabled: false
 # S4-5 전용 경로·JVM 플래그까지 확인해야 활성화됩니다. 일반 부팅에서는 DB에 연결하지 않습니다.

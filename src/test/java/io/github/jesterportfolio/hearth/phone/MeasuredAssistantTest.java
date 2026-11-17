@@ -17,6 +17,7 @@ final class MeasuredAssistantTest {
         public void close(){closes++;}
     }
     static MeasuredAssistant.Usage row(MeasuredAssistant measured,MeasuredAssistant.Kind kind){return measured.snapshot().usage().stream().filter(u->u.kind()==kind).findFirst().orElseThrow();}
+    @Test void preparationObservationIsPassiveAndClosedWrapperIsFalse(){var calls=new AtomicInteger();AssistantService backend=new AssistantService(){public CompletionStage<String> ask(String value){throw new AssertionError("observation must not infer");}public boolean preparationRecorded(){calls.incrementAndGet();return true;}};var measured=new MeasuredAssistant(backend);assertTrue(measured.preparationRecorded());assertEquals(1,calls.get());assertEquals(0,row(measured,MeasuredAssistant.Kind.GENERATION).started());measured.close();assertFalse(measured.preparationRecorded());assertEquals(1,calls.get());}
     @Test void structuredRequestsCacheCapabilityAndResultsAreForwardedWithoutStoringContent(){
         var backend=new Backend();var clock=new AtomicLong();var measured=new MeasuredAssistant(backend,clock::get);var request=new AssistantRequest("private_question",List.of(),"private_context",-1);
         var answer=measured.ask(request).toCompletableFuture();assertSame(request,backend.request);assertTrue(measured.allowsCache());assertEquals(1,row(measured,MeasuredAssistant.Kind.GENERATION).active());

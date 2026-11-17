@@ -207,3 +207,16 @@ tasks.register("stageLifecycleRuntime") {
         copy { from(sourceSets.main.get().output.classesDirs); include("io/github/jesterportfolio/hearth/verification/IsolatedPaths.class"); into(root.resolve("fixture-classes")) }
     }
 }
+
+// 오프라인 검토만 실행합니다. 서버/DB/HTTP 호출이나 기존 파일 수정은 하지 않습니다.
+tasks.register<JavaExec>("operatorConfigAudit") {
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets.main.get().output + configurations.compileClasspath.get() + configurations.runtimeClasspath.get()
+    mainClass.set("io.github.jesterportfolio.hearth.administration.OperatorConfigAudit")
+    maxHeapSize = "256m"
+    jvmArgs("-XX:ActiveProcessorCount=2", "-Djava.io.tmpdir=/home/server/hearth-tmp/gradle-tmp")
+    doFirst {
+        args(providers.gradleProperty("auditRoot").get(),providers.gradleProperty("auditOutput").get(),providers.gradleProperty("auditServerJar").get())
+        providers.gradleProperty("auditInclude").orNull?.split(",")?.filter { it.isNotBlank() }?.let { args(it) }
+    }
+}

@@ -171,6 +171,8 @@ def main():
     parser.add_argument('--story-preparation-recheck',action='store_true',help='통과한 등록 경합/실패는 반복하지 않고 새 준비/다음 정상 JVM의 영향 경로만 검사합니다')
     parser.add_argument('--story-preparation',action='store_true',help='두 정상 모드 JVM에서 새 템플릿 복제·불변 등록/실패 HOLD와 다음 스토리 실행 복원을 검사합니다')
     parser.add_argument('--template-source',type=Path,help='완료한 소유 격리 증거의 템플릿을 읽기 전용 입력으로 복사합니다')
+    parser.add_argument('--owned-economy-world',action='store_true',help='정상 경제 복원에서 기존 소유 표식의 DB 재초기화 금지 분기를 검사합니다')
+    parser.add_argument('--runtime-safety',action='store_true',help='두 JVM에서 정상 기동의 DB 소유 연결 누락 거부·원본 보존·집계 관측을 검사합니다')
     parser.add_argument('--story-community',action='store_true',help='두 JVM에서 전체 저장 구성원 복원·명단/접속 분리·신규 확정/SQL 실패와 원본 보존을 검사합니다')
     parser.add_argument('--story-operations',action='store_true',help='정상 실행의 확정 효과·원본 보존·읽기 전용 진단/HOLD 초기화를 함께 검사합니다')
     parser.add_argument('--story-modules',action='store_true',help='정식 스토리의 제작/채집/호위/전투/던전/거점·준비 안내를 같은 콘텐츠로 묶어 검사합니다')
@@ -215,11 +217,13 @@ def main():
     if args.story_preparation_recheck and not args.story_preparation:parser.error('--story-preparation-recheck requires --story-preparation')
     if args.story_preparation and (args.template_source is None or any(isinstance(v,bool) and v and k not in {'story_preparation','story_preparation_recheck','accept_eula'} for k,v in vars(args).items())):parser.error('--story-preparation requires standalone --template-source')
     if args.template_source is not None and not args.story_preparation:parser.error('--template-source requires --story-preparation')
+    if args.owned_economy_world and (not all([args.sessions,args.economy,args.economy_runtime,args.economy_runtime_recheck]) or any(isinstance(v,bool) and v and k not in {'owned_economy_world','sessions','economy','economy_runtime','economy_runtime_recheck','accept_eula'} for k,v in vars(args).items())):parser.error('--owned-economy-world requires standalone economy runtime recheck')
+    if args.runtime_safety and (not (args.story_runtime and args.story_runtime_recheck) or any([args.story_modules,args.story_operations,args.story_community])):parser.error('--runtime-safety requires standalone --story-runtime --story-runtime-recheck')
     if args.story_community and (not (args.story_runtime and args.story_runtime_recheck) or args.story_modules or args.story_operations):parser.error('--story-community requires standalone --story-runtime --story-runtime-recheck')
     if args.story_operations and (not (args.story_runtime and args.story_runtime_recheck) or args.story_modules):parser.error('--story-operations requires --story-runtime --story-runtime-recheck without --story-modules')
     if args.story_modules and not (args.story_runtime and args.story_runtime_recheck):parser.error('--story-modules requires --story-runtime --story-runtime-recheck')
     if args.story_runtime_recheck and not args.story_runtime:parser.error('--story-runtime-recheck requires --story-runtime')
-    if args.story_runtime and (not args.sessions or any(isinstance(v,bool) and v and k not in {'story_runtime','story_runtime_recheck','story_modules','story_operations','story_community','sessions','accept_eula'} for k,v in vars(args).items())):parser.error('--story-runtime requires standalone --sessions')
+    if args.story_runtime and (not args.sessions or any(isinstance(v,bool) and v and k not in {'story_runtime','story_runtime_recheck','story_modules','story_operations','story_community','runtime_safety','sessions','accept_eula'} for k,v in vars(args).items())):parser.error('--story-runtime requires standalone --sessions')
     if args.economy_gathering and (not all([args.sessions,args.economy,args.economy_runtime,args.economy_runtime_recheck]) or any(isinstance(v,bool) and v and k not in {'economy_gathering','sessions','economy','economy_runtime','economy_runtime_recheck','accept_eula'} for k,v in vars(args).items())):parser.error('--economy-gathering requires standalone --sessions --economy --economy-runtime --economy-runtime-recheck')
     if args.peer_trades and (not all([args.sessions,args.economy,args.economy_runtime,args.economy_runtime_recheck]) or any(isinstance(v,bool) and v and k not in {'peer_trades','sessions','economy','economy_runtime','economy_runtime_recheck','accept_eula'} for k,v in vars(args).items())):parser.error('--peer-trades requires standalone --sessions --economy --economy-runtime --economy-runtime-recheck')
     if args.economy_runtime_recheck and not args.economy_runtime:parser.error("--economy-runtime-recheck requires --economy-runtime")
@@ -549,6 +553,7 @@ motd=Hearth isolated S4-11 verification
         if args.story_runtime_recheck:paper.insert(-3,'-Dhearth.verification.storyRuntimeRecheck=true')
         if args.economy_gathering:paper.insert(-3,'-Dhearth.verification.economyGathering=true')
         if args.peer_trades:paper.insert(-3,'-Dhearth.verification.peerTrade=true')
+        if args.runtime_safety:paper.insert(-3,'-Dhearth.verification.runtimeSafety=true')
         if args.story_community:paper.insert(-3,'-Dhearth.verification.storyCommunity=true')
         if args.story_operations:paper.insert(-3,'-Dhearth.verification.storyOperations=true')
         if args.story_modules:paper.insert(-3,'-Dhearth.verification.storyModules=true')
@@ -576,10 +581,21 @@ motd=Hearth isolated S4-11 verification
                 config=plugins/'Hearth/config.yml'
                 text=re.sub(r'(?m)^([a-z-]*verification-enabled): true$',r'\1: false',config.read_text())
                 text+='\n'+(plugins/'Hearth/normal-story.yml').read_text()
+                if args.runtime_safety:text+='\nruntime-observation-seconds: 1\n'
                 config.write_text(text)
                 os.environ['HEARTH_ISOLATED_STORY_PASSWORD']='isolated-not-a-secret'
                 name='paper-story-runtime';monitor.launch(name,paper,runtime)
                 monitor.wait(name,'Done (',seconds=120);monitor.wait(name,'HEARTH_STORY_RUNTIME_READY',seconds=30)
+                if args.runtime_safety:
+                    import runtime_health
+                    monitor.wait(name,'"phase":"READY"',seconds=5)
+                    report_lines=(runtime/'logs/latest.log').read_text().splitlines()
+                    reports=[json.loads(m.group(1)) for line in report_lines if (m:=runtime_health.PREFIX.fullmatch(line))]
+                    assert reports,'Runtime report missing'
+                    boot_file=root/'runtime-boot-id';boot_file.write_text(reports[-1]['boot']+'\n');boot_file.chmod(0o600)
+                    observed=runtime_health.inspect(runtime/'logs/latest.log',boot_file,'story',5)
+                    assert observed['controller_ready'] and not observed['ai_preparation_recorded'],'Controller / passive AI observation mismatch'
+                    (root/'runtime-health-ready.json').write_text(json.dumps(observed,indent=2)+'\n')
                 monitor.send(name,'hearthstoryadmin verify');monitor.wait(name,'HEARTH_STORY_RUNTIME_PROBE PASS',seconds=60)
                 monitor.send(name,'hearthstoryadmin drain');monitor.wait(name,'HEARTH_STORY_RUNTIME_DRAINED PASS',seconds=45)
                 monitor.stop(name,'stop');s42.port_free();continue
@@ -588,6 +604,12 @@ motd=Hearth isolated S4-11 verification
                 mapping=dict(line.split('=',1) for line in (plugins/'Hearth/economy-world.properties').read_text().splitlines() if line and not line.startswith('#'))
                 # Java Properties escapes ':' in keys/values; these known fixture values are narrow.
                 world_key=mapping['key'].replace('\\:',':')
+                if args.owned_economy_world:
+                    directory=runtime/'world/dimensions'/Path(world_key.replace(':','/'))
+                    assert str(directory)==mapping['directory'] and directory.resolve().is_relative_to(runtime.resolve()),'Owned fixture directory mismatch'
+                    marker=directory/'.hearth-economy-world'
+                    with marker.open('x') as output:output.write(mapping['realm']+'/'+world_key+'/'+mapping['uuid'])
+                    marker.chmod(0o600)
                 config=plugins/'Hearth/config.yml'
                 text=re.sub(r'(?m)^([a-z-]*verification-enabled): true$',r'\1: false',config.read_text())
                 text+='\nruntime-mode: economy\neconomy-runtime:\n'
@@ -909,7 +931,7 @@ motd=Hearth isolated S4-11 verification
                     processes=monitor.summary(),all_owned_processes_and_ports_closed=not cleanup,
                     plugin_sha256=hashlib.sha256(args.plugin.read_bytes()).hexdigest(),
                     session_checks=[line.split('HEARTH_SESSION_CHECK PASS ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_SESSION_CHECK PASS ' in line],
-                    pack_downloads=pack_downloads,s4_client_mode=args.s4_client,manual_no_time_limit=args.manual_no_time_limit,recovery_inspection_mode=args.recovery_inspection,hud_display_mode=args.hud_display,betterhud_mode=args.betterhud,s4_completion_mode=args.s4_completion,inventory_workspaces_mode=args.inventory_workspaces,s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,story_preparation_recheck=args.story_preparation_recheck,story_preparation_mode=args.story_preparation,story_modules_mode=args.story_modules,story_operations_mode=args.story_operations,story_community_mode=args.story_community,peer_trades_mode=args.peer_trades,economy_gathering_mode=args.economy_gathering,story_runtime_mode=args.story_runtime,story_runtime_recheck=args.story_runtime_recheck,economy_runtime_mode=args.economy_runtime,economy_runtime_recheck=args.economy_runtime_recheck,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
+                    pack_downloads=pack_downloads,s4_client_mode=args.s4_client,manual_no_time_limit=args.manual_no_time_limit,recovery_inspection_mode=args.recovery_inspection,hud_display_mode=args.hud_display,betterhud_mode=args.betterhud,s4_completion_mode=args.s4_completion,inventory_workspaces_mode=args.inventory_workspaces,s4_gameplay_mode=args.s4_gameplay,public_course_mode=args.public_course,gathering_facilities_mode=args.gathering_facilities,play_preparation_mode=args.play_preparation,gathering_crafting_mode=args.gathering_crafting,crafting_quests_mode=args.crafting_quests,crafting_mode=args.crafting,dungeon_play_mode=args.dungeon_play,combat_route_mode=args.combat_route,gathering_mode=args.gathering,fast_travel_mode=args.fast_travel,economy_supply_mode=args.economy_supply,economy_flows_mode=args.economy_flows,economy_quote_mode=args.economy_quote,economy_merchants_mode=args.economy_merchants,economy_report_mode=args.economy_report,economy_desk_mode=args.economy_desk,economy_mode=args.economy,story_preparation_recheck=args.story_preparation_recheck,story_preparation_mode=args.story_preparation,story_modules_mode=args.story_modules,story_operations_mode=args.story_operations,story_community_mode=args.story_community,runtime_safety_mode=args.runtime_safety,owned_economy_world_mode=args.owned_economy_world,peer_trades_mode=args.peer_trades,economy_gathering_mode=args.economy_gathering,story_runtime_mode=args.story_runtime,story_runtime_recheck=args.story_runtime_recheck,economy_runtime_mode=args.economy_runtime,economy_runtime_recheck=args.economy_runtime_recheck,boss_areas_mode=args.boss_areas,boss_patterns_mode=args.boss_patterns,combat_departures_mode=args.combat_departures,combat_players_mode=args.combat_players,combat_paths_mode=args.combat_paths, combat_state_mode=args.combat_state, field_encounters_mode=args.field_encounters, branch_progression_mode=args.branch_progression, completion_navigation_mode=args.completion_navigation,quest_completion_mode=args.quest_completion, general_npcs_mode=args.general_npcs, npc_topics_mode=args.npc_topics, world_effects_mode=args.world_effects, story_batch_mode=args.story_batch, explore_batch_mode=args.explore_batch, sessions_mode=args.sessions, quests_mode=args.quests, quest_list_mode=args.quest_list, quest_info_mode=args.quest_info, quest_auto_mode=args.quest_auto, quest_npc_mode=args.quest_npc, quest_start_mode=args.quest_start, quest_requires_mode=args.quest_requires, quest_batch_mode=args.quest_batch, manual_player_mode=args.manual_player,
                     installed_plugin_sha256=hashlib.sha256((plugins/'Hearth.jar').read_bytes()).hexdigest(),
                     snapshots=[line.split('HEARTH_LIFE_SNAPSHOT ',1)[1] for item in monitor.children.values() for line in item['lines'] if 'HEARTH_LIFE_SNAPSHOT ' in line],
                     runtime_library_jars=[str(p.relative_to(runtime)) for p in (runtime/'libraries').rglob('*.jar') if any(part in p.parts for part in ['postgresql','HikariCP','slf4j-api','checker-qual'])],

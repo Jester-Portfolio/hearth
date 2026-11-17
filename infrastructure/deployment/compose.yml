@@ -1,0 +1,75 @@
+# Linux host-network 검토 후보입니다. 운영 토폴로지 채택/실행 승인이 아닙니다.
+name: ${HEARTH_PROJECT:?reviewed unique project name required}
+services:
+  paper:
+    image: ${HEARTH_PAPER_IMAGE:?reviewed built image digest required}
+    user: ${HEARTH_UID:?non-root uid required}:${HEARTH_GID:?gid required}
+    network_mode: host
+    read_only: true
+    restart: "no"
+    stop_grace_period: ${HEARTH_STOP_GRACE:?reviewed drain allowance required}
+    cpus: ${HEARTH_PAPER_CPUS:?reviewed cpu budget required}
+    mem_limit: ${HEARTH_PAPER_MEMORY:?reviewed memory budget required}
+    pids_limit: ${HEARTH_PAPER_PIDS:?reviewed process budget required}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      HEARTH_MODE: ${HEARTH_MODE:?story or economy required}
+      HEARTH_OPERATING_APPROVAL: ${HEARTH_OPERATING_APPROVAL:?separate operating approval required}
+      HEARTH_MANIFEST_SHA256: ${HEARTH_MANIFEST_SHA256:?offline audit hash required}
+      HEARTH_HEAP_MIB: ${HEARTH_HEAP_MIB:?reviewed heap budget required}
+      HEARTH_JAVA_CPUS: ${HEARTH_JAVA_CPUS:?reviewed java cpu count required}
+    volumes:
+      - type: bind
+        source: ${HEARTH_PAPER_DATA:?reviewed existing prepared data required}
+        target: /data
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${HEARTH_AUDIT_DIR:?fresh offline audit output required}
+        target: /review
+        read_only: true
+        bind: {create_host_path: false}
+    tmpfs:
+      - /run/hearth:rw,nosuid,nodev,size=${HEARTH_PAPER_TMP_MIB:?reviewed tmp budget required}m,uid=${HEARTH_UID},gid=${HEARTH_GID},mode=0700
+    secrets: [hearth_db_password]
+    depends_on:
+      postgres: {condition: service_healthy}
+  postgres:
+    image: ${HEARTH_PG_IMAGE:?reviewed matching PostgreSQL digest required}
+    user: ${HEARTH_PG_UID:?existing non-root PGDATA owner required}:${HEARTH_PG_GID:?existing PGDATA group required}
+    entrypoint: [/bin/sh, /review/postgres-entrypoint.sh]
+    network_mode: host
+    read_only: true
+    restart: "no"
+    stop_grace_period: ${HEARTH_STOP_GRACE}
+    cpus: ${HEARTH_PG_CPUS:?reviewed PG cpu budget required}
+    mem_limit: ${HEARTH_PG_MEMORY:?reviewed PG memory budget required}
+    pids_limit: ${HEARTH_PG_PIDS:?reviewed PG process budget required}
+    shm_size: ${HEARTH_PG_SHM:?reviewed shared memory budget required}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      PGDATA: /data
+      HEARTH_PG_PORT: ${HEARTH_PG_PORT:?reviewed unique localhost PG port required}
+      HEARTH_OPERATING_APPROVAL: ${HEARTH_OPERATING_APPROVAL}
+    volumes:
+      - type: bind
+        source: ${HEARTH_PG_DATA:?existing stopped restored PGDATA required}
+        target: /data
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${HEARTH_DEPLOYMENT_DIR:?reviewed repository deployment directory required}
+        target: /review
+        read_only: true
+        bind: {create_host_path: false}
+    tmpfs:
+      - /run/hearth:rw,nosuid,nodev,size=${HEARTH_PG_TMP_MIB:?reviewed PG tmp budget required}m,uid=${HEARTH_PG_UID},gid=${HEARTH_PG_GID},mode=0700
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -p "$${HEARTH_PG_PORT}" -t 2']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+secrets:
+  hearth_db_password:
+    file: ${HEARTH_PASSWORD_FILE:?existing restricted one-line secret file required}

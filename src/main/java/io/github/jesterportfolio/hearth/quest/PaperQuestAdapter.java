@@ -63,6 +63,7 @@ public final class PaperQuestAdapter implements Listener,AutoCloseable {
     public void escort(Set<String> quests,BiPredicate<Player,String> command,BiConsumer<Player,String> guide){escortCommand=command;ui.escort(quests,guide);if(phone!=null)phone.escort(quests,guide);}
     public void featureMenu(java.util.function.Consumer<Player> menu,java.util.function.Consumer<Player> issue){if(phone!=null){phone.featuresMenu(menu);phone.deviceIssuer(issue);}}
     public void showPhone(Player p){if(phone!=null)phone.home(p);else ui.command(p,"/hearthphone");}
+    public boolean aiPreparationRecorded(){return phone!=null&&phone.preparationRecorded();}
     public boolean learningAvailable(){return phone!=null;}
     public void showLearning(Player p,java.util.function.BooleanSupplier current,Runnable back){if(phone==null)throw new IllegalStateException("LEARNING_PHONE_DISABLED");phone.learning(p,"작업대로",current,back);}
     public void showNpcQuest(Player p,String id){var s=players.current(p);if(s==null||!journal.questAllowed(s.context(),id))return;var c=catalog.quest(id);var npc=entity(p.getWorld(),c.npcId());if(npc!=null&&talkAllowed(p,c.npcId(),npc.getUniqueId()))conversation(p,c.npcId(),npc.getUniqueId(),false,"npc");}
