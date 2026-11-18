@@ -87,3 +87,16 @@ betterhud-enabled: false
 # 기본 비활성. modern forwarding과 별도 relay 비밀·역할을 검토한 로비/경제에서만 켭니다.
 network:
   enabled: false
+
+# 일반 생존은 새 전용 경제 backend에서 runtime-mode: survival을 명시합니다.
+# 초기 생성은 검토한 새 서버에서만 allow-create: true로 한 번 준비합니다.
+survival-runtime:
+  group-id: ''
+  allow-create: false
+  worlds:
+    residence:
+      key: minecraft:overworld
+    wilderness:
+      key: hearth_survival:wilderness
+    nether:
+      key: minecraft:the_nether

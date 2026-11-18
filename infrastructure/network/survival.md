@@ -1,0 +1,27 @@
+# 일반 생존 경제 backend: 3월드 선택
+
+[ADR-0026](../../docs/decisions/0026-vanilla-survival-world-selection.md)의 새 실행 모드는 `survival`이다. 기존 로비·경제 역할 중 경제 Paper 안에 **거주·야생·지옥**을 둔다. 기존 RPG 경제/스토리 데이터 자동 이전은 하지 않는다.
+
+## 플레이
+
+`/월드` 또는 `/world` → 인벤토리 선택창 → 거주·야생·지옥 아이콘을 왼쪽 클릭한다. 도착점은 초기 준비에서 고정한 자연 지형의 안전 지점이며, 막히면 이동을 거부한다. 현재 월드는 표시한다. 탑승/사망/다른 이동 처리 중에는 이용할 수 없다. 아이템·엔더·경험치·체력은 같은 Player의 바닐라 상태를 유지한다. 사망 드롭·일반 포탈/End·채집/제작은 기본 게임을 따른다.
+
+별도 로비 복귀는 기존 `/lobby`·`/hearthserver` 메뉴를 사용한다. 개인 파일 저장 확인 뒤 프록시에 요청하며 저장/연결 결과 불명은 자동 재시도하지 않는다. 이동 대기 중 사망하거나 시간 초과/HOLD 안내가 나오면 재접속 후 상태를 확인한다. 이 경로는 아직 실제 정품 계정으로 수용하지 않았다.
+
+## 새 설정 준비
+
+다음 명령은 **새 파일만** 작성한다. 기존 서버/서비스를 실행하거나 바꾸지 않는다.
+
+```sh
+python3 scripts/survival_config.py --output /REVIEWED/NEW_GAME_CONFIG.yml
+```
+
+출력은 group UUID·`allow-create: false`·세 key·네트워크 비활성을 포함하는 0600 YAML이다. 초기 준비가 필요한 **새 전용 게임 데이터**를 검토한 경우 `--allow-create`로 새 설정 파일을 만들 수 있다. 기존 월드/계정/PG를 초기화하거나 변환하는 옵션이 아니다. `network_config.py --economy-config`는 이 YAML도 받아 기존 `economy` 역할에 modern forwarding 구성을 덧붙인다. [네트워크 설정/인증](README.md)을 함께 따른다. 직결 실행은 online-mode + whitelist, 프록시 실행은 검증된 modern 인증 + whitelist + loopback이 필요하다.
+
+기본 월드 key는 거주 `minecraft:overworld`, 야생 `hearth_survival:wilderness`, 지옥 `minecraft:the_nether`다. 새 야생은 기본 NORMAL 생성기이며 `terrain: FLAT`과 정수 `seed`는 초기 준비 시 선택할 수 있다. Nether terrain은 NORMAL만 허용한다. 기존 기본 차원은 Paper server.properties에서 만든 원래 생성기/설정을 유지한다.
+
+초기 준비 완료 후 `plugins/Hearth/survival-worlds.properties`의 group·key/UUID/seed·입장점이 기준이다. 설정의 `allow-create`를 false로 유지해도 다음 정상 기동에서 기존 세계를 로드한다. registry와 실제 월드를 함께 백업한다. registry·`survival-preparation.pending`·기존 `economy-world.properties`를 지우거나 UUID를 재확정해 오류를 덮지 않는다. 누락/불일치는 원본과 로그를 보존해 수동 조사한다. 기존 기본 차원의 playerdata가 있는 새 묶음, 미등록 custom 월드·다른 소유권의 계정도 자동 채택하지 않는다.
+
+`hearthsurvivaladmin status`는 콘솔 상태를, `runtime_health.py --mode survival`은 3개 관리 월드의 집계를 확인한다. `hearthsurvivaladmin verify`는 소유 격리 시험 표식/경로가 있는 콘솔에서만 실행하며 운영 시험 명령이 아니다.
+
+이번 모드에는 기존 PG 잔액/상점/생산의 일반 생존 연결, 거주지 소유/보호 정책, 야생 리셋/주기·경제 밸런스를 아직 넣지 않았다. 운영 설치·기존 데이터 이전·서버별 분산 인벤토리·외부 포트 전환도 적용하지 않았다.

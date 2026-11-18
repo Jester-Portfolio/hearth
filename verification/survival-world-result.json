@@ -1,0 +1,49 @@
+{
+  "format": 1,
+  "outcome": "PASS",
+  "date": "2026-11-18",
+  "java_unique_tests": 29,
+  "python_tests": 21,
+  "final_plugin_sha256": "c22c6bc0db293b9632a63400830ce156d556b10a86212b419194f836a653148c",
+  "world_lifecycle": {
+    "duration_seconds": 36.956,
+    "checks": [
+      "three_actual_paper_worlds_NORMAL_NORMAL_NETHER_with_safe_natural_entries",
+      "registered_world_command_alias_and_three_GUI_item_objects_without_Player",
+      "RPG_session_combat_inventory_listeners_absent_and_native_autosave_enabled",
+      "new_JVM_allow_create_false_restores_identical_UUID_seed_entry_floor_and_registry",
+      "both_owned_Paper_JVMs_cleanly_closed",
+      "original_config_economy_mapping_PG_control_and_world_metadata_preserved"
+    ],
+    "cleanup_errors": [],
+    "plugin_sha256": "7ea53a864e7a61aaf28e6bd78464b1e2857bbc10ab00875895732eed0081cbf0"
+  },
+  "world_lifecycle_evidence": "/home/server/hearth-tmp/hearth-survival-run.visv0e2q/survival-result.json",
+  "final_restore": {
+    "duration_seconds": 16.85,
+    "checks": [
+      "final_JAR_actual_Paper_startup_with_death_and_teleport_listeners_registered",
+      "existing_three_worlds_UUID_seed_safe_entries_and_GUI_objects_restored",
+      "old_RPG_listeners_absent_native_autosave_enabled",
+      "read_only_passed_source_and_registry_preserved",
+      "owned_Paper_clean_close"
+    ],
+    "cleanup_errors": [],
+    "plugin_sha256": "c22c6bc0db293b9632a63400830ce156d556b10a86212b419194f836a653148c"
+  },
+  "final_restore_evidence": "/home/server/hearth-tmp/hearth-survival-run.23gi6af9/final-restore-result.json",
+  "unit_and_build_evidence": "/home/server/hearth-tmp/hearth-survival.pug51cqs",
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "cpu": 2,
+    "combined_rss_stop_mib": 6144,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "host_available_min_mib": 6144
+  },
+  "actual_client": "NOT_RUN",
+  "actual_player_teleport_inventory_and_network_switch": "NOT_RUN",
+  "operating_changes": "NONE"
+}

@@ -32,7 +32,7 @@ def generate(output,network,ports,lobby,economy,max_players):
     if set(ports)!=set(('proxy','lobby','economy')) or len(set(ports.values()))!=3 or any(type(v) is not int or not 1024<=v<=65535 for v in ports.values()):
         raise ValueError('NETWORK_CONFIG_PORTS')
     if type(max_players) is not int or not 1<=max_players<=4096:raise ValueError('NETWORK_CONFIG_PLAYERS')
-    if not re.search(r'^runtime-mode: economy\s*$',economy,re.M) or re.search(r'^[a-z-]*verification-enabled: true\s*$',economy,re.M):raise ValueError('NETWORK_ECONOMY_NORMAL_CONFIG_REQUIRED')
+    if not re.search(r'^runtime-mode: (?:economy|survival)\s*$',economy,re.M) or re.search(r'^[a-z-]*verification-enabled: true\s*$',economy,re.M):raise ValueError('NETWORK_ECONOMY_NORMAL_CONFIG_REQUIRED')
     if len(economy.encode())>1024*1024:raise ValueError('NETWORK_CONFIG_SIZE')
     world=str(uuid.UUID(lobby['world-uuid']));world_key=lobby['world-key'];region=lobby['region']
     if not re.fullmatch(r'[a-z0-9_]+:[a-z0-9_]+',world_key) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',region):raise ValueError('NETWORK_LOBBY_CONFIG')

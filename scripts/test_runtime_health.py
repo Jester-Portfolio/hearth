@@ -28,6 +28,9 @@ class RuntimeHealthTests(unittest.TestCase):
         self.row['mode']='lobby';self.write()
         self.assertTrue(health.inspect(self.log,self.boot_file,'lobby',10,now=105)['controller_ready'])
         with self.assertRaisesRegex(health.Unavailable,'MISMATCH'):self.read()
+    def test_survival_role_reports_three_native_worlds(self):
+        self.row.update(mode='survival',worlds=3);self.write()
+        self.assertTrue(health.inspect(self.log,self.boot_file,'survival',10,now=105)['controller_ready'])
     def test_stale_future_and_other_boot_reports_fail(self):
         self.write()
         for now in (120,90):

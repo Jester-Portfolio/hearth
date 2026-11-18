@@ -59,7 +59,7 @@ def validate(row, boot, mode, now, max_age):
     for key in ('tps','mspt'):
         if type(row[key]) not in (int,float) or not math.isfinite(row[key]) or row[key] < 0:
             raise Unavailable('REPORT_NUMBER')
-    if row['format'] != 1 or row['mode'] not in ('story','economy','story-prepare','lobby') or row['phase'] not in PHASES:
+    if row['format'] != 1 or row['mode'] not in ('story','economy','story-prepare','lobby','survival') or row['phase'] not in PHASES:
         raise Unavailable('REPORT_SCHEMA')
     if row['boot'] != boot or row['mode'] != mode:
         raise Unavailable('BOOT_OR_MODE_MISMATCH')
@@ -97,7 +97,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--log',required=True,type=Path)
     parser.add_argument('--boot-file',required=True,type=Path)
-    parser.add_argument('--mode',required=True,choices=('story','economy','story-prepare','lobby'))
+    parser.add_argument('--mode',required=True,choices=('story','economy','story-prepare','lobby','survival'))
     parser.add_argument('--max-age',required=True,type=int)
     args = parser.parse_args()
     try:

@@ -9,6 +9,13 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth story foundations and optional dedicated economy runtime
 commands:
+  world:
+    description: 거주·야생·지옥 월드 선택창
+    aliases: [월드]
+    usage: /world
+  hearthsurvivaladmin:
+    description: Console-only survival status
+    permission: hearth.economy.manage
   hearthserver:
     description: 저장 확인 후 로비·경제 서버 이동
     aliases: [lobby]

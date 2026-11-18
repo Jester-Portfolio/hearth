@@ -16,6 +16,8 @@ Hearth는 현대 과학·기술 지식을 마법 없는 중세 세계에서 활�
 
 [로비·경제 네트워크](network-verification.md)는 같은 JAR의 Velocity/Paper 진입점, modern 정품 인증 전달·초기 로비, 서버 선택·경제 저장 후 복귀, HMAC/단일 전환 허가·실패 원본 보존·reload HOLD와 새 private 설정 생성을 연결했다. Java34개/Python7개와 최종 실제 프록시·두 Paper/단일 복사 PG의 13개 확인(38.56초)을 통과했다. 실제 정품 접속/서버 이동·클릭과 이미지/운영 수용은 미검증이다. [설정/사용법](../infrastructure/network/README.md)을 따르며 기존 운영 주소/서비스를 전환하지 않았다.
 
+[일반 생존 3월드](decisions/0026-vanilla-survival-world-selection.md)는 새 `survival` 모드에서 경제 Paper 내부의 거주·야생·지옥과 `/월드` 인벤토리 선택창을 연결했다. 바닐라 개인 데이터/전투/사망 규칙을 사용하며 기존 RPG 경제 PG 데이터를 자동 이전하지 않는다. [검증 기록](survival-world-verification.md)과 [설정 안내](../infrastructure/network/survival.md)를 따른다. 기존 PG 화폐·상점/생산의 일반 생존 연결, 거주지 보호/야생 리셋 정책·실제 플레이·운영 적용은 후속 범위다.
+
 ## 구현·검증 현황
 
 아래의 **구현**은 명시한 제한 범위의 코드가 있다는 뜻이다. 내부 콘솔·제어 경계·GUI 객체 시험을 실제 인증 클라이언트 성공으로 대체하지 않는다. 이전 시험은 당시 소스 기준이며 이후 전체 행동을 다시 검증했다는 뜻이 아니다.

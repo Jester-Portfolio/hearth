@@ -16,6 +16,9 @@ class NetworkConfigTests(unittest.TestCase):
   for name in result['files']:self.assertEqual(0o600,stat.S_IMODE((root/name).stat().st_mode))
   text=(root/'proxy/velocity.toml').read_text();self.assertIn('online-mode = true',text);self.assertIn('try = ["lobby"]',text);self.assertIn('bungee-plugin-message-channel = false',text)
   self.assertEqual((root/'secrets/forwarding.secret').read_bytes(),(root/'proxy/forwarding.secret').read_bytes());self.assertNotEqual((root/'secrets/relay.secret').read_bytes(),(root/'secrets/forwarding.secret').read_bytes());self.assertNotIn((root/'secrets/relay.secret').read_text().strip(),json.dumps(result))
+ def test_survival_backend_keeps_three_world_profile_and_economy_route(self):
+  self.generate(economy='runtime-mode: survival\nsurvival-runtime:\n  allow-create: false\n')
+  text=(self.root/'new/economy/plugins/Hearth/config.yml').read_text();self.assertIn('runtime-mode: survival',text);self.assertIn('allow-create: false',text);self.assertIn('server-id: economy',text)
  def test_existing_output_is_preserved(self):
   self.generate();original=(self.root/'new/network-bundle.json').read_bytes()
   with self.assertRaises(ValueError):self.generate()

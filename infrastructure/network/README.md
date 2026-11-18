@@ -2,6 +2,8 @@
 
 현재 개발 우선순위는 **Velocity 프록시 + 로비 Paper + 경제 Paper**다. 스토리 개발은 사용자 요청으로 보류한다. [ADR-0025](../../docs/decisions/0025-lobby-economy-network.md)의 고정 역할·정품 인증·저장/실패 보존 경계를 따른다. 기존 서버/DB/Docker/SSH/방화벽/터널은 이 작업으로 변경하지 않는다.
 
+일반 Minecraft 기준의 새 경제 backend는 [생존 3월드 설정](survival.md)을 사용한다. `network_config.py`는 기존 `economy`와 새 `survival` YAML을 모두 받으며 역할 이름은 `economy`를 유지한다. PG 세션 저장 설명은 기존 `economy` 모드에, native 개인 파일 저장 확인은 `survival` 모드에 적용한다.
+
 ## 빌드·역할
 
 Java25/기존 Gradle 환경에서 `gradle jar`로 같은 Hearth JAR을 만든다. Paper의 `plugin.yml`과 Velocity의 `velocity-plugin.json`을 함께 담고, 각 런타임은 자기 진입점만 로드한다. 프록시는 WorldGuard/PG/스토리·AI를 초기화하지 않는다. 로비와 경제 Paper에는 기존 고정 WorldEdit/WorldGuard가 필요하다. Velocity 4.3.1 build45 공식 JAR SHA-256은 `0844bcabdcdb4f5b875906fd4c3365bc1bb76918e42bc595ed88ad195258dd75`다. 새 버전으로 자동 갱신하지 않는다.

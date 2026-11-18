@@ -189,3 +189,7 @@ PL1의 WG/WE 로딩/종료 부분은 실행했고 MV 조합은 미실행입니�
 [ADR-0025](decisions/0025-lobby-economy-network.md)의 사용자 요청에 따라 Velocity 4.3.1 build45를 선택했다. [공식 배포 메타데이터](https://fill.papermc.io/v3/projects/velocity/versions/4.3.1/builds)의 stable 고정 파일/SHA를 사용하며 기존 Paper26.2/Java25/WG/WE는 유지한다. [modern forwarding](https://docs.papermc.io/velocity/player-information-forwarding/)의 정품 프록시 인증·Paper 전달을 사용하고, [출처가 구분되는 플러그인 메시지](https://docs.papermc.io/velocity/dev/plugin-messaging/)와 서버 전환 이벤트로 Hearth의 기존 PG 저장 경계를 연결한다.
 
 프록시 자체를 구현하지 않는다. Paper 쪽 기본 BungeeCord 호환 메시지만 쓰면 소스 저장 뒤 전환 권한을 모든 경로에서 강제하기 어려워, 같은 JAR의 작은 Velocity 모듈을 추가하는 구현을 택했다. 일반 호환 채널은 비활성화한다. 별도 인벤토리 동기화/화폐 플러그인을 넣어 기존 소유권/CAS를 바꾸지 않는다. 새 프록시 선택이 기존 운영 프로세스/네트워크/컨테이너 변경 승인을 뜻하지 않는다. 실제 정품 접속/서버 이동과 전체 플러그인 조합 수용은 별도다.
+
+### 일반 생존 3월드 선택 (2026-11-18)
+
+[ADR-0026](decisions/0026-vanilla-survival-world-selection.md)의 고정 3월드/인벤토리 선택은 기존 Paper WorldCreator·native Player 비동기 이동과 자체 소형 메뉴/식별자 registry로 구현했다. Multiverse-Core의 범용 관리/다른 인벤토리 동기화 플러그인은 현재 요구에 필요하지 않아 추가하지 않았다. WorldGuard/WorldEdit은 기존 도구를 유지한다. [실제 Paper 준비/복원 검증](survival-world-verification.md)은 해당 자체 경로의 한정 증거이며 Multiverse 조합·실제 Player 수용을 검증했다는 뜻이 아니다.
