@@ -233,3 +233,7 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 `--restore-source PASSED_MARKET_ROOT`는 정리 완료·algorithm PASS인 이전 비활성 시장 시험을 새 소유 경로로 복사해 변경된 최종 코드의 한 JVM 복원을 검사한다. 최초 전체 시험에서 선택형 모델만 실패한 PARTIAL 원본도 algorithm PASS/정리 완료를 확인하면 복사할 수 있다. 이는 모델 성공 판정에 해당하지 않는다. 이미 통과한 DB 신규 생성/경합은 반복하지 않는다.
 
 기본은 LLM 없는 경제 에이전트 검사다. 별도 승인된 한 묶음에만 `--ai-source VERIFIED_INACTIVE_AI_ROOT`를 추가하면 기존 고정 모델을 읽기 전용 검증 복사하고 명시적 준비/실제 모드 후보 응답을 확인한다. CPU2/nice10·최초 600초/작업550초·준비90초/질의6초·Paper heap1536MiB/RSS2560MiB·AI RSS4GiB/합산RSS6GiB/GPU5GiB·호스트 가용6GiB·localhost·Paper 최대2/PG1을 유지한다. 기존 시간을 새 예산으로 재개하지 않으며 새 실제 AI 시험은 기존 시도 승인 경계를 따른다. `market-result.json`은 알고리즘/선택형 AI 결과를 구분하고 실패해도 원본·후속 독립 검사·소유 프로세스 정리를 보존한다. [검증 기록](../docs/market-automation-verification.md)을 따른다.
+
+### 단일 스폰 상점
+
+`verify_native_economy.py --spawn-market`는 새 단일 스폰 예제/realm을 사용하고, `.hearth-spawn-shops-isolated` (`Hearth spawn shops isolated v1` + 개행) 표식을 추가한다. 정상 모드와 같은 소유/localhost/자원 한도에서 새 복사본의 NPC 바닥만 준비한다. 기존 세계 원본/운영 지형을 바꾸지 않으며 실제 Player를 만들지 않는다. fixture 완료 표식은 다음 JVM에서 유지한다. 이미 검증된 E006 신규 연결 행렬은 반복하지 않고 helper의 restore 경로에 새 대상 realm ID를 먼저 기록하여 기존 행을 모두 비교한다. 실제 PG 거래·실패/HOLD·같은 스폰의 종류별 실제 NPC·다음 JVM 복원을 함께 검사한다. [단일 스폰 결과/실패 보완과 한계](../docs/spawn-shops-verification.md)를 따른다.

@@ -4,6 +4,8 @@
 - 사용자 결정: 일반 생존 멀티서버에 기존 RPG 프로젝트에서 개발하던 경제 시스템도 넣는다.
 - 관계: [3월드 생존](0026-vanilla-survival-world-selection.md)·[로비 네트워크](0025-lobby-economy-network.md)를 유지하며, [기존 경제 엔진](0015-economy-engine-and-transaction-boundaries.md)·[PG 화폐/잔액 0/PAUSE](0024-dedicated-economy-admission-and-currency.md)를 재사용한다. 스토리 추가 개발은 재개하지 않는다.
 
+후속 사용자 결정인 [ADR-0029](0029-single-spawn-shops.md)가 일반 생존의 상점 진입/단일 스폰 정책을 대체한다. 아래 근거리/지역별 진입은 당시 구현 이력이며 PG/native 거래 안전성은 유지한다.
+
 ## 연결 범위
 
 같은 경제 Paper의 거주·야생·지옥은 하나의 경제 realm/PG 잔액을 쓴다. `survival-economy.enabled`로 명시한 새 연결에서 지역별 생산·소비·투입 재료 제련·지연 운송·재고·수급/EMA 가격·등록 사건을 기존 EconomyEngine/EconomyStore로 처리한다. `/경제`, `/돈`, 근거리 NPC 상점/`/상점 <ID>`, `/거래`의 양쪽 제안/최종 확인을 연결한다. 시장·시설·운송·사건·상품 공급망/안내와 본인 거래 기록도 기존 공개 DTO/조회 규칙을 재사용한다. 일반 상자 상점/Vault/QuickShop·외부 화폐 플러그인은 추가하지 않는다.

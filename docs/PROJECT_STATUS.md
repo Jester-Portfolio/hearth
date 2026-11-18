@@ -16,9 +16,11 @@ Hearth는 현대 과학·기술 지식을 마법 없는 중세 세계에서 활�
 
 [로비·경제 네트워크](network-verification.md)는 같은 JAR의 Velocity/Paper 진입점, modern 정품 인증 전달·초기 로비, 서버 선택·경제 저장 후 복귀, HMAC/단일 전환 허가·실패 원본 보존·reload HOLD와 새 private 설정 생성을 연결했다. Java34개/Python7개와 최종 실제 프록시·두 Paper/단일 복사 PG의 13개 확인(38.56초)을 통과했다. 실제 정품 접속/서버 이동·클릭과 이미지/운영 수용은 미검증이다. [설정/사용법](../infrastructure/network/README.md)을 따르며 기존 운영 주소/서비스를 전환하지 않았다.
 
-[일반 생존 3월드](decisions/0026-vanilla-survival-world-selection.md)는 새 `survival` 모드에서 경제 Paper 내부의 거주·야생·지옥과 `/월드` 인벤토리 선택창을 연결했다. 바닐라 개인 데이터/전투/사망 규칙을 사용하며 기존 RPG 경제 PG 데이터를 자동 이전하지 않는다. [검증 기록](survival-world-verification.md)과 [설정 안내](../infrastructure/network/survival.md)를 따른다. [기존 경제 엔진 연결](native-economy-verification.md)로 PG 화폐·근거리 상점/개인 거래·지역 생산/제련/수급/운송·공개 정보와 거래 기록을 추가했다. native 인벤토리는 유지하고 거래 시점 그림자 CAS/원자 PG 거래·실패 HOLD를 사용한다. 거주지 보호/야생 리셋 정책·콘텐츠/실제 플레이·부하/운영 적용은 후속 범위다.
+[일반 생존 3월드](decisions/0026-vanilla-survival-world-selection.md)는 새 `survival` 모드에서 경제 Paper 내부의 거주·야생·지옥과 `/월드` 인벤토리 선택창을 연결했다. 바닐라 개인 데이터/전투/사망 규칙을 사용하며 기존 RPG 경제 PG 데이터를 자동 이전하지 않는다. [검증 기록](survival-world-verification.md)과 [설정 안내](../infrastructure/network/survival.md)를 따른다. [기존 경제 엔진 연결](native-economy-verification.md)로 PG 화폐·상점/근거리 개인 거래·지역 생산/제련/수급/운송·공개 정보와 거래 기록을 추가했다. native 인벤토리는 유지하고 거래 시점 그림자 CAS/원자 PG 거래·실패 HOLD를 사용한다. 거주지 보호/야생 리셋 정책·콘텐츠/실제 플레이·부하/운영 적용은 후속 범위다.
 
 [시장 자동 운영](market-automation-verification.md)은 경제 에이전트가 부족량·도착 예정량·현지 소비/생산 재료를 계산해 출하량을 배분하고 BALANCED/RESTOCK/CONSERVE를 안정적으로 전환한다. 사용자 선택에 따라 **외부 LLM 없이 운영**하며, 기존 생산/가격/거래 엔진과 E007 컨트롤러의 원자 저장·경합/실패 방어·재시작 복원을 연결했다. 선택형 모델 후보 연동은 기본 해제이며 운영 환경에는 적용하지 않았다. [설정/관리](../infrastructure/network/market-automation.md)를 따른다.
+
+현재 경제 서버는 [단일 스폰·종류별 상점](spawn-shops-verification.md)을 기준으로 한다. 여러 마을/방문 동선·스토리식 안내를 추가하지 않으며, 같은 거주 스폰에 종류별 NPC 한 명과 `/상점` 공통 선택창을 둔다. 세 월드 어디서든 구매·판매하고 기존 PG/native 거래·HOLD를 유지한다. 새 예제는 공통 시장 하나/5종/15상품이며 기존 realm은 자동 변환하지 않는다.
 
 ## 구현·검증 현황
 

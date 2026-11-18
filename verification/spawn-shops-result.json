@@ -1,0 +1,133 @@
+{
+  "date": "2026-11-18",
+  "scope": "single_spawn_category_shops",
+  "outcome": "PASS",
+  "final_plugin_sha256": "dec4870a106ed0a01c2ff51ce19a4fb3c353d284bdc077da65c05c52680bfe0f",
+  "java_unique_tests": 35,
+  "java_classes": {
+    "io.github.jesterportfolio.hearth.economy.EconomyEngineTest": {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "io.github.jesterportfolio.hearth.survival.economy.NativeMenuRulesTest": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "io.github.jesterportfolio.hearth.survival.economy.SpawnShopsTest": {
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "io.github.jesterportfolio.hearth.survival.economy.NativeTransactionsTest": {
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "unit_evidence": "/home/server/hearth-tmp/hearth-spawn-shops.7sx3k8it",
+  "integration_evidence": "/home/server/hearth-tmp/hearth-native-economy-run.f97a70im/native-economy-result.json",
+  "integration_check_count": 36,
+  "integration": {
+    "scope": "TWO_JVM_FULL",
+    "spawn_market": true,
+    "outcome": "PASS",
+    "failure": null,
+    "cleanup_errors": [],
+    "duration_seconds": 39.268,
+    "checks": [
+      "original_economy_market_rows_preserved",
+      "original_economy_gathering_instance_rows_preserved",
+      "original_economy_shipment_rows_preserved",
+      "original_economy_trade_rows_preserved",
+      "original_economy_peer_trade_rows_preserved",
+      "original_economy_tick_flow_rows_preserved",
+      "original_economy_realm_rows_preserved",
+      "original_economy_event_rows_preserved",
+      "original_economy_account_rows_preserved",
+      "isolated_copied_spawn_floor_prepared_without_modifying_source_world",
+      "actual_configured_merchants_loaded_without_Player",
+      "single_spawn_market_has_no_villages_routes_or_story_events",
+      "one_NPC_per_category_uses_one_shared_market",
+      "valid_Paper_category_icon_building",
+      "valid_Paper_category_icon_minerals",
+      "valid_Paper_category_icon_farming",
+      "valid_Paper_category_icon_food",
+      "valid_Paper_category_icon_misc",
+      "actual_single_NPC_of_each_category_is_at_the_same_spawn",
+      "latest_native_items_sell_atomically_with_zero_initial_balance_and_no_join_restore",
+      "native_buy_preserves_other_storage_armor_and_offhand",
+      "peer_goods_and_money_commit_once_for_both_native_payloads",
+      "real_23514_trade_rollback_keeps_native_original_and_market_balance_unchanged",
+      "commit_unknown_keeps_receipt_and_native_original_without_automatic_reissue",
+      "revoked_life_fence_rejects_real_DB_trade_and_old_callback_application",
+      "production_inputs_consumption_transport_prices_and_registered_event_reports_reused",
+      "public_supply_snapshot_matches_configured_scope",
+      "first_native_wallet_restored_in_second_JVM",
+      "second_native_wallet_restored_in_second_JVM",
+      "offline_PAUSE_and_market_production_state_restore_without_reinitialization",
+      "original_shop_history_restores_without_duplicate_receipts",
+      "peer_receipt_survives_new_JVM",
+      "pending_native_holds_restore_without_profile_overwrite_or_reissue",
+      "reconnecting_held_actor_cannot_start_another_native_economy_transaction",
+      "original_inactive_worlds_registry_economy_mapping_and_database_control_preserved",
+      "owned_Paper_drains_PG_and_preserves_native_pending_markers_without_real_Player"
+    ],
+    "plugin_sha256": "dec4870a106ed0a01c2ff51ce19a4fb3c353d284bdc077da65c05c52680bfe0f",
+    "limits": {
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "cpu": 2,
+      "combined_rss_stop_mib": 6144,
+      "paper_starts_max": 2,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "host_available_min_mib": 6144
+    },
+    "actual_client": "NOT_RUN",
+    "actual_Player_saveData_click_native_item_transfer_and_network_switch": "NOT_RUN",
+    "operating_changes": "NONE"
+  },
+  "prior_failures": [
+    "/home/server/hearth-tmp/hearth-native-economy-run.uok1bp4p/native-economy-result.json",
+    "/home/server/hearth-tmp/hearth-native-economy-run.ymw3wy50/native-economy-result.json"
+  ],
+  "first_failure_cleanup_followup": {
+    "all_recorded_PIDs_absent": true,
+    "both_recorded_ports_bindable_after_cleanup": true,
+    "original_failure_evidence_preserved": true
+  },
+  "remote_shop_actual_client": "NOT_RUN",
+  "actual_Player_saveData": "NOT_RUN",
+  "production_spawn_terrain": "NOT_BUILT",
+  "operating_changes": "NONE",
+  "real_AI_requests": "NOT_RUN",
+  "process_summary": {
+    "database": {
+      "exit_code": 0,
+      "duration_seconds": 38.652,
+      "ready_seconds": null,
+      "max_sampled_rss_kib": 232896,
+      "min_sampled_host_available_kib": 12498740
+    },
+    "paper-native-1": {
+      "exit_code": 0,
+      "duration_seconds": 19.984,
+      "ready_seconds": 13.535,
+      "max_sampled_rss_kib": 976840,
+      "min_sampled_host_available_kib": 12498740
+    },
+    "paper-native-2": {
+      "exit_code": 0,
+      "duration_seconds": 15.875,
+      "ready_seconds": 12.753,
+      "max_sampled_rss_kib": 939556,
+      "min_sampled_host_available_kib": 12555620
+    }
+  }
+}

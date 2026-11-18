@@ -1,0 +1,20 @@
+package io.github.jesterportfolio.hearth.survival.economy;
+
+import io.github.jesterportfolio.hearth.economy.*;
+import java.nio.file.*;
+import java.util.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class SpawnShopsTest {
+    private Properties settings(){var p=new Properties();try(var r=Files.newBufferedReader(Path.of("infrastructure/network/survival-economy.properties"))){p.load(r);}catch(Exception e){throw new AssertionError(e);}return p;}
+    private SpawnShops parse(Properties p){var content=EconomyContent.parse(p);return SpawnShops.parse(p,content,EconomyMerchants.parse(p,content));}
+    @Test void published_setup_is_one_market_with_one_distinct_NPC_per_category(){var p=settings();var c=EconomyContent.parse(p);var shops=parse(p);assertTrue(shops.enabled());assertEquals(List.of("spawn"),c.regions());assertTrue(c.routes().isEmpty());assertTrue(c.events().isEmpty());assertEquals(5,shops.size());assertEquals(List.of("building","minerals","farming","food","misc"),shops.page(0).stream().map(EconomyMerchants.Merchant::id).toList());assertEquals(15,shops.page(0).stream().mapToInt(m->m.shop().goods().size()).sum());assertThrows(UnsupportedOperationException.class,()->shops.page(0).clear());assertEquals(0,c.fixtureBalance());assertEquals("PAUSE",c.offline());}
+    @Test void villages_and_cross_market_routes_are_rejected_in_spawn_layout(){var p=settings();p.setProperty("regions","spawn,other");assertThrows(IllegalArgumentException.class,()->parse(p));}
+    @Test void goods_cannot_appear_in_multiple_categories_or_go_missing(){var duplicate=settings();duplicate.setProperty("merchant.misc.goods","leather,string,gunpowder,iron_ore");assertThrows(IllegalArgumentException.class,()->parse(duplicate));var missing=settings();missing.setProperty("merchant.misc.goods","leather,string");assertThrows(IllegalArgumentException.class,()->parse(missing));}
+    @Test void NPC_offsets_are_bounded_distinct_and_only_in_residence(){for(var edit:List.of(Map.of("merchant.food.x","100"),Map.of("merchant.food.y","9"),Map.of("merchant.food.world","wilderness"),Map.of("merchant.food.x","-4"))){var p=settings();p.putAll(edit);assertThrows(IllegalArgumentException.class,()->parse(p));}}
+    @Test void duplicate_categories_unknown_layout_and_invalid_icons_are_rejected(){for(var edit:List.of(Map.of("merchants","building,building"),Map.of("shop-layout","towns"),Map.of("merchant.food.icon","../BREAD"))){var p=settings();p.putAll(edit);assertThrows(RuntimeException.class,()->parse(p));}}
+    @Test void pages_reject_invalid_indices_and_keep_configured_order(){var shops=parse(settings());assertEquals("BRICKS",shops.icon("building"));assertThrows(IllegalArgumentException.class,()->shops.page(-1));assertThrows(IllegalArgumentException.class,()->shops.page(1));assertThrows(NullPointerException.class,()->shops.icon("missing"));}
+    @Test void existing_regional_content_is_read_without_automatic_conversion(){var p=new Properties();try(var r=Files.newBufferedReader(Path.of("src/main/resources/economy-demo.properties"))){p.load(r);}catch(Exception e){throw new AssertionError(e);}var c=EconomyContent.parse(p);String hash=c.fingerprint();var shops=parse(p);assertFalse(shops.enabled());assertEquals(2,shops.size());assertEquals(hash,EconomyContent.parse(p).fingerprint());assertEquals(List.of("mine","capital"),c.regions());}
+    @Test void single_market_production_consumption_and_ingredient_flows_work_without_travel(){var c=EconomyContent.parse(settings());var state=EconomyEngine.initial(c);for(int tick=1;tick<=200;tick++){var step=EconomyEngine.advance(new UUID(0,1),c,state,new MarketRouting.Policy(2500,2));assertEquals(tick,step.state().tick());assertTrue(step.departed().isEmpty());for(var f:step.flows().values())assertEquals(f.after(),f.before()+f.produced()+f.arrived()-f.inputs()-f.consumed()-f.departed());state=step.state();}assertTrue(state.shipments().isEmpty());assertTrue(state.markets().values().stream().allMatch(m->m.stock()>=0&&m.price()>0));}
+}

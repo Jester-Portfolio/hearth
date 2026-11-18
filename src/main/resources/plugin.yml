@@ -16,7 +16,7 @@ commands:
     description: 본인 PG 화폐 잔액 조회
     aliases: [돈]
   shop:
-    description: 근처 경제 상인 상점
+    description: 종류별 상점 선택창
     aliases: [상점]
   world:
     description: 거주·야생·지옥 월드 선택창

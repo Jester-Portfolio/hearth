@@ -30,9 +30,10 @@ class NativeMonitor(Monitor):
   if not self.stopping and not all(any(token in line for line in item['lines']) for token in markers):raise RuntimeError('CLEAN_CLOSE_MISSING_'+name)
 
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--workspace',type=Path,required=True);p.add_argument('--java',type=Path,required=True);p.add_argument('--plugin',type=Path,required=True);p.add_argument('--prepared-worlds',type=Path);p.add_argument('--prepared-database',type=Path);p.add_argument('--restore-source',type=Path);p.add_argument('--accept-eula',action='store_true');a=p.parse_args();root=isolated_paths.workspace(a.workspace,'hearth-native-economy-run.');os.sched_setaffinity(0,sorted(os.sched_getaffinity(0))[:2]);started=time.monotonic();m=NativeMonitor(root,started);error=None;cleanup=[];checks=[];outcome='FAIL';ports=[]
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--workspace',type=Path,required=True);p.add_argument('--java',type=Path,required=True);p.add_argument('--plugin',type=Path,required=True);p.add_argument('--prepared-worlds',type=Path);p.add_argument('--prepared-database',type=Path);p.add_argument('--restore-source',type=Path);p.add_argument('--spawn-market',action='store_true');p.add_argument('--accept-eula',action='store_true');a=p.parse_args();root=isolated_paths.workspace(a.workspace,'hearth-native-economy-run.');os.sched_setaffinity(0,sorted(os.sched_getaffinity(0))[:2]);started=time.monotonic();m=NativeMonitor(root,started);error=None;cleanup=[];checks=[];outcome='FAIL';ports=[]
  try:
   if not a.accept_eula or (root/'.hearth-native-economy-isolated').read_text()!='Hearth native economy isolated v1\n':raise ValueError('NATIVE_FIXTURE_GATE')
+  if a.spawn_market:(root/'.hearth-spawn-shops-isolated').write_text('Hearth spawn shops isolated v1\n',encoding='utf-8')
   restore=a.restore_source is not None
   if restore:
    worlds=database=isolated_paths.workspace(a.restore_source,'hearth-native-economy-run.');passed=json.loads((worlds/'native-economy-result.json').read_text())
@@ -49,12 +50,15 @@ def main():
    match=re.search(r'(?m)^  realm: ([a-f0-9-]{36})$',config.read_text())
    if not match:raise ValueError('NATIVE_RESTORE_REALM')
    (root/'restore-realm.txt').write_text(match.group(1)+'\n');shutil.copy2(worlds/'native-expected.properties',root/'native-expected.properties')
-  helper=[str(a.java),'-Xmx128m','-XX:ActiveProcessorCount=2','-Djava.io.tmpdir='+str(root),'-cp',str(root/'fixture-classes')+':'+str(root/'resolved-jars/*')+':'+str(a.plugin),'io.github.jesterportfolio.hearth.persistence.NativeEconomyDatabaseFixture',str(root)]+(['restore'] if restore else []);m.launch('database',helper,root);m.wait('database','HEARTH_NATIVE_DB_READY',seconds=75);db_port=int((root/'db-port.txt').read_text());ports.append(db_port);game_port=port();ports.append(game_port)
+  if a.spawn_market and not restore:
+   realm=uuid.uuid4();(root/'restore-realm.txt').write_text(str(realm)+'\n')
+  helper=[str(a.java),'-Xmx128m','-XX:ActiveProcessorCount=2','-Djava.io.tmpdir='+str(root),'-cp',str(root/'fixture-classes')+':'+str(root/'resolved-jars/*')+':'+str(a.plugin),'io.github.jesterportfolio.hearth.persistence.NativeEconomyDatabaseFixture',str(root)]+(['restore'] if restore or a.spawn_market else []);m.launch('database',helper,root);m.wait('database','HEARTH_NATIVE_DB_READY',seconds=75);db_port=int((root/'db-port.txt').read_text());ports.append(db_port);game_port=port();ports.append(game_port)
   text=config.read_text()
   if restore:text=re.sub(r'(?m)^  db-port: [0-9]+$',f'  db-port: {db_port}',text)
   else:
-   realm=uuid.uuid4();text+='\nsurvival-economy:\n  enabled: true\n  realm: '+str(realm)+'\n  allow-new-realm: true\n  content-file: survival-economy.properties\n  db-host: 127.0.0.1\n  db-port: '+str(db_port)+'\n  db-name: hearth_s4_11\n  db-user: postgres\n  password-environment: HEARTH_ISOLATED_NATIVE_PASSWORD\n'
-   source_content=Path(__file__).resolve().parents[1]/'src/main/resources/economy-demo.properties';content=source_content.read_text().replace('fixture-balance=100000','fixture-balance=0').replace('tick-millis=5000','tick-millis=60000');content=re.sub(r'(?m)^(merchant\.[a-z_]+\.y)=64$',r'\1=-63',content);(root/'server/plugins/Hearth/survival-economy.properties').write_text(content)
+   if not a.spawn_market:realm=uuid.uuid4()
+   text+='\nsurvival-economy:\n  enabled: true\n  realm: '+str(realm)+'\n  allow-new-realm: true\n  content-file: survival-economy.properties\n  db-host: 127.0.0.1\n  db-port: '+str(db_port)+'\n  db-name: hearth_s4_11\n  db-user: postgres\n  password-environment: HEARTH_ISOLATED_NATIVE_PASSWORD\n'
+   source_content=Path(__file__).resolve().parents[1]/('infrastructure/network/survival-economy.properties' if a.spawn_market else 'src/main/resources/economy-demo.properties');content=source_content.read_text().replace('fixture-balance=100000','fixture-balance=0').replace('tick-millis=5000','tick-millis=60000');content=re.sub(r'(?m)^(merchant\.[a-z_]+\.y)=64$',r'\1=-63',content);(root/'server/plugins/Hearth/survival-economy.properties').write_text(content)
   config.write_text(text);os.environ['HEARTH_ISOLATED_NATIVE_PASSWORD']='isolated-not-a-secret'
   with (root/'server/server.properties').open('a') as f:f.write('\nserver-ip=127.0.0.1\nserver-port='+str(game_port)+'\nonline-mode=true\nwhite-list=true\nenforce-whitelist=true\nenable-query=false\nenable-rcon=false\n')
   command=[str(a.java),'-Xms256m','-Xmx1536m','-XX:ActiveProcessorCount=2','-Djava.io.tmpdir='+str(root),'-Dhearth.native.economy.verification.root='+str(root),'-jar',str(root/'paper.jar'),'--nogui'];world_registry=(root/'server/plugins/Hearth/survival-worlds.properties').read_bytes()
@@ -75,6 +79,6 @@ def main():
     try:s.bind(('127.0.0.1',number))
     except OSError:cleanup.append('OWNED_PORT_REMAINS')
   if cleanup:outcome='FAIL'
-  result=dict(scope='RESTORE_ONLY' if a.restore_source else 'TWO_JVM_FULL',outcome=outcome,failure=error,cleanup_errors=cleanup,duration_seconds=round(time.monotonic()-started,3),checks=checks,processes=m.summary(),combined_samples=m.combined,plugin_sha256=digest(a.plugin),limits={'total_seconds':600,'work_seconds':550,'cpu':2,'combined_rss_stop_mib':6144,'paper_starts_max':2,'paper_heap_mib':1536,'paper_rss_stop_mib':2560,'host_available_min_mib':6144},actual_client='NOT_RUN',actual_Player_saveData_click_native_item_transfer_and_network_switch='NOT_RUN',operating_changes='NONE');(root/'native-economy-result.json').write_text(json.dumps(result,indent=2)+'\n');print('NATIVE_ECONOMY',outcome,'evidence:',root/'native-economy-result.json',flush=True)
+  result=dict(spawn_market=a.spawn_market,scope='RESTORE_ONLY' if a.restore_source else 'TWO_JVM_FULL',outcome=outcome,failure=error,cleanup_errors=cleanup,duration_seconds=round(time.monotonic()-started,3),checks=checks,processes=m.summary(),combined_samples=m.combined,plugin_sha256=digest(a.plugin),limits={'total_seconds':600,'work_seconds':550,'cpu':2,'combined_rss_stop_mib':6144,'paper_starts_max':2,'paper_heap_mib':1536,'paper_rss_stop_mib':2560,'host_available_min_mib':6144},actual_client='NOT_RUN',actual_Player_saveData_click_native_item_transfer_and_network_switch='NOT_RUN',operating_changes='NONE');(root/'native-economy-result.json').write_text(json.dumps(result,indent=2)+'\n');print('NATIVE_ECONOMY',outcome,'evidence:',root/'native-economy-result.json',flush=True)
  return 0 if outcome=='PASS' else 1
 if __name__=='__main__':raise SystemExit(main())
