@@ -9,6 +9,15 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth story foundations and optional dedicated economy runtime
 commands:
+  economy:
+    description: 잔액·지역 시장·생산·공급망 조회
+    aliases: [경제]
+  balance:
+    description: 본인 PG 화폐 잔액 조회
+    aliases: [돈]
+  shop:
+    description: 근처 경제 상인 상점
+    aliases: [상점]
   world:
     description: 거주·야생·지옥 월드 선택창
     aliases: [월드]
@@ -21,6 +30,7 @@ commands:
     aliases: [lobby]
     usage: /hearthserver [lobby|economy]
   hearthtrade:
+    aliases: [거래]
     description: 같은 경제 월드의 상호 확인 플레이어 거래
     usage: /hearthtrade request <이름> | accept | show | cancel
   hearthstoryadmin:

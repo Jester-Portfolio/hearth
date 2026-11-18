@@ -19,4 +19,20 @@ class SurvivalConfigTests(unittest.TestCase):
  def test_invalid_group_does_not_create_output(self):
   with self.assertRaises(ValueError):config.write(self.root/'game.yml','invalid')
   self.assertFalse((self.root/'game.yml').exists())
+ def economy(self):
+  return {'realm':str(uuid.uuid4()),'allow-new-realm':False,'content-file':'market.properties','db-host':'127.0.0.1','db-port':5432,'db-name':'hearth','db-user':'hearth','password-environment':'HEARTH_DB_PASSWORD'}
+ def test_economy_overlay_is_explicit_and_preserves_three_worlds_without_secrets(self):
+  settings=self.economy();file=config.write(self.root/'game.yml',uuid.uuid4(),False,settings);text=file.read_text();self.assertIn('survival-economy:',text);self.assertIn('allow-new-realm: false',text);self.assertIn('password-environment: "HEARTH_DB_PASSWORD"',text);self.assertEqual(3,text.count('      key:'))
+ def test_invalid_database_or_content_path_publishes_nothing(self):
+  for key,value in (('content-file','../data.properties'),('db-host','host/password'),('db-port',65536),('password-environment','secret=value'),('allow-new-realm','true')):
+   settings=self.economy();settings[key]=value
+   with self.assertRaises(ValueError):config.write(self.root/'game.yml',uuid.uuid4(),False,settings)
+   self.assertFalse((self.root/'game.yml').exists())
+ def test_yaml_reserved_database_names_remain_strings(self):
+  import json
+  settings=self.economy();settings.update({'db-user':'true','db-name':'null','db-host':'123'})
+  text=config.configuration(uuid.uuid4(),False,settings)
+  for key in ('db-user','db-name','db-host'):
+   line=next(row for row in text.splitlines() if row.startswith('  '+key+': '))
+   self.assertEqual(settings[key],json.loads(line.split(': ',1)[1]))
 if __name__=='__main__':unittest.main()

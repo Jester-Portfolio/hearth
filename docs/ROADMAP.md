@@ -15,7 +15,7 @@ Hearth의 목표는 현대 과학·기술 지식을 활용하는 싱글·소규�
 
 2026-11-18 사용자 요청으로 스토리 모드의 추가 개발을 보류한다. [ADR-0025](decisions/0025-lobby-economy-network.md)의 Velocity 프록시·로비/경제 Paper, 정품 modern forwarding·고정 경로·경제 저장 후 서버 이동을 한 배치로 구현/검증한다. 기존 스토리 B안은 보존하며 진행별 서버 분리/A안 전환을 뜻하지 않는다. 실제 접속/전환·운영 예산·배포 적용은 별도 수용/승인 경계다. [설정/플레이 경로](../infrastructure/network/README.md)를 따른다.
 
-일반 마크 기반의 경제 backend는 [ADR-0026](decisions/0026-vanilla-survival-world-selection.md)의 `survival` 모드로 시작한다. 거주·야생·지옥 3월드와 `/월드` 선택 UI·native 개인 데이터/기본 생존을 연결했다. 다음 경제 기능 배치는 기존 PG 화폐/상점·거래의 일반 생존 연결이며, 거주지 소유/보호·야생 초기화 정책과 운영 적용은 별도로 확정한다. 기존 RPG 경제 프로토타입의 PG 인벤토리를 새 모드에 자동 채택하지 않는다.
+일반 마크 기반의 경제 backend는 [ADR-0026](decisions/0026-vanilla-survival-world-selection.md)의 `survival` 모드로 시작한다. 거주·야생·지옥 3월드와 `/월드` 선택 UI·native 개인 데이터/기본 생존을 연결했다. [기존 경제의 일반 생존 연결](native-economy-verification.md)로 PG 화폐·상점/개인 거래·생산/수급/운송·공개 조회를 구현했다. 후속 범위는 콘텐츠 수치/상인 배치·거주지 소유/보호·야생 초기화 정책, 실제 플레이·부하/운영 수용이다. 기존 RPG 경제 프로토타입의 PG 인벤토리를 새 모드에 자동 채택하지 않는다.
 
 ## 공통 기반·스토리 단계
 

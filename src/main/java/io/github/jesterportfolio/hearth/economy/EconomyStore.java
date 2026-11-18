@@ -43,31 +43,46 @@ public final class EconomyStore implements InventoryStore {
             }else{
                 try(var st=c.createStatement();var versions=st.executeQuery("SELECT version,checksum FROM hearth_economy.version ORDER BY version")){if(!versions.next()||versions.getInt(1)!=1||!hash.equals(versions.getString(2)))throw fail("ECON_SCHEMA_MISMATCH");}
             }
-            var upgrades=List.of("E002__trade_history.sql","E003__tick_flow.sql","E004__peer_trade.sql","E005__gathering.sql");
+            var upgrades=List.of("E002__trade_history.sql","E003__tick_flow.sql","E004__peer_trade.sql","E005__gathering.sql","E006__native_survival.sql");
             var known=new TreeMap<Integer,String>();try(var st=c.createStatement();var rows=st.executeQuery("SELECT version,checksum FROM hearth_economy.version WHERE version<>1 ORDER BY version")){while(rows.next())known.put(rows.getInt(1),rows.getString(2));}
-            if(known.keySet().stream().anyMatch(v->v<2||v>5)||known.containsKey(3)&&!known.containsKey(2)||known.containsKey(4)&&!known.containsKey(3)||known.containsKey(5)&&!known.containsKey(4))throw fail("ECON_SCHEMA_MISMATCH");
+            if(known.keySet().stream().anyMatch(v->v<2||v>6)||known.containsKey(3)&&!known.containsKey(2)||known.containsKey(4)&&!known.containsKey(3)||known.containsKey(5)&&!known.containsKey(4)||known.containsKey(6)&&!known.containsKey(5))throw fail("ECON_SCHEMA_MISMATCH");
             for(int i=0;i<upgrades.size();i++){
                 int version=i+2;byte[] upgrade;try(var in=Objects.requireNonNull(getClass().getResourceAsStream("/db/economy/"+upgrades.get(i)))){upgrade=in.readAllBytes();}
                 String upgradeHash=HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(upgrade));
                 if(known.containsKey(version)){if(!upgradeHash.equals(known.get(version)))throw fail("ECON_SCHEMA_MISMATCH");}
                 else{try(var ddl=c.createStatement()){ddl.execute(new String(upgrade,java.nio.charset.StandardCharsets.UTF_8));}try(var marker=c.prepareStatement("INSERT INTO hearth_economy.version VALUES(?,?)")){marker.setInt(1,version);marker.setString(2,upgradeHash);marker.executeUpdate();}}
             }
-            for(String query:List.of("SELECT realm_id,dungeon_id,world_uuid,revision,generation,area_hash,template_version,template_hash,phase,request_id,empty_reset,next_reset FROM hearth_economy.gathering_instance LIMIT 0","SELECT fingerprint,first_player,second_player,first_revision,second_revision FROM hearth_economy.peer_trade LIMIT 0","SELECT tick,revision,content_hash,flow_tick FROM hearth_economy.realm LIMIT 0","SELECT stock,price,revision FROM hearth_economy.market LIMIT 0","SELECT balance,payload,inventory_revision FROM hearth_economy.account LIMIT 0","SELECT due_tick,arrived FROM hearth_economy.shipment LIMIT 0","SELECT fingerprint,total FROM hearth_economy.trade LIMIT 0","SELECT tick,before_stock,produced,inputs,consumed,shortage,arrived,departed,after_stock FROM hearth_economy.tick_flow LIMIT 0"))try(var st=c.createStatement()){st.executeQuery(query).close();}
+            for(String query:List.of("SELECT realm_id,group_id,worlds_hash FROM hearth_economy.native_binding LIMIT 0","SELECT realm_id,dungeon_id,world_uuid,revision,generation,area_hash,template_version,template_hash,phase,request_id,empty_reset,next_reset FROM hearth_economy.gathering_instance LIMIT 0","SELECT fingerprint,first_player,second_player,first_revision,second_revision FROM hearth_economy.peer_trade LIMIT 0","SELECT tick,revision,content_hash,flow_tick FROM hearth_economy.realm LIMIT 0","SELECT stock,price,revision FROM hearth_economy.market LIMIT 0","SELECT balance,payload,inventory_revision FROM hearth_economy.account LIMIT 0","SELECT due_tick,arrived FROM hearth_economy.shipment LIMIT 0","SELECT fingerprint,total FROM hearth_economy.trade LIMIT 0","SELECT tick,before_stock,produced,inputs,consumed,shortage,arrived,departed,after_stock FROM hearth_economy.tick_flow LIMIT 0"))try(var st=c.createStatement()){st.executeQuery(query).close();}
             return null;
         });ready=true;return null;
     });}
     private long[] realm(Connection c,UUID realm,boolean lock)throws Exception{if(!ready)throw fail("SCHEMA_NOT_READY");try(var st=c.prepareStatement("SELECT tick,revision,wall_millis,content_hash FROM hearth_economy.realm WHERE realm_id=?"+(lock?" FOR UPDATE":""))){st.setObject(1,realm);try(var r=st.executeQuery()){if(!r.next())throw fail("ECON_REALM_MISSING");if(!contentHash.equals(r.getString(4)))throw fail("ECON_CONTENT_MISMATCH");return new long[]{r.getLong(1),r.getLong(2),r.getLong(3)};}}}
     public CompletionStage<Void> createRealm(UUID realm,long wall){return db.module("economy_create",c->tx(c,()->{if(!ready)throw fail("SCHEMA_NOT_READY");try(var st=c.prepareStatement("INSERT INTO hearth_economy.realm(realm_id,content_hash,tick,revision,wall_millis) VALUES(?,?,0,0,?)")){st.setObject(1,realm);st.setString(2,contentHash);st.setLong(3,wall);st.executeUpdate();}try(var st=c.prepareStatement("INSERT INTO hearth_economy.market VALUES(?,?,?,?,?,0)")){for(var e:initial(content).markets().entrySet()){st.setObject(1,realm);st.setString(2,e.getKey().region());st.setString(3,e.getKey().good());st.setLong(4,e.getValue().stock());st.setLong(5,e.getValue().price());st.addBatch();}st.executeBatch();}return null;}));}
     /** 정식 실행의 멱등 bootstrap. 기존 수급/가격·진행 시계는 덮어쓰지 않습니다. */
-    public CompletionStage<Boolean> openRealm(UUID realm,long wall,boolean allowNew){return allowNew?ensureRealm(realm,wall):db.module("economy_existing_realm",c->tx(c,()->{realm(c,realm,false);verifyMarkets(c,realm);return false;}));}
+    public CompletionStage<Boolean> openRealm(UUID realm,long wall,boolean allowNew){return allowNew?ensureRealm(realm,wall):db.module("economy_existing_realm",c->tx(c,()->{realm(c,realm,true);requireLegacy(c,realm);verifyMarkets(c,realm);return false;}));}
     public CompletionStage<Boolean> ensureRealm(UUID realm,long wall){return db.module("economy_realm_open",c->tx(c,()->{
         if(!ready)throw fail("SCHEMA_NOT_READY");if(wall<0)throw fail("ECON_CLOCK");boolean created;
         try(var st=c.prepareStatement("INSERT INTO hearth_economy.realm(realm_id,content_hash,tick,revision,wall_millis) VALUES(?,?,0,0,?) ON CONFLICT (realm_id) DO NOTHING")){st.setObject(1,realm);st.setString(2,contentHash);st.setLong(3,wall);created=st.executeUpdate()==1;}
-        realm(c,realm,true);
+        realm(c,realm,true);requireLegacy(c,realm);
         if(created)try(var st=c.prepareStatement("INSERT INTO hearth_economy.market VALUES(?,?,?,?,?,0)")){for(var row:initial(content).markets().entrySet()){st.setObject(1,realm);st.setString(2,row.getKey().region());st.setString(3,row.getKey().good());st.setLong(4,row.getValue().stock());st.setLong(5,row.getValue().price());st.addBatch();}st.executeBatch();}
         verifyMarkets(c,realm);
         return created;
     }));}
+    private static void requireLegacy(Connection c,UUID realm)throws Exception{try(var st=c.prepareStatement("SELECT 1 FROM hearth_economy.native_binding WHERE realm_id=?")){st.setObject(1,realm);try(var rows=st.executeQuery()){if(rows.next())throw fail("ECON_NATIVE_REALM_REQUIRES_SURVIVAL");}}}
+    /** 명시적 새 native 묶음만 연결합니다. 기존 RPG realm/다른 묶음은 자동 채택하지 않습니다. */
+    public CompletionStage<Void> openNativeRealm(UUID id,UUID group,String worlds,long wall,boolean allowNew){
+        if(group==null||worlds==null||!worlds.matches("[a-f0-9]{64}")||wall<0)return CompletableFuture.failedFuture(fail("ECON_NATIVE_CONFIG"));
+        return db.module("economy_native_open",c->tx(c,()->{
+            if(!ready)throw fail("SCHEMA_NOT_READY");
+            try(var st=c.prepareStatement("SELECT pg_advisory_xact_lock(hashtextextended(?,704406))")){st.setString(1,id.toString());st.execute();}
+            boolean found;try(var st=c.prepareStatement("SELECT 1 FROM hearth_economy.realm WHERE realm_id=? FOR UPDATE")){st.setObject(1,id);try(var rows=st.executeQuery()){found=rows.next();}}
+            if(found){realm(c,id,false);try(var st=c.prepareStatement("SELECT group_id,worlds_hash FROM hearth_economy.native_binding WHERE realm_id=?")){st.setObject(1,id);try(var rows=st.executeQuery()){if(!rows.next()||!group.equals(rows.getObject(1,UUID.class))||!worlds.equals(rows.getString(2)))throw fail("ECON_NATIVE_BINDING_MISMATCH");}}verifyMarkets(c,id);return null;}
+            if(!allowNew)throw fail("ECON_NATIVE_EXISTING_REQUIRED");
+            try(var st=c.prepareStatement("INSERT INTO hearth_economy.realm(realm_id,content_hash,tick,revision,wall_millis,flow_tick) VALUES(?,?,0,0,?,NULL)")){st.setObject(1,id);st.setString(2,contentHash);st.setLong(3,wall);st.executeUpdate();}
+            try(var st=c.prepareStatement("INSERT INTO hearth_economy.market VALUES(?,?,?,?,?,0)")){for(var row:initial(content).markets().entrySet()){st.setObject(1,id);st.setString(2,row.getKey().region());st.setString(3,row.getKey().good());st.setLong(4,row.getValue().stock());st.setLong(5,row.getValue().price());st.addBatch();}st.executeBatch();}
+            try(var st=c.prepareStatement("INSERT INTO hearth_economy.native_binding VALUES(?,?,?)")){st.setObject(1,id);st.setObject(2,group);st.setString(3,worlds);st.executeUpdate();}return null;
+        }));
+    }
     private void verifyMarkets(Connection c,UUID realm)throws SQLException{try(var st=c.prepareStatement("SELECT region_id,good_id FROM hearth_economy.market WHERE realm_id=?")){st.setObject(1,realm);try(var rows=st.executeQuery()){var keys=new HashSet<Key>();while(rows.next())keys.add(new Key(rows.getString(1),rows.getString(2)));if(!keys.equals(new HashSet<>(content.cells())))throw fail("ECON_MARKET_MISMATCH");}}}
     /** 정상 접속의 새 계정은 잔액 0/신뢰된 빈 41슬롯만 생성합니다. 경합/재접속은 기존 행을 그대로 읽습니다. */
     public CompletionStage<Account> ensureAccount(ServerProgressAccess.Context ctx,InventoryPayload empty){return db.module("economy_account_open",c->tx(c,()->{

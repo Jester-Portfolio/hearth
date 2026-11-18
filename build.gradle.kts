@@ -243,3 +243,15 @@ tasks.register("stageNetworkRuntime") {
         copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(target) }
     }
 }
+
+tasks.register("stageNativeEconomyRuntime") {
+    dependsOn(tasks.named("integrationTestClasses"))
+    doLast {
+        val root=file(providers.gradleProperty("nativeEconomyWorkspace").get())
+        requireTestRoot(root,"hearth-native-economy-run.")
+        val target=root.resolve("resolved-jars")
+        require(!target.exists())
+        copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
+        copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(target) }
+    }
+}

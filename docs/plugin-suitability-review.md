@@ -193,3 +193,7 @@ PL1의 WG/WE 로딩/종료 부분은 실행했고 MV 조합은 미실행입니�
 ### 일반 생존 3월드 선택 (2026-11-18)
 
 [ADR-0026](decisions/0026-vanilla-survival-world-selection.md)의 고정 3월드/인벤토리 선택은 기존 Paper WorldCreator·native Player 비동기 이동과 자체 소형 메뉴/식별자 registry로 구현했다. Multiverse-Core의 범용 관리/다른 인벤토리 동기화 플러그인은 현재 요구에 필요하지 않아 추가하지 않았다. WorldGuard/WorldEdit은 기존 도구를 유지한다. [실제 Paper 준비/복원 검증](survival-world-verification.md)은 해당 자체 경로의 한정 증거이며 Multiverse 조합·실제 Player 수용을 검증했다는 뜻이 아니다.
+
+### 일반 생존의 기존 경제 연결 (2026-11-18)
+
+[ADR-0027](decisions/0027-native-survival-economy-integration.md)은 기존 EconomyEngine/Store·Quote·PeerTrade·공개 Report/Supply와 PG 거래를 재사용한다. 기존 검토의 Vault/QuickShop은 이 엔진과 같은 재고/잔액/슬롯 트랜잭션을 대신하지 않아 설치하지 않았다. 새 외부 API/플러그인은 추가하지 않으며 native 생존 UI/거래 연결만 자체 구현한다. [제한된 실제 PG/Paper 검증](native-economy-verification.md)을 외부 플러그인 조합이나 실제 Player 수용 근거로 확대하지 않는다.

@@ -217,3 +217,11 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 `survival_config.py --output NEW_FILE [--group-id UUID] [--allow-create]`는 새 0600 YAML만 만든다. 기본 생성 비활성·스토리/PG 경제 자동 변환 없음이며 [설정 안내](../infrastructure/network/survival.md)를 따른다.
 
 `verify_survival.py --workspace FRESH_ROOT --java JAVA --plugin FROZEN_JAR --prepared-source PASSED_INACTIVE_S4_11 --accept-eula`는 소유 `hearth-survival-run.*`·정확한 `.hearth-survival-isolated` 표식(`Hearth survival isolated v1` + 개행)에서만 실행한다. 완료한 비활성 S4-11의 공식 Paper/WE/WG와 기본 차원을 읽기 전용 복사하고 기존 개인 파일/PG/Hearth 경제 매핑은 채택하지 않는다. 새 Paper 두 JVM에서 3월드/안전 입장·메뉴 ItemStack 객체·RPG listener 부재·재시작 동일 식별자/원본 보존을 함께 확인한다. 일반 설정은 NORMAL, 시험 새 야생만 표준 FLAT 생성기를 사용한다. CPU2/nice10·600초/작업550초·Paper heap1536MiB/RSS2560MiB·합산RSS6GiB·호스트 가용6GiB·최대 두 Paper/localhost를 유지한다. 정상 종료/소유 PID·포트 정리와 결과는 `survival-result.json`에 보존한다. 실제 Player·클릭·이동·인벤토리 동작은 합성하지 않으며 수용 성공을 주장하지 않는다.
+
+## 기존 경제의 일반 생존 연결
+
+`survival_config.py --with-economy`는 기존 새 파일 생성 규칙을 유지하면서 PG 연결/realm/content/env 이름을 명시한 YAML을 준비한다. 새 realm은 `--allow-new-realm`을 별도로 명시한다. [설정/예제/관리](../infrastructure/network/native-economy.md)를 따르며 운영에 적용하지 않는다.
+
+`verify_native_economy.py --workspace FRESH_ROOT --java JAVA --plugin FROZEN_JAR --prepared-worlds PASSED_SURVIVAL_ROOT --prepared-database PASSED_S4_11_ROOT --accept-eula`는 새 소유 `hearth-native-economy-run.*`와 정확한 `.hearth-native-economy-isolated` 표식(`Hearth native economy isolated v1` + 개행)을 요구한다. 기존 승인된 비활성 시험 세계/PG만 복사하고 E006 소유권/경합/실패 보존·기존 행 불변과 실제 Paper 두 JVM의 상인/코덱·PG 거래/생산/영수증/HOLD 복원을 함께 검사한다. 실물 Player를 만들지 않으며 제어 Port의 native 저장 호출은 모형이다.
+
+최종 순수 제어/GUI 보완 후에는 같은 소스의 두 JVM 검사를 반복하는 대신 `--restore-source PASSED_NATIVE_ECONOMY_ROOT`로 이미 통과한 비활성 경제 시험을 새 소유 경로에 복사해 기존 상태의 한 JVM 복원을 확인할 수 있다. 이 모드에서는 신규 realm 생성/DB 경합 시나리오를 반복하지 않는다. 두 모드 모두 localhost·CPU2/nice10·600초/작업550초·Paper heap1536MiB/RSS2560MiB·합산RSS6GiB·호스트 가용6GiB·최대 두 Paper/단일 PG와 소유 PID/포트 정리를 유지한다. 결과는 `native-economy-result.json`이며 실제 클라이언트·Player.saveData·아이템 이동·운영 수용은 별도다.

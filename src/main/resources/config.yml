@@ -100,3 +100,15 @@ survival-runtime:
       key: hearth_survival:wilderness
     nether:
       key: minecraft:the_nether
+
+# 일반 생존에 기존 경제 엔진을 연결합니다. 새 realm/명시적 설정만 허용합니다.
+survival-economy:
+  enabled: false
+  realm: ''
+  allow-new-realm: false
+  content-file: survival-economy.properties
+  db-host: 127.0.0.1
+  db-port: 5432
+  db-name: hearth_economy
+  db-user: hearth
+  password-environment: HEARTH_DB_PASSWORD

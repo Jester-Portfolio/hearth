@@ -24,4 +24,4 @@ python3 scripts/survival_config.py --output /REVIEWED/NEW_GAME_CONFIG.yml
 
 `hearthsurvivaladmin status`는 콘솔 상태를, `runtime_health.py --mode survival`은 3개 관리 월드의 집계를 확인한다. `hearthsurvivaladmin verify`는 소유 격리 시험 표식/경로가 있는 콘솔에서만 실행하며 운영 시험 명령이 아니다.
 
-이번 모드에는 기존 PG 잔액/상점/생산의 일반 생존 연결, 거주지 소유/보호 정책, 야생 리셋/주기·경제 밸런스를 아직 넣지 않았다. 운영 설치·기존 데이터 이전·서버별 분산 인벤토리·외부 포트 전환도 적용하지 않았다.
+기존 PG 잔액/상점·개인 거래/생산 연결은 [일반 생존 경제 설정](native-economy.md)으로 명시적으로 활성화할 수 있다. 거주지 소유/보호 정책, 야생 리셋/주기·경제 밸런스 확정은 아직 넣지 않았다. 운영 설치·기존 데이터 이전·서버별 분산 인벤토리·외부 포트 전환도 적용하지 않았다.
