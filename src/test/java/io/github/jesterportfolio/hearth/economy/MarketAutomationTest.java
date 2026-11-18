@@ -1,0 +1,19 @@
+package io.github.jesterportfolio.hearth.economy;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+import static io.github.jesterportfolio.hearth.economy.MarketAutomation.*;
+import static io.github.jesterportfolio.hearth.economy.EconomyEngine.*;
+import static io.github.jesterportfolio.hearth.economy.EconomyContent.*;
+final class MarketAutomationTest{
+ final EconomyContent c=EconomyEngineTest.demo();final MarketAutomation.Policy p=new MarketAutomation.Policy(2,2,4,1000,2500,5000,2,5000);
+ State stock(long tick,long source,long destination){var markets=new HashMap<>(EconomyEngine.initial(c).markets());markets.put(new Key("mine","iron_ore"),new Market(source,100,0));markets.put(new Key("capital","iron_ore"),new Market(destination,100,0));return new State(tick,markets,List.of(),List.of());}
+ Cursor initial(){return new Cursor(0,Mode.BALANCED,0,Mode.BALANCED,0,0);}
+ @Test void low_source_uses_conservation_and_low_destination_with_stock_uses_restock(){assertEquals(List.of(Mode.CONSERVE,Mode.BALANCED),observe(c,stock(0,0,0),Map.of(),p).candidates());assertEquals(List.of(Mode.RESTOCK,Mode.BALANCED),observe(c,stock(0,200,0),Map.of(),p).candidates());assertEquals(List.of(Mode.BALANCED),observe(c,stock(0,200,200),Map.of(),p).candidates());}
+ @Test void repeated_evaluations_and_minimum_hold_are_required_before_switching(){var cursor=initial();for(int tick=0;tick<4;tick++){var decision=decide(c,stock(tick,0,200),Map.of(),p,cursor,Optional.empty());cursor=decision.cursor();assertEquals(tick<3?Mode.BALANCED:Mode.CONSERVE,cursor.mode());}assertEquals(4,cursor.since());}
+ @Test void interrupted_candidate_votes_cannot_trigger_oscillation(){var cursor=new Cursor(1,Mode.BALANCED,0,Mode.CONSERVE,1,1);var result=decide(c,stock(1,200,0),Map.of(),p,cursor,Optional.empty());assertEquals(Mode.RESTOCK,result.cursor().candidate());assertEquals(1,result.cursor().votes());assertFalse(result.changed());}
+ @Test void stale_future_wrong_policy_and_ineligible_LLM_proposals_fall_back_to_rules(){for(var advice:List.of(new Advice(Mode.RESTOCK,0,p.fingerprint()),new Advice(Mode.BALANCED,5,p.fingerprint()),new Advice(Mode.BALANCED,0,"f".repeat(64)))){var decision=decide(c,stock(1,0,0),Map.of(),p,new Cursor(1,Mode.BALANCED,0,Mode.BALANCED,0,1),Optional.of(advice));assertEquals(Mode.CONSERVE,decision.cursor().candidate());assertEquals(Source.RULE,decision.source());}var old=decide(c,stock(9,0,0),Map.of(),p,new Cursor(9,Mode.BALANCED,0,Mode.BALANCED,0,9),Optional.of(new Advice(Mode.BALANCED,0,p.fingerprint())));assertEquals(Source.RULE,old.source());}
+ @Test void valid_LLM_choice_is_still_confirmed_and_revalidated_by_current_candidates(){var decision=decide(c,stock(1,0,0),Map.of(),p,new Cursor(1,Mode.BALANCED,0,Mode.BALANCED,0,1),Optional.of(new Advice(Mode.BALANCED,1,p.fingerprint())));assertEquals(Source.LLM,decision.source());assertFalse(decision.changed());assertEquals(Mode.BALANCED,decision.cursor().candidate());}
+ @Test void restart_cursor_preserves_votes_and_no_old_tick_can_be_replayed(){var before=new Cursor(3,Mode.BALANCED,0,Mode.CONSERVE,1,3);var result=decide(c,stock(3,0,200),Map.of(),p,before,Optional.empty());assertEquals(Mode.CONSERVE,result.cursor().mode());assertThrows(IllegalArgumentException.class,()->decide(c,stock(2,0,200),Map.of(),p,before,Optional.empty()));}
+ @Test void policy_hash_and_bounds_are_stable(){assertEquals(p.fingerprint(),new MarketAutomation.Policy(2,2,4,1000,2500,5000,2,5000).fingerprint());assertNotEquals(p.fingerprint(),new MarketAutomation.Policy(2,2,4,1000,3000,5000,2,5000).fingerprint());assertThrows(IllegalArgumentException.class,()->new MarketAutomation.Policy(0,2,4,1000,2500,5000,2,5000));assertThrows(IllegalArgumentException.class,()->new MarketAutomation.Policy(2,2,1,1000,2500,5000,2,5000));}
+}

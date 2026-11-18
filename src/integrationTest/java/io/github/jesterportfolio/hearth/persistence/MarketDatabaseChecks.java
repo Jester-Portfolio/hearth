@@ -1,0 +1,24 @@
+package io.github.jesterportfolio.hearth.persistence;
+
+import io.github.jesterportfolio.hearth.economy.*;
+import io.github.jesterportfolio.hearth.inventory.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.sql.*;
+import javax.sql.DataSource;
+
+/** 호출자가 소유 격리 PG를 검증한 뒤 사용하는 시장 제어의 SQL 경합/실패 검사입니다. */
+final class MarketDatabaseChecks {
+ private static <T>T await(CompletionStage<T> work)throws Exception{return work.toCompletableFuture().get(10,TimeUnit.SECONDS);}
+ private static void check(boolean ok,String name){if(!ok)throw new IllegalStateException(name);System.out.println("HEARTH_MARKET_DB_CHECK PASS "+name);System.out.flush();}
+ private static void reject(CompletionStage<?> work)throws Exception{try{await(work);throw new IllegalStateException("EXPECTED_MARKET_FAILURE");}catch(ExecutionException expected){}}
+ static void run(DataSource source,Connection admin)throws Exception{var p=new Properties();try(var r=new java.io.InputStreamReader(Objects.requireNonNull(MarketDatabaseChecks.class.getResourceAsStream("/economy-demo.properties")),java.nio.charset.StandardCharsets.UTF_8)){p.load(r);}p.setProperty("fixture-balance","0");var content=EconomyContent.parse(p);var db=PostgresProgressStore.forModules(source,f->{});try{var store=new EconomyStore(db,content);await(store.migrate());UUID realm=UUID.randomUUID(),group=UUID.randomUUID();await(store.openNativeRealm(realm,group,"c".repeat(64),1,true));var policy=new MarketAutomation.Policy(1,1,1,1000,2500,5000,2,5000);await(store.openController(realm,policy,true));reject(store.tick(realm,0,2));reject(store.openController(realm,new MarketAutomation.Policy(1,1,1,1000,3000,5000,2,5000),true));check(true,"managed_realm_cannot_bypass_controller_or_change_policy_hash");
+  var actor=store.context(realm,UUID.randomUUID());var empty=InventoryPayload.pack(new byte[41][]);await(store.createAccount(actor,123,empty));try(var st=admin.prepareStatement("UPDATE hearth_economy.market SET stock=0 WHERE realm_id=? AND good_id='iron_ore'")){st.setObject(1,realm);st.executeUpdate();}var before=await(store.snapshot(realm));var cursor=await(store.openController(realm,policy,false));reject(store.tickManaged(realm,0,2,policy,Optional.empty(),EconomyStore.Probe.ROLLBACK));check(before.equals(await(store.snapshot(realm)))&&cursor.equals(await(store.openController(realm,policy,false)))&&await(store.modeHistory(realm,20)).size()==1,"real_23514_rolls_back_stock_flows_cursor_and_mode_history_together");
+  var advice=new MarketAutomation.Advice(MarketAutomation.Mode.CONSERVE,0,policy.fingerprint());reject(store.tickManaged(realm,0,2,policy,Optional.of(advice),EconomyStore.Probe.COMMIT_UNKNOWN));var committed=await(store.openController(realm,policy,false));var history=await(store.modeHistory(realm,20));check(committed.tick()==1&&committed.mode()==MarketAutomation.Mode.CONSERVE&&history.size()==2&&history.getFirst().source()==MarketAutomation.Source.LLM&&history.getFirst().before()==MarketAutomation.Mode.BALANCED,"unknown_commit_retains_one_atomic_validated_LLM_mode_change");
+  check(!await(store.tickManaged(realm,0,2,policy,Optional.empty(),EconomyStore.Probe.NONE)).advanced()&&await(store.modeHistory(realm,20)).size()==2,"late_repeat_cannot_advance_clock_or_append_duplicate_mode_history");
+  var a=store.tickManaged(realm,1,3,policy,Optional.empty(),EconomyStore.Probe.NONE);var b=store.tickManaged(realm,1,3,policy,Optional.empty(),EconomyStore.Probe.NONE);check(await(a).advanced()!=await(b).advanced()&&await(store.snapshot(realm)).tick()==2,"concurrent_managed_ticks_have_exactly_one_winner");check(await(store.account(actor)).balance()==123&&await(store.account(actor)).inventory().payload().equals(empty),"market_agents_never_mutate_player_money_or_inventory");
+  UUID legacy=UUID.randomUUID();await(store.ensureRealm(legacy,1));reject(store.openController(legacy,policy,true));check(await(store.tick(legacy,0,2)),"legacy_tick_remains_usable_and_cannot_be_adopted_as_managed_native");
+  var resumed=new EconomyStore(db,content);await(resumed.migrate());check(await(resumed.openController(realm,policy,false)).equals(await(store.openController(realm,policy,false))),"new_store_reattaches_exact_policy_cursor_without_reinitialization");
+  String checksum;try(var st=admin.createStatement();var rows=st.executeQuery("SELECT checksum FROM hearth_economy.version WHERE version=7")){rows.next();checksum=rows.getString(1);}try(var st=admin.createStatement()){st.executeUpdate("UPDATE hearth_economy.version SET checksum='market-fixture-mismatch' WHERE version=7");}var mismatch=new EconomyStore(db,content);reject(mismatch.migrate());try(var st=admin.prepareStatement("UPDATE hearth_economy.version SET checksum=? WHERE version=7")){st.setString(1,checksum);st.executeUpdate();}check(true,"E007_checksum_mismatch_is_rejected_without_replacing_controller_data");
+ }finally{await(db.closeAsync());}}
+}

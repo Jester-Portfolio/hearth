@@ -29,6 +29,7 @@ public final class OllamaAssistant implements AssistantService {
         final String payload;try{payload=OllamaProtocol.request(request);}catch(RuntimeException invalid){return CompletableFuture.failedFuture(invalid);}
         return operation(payload,null,false,request);
     }
+    public synchronized CompletionStage<String> classify(String prompt,List<String> choices){final String payload;final List<String> allowed;try{allowed=List.copyOf(choices);payload=OllamaProtocol.classification(prompt,allowed);}catch(RuntimeException invalid){return CompletableFuture.failedFuture(invalid);}return operation(payload,null,false,null).thenApply(answer->OllamaProtocol.classified(answer,allowed));}
     @Override public boolean allowsCalculationHelp(){return true;}
     @Override public boolean allowsCache(){return true;}
     @Override public CompletionStage<String> confirmCached(String answer){return operation(null,Objects.requireNonNull(answer),false,null);}

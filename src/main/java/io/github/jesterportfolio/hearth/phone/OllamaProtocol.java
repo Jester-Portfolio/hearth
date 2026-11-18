@@ -30,6 +30,13 @@ final class OllamaProtocol {
         var options=new JsonObject();options.addProperty("num_ctx",CONTEXT);options.addProperty("num_predict",OUTPUT);options.addProperty("num_thread",2);options.addProperty("temperature",0);
         var stop=new JsonArray();stop.add("<|im_end|>");stop.add("<|endoftext|>");options.add("stop",stop);request.add("options",options);return JSON.toJson(request);
     }
+    /** 경제 분류는 자유 문장을 파싱하지 않고 제한된 enum JSON만 요청합니다. 기존 질의 계약은 유지합니다. */
+    static String classification(String prompt,List<String> choices){
+        if(choices==null||choices.isEmpty()||choices.size()>3||new HashSet<>(choices).size()!=choices.size()||choices.stream().anyMatch(c->c==null||!c.matches("[A-Z][A-Z_]{0,15}")))throw new IllegalArgumentException("OLLAMA_CLASSIFICATION_CHOICES");
+        var value=object(request(prompt));String raw="<|im_start|>system\n당신은 공개 시장 숫자를 분류하는 보조입니다. 주어진 후보 중 하나를 고르고 mode 필드 하나의 JSON 객체만 반환하세요. 설명·추론·도구 호출·게임 명령/상태 변경 권한은 없습니다.<|im_end|>\n<|im_start|>user\n"+prompt.replace("<|","< |")+"<|im_end|>\n<|im_start|>assistant\n";value.addProperty("prompt",raw);
+        var schema=new JsonObject();schema.addProperty("type","object");var properties=new JsonObject();var mode=new JsonObject();mode.addProperty("type","string");var options=new JsonArray();choices.forEach(options::add);mode.add("enum",options);properties.add("mode",mode);schema.add("properties",properties);var required=new JsonArray();required.add("mode");schema.add("required",required);schema.addProperty("additionalProperties",false);value.add("format",schema);return JSON.toJson(value);
+    }
+    static String classified(String response,List<String> choices){var result=object(response);if(!result.keySet().equals(Set.of("mode")))throw invalid();String code=string(result,"mode");if(!choices.contains(code))throw invalid();return code;}
     static void version(String body){if(!VERSION.equals(string(object(body),"version")))throw failure(AssistantFailure.Reason.MODEL_MISMATCH);}
     static void model(String body){
         var root=object(body);if(!root.has("models")||!root.get("models").isJsonArray())throw invalid();int matches=0;

@@ -225,3 +225,11 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 `verify_native_economy.py --workspace FRESH_ROOT --java JAVA --plugin FROZEN_JAR --prepared-worlds PASSED_SURVIVAL_ROOT --prepared-database PASSED_S4_11_ROOT --accept-eula`는 새 소유 `hearth-native-economy-run.*`와 정확한 `.hearth-native-economy-isolated` 표식(`Hearth native economy isolated v1` + 개행)을 요구한다. 기존 승인된 비활성 시험 세계/PG만 복사하고 E006 소유권/경합/실패 보존·기존 행 불변과 실제 Paper 두 JVM의 상인/코덱·PG 거래/생산/영수증/HOLD 복원을 함께 검사한다. 실물 Player를 만들지 않으며 제어 Port의 native 저장 호출은 모형이다.
 
 최종 순수 제어/GUI 보완 후에는 같은 소스의 두 JVM 검사를 반복하는 대신 `--restore-source PASSED_NATIVE_ECONOMY_ROOT`로 이미 통과한 비활성 경제 시험을 새 소유 경로에 복사해 기존 상태의 한 JVM 복원을 확인할 수 있다. 이 모드에서는 신규 realm 생성/DB 경합 시나리오를 반복하지 않는다. 두 모드 모두 localhost·CPU2/nice10·600초/작업550초·Paper heap1536MiB/RSS2560MiB·합산RSS6GiB·호스트 가용6GiB·최대 두 Paper/단일 PG와 소유 PID/포트 정리를 유지한다. 결과는 `native-economy-result.json`이며 실제 클라이언트·Player.saveData·아이템 이동·운영 수용은 별도다.
+
+## 시장 자동 운영 검증
+
+`verify_market.py --workspace FRESH_ROOT --java JAVA --plugin FROZEN_JAR --prepared-worlds PASSED_SURVIVAL_ROOT --prepared-database PASSED_S4_11_ROOT --accept-eula`는 위 native 소유 표식과 `.hearth-market-isolated` (`Hearth market isolated v1` + 개행)를 모두 요구한다. 먼저 `stageNativeEconomyRuntime -PnativeEconomyWorkspace=FRESH_ROOT`로 helper를 준비한다. E007의 실제 PG 잠금/CAS/롤백/commit 불명·기존 행 보존과 실제 Paper 예약 틱·규칙 모드 전환·다음 JVM의 정확한 컨트롤러/이력 복원을 묶어 검사한다. 합성 Player·실제 클릭/거래는 생성하지 않는다.
+
+`--restore-source PASSED_MARKET_ROOT`는 정리 완료·algorithm PASS인 이전 비활성 시장 시험을 새 소유 경로로 복사해 변경된 최종 코드의 한 JVM 복원을 검사한다. 최초 전체 시험에서 선택형 모델만 실패한 PARTIAL 원본도 algorithm PASS/정리 완료를 확인하면 복사할 수 있다. 이는 모델 성공 판정에 해당하지 않는다. 이미 통과한 DB 신규 생성/경합은 반복하지 않는다.
+
+기본은 LLM 없는 경제 에이전트 검사다. 별도 승인된 한 묶음에만 `--ai-source VERIFIED_INACTIVE_AI_ROOT`를 추가하면 기존 고정 모델을 읽기 전용 검증 복사하고 명시적 준비/실제 모드 후보 응답을 확인한다. CPU2/nice10·최초 600초/작업550초·준비90초/질의6초·Paper heap1536MiB/RSS2560MiB·AI RSS4GiB/합산RSS6GiB/GPU5GiB·호스트 가용6GiB·localhost·Paper 최대2/PG1을 유지한다. 기존 시간을 새 예산으로 재개하지 않으며 새 실제 AI 시험은 기존 시도 승인 경계를 따른다. `market-result.json`은 알고리즘/선택형 AI 결과를 구분하고 실패해도 원본·후속 독립 검사·소유 프로세스 정리를 보존한다. [검증 기록](../docs/market-automation-verification.md)을 따른다.

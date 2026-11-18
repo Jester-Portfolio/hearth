@@ -1,0 +1,15 @@
+# 기존 survival-economy 설정을 유지한 채 검토하여 병합하는 절입니다.
+# 새 컨트롤러의 최초 생성 시에만 enabled/allow-new-controller를 true로 지정합니다.
+market-automation:
+  enabled: false
+  allow-new-controller: false
+  interval-ticks: 12
+  confirmations: 2
+  minimum-hold-ticks: 24
+  reserve-low-bps: 1000
+  reserve-normal-bps: 2500
+  reserve-high-bps: 5000
+  buffer-ticks: 2
+  low-stock-bps: 5000
+  ai-mode: none
+  ai-address: http://127.0.0.1:11435/api/generate

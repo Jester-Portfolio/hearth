@@ -150,11 +150,12 @@ class JointAI:
         if self.trial.watcher.is_alive():self.cleanup_errors.append('Joint resource watcher did not close')
         return self.cleanup_errors
 
-    def result(self, outcome):
+    def result(self, outcome, evidence_name="joint-phone-result.json"):
+        assert evidence_name in ("joint-phone-result.json","market-ai-result.json")
         samples=self.trial.samples
-        native=self.monitor.root/'joint-phone-result.json'
+        native=self.monitor.root/evidence_name
         observed=json.loads(native.read_text()) if native.is_file() else {}
-        report=dict(outcome=outcome,runtime_ready=self.ready,real_model=observed.get('real_model',False),profile='joint-paper-pg-ai',actual_minecraft_client=False,four_player_capacity_pass=False,shared_native_workspace=str(self.monitor.root),shared_clock=True,duration_seconds=round(time.monotonic()-self.monitor.started,3),guard_failure=self.trial.error,cleanup_errors=self.cleanup_errors,downloaded_bytes=self.trial.downloaded,locally_reused_bytes=self.trial.reused,receipts=self.trial.receipts,parent_home_unchanged=os.environ.get('HOME')==self.original_home,max_combined_rss_kib=max((s['combined_rss_kib'] for s in samples),default=0),max_ai_rss_kib=max((s['ai_rss_kib'] for s in samples),default=0),max_gpu_mib=max((s['gpu_mib'] for s in samples),default=0),min_host_available_kib=min((s['host_available_kib'] for s in samples),default=s5.available_kib()),limits=dict(total_seconds=600,work_seconds=550,ai_rss_gib=4,combined_rss_gib=6,gpu_gib=5,host_available_gib=6,cpu=2,nice=10))
+        report=dict(outcome=outcome,runtime_ready=self.ready,real_model=observed.get('real_model',False),profile='joint-market-agents-ai' if evidence_name=='market-ai-result.json' else 'joint-paper-pg-ai',actual_minecraft_client=False,four_player_capacity_pass=False,shared_native_workspace=str(self.monitor.root),shared_clock=True,duration_seconds=round(time.monotonic()-self.monitor.started,3),guard_failure=self.trial.error,cleanup_errors=self.cleanup_errors,downloaded_bytes=self.trial.downloaded,locally_reused_bytes=self.trial.reused,receipts=self.trial.receipts,parent_home_unchanged=os.environ.get('HOME')==self.original_home,max_combined_rss_kib=max((s['combined_rss_kib'] for s in samples),default=0),max_ai_rss_kib=max((s['ai_rss_kib'] for s in samples),default=0),max_gpu_mib=max((s['gpu_mib'] for s in samples),default=0),min_host_available_kib=min((s['host_available_kib'] for s in samples),default=s5.available_kib()),limits=dict(total_seconds=600,work_seconds=550,ai_rss_gib=4,combined_rss_gib=6,gpu_gib=5,host_available_gib=6,cpu=2,nice=10))
         if report['duration_seconds']>600 or self.cleanup_errors or self.trial.error:report['outcome']='FAIL'
         (self.root/'resource-samples.json').write_text(json.dumps(samples)+'\n');(self.root/'run-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
         return dict(result=str(self.root/'run-result.json'),**report)

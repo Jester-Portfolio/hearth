@@ -31,6 +31,7 @@
 | [ADR-0025: 로비·경제 멀티서버 네트워크 우선](0025-lobby-economy-network.md) | 사용자 네트워크 우선 결정·구현 선택 기록 | 스토리 개발 보류, Velocity/로비/경제·modern 인증·저장 후 단일 경로/실패 보존 |
 | [ADR-0026: 일반 생존 경제 서버와 3월드 선택](0026-vanilla-survival-world-selection.md) | 사용자 일반 마크/월드 분리 결정·구현 선택 | 별도 로비 + 경제 Paper의 거주/야생/지옥, 인벤토리 UI·native 개인 데이터·기존 PG 보존 |
 | [ADR-0027: 기존 경제 엔진의 일반 생존 연결](0027-native-survival-economy-integration.md) | 사용자 기존 경제 재사용 결정·구현 | 3월드 PG 화폐/상점·개인 거래·생산/수급, native 인벤토리 유지·그림자 CAS/HOLD |
+| [ADR-0028: 시장 자동 운영·경제 에이전트](0028-autonomous-market-agents.md) | 사용자 자동 시장/경제 에이전트 선택·구현 | 부족량/비축/운송 중 수량·모드 안정화·E007 원자 저장/복원, LLM 기본 해제 |
 
 각 기록에는 다음 내용을 포함합니다.
 

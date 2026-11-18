@@ -112,3 +112,18 @@ survival-economy:
   db-name: hearth_economy
   db-user: hearth
   password-environment: HEARTH_DB_PASSWORD
+
+# 시장 에이전트/재고 기반 운송. 새 컨트롤러/경제 정책 해시를 명시적으로 준비합니다.
+market-automation:
+  enabled: false
+  allow-new-controller: false
+  interval-ticks: 12
+  confirmations: 2
+  minimum-hold-ticks: 24
+  reserve-low-bps: 1000
+  reserve-normal-bps: 2500
+  reserve-high-bps: 5000
+  buffer-ticks: 2
+  low-stock-bps: 5000
+  ai-mode: none
+  ai-address: http://127.0.0.1:11435/api/generate
