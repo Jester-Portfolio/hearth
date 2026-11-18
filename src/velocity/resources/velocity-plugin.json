@@ -1,0 +1,1 @@
+{"id":"hearth-network","name":"Hearth Network","version":"${version}","description":"Authenticated lobby/economy routing after source save","authors":["Jester-Portfolio"],"main":"io.github.jesterportfolio.hearth.network.VelocityNetwork"}

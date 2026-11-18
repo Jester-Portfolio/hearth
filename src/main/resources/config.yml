@@ -83,3 +83,7 @@ minimap-horizontal-offset: 96
 
 # 선택형 고정 HUD. BetterHud 지원 빌드와 별도 리소스팩 준비가 필요합니다.
 betterhud-enabled: false
+
+# 기본 비활성. modern forwarding과 별도 relay 비밀·역할을 검토한 로비/경제에서만 켭니다.
+network:
+  enabled: false

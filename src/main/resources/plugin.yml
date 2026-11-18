@@ -9,6 +9,10 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth story foundations and optional dedicated economy runtime
 commands:
+  hearthserver:
+    description: 저장 확인 후 로비·경제 서버 이동
+    aliases: [lobby]
+    usage: /hearthserver [lobby|economy]
   hearthtrade:
     description: 같은 경제 월드의 상호 확인 플레이어 거래
     usage: /hearthtrade request <이름> | accept | show | cancel

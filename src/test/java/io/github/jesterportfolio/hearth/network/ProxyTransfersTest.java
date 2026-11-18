@@ -1,0 +1,17 @@
+package io.github.jesterportfolio.hearth.network;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+final class ProxyTransfersTest {
+ final AtomicLong clock=new AtomicLong();final NetworkSettings settings=NetworkSettingsTest.settings("lobby");final ProxyTransfers core=new ProxyTransfers(settings,clock::get);final UUID player=UUID.randomUUID();final Object token=new Object();
+ NetworkProtocol.Frame frame(String from,String to){return new NetworkProtocol.Frame(settings.network(),UUID.randomUUID(),from,to,15000,NetworkProtocol.Kind.REQUEST);}
+ void lobby(){core.connected(player,token);assertTrue(core.permit(player,token,null,"lobby"));assertTrue(core.arrived(player,token,"lobby"));}
+ @Test void initial_admission_is_only_lobby_and_one_permit(){core.connected(player,token);assertFalse(core.permit(player,token,null,"economy"));assertTrue(core.permit(player,token,null,"lobby"));assertFalse(core.permit(player,token,null,"lobby"));assertTrue(core.arrived(player,token,"lobby"));}
+ @Test void proxy_commands_or_other_plugins_cannot_switch_without_source_receipt(){lobby();assertFalse(core.permit(player,token,"lobby","economy"));assertFalse(core.arrived(player,token,"economy"));}
+ @Test void signed_source_request_gets_one_fixed_destination_permit(){lobby();var f=frame("lobby","economy");assertTrue(core.request(player,token,"lobby",f));assertFalse(core.permit(player,token,"lobby","story"));assertTrue(core.permit(player,token,"lobby","economy"));assertFalse(core.permit(player,token,"lobby","economy"));assertTrue(core.arrived(player,token,"economy"));}
+ @Test void stale_connection_wrong_network_source_and_expiry_are_refused(){lobby();var f=frame("lobby","economy");assertFalse(core.request(player,new Object(),"lobby",f));assertFalse(core.request(player,token,"economy",f));assertFalse(core.request(player,token,"lobby",new NetworkProtocol.Frame(UUID.randomUUID(),f.request(),f.from(),f.to(),f.expiresMillis(),f.kind())));clock.set(15000);assertFalse(core.request(player,token,"lobby",f));}
+ @Test void replay_is_refused_after_fast_roundtrip(){lobby();var first=frame("lobby","economy");assertTrue(core.request(player,token,"lobby",first));assertTrue(core.permit(player,token,"lobby","economy"));assertTrue(core.arrived(player,token,"economy"));var back=frame("economy","lobby");assertTrue(core.request(player,token,"economy",back));assertTrue(core.permit(player,token,"economy","lobby"));assertTrue(core.arrived(player,token,"lobby"));assertFalse(core.request(player,token,"lobby",first));}
+ @Test void refusal_can_clear_only_same_current_request_before_deadline(){lobby();var f=frame("lobby","economy");assertTrue(core.request(player,token,"lobby",f));assertFalse(core.refused(player,token,UUID.randomUUID(),"lobby"));assertTrue(core.refused(player,token,f.request(),"lobby"));assertFalse(core.request(player,token,"lobby",f));var next=frame("lobby","economy");assertTrue(core.request(player,token,"lobby",next));clock.set(15000);assertFalse(core.refused(player,token,next.request(),"lobby"));}
+ @Test void old_disconnect_cannot_remove_new_authenticated_connection(){lobby();core.disconnected(player,new Object());assertEquals(1,core.connections());core.disconnected(player,token);var newer=new Object();core.connected(player,newer);core.disconnected(player,token);assertEquals(1,core.connections());assertFalse(core.permit(player,token,null,"lobby"));assertTrue(core.permit(player,newer,null,"lobby"));}
+}

@@ -84,6 +84,11 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private BiPredicate<Player,InventoryClickEvent> boundClick=(p,e)->true;private Predicate<InventoryDragEvent> boundDrag=e->true;
     public void boundItems(BiPredicate<Player,InventoryClickEvent> click,Predicate<InventoryDragEvent> drag){boundClick=click;boundDrag=drag;}
     private boolean closed;
+    private BooleanSupplier authenticated=Bukkit::getOnlineMode;
+    public void authenticated(BooleanSupplier authority){main();authenticated=Objects.requireNonNull(authority);}
+    private BiPredicate<Player,String> networkCommand=(p,c)->false;
+    public void network(BiPredicate<Player,String> command,BiPredicate<Player,Inventory> inventory){main();networkCommand=command;networkInventory=inventory;}
+    private BiPredicate<Player,Inventory> networkInventory=(p,i)->false;
     private BiPredicate<Player,String> questCommand=(p,c)->false;
     private BiPredicate<Player,Inventory> developerInventory=(p,i)->false;
     private BiPredicate<Player,Inventory> craftingInventory=(p,i)->false;
@@ -131,7 +136,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     }
     @EventHandler public void joined(PlayerJoinEvent e) {
         var player=e.getPlayer();if(provisioner==null){try { connectPlayer(player); } catch (RuntimeException error) { player.kick(Component.text("격리 세션 연결 거부"));plugin.getLogger().warning("HEARTH_SESSION_CONNECT_REJECTED"); }return;}
-        if(closed||!Bukkit.getOnlineMode()||!player.isWhitelisted()){player.kick(Component.text("접속 권한을 확인할 수 없습니다."));return;}
+        if(closed||!authenticated.getAsBoolean()||!player.isWhitelisted()){player.kick(Component.text("접속 권한을 확인할 수 없습니다."));return;}
         var nonce=new Object();admissions.put(player.getUniqueId(),nonce);BooleanSupplier current=()->!closed&&admissions.get(player.getUniqueId())==nonce&&player.isOnline()&&Bukkit.getPlayer(player.getUniqueId())==player;
         CompletionStage<Link> prepared;try{prepared=Objects.requireNonNull(provisioner.apply(player,current));}catch(RuntimeException error){prepared=CompletableFuture.failedFuture(error);}
         prepared.toCompletableFuture().copy().orTimeout(8,TimeUnit.SECONDS).whenCompleteAsync((link,error)->{
@@ -143,7 +148,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     private void connectPlayer(Player player) {
         knownNames.put(player.getUniqueId(),player.getName());
         Link link=links.get(player.getUniqueId());
-        if (closed || link==null || !Bukkit.getOnlineMode() || !player.isWhitelisted()) { player.kick(Component.text("준비된 격리 시험 프로필이 필요합니다."));return; }
+        if (closed || link==null || !authenticated.getAsBoolean() || !player.isWhitelisted()) { player.kick(Component.text("준비된 격리 시험 프로필이 필요합니다."));return; }
         var session=sessions.connect(link.context(),link.world(),new PlayerSessions.Port(){
             public boolean connected(){main();return !closed && player.isOnline() && Bukkit.getPlayer(player.getUniqueId())==player;}
             public InventoryPayload capture(){main();observePrivate.accept(player);return temporary.capture(temporaryPort(player,player.getOpenInventory().getTopInventory()));}
@@ -240,7 +245,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void open(InventoryOpenEvent e){
         if(!(e.getPlayer() instanceof Player p))return;
         if(e.getInventory().getType()!=InventoryType.CRAFTING&&e.getInventory().getType()!=InventoryType.PLAYER){
-            if(!allowed(p)||!(nativeKind(p,e.getInventory())!=InventoryWindowRules.Kind.OTHER||developerInventory.test(p,e.getInventory())||travelInventory.test(p,e.getInventory())||craftingInventory.test(p,e.getInventory())||gatheringInventory.test(p,e.getInventory())))e.setCancelled(true);
+            if(!allowed(p)||!(nativeKind(p,e.getInventory())!=InventoryWindowRules.Kind.OTHER||networkInventory.test(p,e.getInventory())||developerInventory.test(p,e.getInventory())||travelInventory.test(p,e.getInventory())||craftingInventory.test(p,e.getInventory())||gatheringInventory.test(p,e.getInventory())))e.setCancelled(true);
             else if(!e.isCancelled())try{settleCursor(p);}catch(RuntimeException failure){e.setCancelled(true);temporaryHold(p);}
         }else if(!allowed(p))e.setCancelled(true);
     }
@@ -254,13 +259,13 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
         }
     }
     @EventHandler(priority=EventPriority.HIGHEST) public void click(InventoryClickEvent e){
-        if(!(e.getWhoClicked() instanceof Player p))return;if(!boundClick.test(p,e)){e.setCancelled(true);hint(p);return;}var kind=window(p,e.getView());var request=new InventoryWindowRules.Request(allowed(p),kind!=InventoryWindowRules.Kind.OTHER,p.getGameMode()==GameMode.CREATIVE,kind,PaperInventoryWindow.slot(e.getView(),e.getClickedInventory(),e.getSlot()),e.getClick().name(),e.getAction().name(),e.getHotbarButton(),p.getItemOnCursor().isEmpty());
+        if(!(e.getWhoClicked() instanceof Player p))return;if(networkInventory.test(p,e.getView().getTopInventory()))return;if(!boundClick.test(p,e)){e.setCancelled(true);hint(p);return;}var kind=window(p,e.getView());var request=new InventoryWindowRules.Request(allowed(p),kind!=InventoryWindowRules.Kind.OTHER,p.getGameMode()==GameMode.CREATIVE,kind,PaperInventoryWindow.slot(e.getView(),e.getClickedInventory(),e.getSlot()),e.getClick().name(),e.getAction().name(),e.getHotbarButton(),p.getItemOnCursor().isEmpty());
         if(!InventoryWindowRules.inventory(request)){e.setCancelled(true);if(allowed(p)&&kind!=InventoryWindowRules.Kind.OTHER)hint(p);return;}
         if(!e.isCancelled())try{PaperInventoryWindow.preview(codec,p,e);sample(p);}catch(RuntimeException full){e.setCancelled(true);hint(p);}
     }
     private void hint(Player p){long now=System.nanoTime();Long previous=interactionHints.get(p.getUniqueId());if(previous!=null&&now-previous<5_000_000_000L)return;interactionHints.put(p.getUniqueId(),now);p.sendMessage(Component.text("현재 화면·권한·보관 공간을 확인하세요. 제작 결과는 한 번씩 받습니다. /hearthplay help"));}
     @EventHandler(priority=EventPriority.HIGHEST) public void drag(InventoryDragEvent e){
-        if(!(e.getWhoClicked() instanceof Player p))return;if(!boundDrag.test(e)){e.setCancelled(true);return;}var kind=window(p,e.getView());var slots=new ArrayList<InventoryWindowRules.Slot>();
+        if(!(e.getWhoClicked() instanceof Player p))return;if(networkInventory.test(p,e.getView().getTopInventory())){e.setCancelled(true);return;}if(!boundDrag.test(e)){e.setCancelled(true);return;}var kind=window(p,e.getView());var slots=new ArrayList<InventoryWindowRules.Slot>();
         for(int raw:e.getRawSlots()){if(raw<0||raw>=e.getView().countSlots()){slots.add(InventoryWindowRules.Slot.OUTSIDE);continue;}slots.add(PaperInventoryWindow.slot(e.getView(),e.getView().getInventory(raw),e.getView().convertSlot(raw)));}
         if(!InventoryWindowRules.drag(allowed(p),kind!=InventoryWindowRules.Kind.OTHER,p.getGameMode()==GameMode.CREATIVE,kind,slots))e.setCancelled(true);
         else if(!e.isCancelled())try{PaperInventoryWindow.previewDrag(codec,p,e);sample(p);}catch(RuntimeException full){e.setCancelled(true);hint(p);}
@@ -276,7 +281,7 @@ public final class PaperSessionAdapter implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST) public void consume(PlayerItemConsumeEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void swap(PlayerSwapHandItemsEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
     @EventHandler(priority=EventPriority.HIGHEST) public void damageItem(PlayerItemDamageEvent e){if(!allowed(e.getPlayer()))e.setCancelled(true);sample(e.getPlayer());}
-    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied&&!featureLoading.contains(linked(e.getPlayer()))&&prepared(e.getPlayer())!=null&&sceneCommand.test(e.getPlayer(),e.getMessage()))return;if(!denied&&!featureLoading.contains(linked(e.getPlayer()))&&prepared(e.getPlayer())!=null&&combat.command(e.getPlayer(),e.getMessage()))return;if(!denied && allowed(e.getPlayer())){try{settleBoundary(e.getPlayer());}catch(RuntimeException failure){temporaryHold(e.getPlayer());return;}if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else if(!featureCommand.test(e.getPlayer(),e.getMessage())&&!gatheringCommand.test(e.getPlayer(),e.getMessage()))questCommand.test(e.getPlayer(),e.getMessage());}}
+    @EventHandler(priority=EventPriority.HIGHEST) public void command(PlayerCommandPreprocessEvent e){boolean denied=e.isCancelled();e.setCancelled(true);if(!denied&&!featureLoading.contains(linked(e.getPlayer()))&&prepared(e.getPlayer())!=null&&sceneCommand.test(e.getPlayer(),e.getMessage()))return;if(!denied&&!featureLoading.contains(linked(e.getPlayer()))&&prepared(e.getPlayer())!=null&&combat.command(e.getPlayer(),e.getMessage()))return;if(!denied && allowed(e.getPlayer())){try{settleBoundary(e.getPlayer());}catch(RuntimeException failure){temporaryHold(e.getPlayer());return;}if(networkCommand.test(e.getPlayer(),e.getMessage()))return;if(Set.of("/hearthplay","/hearthplay help").contains(e.getMessage()))PlayerInteractionRules.help().forEach(line->e.getPlayer().sendMessage(Component.text(line)));else if(!featureCommand.test(e.getPlayer(),e.getMessage())&&!gatheringCommand.test(e.getPlayer(),e.getMessage()))questCommand.test(e.getPlayer(),e.getMessage());}}
     @EventHandler(priority=EventPriority.HIGHEST) public void damage(EntityDamageEvent e){if(e.getEntity() instanceof Player p&&(featureLoading.contains(linked(p))||!combat.damage(p,e)))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.HIGHEST) public void attack(EntityDamageByEntityEvent e){if(e.getDamager() instanceof Player p&&(!allowed(p)||!fieldAttack.test(p,e.getEntity())&&!combat.attack(p,e.getEntity())))e.setCancelled(true);}
     @Override public void close(){main();closed=true;admissions.clear();for(var move:List.copyOf(combatMoves))move.completeExceptionally(new IllegalStateException("COMBAT_MOVE_CLOSED"));moving.clear();travelFrozen.clear();featureLoading.clear();interactionHints.clear();windows.clear();HandlerList.unregisterAll(this);}

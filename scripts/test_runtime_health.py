@@ -24,6 +24,10 @@ class RuntimeHealthTests(unittest.TestCase):
         self.write()
         self.assertTrue(self.read()['controller_ready'])
         self.assertFalse(self.read()['ai_preparation_recorded'])
+    def test_lobby_report_is_checked_with_its_own_expected_role(self):
+        self.row['mode']='lobby';self.write()
+        self.assertTrue(health.inspect(self.log,self.boot_file,'lobby',10,now=105)['controller_ready'])
+        with self.assertRaisesRegex(health.Unavailable,'MISMATCH'):self.read()
     def test_stale_future_and_other_boot_reports_fail(self):
         self.write()
         for now in (120,90):

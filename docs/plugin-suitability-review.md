@@ -183,3 +183,9 @@ PL1의 WG/WE 로딩/종료 부분은 실행했고 MV 조합은 미실행입니�
 ## 선택형 HUD 엔진 — 2026-11-09
 
 사용자 선택에 따라 [ADR-0017](decisions/0017-optional-betterhud-presentation.md)의 BetterHud 개발 연동을 채택했다. [공식 배포 2.1.0-SNAPSHOT-448](https://hangar.papermc.io/toxicity188/BetterHud/versions/2.1.0-SNAPSHOT-448)은 Paper 26.2를 표시하며 [저장소 라이선스](https://github.com/toxicity188/BetterHud/blob/master/LICENSE)는 MIT다. 기존 Paper API 기본 표시는 설치 의존성을 줄이는 대안으로 보존한다. 자체 core shader/폰트 엔진을 추가 유지하는 대신 BetterHud의 공개 API·생성 팩을 재사용하며, Hearth는 개인 정보·세션·조회/출력·팩 ID 확인을 맡는다. 실제 호환성과 제한은 [표시 검증](hud-display-verification.md)을 따른다. 운영 설치·실제 클라이언트/다른 팩 조합·부하 수용은 별도다.
+
+## 로비·경제 네트워크의 프록시 선택 (2026-11-18)
+
+[ADR-0025](decisions/0025-lobby-economy-network.md)의 사용자 요청에 따라 Velocity 4.3.1 build45를 선택했다. [공식 배포 메타데이터](https://fill.papermc.io/v3/projects/velocity/versions/4.3.1/builds)의 stable 고정 파일/SHA를 사용하며 기존 Paper26.2/Java25/WG/WE는 유지한다. [modern forwarding](https://docs.papermc.io/velocity/player-information-forwarding/)의 정품 프록시 인증·Paper 전달을 사용하고, [출처가 구분되는 플러그인 메시지](https://docs.papermc.io/velocity/dev/plugin-messaging/)와 서버 전환 이벤트로 Hearth의 기존 PG 저장 경계를 연결한다.
+
+프록시 자체를 구현하지 않는다. Paper 쪽 기본 BungeeCord 호환 메시지만 쓰면 소스 저장 뒤 전환 권한을 모든 경로에서 강제하기 어려워, 같은 JAR의 작은 Velocity 모듈을 추가하는 구현을 택했다. 일반 호환 채널은 비활성화한다. 별도 인벤토리 동기화/화폐 플러그인을 넣어 기존 소유권/CAS를 바꾸지 않는다. 새 프록시 선택이 기존 운영 프로세스/네트워크/컨테이너 변경 승인을 뜻하지 않는다. 실제 정품 접속/서버 이동과 전체 플러그인 조합 수용은 별도다.

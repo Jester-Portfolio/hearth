@@ -28,6 +28,7 @@
 | [ADR-0022: 명시적 AI 준비와 요청 진입](0022-explicit-ai-preparation-and-admission.md) | 내부 검사·별도 승인한 콜드 시험 통과 | 콘솔 준비·초기 연산 확인·질의 6초 유지·준비 성공 표식/적재 상태 확인 |
 | [ADR-0023: 필드 전투의 인던 제어 규칙 재사용](0023-field-combat-dungeon-rules.md) | 승인 | 고정 명단·사망/관전·조건부 부활·저장/복귀 재사용, 자동 재소환 금지 |
 | [ADR-0024: 경제 전용 실행·PG 잔액·정상 계정 진입](0024-dedicated-economy-admission-and-currency.md) | 승인 | 새 계정 0/빈 인벤토리, 기존 데이터 보존·PAUSE, 별도 실행/저장 종료 |
+| [ADR-0025: 로비·경제 멀티서버 네트워크 우선](0025-lobby-economy-network.md) | 사용자 네트워크 우선 결정·구현 선택 기록 | 스토리 개발 보류, Velocity/로비/경제·modern 인증·저장 후 단일 경로/실패 보존 |
 
 각 기록에는 다음 내용을 포함합니다.
 

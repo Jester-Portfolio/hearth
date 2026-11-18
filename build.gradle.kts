@@ -220,3 +220,26 @@ tasks.register<JavaExec>("operatorConfigAudit") {
         providers.gradleProperty("auditInclude").orNull?.split(",")?.filter { it.isNotBlank() }?.let { args(it) }
     }
 }
+
+// 한 배포 JAR 안의 선택형 Velocity 진입점. Paper에서는 이 클래스/의존성을 초기화하지 않습니다.
+val velocity by sourceSets.creating {
+    compileClasspath += sourceSets.main.get().output
+}
+dependencies { add(velocity.compileOnlyConfigurationName,"com.velocitypowered:velocity-api:4.3.1") }
+tasks.named<ProcessResources>(velocity.processResourcesTaskName) {
+    inputs.property("version",project.version)
+    filesMatching("velocity-plugin.json") { expand(mapOf("version" to project.version)) }
+}
+tasks.jar { dependsOn(tasks.named(velocity.classesTaskName));from(velocity.output) }
+
+tasks.register("stageNetworkRuntime") {
+    dependsOn(tasks.named("integrationTestClasses"))
+    doLast {
+        val root=file(providers.gradleProperty("networkWorkspace").get())
+        requireTestRoot(root,"hearth-network-run.")
+        val target=root.resolve("resolved-jars")
+        require(!target.exists())
+        copy { from(integrationTest.output); into(root.resolve("fixture-classes")) }
+        copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(target) }
+    }
+}

@@ -1,0 +1,72 @@
+{
+  "outcome": "PASS_ISOLATED_NETWORK_FOUNDATION",
+  "date": "2026-11-18",
+  "java_unit_tests": 34,
+  "python_unit_tests": 7,
+  "java_results": [
+    "/home/server/hearth-tmp/hearth-network.7fycjhxn/unit-results",
+    "/home/server/hearth-tmp/hearth-network.7fycjhxn/menu-unit-results"
+  ],
+  "python_results": [
+    "/home/server/hearth-tmp/hearth-network.7fycjhxn/config-tests.log",
+    "/home/server/hearth-tmp/hearth-network.7fycjhxn/lobby-health-test.log"
+  ],
+  "final_jar": "/home/server/hearth-tmp/hearth-network.7fycjhxn/Hearth-final-safe.jar",
+  "final_jar_sha256": "70beb6114ae8feca20780900bfc44a739ee1325ed675dcf4be06d4c3ad1d9843",
+  "native_result": "/home/server/hearth-tmp/hearth-network-run.4jen__de/network-result.json",
+  "duration_seconds": 38.56,
+  "native_checks": [
+    "velocity_and_two_actual_paper_roles_ready_with_modern_forwarding",
+    "actual_velocity_server_list_status_without_login_or_fake_player",
+    "actual_loaded_modern_forwarding_authentication_with_backend_offline_mode",
+    "actual_loaded_modern_secret_mismatch_is_refused_without_relaxing_authentication",
+    "backend_offline_mode_cannot_fall_back_to_direct_authentication",
+    "source_is_frozen_before_actual_PG_save_and_no_frame_is_sent_early",
+    "proxy_request_is_released_only_after_latest_real_inventory_commit",
+    "known_target_refusal_keeps_same_current_source_inventory",
+    "disconnect_does_not_reissue_or_reinitialize_saved_source_items",
+    "real_23514_save_failure_preserves_original_payload_and_sends_no_transfer",
+    "real_concurrent_source_revision_has_exactly_one_CAS_winner",
+    "actual_proxy_reload_closes_network_admissions_and_switch_gate",
+    "read_only_source_config_metadata_and_original_cluster_control_preserved"
+  ],
+  "cleanup_errors": [],
+  "max_sampled_combined_rss_mib": 2163.63,
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "cpu": 2,
+    "combined_rss_stop_mib": 6144,
+    "paper_starts_max": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "proxy_heap_mib": 256,
+    "proxy_rss_stop_mib": 512,
+    "host_available_min_mib": 6144
+  },
+  "velocity_version": "4.3.1",
+  "velocity_build": 45,
+  "velocity_official_sha256": "0844bcabdcdb4f5b875906fd4c3365bc1bb76918e42bc595ed88ad195258dd75",
+  "velocity_metadata": "/home/server/hearth-tmp/hearth-network.7fycjhxn/velocity-builds.json",
+  "preserved_prior_trials": [
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-network-run.wcp3hzye",
+      "outcome": "FAIL",
+      "duration_seconds": 131.089,
+      "failure": "RuntimeError: paper-economy-runtime: 예상 토큰 이전 종료: HEARTH_ECONOMY_RUNTIME_READY",
+      "cleanup_errors": []
+    },
+    {
+      "workspace": "/home/server/hearth-tmp/hearth-network-run.8ia1hnkn",
+      "outcome": "PASS",
+      "duration_seconds": 38.968,
+      "failure": null,
+      "cleanup_errors": []
+    }
+  ],
+  "actual_authenticated_client_and_switch": "NOT_RUN",
+  "actual_GUI_input": "NOT_RUN",
+  "operating_changes": "NONE",
+  "story_additional_development": "DEFERRED_BY_USER",
+  "new_DDL": "NONE"
+}
