@@ -13,7 +13,7 @@ Hearth의 목표는 현대 과학·기술 지식을 활용하는 싱글·소규�
 
 ## 현재 개발 우선순위 — 멀티서버 네트워크
 
-경제 숙련도/레벨/스탯은 사용자 지시에 따라 [AuraSkills](auraskills-technical-verification.md)를 채택했다. [기반/공통 접근 1차 구현](auraskills-admission-verification.md)은 기존 월드/거주 ACL과 연결했고 초보 자원/엔드 물리 확장은 남아 있다. [공통 전투/TPA](combat-travel-verification.md)까지 구현했으며 다음은 [ADR-0031](decisions/0031-auraskills-economy-integration.md)의 월드 PvP/사망 → 장비/최종 보상 → UI/운영 수용이다. 구체 레벨·수치/밸런싱은 추후 결정하며 실제 클라이언트 시험은 계속 보류한다.
+경제 숙련도/레벨/스탯은 [AuraSkills](auraskills-technical-verification.md)를 채택했다. [공통 입장](auraskills-admission-verification.md)·[전투/TPA](combat-travel-verification.md)에 이어 [잔여 시스템 일괄 배치](economy-rpg-verification.md)에서 초보/엔드 물리 월드·개인 PvP·사망/부적·오브젝트 권한·장비/커스텀 능력·최종 보상·Home/UI를 구현했다. 다음 수용 범위는 미정 정책/콘텐츠 값 선택, 별도 요청 시 실제 클라이언트, 목표 동접/장기 부하와 백업/운영 수용이다. 기본 비활성이며 세부 밸런싱을 시험값으로 확정하지 않는다.
 
 2026-11-18 사용자 요청으로 스토리 모드의 추가 개발을 보류한다. [ADR-0025](decisions/0025-lobby-economy-network.md)의 Velocity 프록시·로비/경제 Paper, 정품 modern forwarding·고정 경로·경제 저장 후 서버 이동을 한 배치로 구현/검증한다. 기존 스토리 B안은 보존하며 진행별 서버 분리/A안 전환을 뜻하지 않는다. 실제 접속/전환·운영 예산·배포 적용은 별도 수용/승인 경계다. [설정/플레이 경로](../infrastructure/network/README.md)를 따른다.
 

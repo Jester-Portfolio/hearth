@@ -22,6 +22,7 @@ public final class SurvivalAdmission implements Listener,AutoCloseable {
         default boolean travelAllowed(Player player){return true;}
         default String travelReason(Player player){return "현재 이동할 수 없습니다.";}
         default boolean loginPublic(){return false;}
+        default boolean roleReady(World world){return true;}
         Map<SurvivalWorld,World> worlds(); HousingRuntime housing();
         Location publicEntry(); void portal(Player player,SurvivalWorld target); void evict(Player player);
     }
@@ -45,16 +46,16 @@ public final class SurvivalAdmission implements Listener,AutoCloseable {
     public WorldAccessPolicy policy(){return policy;}
     public Role role(World world){
         if(world==null)return null;
-        for(var entry:boundary.worlds().entrySet())if(entry.getValue()==world)return switch(entry.getKey()){case RESIDENCE->Role.PUBLIC_HOME;case WILDERNESS->Role.RESOURCE;case NETHER->Role.NETHER;};
+        for(var entry:boundary.worlds().entrySet())if(entry.getValue()==world)return switch(entry.getKey()){case RESIDENCE->Role.PUBLIC_HOME;case WILDERNESS->Role.RESOURCE;case NETHER->Role.NETHER;case NOVICE->Role.NOVICE_RESOURCE;case END->Role.END;};
         var housing=boundary.housing();return housing!=null&&housing.house(world).isPresent()?Role.PRIVATE_HOME:null;
     }
     public Decision decision(UUID player,Location target){
         if(closed||!boundary.ready()||target==null||target.getWorld()==null)return new Decision(false,"월드 접근 준비가 끝나지 않았습니다.");
-        Role role=role(target.getWorld());var housing=boundary.housing();boolean acl=housing==null?role!=Role.PRIVATE_HOME:housing.allowed(player,target);
+        Role role=role(target.getWorld());if(!boundary.roleReady(target.getWorld()))return new Decision(false,"해당 월드의 정책 준비가 끝나지 않았습니다.");var housing=boundary.housing();boolean acl=housing==null?role!=Role.PRIVATE_HOME:housing.allowed(player,target);
         return policy.evaluate(role,acl,role==null||role.residence()?Levels.unavailable():skills.levels(player));
     }
     public boolean allowed(Player player,Location target){return decision(player.getUniqueId(),target).allowed();}
-    public String reason(Player player,SurvivalWorld target){var d=decision(player.getUniqueId(),boundary.worlds().get(target).getSpawnLocation());return d.allowed()?"다른 이동·거래 처리가 끝난 뒤 다시 이용하세요.":d.message();}
+    public String reason(Player player,SurvivalWorld target){var world=boundary.worlds().get(target);if(world==null)return "아직 준비되지 않은 월드입니다.";var d=decision(player.getUniqueId(),world.getSpawnLocation());return d.allowed()?"다른 이동·거래 처리가 끝난 뒤 다시 이용하세요.":d.message();}
     public Permit prepare(Player player,Location target){return prepare(player.getUniqueId(),target);}
     public Permit prepare(UUID player,Location target){if(!decision(player,target).allowed())throw new IllegalStateException("WORLD_ACCESS_DENIED");return new Permit(player,target.getWorld().getUID(),generation());}
     public boolean commit(Permit permit,Player player,Location target){return commit(permit,player.getUniqueId(),target);}
@@ -65,8 +66,7 @@ public final class SurvivalAdmission implements Listener,AutoCloseable {
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void teleport(PlayerTeleportEvent event){if(!boundary.connected(event.getPlayer())||!boundary.travelAllowed(event.getPlayer())||!allowed(event.getPlayer(),event.getTo())){event.setCancelled(true);event.getPlayer().sendMessage(Component.text(!boundary.travelAllowed(event.getPlayer())?boundary.travelReason(event.getPlayer()):decision(event.getPlayer().getUniqueId(),event.getTo()).message()));}}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void portal(PlayerPortalEvent event){
         event.setCancelled(true);var p=event.getPlayer();if(!boundary.connected(p))return;if(!boundary.travelAllowed(p)){p.sendMessage(Component.text(boundary.travelReason(p)));return;}
-        if(event.getCause()!=PlayerTeleportEvent.TeleportCause.NETHER_PORTAL){p.sendMessage(Component.text("이 차원은 아직 열리지 않았습니다."));return;}
-        var target=p.getWorld().getEnvironment()==World.Environment.NETHER?SurvivalWorld.WILDERNESS:SurvivalWorld.NETHER;
+        SurvivalWorld target;if(event.getCause()==PlayerTeleportEvent.TeleportCause.NETHER_PORTAL)target=p.getWorld().getEnvironment()==World.Environment.NETHER?SurvivalWorld.WILDERNESS:SurvivalWorld.NETHER;else if(event.getCause()==PlayerTeleportEvent.TeleportCause.END_PORTAL)target=p.getWorld().getEnvironment()==World.Environment.THE_END?SurvivalWorld.WILDERNESS:SurvivalWorld.END;else{p.sendMessage(Component.text("이 차원은 아직 열리지 않았습니다."));return;}if(!boundary.worlds().containsKey(target)){p.sendMessage(Component.text("이 차원은 아직 준비되지 않았습니다."));return;}
         Bukkit.getScheduler().runTask(plugin,()->{if(!closed&&boundary.connected(p))boundary.portal(p,target);});
     }
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void move(PlayerMoveEvent event){

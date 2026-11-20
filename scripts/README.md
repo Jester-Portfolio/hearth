@@ -264,3 +264,7 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 `verify_auraskills.py --admission`은 [정식 접근 통합](../docs/auraskills-admission-verification.md)의 별도 off/on 두 JVM 검사다. 새 native root에 `stageNativeEconomyRuntime -PnativeEconomyWorkspace=ROOT`로 **현재** 통합 fixture를 먼저 준비한 뒤 기존 `--source` native PASS 복사본·현재 `--plugin`과 기존 고정 Aura/probe를 사용한다. PG `skills` 모드는 거주 경합/실패/권한 철회와 정식 admission 정책을 연결해 검사한다. Player/행동 이벤트는 만들지 않고 실제 로그인/teleport 성공으로 기록하지 않는다. 기존 자원/종료/원본 보존 한도를 유지하며 `--restore`/`--aura-only`와 함께 쓰지 않는다.
 
 `verify_auraskills.py --travel`은 [전투/TPA](../docs/combat-travel-verification.md)의 E009 실제 PG 경합/실패/원본 보존과 Paper prepare/resume 두 JVM 복원이다. native PASS source·새 소유 root·현재 `stageNativeEconomyRuntime` fixture를 사용한다. `--travel-final`은 PG 행렬 재실행 없이 기본 off/최종 on 두 JVM만 확인한다. 기존 제한을 상속하며 다른 trial 모드와 섞지 않는다. 실제 Player/피해/수락/텔레포트 이벤트를 만들지 않는다.
+
+### 경제 RPG 일괄 통합 검증
+
+`verify_auraskills.py --rpg`는 기존 native PASS의 비활성 cold 복사본에서 E010 PG 경합/실패·공용 5월드와 커스텀 skill/stat/gear/UI를 함께 준비하고 두 Paper JVM에서 복원한다. 현재 `stageNativeEconomyRuntime`으로 fixture를 먼저 준비한다. `--rpg-final`은 RPG PASS cold 복사본에서 최종 변경 코드/PG 행렬과 복원 한 JVM만 실행한다. `--rpg-events-final`은 마지막 방문자 PvP/provider·이벤트 연결만 한 JVM에서 확인한다. `--rpg-db-evidence <이전 root>`는 RpgStore/E010/DB fixture hash가 같고 PG 검사 13개·정상 종료가 확인될 때만 DB 검사를 재사용한다. 코드가 달라지면 재사용을 거부한다. fixture 정책/밸런스 값은 운영값이 아니다. 기존 CPU/RSS/600초/최대 두 JVM·localhost·소유 경계와 실제 Player 합성 금지를 유지한다. 상세 증거는 [일괄 통합 검증](../docs/economy-rpg-verification.md)을 따른다.

@@ -1,7 +1,7 @@
 # ADR-0031: 경제 서버 AuraSkills 기반과 Hearth 정책 경계
 
 - 날짜: 2026-11-20
-- 상태: 사용자 AuraSkills 채택·기술 검증 후 [기반/공통 접근 1차 정식 구현](../auraskills-admission-verification.md). [공통 전투/TPA](../combat-travel-verification.md) 후속 구현, 사망/PvP 소유자 정책/보상·정식 전체 기능·운영 배포는 미완료.
+- 상태: [기반/공통 접근](../auraskills-admission-verification.md)·[전투/TPA](../combat-travel-verification.md) 이후 [잔여 시스템 일괄 구현](../economy-rpg-verification.md). 미정 콘텐츠/정책·실제 클라이언트/부하·운영 배포는 미완료.
 - 근거: [기술 검증·요구별 결과](../auraskills-technical-verification.md), [구조화 증거](../../verification/auraskills-technical-result.json).
 
 ## 문제
@@ -24,6 +24,6 @@
 
 ## 후속·미정
 
-기반/공통 접근 → 전투/사망 → 장비/보상 → 표시/운영 수용 순서로 정식 구현한다. 기본 거주 사망 정책, XP 종류/산식, 부적 범위, 레벨 집합/요구 값, 확률 판정 단위, 전투 예외, 운영 예산/라이선스는 상세 검증 문서를 따른다. 이번 검증은 이 값을 임의 확정하지 않는다.
+기반/공통 접근·전투/사망·장비/보상·표시 시스템을 일괄 구현했다. 다음은 미정 정책/콘텐츠 선택과 실제 플레이/부하·운영 수용이다. 기본 거주 사망 정책, XP 종류/산식, 부적 범위, 레벨 집합/요구 값, 확률 판정 단위, 전투 예외, 운영 예산/라이선스는 상세 검증 문서를 따른다. 이번 검증은 이 값을 임의 확정하지 않는다.
 
 운영 변경은 없으며 rollback은 필요하지 않았다. 향후 배포 시 단일 writer·정상 drain·일관 백업·격리 복구 리허설·이전 설정/JAR 보존을 포함한 별도 계획과 운영 승인이 필요하다.

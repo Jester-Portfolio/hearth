@@ -11,12 +11,12 @@ import net.kyori.adventure.text.Component;
 
 /** 일반 인벤토리와 분리된 가상 선택창입니다. 실제 슬롯/경험치/잔액을 복사하거나 수정하지 않습니다. */
 public final class PaperWorldMenu implements Listener,AutoCloseable {
-    public interface Boundary {Object token(Player p);boolean current(Player p,Object token);SurvivalWorld world(Player p);boolean available(Player p,SurvivalWorld target);void select(Player p,Object token,SurvivalWorld target);default String reason(Player p,SurvivalWorld target){return "현재 해당 월드로 이동할 수 없습니다.";}default boolean personalAvailable(){return false;}default void personal(Player p){} }
+    public interface Boundary {Object token(Player p);boolean current(Player p,Object token);SurvivalWorld world(Player p);boolean available(Player p,SurvivalWorld target);void select(Player p,Object token,SurvivalWorld target);default boolean registered(SurvivalWorld target){return true;}default String reason(Player p,SurvivalWorld target){return "현재 해당 월드로 이동할 수 없습니다.";}default boolean personalAvailable(){return false;}default void personal(Player p){} }
     private final JavaPlugin plugin;private final Boundary boundary;private boolean closed;
     private final class Screen implements InventoryHolder {
         final Player player;final Object token;final Inventory inventory;
         Screen(Player p,Object token){this.player=p;this.token=token;inventory=Bukkit.createInventory(this,27,Component.text("월드 선택"));
-            inventory.setContents(items(boundary.world(p),w->boundary.available(p,w),w->boundary.reason(p,w)));if(boundary.personalAvailable()){var house=new ItemStack(Material.OAK_DOOR);house.editMeta(meta->{meta.displayName(Component.text("개인 거주 · 나의 집과 공동 거주"));meta.lore(List.of(Component.text("구매·확장·초대·기본 거주 구획")));});inventory.setItem(22,house);}}
+            inventory.setContents(items(boundary.world(p),w->boundary.available(p,w),w->boundary.reason(p,w)));for(var world:SurvivalWorld.values())if(!boundary.registered(world))inventory.setItem(world.slot(),null);if(boundary.personalAvailable()){var house=new ItemStack(Material.OAK_DOOR);house.editMeta(meta->{meta.displayName(Component.text("개인 거주 · 나의 집과 공동 거주"));meta.lore(List.of(Component.text("구매·확장·초대·기본 거주 구획")));});inventory.setItem(22,house);}}
 
         public Inventory getInventory(){return inventory;}
     }

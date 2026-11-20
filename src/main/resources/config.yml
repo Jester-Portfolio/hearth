@@ -132,3 +132,9 @@ market-automation:
 housing:
   enabled: false
   content-file: housing.properties
+
+# Optional economy RPG systems; configure policy/content files before first preparation.
+economy-rpg:
+  enabled: false
+  policy-file: rpg-policy.properties
+  content-file: rpg-content.properties

@@ -1,0 +1,6 @@
+# Merge into the existing survival backend config. No operating service is changed.
+# Requires survival-economy, housing, skills and the pinned AuraSkills 2.4.0 plugin.
+economy-rpg:
+  enabled: false
+  policy-file: rpg-policy.properties
+  content-file: rpg-content.properties

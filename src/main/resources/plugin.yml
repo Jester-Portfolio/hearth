@@ -9,6 +9,23 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth story foundations and optional dedicated economy runtime
 commands:
+  hearthrpg:
+    aliases: [메뉴]
+    description: 경제 서버 편의 메뉴
+  hearthskills:
+    aliases: [숙련도, 능력치]
+    description: 숙련도·스탯·마나 메뉴
+  hearthskill:
+    description: 커스텀 액티브 사용
+  home:
+    aliases: [집]
+    description: 저장한 Home으로 이동
+  sethome:
+    aliases: [집설정]
+    description: 현재 안전 위치를 Home으로 저장
+  objectaccess:
+    aliases: [보호]
+    description: 바라보는 시설·보관함 공개 범위
   tpa:
     description: 상대 수락 후 텔레포트 요청
     usage: /tpa <player>

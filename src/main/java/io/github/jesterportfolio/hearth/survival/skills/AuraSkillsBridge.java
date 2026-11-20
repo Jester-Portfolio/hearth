@@ -27,8 +27,9 @@ final class AuraSkillsBridge implements SkillsBridge,Listener {
     public Levels levels(UUID player){
         if(!Bukkit.isPrimaryThread())throw new IllegalStateException("SKILLS_MAIN_THREAD_REQUIRED");
         if(closed||!loaded)return Levels.unavailable();
+        try{if(skills.values().stream().anyMatch(skill->!skill.isEnabled())){loaded=false;hold.run();return Levels.unavailable();}
         var user=AuraSkillsApi.get().getUser(player);if(!user.isLoaded())return Levels.unavailable();
-        var levels=new HashMap<String,Integer>();skills.forEach((id,skill)->levels.put(id,user.getSkillLevel(skill)));return new Levels(true,levels);
+        var levels=new HashMap<String,Integer>();skills.forEach((id,skill)->levels.put(id,user.getSkillLevel(skill)));return new Levels(true,levels);}catch(RuntimeException error){loaded=false;hold.run();return Levels.unavailable();}
     }
     public void close(){closed=true;timeout.cancel();loaded=false;ready.completeExceptionally(new IllegalStateException("SKILLS_CLOSED"));HandlerList.unregisterAll(this);}
 }

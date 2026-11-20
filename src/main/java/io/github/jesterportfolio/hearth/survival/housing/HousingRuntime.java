@@ -28,6 +28,13 @@ public final class HousingRuntime implements AutoCloseable {
  public Optional<House> house(UUID id){return snapshot.houses().stream().filter(h->h.id().equals(id)).findFirst();}public Optional<House> house(World w){var id=worlds.house(w);return id.flatMap(this::house);}
  public boolean managed(World w){return boundary.worlds().containsValue(w)||worlds.house(w).isPresent();}
  public boolean allowed(UUID player,Location to){var h=house(to.getWorld());if(h.isPresent())return state==State.READY&&!blocked.contains(h.get().id())&&snapshot.enter(player,h.get())&&HousingWorlds.inside(h.get(),to);return boundary.worlds().containsValue(to.getWorld());}
+ private java.util.function.BiPredicate<UUID,Location> interaction=(id,at)->false;
+ private java.util.function.BiPredicate<Player,Player> rpgPvp;
+ public void pvpPolicy(java.util.function.BiPredicate<Player,Player> policy){rpgPvp=policy;}
+ public boolean pvpConfigured(){return rpgPvp!=null;}
+ public boolean pvpAllowed(Player source,Player target){return rpgPvp!=null&&rpgPvp.test(source,target);}
+ public void interactionPolicy(java.util.function.BiPredicate<UUID,Location> policy){interaction=policy;}
+ public boolean interactionAllowed(Player p,Location target){return allowed(p.getUniqueId(),target)&&interaction.test(p.getUniqueId(),target);}
  public boolean writable(Player p){var h=house(p.getWorld());return h.isEmpty()||state==State.READY&&!blocked.contains(h.get().id())&&snapshot.build(p.getUniqueId(),h.get());}
  public void open(Player p){if(ready(p))menu.home(p);else p.sendMessage(Component.text("거주 준비·거래·이동이 끝난 뒤 다시 이용하세요."));}
  public void invalidate(UUID p){var work=busy.get(p);if(work!=null)work.set(false);menu.invalidate(p);}

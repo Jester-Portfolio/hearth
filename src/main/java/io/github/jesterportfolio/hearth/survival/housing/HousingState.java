@@ -2,6 +2,7 @@ package io.github.jesterportfolio.hearth.survival.housing;
 import java.util.*;
 public final class HousingState {
  private HousingState(){}
+ public static boolean canDamage(boolean writable,boolean targetPlayer,boolean authorizedPvp){return writable||targetPlayer&&authorizedPvp;}
  public enum Role{RESIDENT,VISITOR}public enum Phase{PREPARING,APPLYING,ACTIVE}
  public record House(UUID id,UUID owner,String version,int tier,int width,long paid,long seed,UUID world,Phase phase,long revision){public House{Objects.requireNonNull(id);Objects.requireNonNull(owner);Objects.requireNonNull(version);Objects.requireNonNull(phase);if(tier<0||width<16||paid<0||revision<0)throw new IllegalArgumentException("HOUSING_HOUSE");}public String key(){return "hearth_housing:h_"+id.toString().replace("-","");}}
  public record Member(UUID house,UUID player,Role role,boolean accepted){}

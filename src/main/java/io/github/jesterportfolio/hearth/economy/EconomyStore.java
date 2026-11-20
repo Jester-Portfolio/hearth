@@ -26,6 +26,7 @@ public final class EconomyStore implements InventoryStore {
     public EconomyContent content(){return content;}
     public CompletionStage<Void> requireNoHousing(UUID id){return db.module("housing_disabled_guard",c->{realm(c,id,false);try(var st=c.prepareStatement("SELECT 1 FROM hearth_economy.housing_policy WHERE realm_id=?")){st.setObject(1,id);try(var row=st.executeQuery()){if(row.next())throw fail("HOUSING_RUNTIME_REQUIRED");}}return null;});}
 
+    public CompletionStage<Void> requireNoRpg(UUID id){return db.module("rpg_disabled_guard",c->{realm(c,id,false);for(String table:List.of("extra_world","house_pvp","player_home","object_acl"))try(var st=c.prepareStatement("SELECT 1 FROM hearth_economy."+table+" WHERE realm_id=? LIMIT 1")){st.setObject(1,id);try(var row=st.executeQuery()){if(row.next())throw fail("RPG_RUNTIME_REQUIRED");}}return null;});}
     void housingLock(Connection c,ServerProgressAccess.Context ctx)throws Exception{access(ctx);realm(c,ctx.storyRunId(),true);try(var st=c.prepareStatement("SELECT 1 FROM hearth_economy.native_binding WHERE realm_id=?")){st.setObject(1,ctx.storyRunId());try(var row=st.executeQuery()){if(!row.next())throw fail("HOUSING_NATIVE_REQUIRED");}}}
 
     public ServerProgressAccess.Context context(UUID realm,UUID player){return issuer.forVerifiedServerLink(realm,player);}
@@ -47,9 +48,9 @@ public final class EconomyStore implements InventoryStore {
             }else{
                 try(var st=c.createStatement();var versions=st.executeQuery("SELECT version,checksum FROM hearth_economy.version ORDER BY version")){if(!versions.next()||versions.getInt(1)!=1||!hash.equals(versions.getString(2)))throw fail("ECON_SCHEMA_MISMATCH");}
             }
-            var upgrades=List.of("E002__trade_history.sql","E003__tick_flow.sql","E004__peer_trade.sql","E005__gathering.sql","E006__native_survival.sql","E007__market_controller.sql","E008__housing.sql","E009__combat_travel.sql");
+            var upgrades=List.of("E002__trade_history.sql","E003__tick_flow.sql","E004__peer_trade.sql","E005__gathering.sql","E006__native_survival.sql","E007__market_controller.sql","E008__housing.sql","E009__combat_travel.sql","E010__rpg_policies.sql");
             var known=new TreeMap<Integer,String>();try(var st=c.createStatement();var rows=st.executeQuery("SELECT version,checksum FROM hearth_economy.version WHERE version<>1 ORDER BY version")){while(rows.next())known.put(rows.getInt(1),rows.getString(2));}
-            if(known.keySet().stream().anyMatch(v->v<2||v>9)||known.containsKey(3)&&!known.containsKey(2)||known.containsKey(4)&&!known.containsKey(3)||known.containsKey(5)&&!known.containsKey(4)||known.containsKey(6)&&!known.containsKey(5)||known.containsKey(7)&&!known.containsKey(6)||known.containsKey(8)&&!known.containsKey(7)||known.containsKey(9)&&!known.containsKey(8))throw fail("ECON_SCHEMA_MISMATCH");
+            if(known.keySet().stream().anyMatch(v->v<2||v>10)||known.containsKey(3)&&!known.containsKey(2)||known.containsKey(4)&&!known.containsKey(3)||known.containsKey(5)&&!known.containsKey(4)||known.containsKey(6)&&!known.containsKey(5)||known.containsKey(7)&&!known.containsKey(6)||known.containsKey(8)&&!known.containsKey(7)||known.containsKey(9)&&!known.containsKey(8)||known.containsKey(10)&&!known.containsKey(9))throw fail("ECON_SCHEMA_MISMATCH");
             for(int i=0;i<upgrades.size();i++){
                 int version=i+2;byte[] upgrade;try(var in=Objects.requireNonNull(getClass().getResourceAsStream("/db/economy/"+upgrades.get(i)))){upgrade=in.readAllBytes();}
                 String upgradeHash=HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(upgrade));
