@@ -1,0 +1,20 @@
+package io.github.jesterportfolio.hearth.persistence;
+import java.util.*;import java.util.concurrent.*;import java.sql.*;import javax.sql.DataSource;
+import io.github.jesterportfolio.hearth.economy.*;
+public final class CombatTravelDatabaseChecks {
+    static <T>T await(CompletionStage<T> f)throws Exception{return f.toCompletableFuture().get(12,TimeUnit.SECONDS);}
+    static void check(boolean ok,String name){if(!ok)throw new IllegalStateException(name);System.out.println("HEARTH_COMBAT_DB_CHECK PASS "+name);System.out.flush();}
+    static void reject(CompletionStage<?> f)throws Exception{try{await(f);throw new IllegalStateException("EXPECTED_FAILURE");}catch(ExecutionException expected){}}
+    public static void run(DataSource source,Connection c)throws Exception{
+        var properties=new Properties();try(var r=CombatTravelDatabaseChecks.class.getResourceAsStream("/economy-demo.properties")){properties.load(new java.io.InputStreamReader(r,java.nio.charset.StandardCharsets.UTF_8));}properties.setProperty("fixture-balance","0");var content=EconomyContent.parse(properties);var db=PostgresProgressStore.forModules(source,f->{});var economy=new EconomyStore(db,content);await(economy.migrate());await(economy.migrate());check(true,"E009_is_idempotent_and_preserves_prior_checksums");
+        UUID realm=UUID.randomUUID(),otherRealm=UUID.randomUUID(),a=UUID.randomUUID(),b=UUID.randomUUID();await(economy.openNativeRealm(realm,UUID.randomUUID(),"d".repeat(64),1,true));await(economy.openNativeRealm(otherRealm,UUID.randomUUID(),"e".repeat(64),1,true));var store=new CombatTagStore(db,economy,realm);var other=new CombatTagStore(db,economy,otherRealm);
+        await(store.save(Map.of(a,1000L)));check(await(store.load(0)).equals(Map.of(a,1000L)),"durable_player_deadline_is_loaded_without_inventory_writes");
+        var x=store.save(Map.of(a,2000L,b,4000L));var y=store.save(Map.of(a,3000L,b,2500L));await(x);await(y);check(await(store.load(0)).equals(Map.of(a,3000L,b,4000L)),"concurrent_and_out_of_order_flushes_preserve_max_deadline");
+        reject(store.save(new ServerProgressAccess().forVerifiedServerLink(realm,a),Map.of(a,5000L)));reject(store.save(economy.context(otherRealm,a),Map.of(a,5000L)));check(await(store.load(0)).get(a)==3000L,"foreign_issuer_and_cross_realm_context_are_rejected");
+        try(var s=c.createStatement()){s.execute("CREATE FUNCTION hearth_economy.reject_combat_flush() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'combat fixture failure' USING ERRCODE='23514'; END $$");s.execute("CREATE TRIGGER reject_combat_flush BEFORE INSERT OR UPDATE ON hearth_economy.combat_tag FOR EACH ROW EXECUTE FUNCTION hearth_economy.reject_combat_flush()");}
+        reject(store.save(Map.of(a,5000L,b,6000L)));check(await(store.load(0)).equals(Map.of(a,3000L,b,4000L)),"real_SQL_failure_rolls_back_batch_without_shortening_or_deleting_tags");
+        try(var s=c.createStatement()){s.execute("DROP TRIGGER reject_combat_flush ON hearth_economy.combat_tag");s.execute("DROP FUNCTION hearth_economy.reject_combat_flush()");}
+        check(await(store.load(3000)).equals(Map.of(b,4000L)),"expiry_uses_strict_deadline_and_excludes_expired_rows");await(other.save(Map.of(a,8000L)));check(await(other.load(0)).equals(Map.of(a,8000L))&&await(store.load(0)).get(a)==3000L,"same_player_UUID_in_other_realm_is_isolated");
+        String checksum;try(var s=c.createStatement();var r=s.executeQuery("SELECT checksum FROM hearth_economy.version WHERE version=9")){r.next();checksum=r.getString(1);}try(var s=c.createStatement()){s.execute("UPDATE hearth_economy.version SET checksum='combat-fixture-mismatch' WHERE version=9");}var mismatch=PostgresProgressStore.forModules(source,f->{});reject(new EconomyStore(mismatch,content).migrate());await(mismatch.closeAsync());try(var s=c.prepareStatement("UPDATE hearth_economy.version SET checksum=? WHERE version=9")){s.setString(1,checksum);s.executeUpdate();}check(await(store.load(0)).get(a)==3000L,"E009_checksum_mismatch_rejects_without_rewriting_saved_deadline");await(db.closeAsync());
+    }
+}

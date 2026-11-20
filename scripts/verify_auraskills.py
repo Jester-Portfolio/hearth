@@ -20,14 +20,20 @@ def main():
     for name in ('workspace', 'source', 'java', 'plugin', 'probe', 'aura', 'aura-config'):
         p.add_argument('--' + name, type=Path, required=True)
     p.add_argument('--restore', action='store_true')
+    p.add_argument('--travel-final', action='store_true', help='최종 TPA/기본 off 경로 두 JVM; 기존 PG 행렬 재실행 없음')
+    p.add_argument('--travel', action='store_true', help='전투 저장·복원 두 JVM 및 PG 경합/실패 통합')
     p.add_argument('--admission', action='store_true', help='정식 접근 제어 off/on 및 PG 권한 통합')
     p.add_argument('--aura-only', action='store_true', help='기존 baseline 성공 후 Aura 영향 검사만 실행')
     p.add_argument('--betterhud', type=Path)
     p.add_argument('--accept-eula', action='store_true')
     a = p.parse_args()
+    if a.travel_final:
+        a.travel = True
     for artifact in (a.java, a.plugin, a.probe, a.aura, a.aura_config):
         if not artifact.is_file():
             p.error('artifact is not a regular file: ' + str(artifact))
+    if a.travel and (a.admission or a.restore or a.aura_only):
+        p.error('--travel excludes other trial modes')
     if a.admission and (a.restore or a.aura_only):
         p.error('--admission excludes --restore and --aura-only')
     if a.restore and (a.betterhud is None or a.aura_only):
@@ -52,7 +58,7 @@ def main():
         for rel in ('data/global/pg_control', 'server/plugins/Hearth/config.yml', 'server/plugins/Hearth/survival-worlds.properties'):
             before[str(source / rel)] = digest(source / rel)
         for name in ('server', 'data', 'fixture-classes', 'resolved-jars'):
-            if a.admission and name in ('fixture-classes', 'resolved-jars'):
+            if (a.admission or a.travel) and name in ('fixture-classes', 'resolved-jars'):
                 if not (root / name).is_dir():
                     raise ValueError('STAGE_CURRENT_NATIVE_FIXTURE_FIRST')
             else:
@@ -72,7 +78,7 @@ def main():
             raise ValueError('ISOLATED_REALM')
         (root / 'restore-realm.txt').write_text(realm.group(1) + '\n')
         os.environ['HEARTH_ISOLATED_NATIVE_PASSWORD'] = 'isolated-not-a-secret'
-        helper = [str(a.java), '-Xmx128m', '-XX:ActiveProcessorCount=2', '-Djava.io.tmpdir=' + str(root), '-cp', str(root / 'fixture-classes') + ':' + str(root / 'resolved-jars/*') + ':' + str(a.plugin), 'io.github.jesterportfolio.hearth.persistence.NativeEconomyDatabaseFixture', str(root), 'skills' if a.admission else 'restore']
+        helper = [str(a.java), '-Xmx128m', '-XX:ActiveProcessorCount=2', '-Djava.io.tmpdir=' + str(root), '-cp', str(root / 'fixture-classes') + ':' + str(root / 'resolved-jars/*') + ':' + str(a.plugin), 'io.github.jesterportfolio.hearth.persistence.NativeEconomyDatabaseFixture', str(root), 'travel' if a.travel and not a.travel_final else 'restore' if a.travel_final else 'skills' if a.admission else 'restore']
         m.launch('database', helper, root)
         m.wait('database', 'HEARTH_NATIVE_DB_READY', seconds=75)
         dbport = int((root / 'db-port.txt').read_text())
@@ -84,9 +90,13 @@ def main():
         command = [str(a.java), '-Xms256m', '-Xmx1536m', '-XX:ActiveProcessorCount=2', '-Djava.io.tmpdir=' + str(root), '-Dhearth.aura.verification.root=' + str(root), '-jar', str(root / 'paper.jar'), '--nogui']
         if a.admission:
             config.write_text(config.read_text() + '\nskills:\n  enabled: false\n  access-file: skills-access.properties\n')
-        phases = ['admission-off', 'admission-on'] if a.admission else ['restore'] if a.restore else ['aura'] if a.aura_only else ['baseline', 'aura']
+        if a.travel:
+            config.write_text(config.read_text() + '\ncombat-travel:\n  enabled: '+('false' if a.travel_final else 'true')+'\n  include-pve: true\n  request-seconds: 60\n')
+        phases = ['travel-off', 'travel-prepare'] if a.travel_final else ['travel-prepare', 'travel-resume'] if a.travel else ['admission-off', 'admission-on'] if a.admission else ['restore'] if a.restore else ['aura'] if a.aura_only else ['baseline', 'aura']
         for phase in phases:
-            if phase not in ('baseline', 'admission-off'):
+            if a.travel_final and phase == 'travel-prepare':
+                config.write_text(config.read_text().replace('combat-travel:\n  enabled: false', 'combat-travel:\n  enabled: true'))
+            if not a.travel and phase not in ('baseline', 'admission-off'):
                 shutil.copy2(a.aura, plugins / 'AuraSkills.jar')
                 folder = plugins / 'AuraSkills'
                 folder.mkdir(exist_ok=True)
@@ -105,12 +115,12 @@ def main():
             m.wait(name, 'HEARTH_SURVIVAL_ECONOMY_READY', seconds=120)
             m.wait(name, 'HEARTH_SURVIVAL_READY worlds=3', seconds=20)
             m.wait(name, 'HEARTH_AURA_PROBE_READY', seconds=15)
-            expected = 'HEARTH_ACCESS_PROBE PASS' if a.admission else 'HEARTH_AURA_PROBE PASS ' + phase
-            m.send(name, 'hearthsurvivaladmin access-verify' if a.admission else 'hearthauraprobe ' + phase)
+            expected = 'HEARTH_ACCESS_PROBE PASS' if phase == 'travel-off' else 'HEARTH_COMBAT_PROBE PASS ' + phase.removeprefix('travel-') if a.travel else 'HEARTH_ACCESS_PROBE PASS' if a.admission else 'HEARTH_AURA_PROBE PASS ' + phase
+            m.send(name, 'hearthsurvivaladmin access-verify' if phase == 'travel-off' else 'hearthsurvivaladmin travel-verify ' + phase.removeprefix('travel-') if a.travel else 'hearthsurvivaladmin access-verify' if a.admission else 'hearthauraprobe ' + phase)
             until = min(m.deadline, time.monotonic() + 90)
             while not any(expected in line for line in m.children[name]['lines']):
                 m.pump()
-                if any('HEARTH_AURA_PROBE FAIL' in line or 'HEARTH_ACCESS_PROBE FAIL' in line for line in m.children[name]['lines']):
+                if any('HEARTH_COMBAT_PROBE FAIL' in line or 'HEARTH_COMBAT_TRAVEL_HOLD' in line or 'HEARTH_AURA_PROBE FAIL' in line or 'HEARTH_ACCESS_PROBE FAIL' in line for line in m.children[name]['lines']):
                     raise RuntimeError('AURA_PROBE_FAILED_' + phase)
                 if m.children[name]['proc'].poll() is not None or time.monotonic() > until:
                     raise RuntimeError('AURA_PROBE_TIMEOUT_' + phase)
@@ -144,7 +154,7 @@ def main():
         cleanup.extend('OWNED_PORT_REMAINS_' + str(number) for number in ports if not port_closed(number))
         if cleanup:
             outcome = 'FAIL'
-        report = dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, restore=a.restore, admission=a.admission, duration_seconds=round(time.monotonic()-started, 3), processes=m.summary(), combined_samples=m.combined, source_hashes=before, aura_sha256=digest(a.aura), hearth_sha256=digest(a.plugin), probe_sha256=digest(a.probe) if a.probe.is_file() else None, limits=dict(cpu=2, total_seconds=600, work_seconds=550, paper_heap_mib=1536, paper_rss_stop_mib=2560, combined_rss_stop_mib=6144, host_available_min_mib=6144, paper_starts_max=2), actual_client='NOT_RUN', fake_player='NOT_USED', operating_changes='NONE')
+        report = dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, restore=a.restore, admission=a.admission, travel=a.travel, travel_final=a.travel_final, duration_seconds=round(time.monotonic()-started, 3), processes=m.summary(), combined_samples=m.combined, source_hashes=before, aura_sha256=digest(a.aura), hearth_sha256=digest(a.plugin), probe_sha256=digest(a.probe) if a.probe.is_file() else None, limits=dict(cpu=2, total_seconds=600, work_seconds=550, paper_heap_mib=1536, paper_rss_stop_mib=2560, combined_rss_stop_mib=6144, host_available_min_mib=6144, paper_starts_max=2), actual_client='NOT_RUN', fake_player='NOT_USED', operating_changes='NONE')
         (root / 'aura-trial-result.json').write_text(json.dumps(report, indent=2) + '\n')
         print('AURA', outcome, root / 'aura-trial-result.json', flush=True)
     return 0 if outcome == 'PASS' else 1

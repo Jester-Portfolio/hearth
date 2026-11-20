@@ -1,0 +1,366 @@
+{
+  "date": "2026-11-20",
+  "outcome": "PASS",
+  "scope": "COMBAT_TAGS_COMMON_TRAVEL_RESTRICTIONS_AND_TPA",
+  "base_commit": "e135706",
+  "unit_tests": [
+    {
+      "name": "io.github.jesterportfolio.hearth.survival.WorldTravelTest",
+      "tests": 10,
+      "path": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/combat-final-combat-first-TEST-io.github.jesterportfolio.hearth.survival.WorldTravelTest.xml",
+      "sha256": "d8250c7788609b3543998e56606bffdd9170aa59792a4fd8c21a8fc2264cef47"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.survival.skills.WorldAccessPolicyTest",
+      "tests": 9,
+      "path": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/combat-final-combat-first-TEST-io.github.jesterportfolio.hearth.survival.skills.WorldAccessPolicyTest.xml",
+      "sha256": "ed5708103b95e0e3aa7244720f5a6acaef7daca754de1bddb8e2578a3b01be40"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.survival.travel.CombatTravelTest",
+      "tests": 12,
+      "path": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/combat-final-TEST-io.github.jesterportfolio.hearth.survival.travel.CombatTravelTest.xml",
+      "sha256": "66d4719a722abc4a7697c320b73b0d6539e80b31063b74c68250c311d78d2037"
+    }
+  ],
+  "database_checks": [
+    "E009_is_idempotent_and_preserves_prior_checksums",
+    "durable_player_deadline_is_loaded_without_inventory_writes",
+    "concurrent_and_out_of_order_flushes_preserve_max_deadline",
+    "foreign_issuer_and_cross_realm_context_are_rejected",
+    "real_SQL_failure_rolls_back_batch_without_shortening_or_deleting_tags",
+    "expiry_uses_strict_deadline_and_excludes_expired_rows",
+    "same_player_UUID_in_other_realm_is_isolated",
+    "E009_checksum_mismatch_rejects_without_rewriting_saved_deadline"
+  ],
+  "paper_checks": {
+    "core-prepare": [
+      "combat_runtime_reaches_ready_with_native_PG",
+      "actual_Paper_MONITOR_damage_listener_is_registered_without_firing_a_player_event",
+      "command_registered_tpa",
+      "command_registered_tpaccept",
+      "command_registered_tpdeny",
+      "command_registered_tpcancel",
+      "both_combat_participants_are_denied_by_shared_runtime_gate",
+      "hits_are_coalesced_in_memory_before_PG_flush",
+      "PG_completion_acknowledges_only_saved_deadlines",
+      "actual_30_second_deadlines_are_durable"
+    ],
+    "core-resume": [
+      "combat_runtime_reaches_ready_with_native_PG",
+      "actual_Paper_MONITOR_damage_listener_is_registered_without_firing_a_player_event",
+      "command_registered_tpa",
+      "command_registered_tpaccept",
+      "command_registered_tpdeny",
+      "command_registered_tpcancel",
+      "new_Paper_JVM_restores_PG_deadline_and_blocks_ordinary_travel",
+      "safe_public_access_remains_valid_without_clearing_combat_tag",
+      "new_pool_reads_exact_persisted_deadline"
+    ],
+    "final-prepare": [
+      "combat_runtime_reaches_ready_with_native_PG",
+      "actual_Paper_MONITOR_damage_listener_is_registered_without_firing_a_player_event",
+      "command_registered_tpa",
+      "command_registered_tpaccept",
+      "command_registered_tpdeny",
+      "command_registered_tpcancel",
+      "both_combat_participants_are_denied_by_shared_runtime_gate",
+      "hits_are_coalesced_in_memory_before_PG_flush",
+      "PG_completion_acknowledges_only_saved_deadlines",
+      "actual_30_second_deadlines_are_durable"
+    ],
+    "final-off-on-off": [
+      "registered_world_roles_and_public_fallback",
+      "public_home_never_requires_skill_data",
+      "unregistered_end_is_not_adopted_as_managed_world",
+      "world_menu_contains_denial_reason_without_player",
+      "enabled_feature_refuses_missing_Aura_without_linkage_error",
+      "disabled_feature_works_without_AuraSkills_API_classes"
+    ],
+    "final-off-on-prepare": [
+      "combat_runtime_reaches_ready_with_native_PG",
+      "actual_Paper_MONITOR_damage_listener_is_registered_without_firing_a_player_event",
+      "command_registered_tpa",
+      "command_registered_tpaccept",
+      "command_registered_tpdeny",
+      "command_registered_tpcancel",
+      "both_combat_participants_are_denied_by_shared_runtime_gate",
+      "hits_are_coalesced_in_memory_before_PG_flush",
+      "PG_completion_acknowledges_only_saved_deadlines",
+      "actual_30_second_deadlines_are_durable"
+    ]
+  },
+  "trials": [
+    {
+      "outcome": "PASS",
+      "failure": null,
+      "cleanup_errors": [],
+      "restore": false,
+      "admission": false,
+      "travel": true,
+      "duration_seconds": 35.759,
+      "processes": {
+        "database": {
+          "pid": 2768016,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 35.133,
+          "shutdown_seconds": 0.133,
+          "max_sampled_rss_kib": 241052,
+          "observed_cpu_seconds": 2.57,
+          "min_sampled_host_available_kib": 12467644,
+          "sample_count": 363,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-travel-prepare": {
+          "pid": 2768133,
+          "exit_code": 0,
+          "ready_seconds": 13.274,
+          "duration_seconds": 16.267,
+          "shutdown_seconds": 0.894,
+          "max_sampled_rss_kib": 928752,
+          "observed_cpu_seconds": 24.64,
+          "min_sampled_host_available_kib": 12467644,
+          "sample_count": 166,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-travel-resume": {
+          "pid": 2768287,
+          "exit_code": 0,
+          "ready_seconds": 12.762,
+          "duration_seconds": 15.94,
+          "shutdown_seconds": 0.898,
+          "max_sampled_rss_kib": 939444,
+          "observed_cpu_seconds": 24.19,
+          "min_sampled_host_available_kib": 12558304,
+          "sample_count": 160,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/data/global/pg_control": "e1b4609f014c8607a99d53be0e3f265616f79f3308f03ea9444c90128ef1a22c",
+        "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/config.yml": "57c874d088c3f98727939a9cf282e424cc338901054c2c4eadccd8615f7215be",
+        "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "aura_sha256": "de54cbd2e33d65e8b1704751ae4121ed2f5b466ba89c63a1aadf3a3e629d6a40",
+      "hearth_sha256": "0d61a38c55e22d2f5ef661674318e22d453cebb3f47be757817ccc9970904c5f",
+      "probe_sha256": "27341c8cad99253aab5d3cd83e6ae42c49bea8e05a7868f808ef3a4a13f042e1",
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "actual_client": "NOT_RUN",
+      "fake_player": "NOT_USED",
+      "operating_changes": "NONE"
+    },
+    {
+      "outcome": "PASS",
+      "failure": null,
+      "cleanup_errors": [],
+      "restore": false,
+      "admission": false,
+      "travel": true,
+      "travel_final": true,
+      "duration_seconds": 19.512,
+      "processes": {
+        "database": {
+          "pid": 2769110,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 18.886,
+          "shutdown_seconds": 0.332,
+          "max_sampled_rss_kib": 234772,
+          "observed_cpu_seconds": 2.3,
+          "min_sampled_host_available_kib": 12528152,
+          "sample_count": 194,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-travel-prepare": {
+          "pid": 2769209,
+          "exit_code": 0,
+          "ready_seconds": 13.012,
+          "duration_seconds": 16.225,
+          "shutdown_seconds": 0.932,
+          "max_sampled_rss_kib": 929000,
+          "observed_cpu_seconds": 24.27,
+          "min_sampled_host_available_kib": 12527900,
+          "sample_count": 164,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/data/global/pg_control": "e1b4609f014c8607a99d53be0e3f265616f79f3308f03ea9444c90128ef1a22c",
+        "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/config.yml": "57c874d088c3f98727939a9cf282e424cc338901054c2c4eadccd8615f7215be",
+        "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "aura_sha256": "de54cbd2e33d65e8b1704751ae4121ed2f5b466ba89c63a1aadf3a3e629d6a40",
+      "hearth_sha256": "5a318b0ec06f97738ac13f8bb2a47b405caead3acdbee77efc524a390e00ac54",
+      "probe_sha256": "27341c8cad99253aab5d3cd83e6ae42c49bea8e05a7868f808ef3a4a13f042e1",
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "actual_client": "NOT_RUN",
+      "fake_player": "NOT_USED",
+      "operating_changes": "NONE"
+    },
+    {
+      "outcome": "PASS",
+      "failure": null,
+      "cleanup_errors": [],
+      "restore": false,
+      "admission": false,
+      "travel": true,
+      "travel_final": true,
+      "duration_seconds": 35.037,
+      "processes": {
+        "database": {
+          "pid": 2770139,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 34.423,
+          "shutdown_seconds": 0.332,
+          "max_sampled_rss_kib": 234108,
+          "observed_cpu_seconds": 2.26,
+          "min_sampled_host_available_kib": 12394872,
+          "sample_count": 358,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-travel-off": {
+          "pid": 2770220,
+          "exit_code": 0,
+          "ready_seconds": 12.62,
+          "duration_seconds": 16.21,
+          "shutdown_seconds": 1.589,
+          "max_sampled_rss_kib": 926668,
+          "observed_cpu_seconds": 23.85,
+          "min_sampled_host_available_kib": 12580096,
+          "sample_count": 167,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-travel-prepare": {
+          "pid": 2770374,
+          "exit_code": 0,
+          "ready_seconds": 12.446,
+          "duration_seconds": 15.495,
+          "shutdown_seconds": 0.88,
+          "max_sampled_rss_kib": 919612,
+          "observed_cpu_seconds": 23.65,
+          "min_sampled_host_available_kib": 12394872,
+          "sample_count": 160,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/data/global/pg_control": "e1b4609f014c8607a99d53be0e3f265616f79f3308f03ea9444c90128ef1a22c",
+        "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/config.yml": "57c874d088c3f98727939a9cf282e424cc338901054c2c4eadccd8615f7215be",
+        "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "aura_sha256": "de54cbd2e33d65e8b1704751ae4121ed2f5b466ba89c63a1aadf3a3e629d6a40",
+      "hearth_sha256": "164068e9357a897c8305c3882bed25c225139e19783e035a91c70757cb65be56",
+      "probe_sha256": "27341c8cad99253aab5d3cd83e6ae42c49bea8e05a7868f808ef3a4a13f042e1",
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "actual_client": "NOT_RUN",
+      "fake_player": "NOT_USED",
+      "operating_changes": "NONE"
+    }
+  ],
+  "combined_peak_rss_mib": [
+    1152.3,
+    1136.22,
+    1133.42
+  ],
+  "evidence": [
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.1m_9dcjc/aura-trial-result.json",
+      "sha256": "efb437fecaafaa84482907ea0eb596733b76b4b9be812f27b05d16cc089a8094"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.1m_9dcjc/database-console.log",
+      "sha256": "1181a18c7ea5c2e58ae16a83a35f87339a945eba9ac3127ce411922f4c8da02a"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.1m_9dcjc/paper-travel-prepare-console.log",
+      "sha256": "383d1250f387a6485af4d3e22fedaa16aea847ae445ee92527b11c3e56d6554a"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.1m_9dcjc/paper-travel-resume-console.log",
+      "sha256": "933635244ed3d7d535f1dd9f9d53360eccfbfcb96a1013c3a928cfd2ff964f4e"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.cye3qvht/aura-trial-result.json",
+      "sha256": "8fc66bba2cd68c60e78351faca252c6d50a10ff89dd31e1bca6cf7e0cdbbea90"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.cye3qvht/database-console.log",
+      "sha256": "b2d540cafec713e27c190609259ea1a5d53f9b570757c1d970d6cee8ac30580e"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.cye3qvht/paper-travel-prepare-console.log",
+      "sha256": "17e1e4cde97fb5ad5f2236aceed21341a0fceeb44ccdf7b549ea91a4747505d4"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.qitztbno/aura-trial-result.json",
+      "sha256": "776dc9b42b8bf431d9804e2f08f361c5ccdd274337e64d463e743649bfc210f0"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.qitztbno/database-console.log",
+      "sha256": "bf8a223af283f847d835a8396f665c20838065e8b7b5080c74bb51fadd7b8063"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.qitztbno/paper-travel-off-console.log",
+      "sha256": "e99c916ecc2c6aacb75e1048826f7c4788d85e2f219e3fda851dcec0d0eef670"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.qitztbno/paper-travel-prepare-console.log",
+      "sha256": "b80c7c936117c2e735754c9f8f0c757f8b67fd862aa32d721938cba7b9b9ec00"
+    }
+  ],
+  "actual_client": "DEFERRED_BY_USER",
+  "actual_player_events": "NOT_RUN",
+  "fake_player": "NOT_USED",
+  "operating_changes": "NONE",
+  "include_pve_policy": "UNDECIDED; must explicitly configure when enabling",
+  "game_tag_millis": 30000,
+  "fixture_restore_deadline": "synthetic UUID +120000ms only; not game duration",
+  "death_penalty_or_owner_PvP": "NOT_IMPLEMENTED_IN_THIS_BATCH",
+  "final_jar_sha256": "164068e9357a897c8305c3882bed25c225139e19783e035a91c70757cb65be56",
+  "scope_notes": "PG/storage restoration proof reused; stale-button and off-path main-thread startup fixes checked with targeted unit tests and final off/on Paper; no authenticated Player actions."
+}

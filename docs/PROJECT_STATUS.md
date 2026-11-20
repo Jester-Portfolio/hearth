@@ -6,7 +6,9 @@
 
 ## 프로젝트 목표·현재 단계
 
-[AuraSkills 기술 검증](auraskills-technical-verification.md) 뒤 [1차 정식 통합](auraskills-admission-verification.md)으로 optional 공개 API bridge·6역할 조건 엔진·기존 월드/개인 ACL 공통 admission을 구현했다. 메뉴·비동기 이동 최종 검사·포탈/리스폰·초기 로그인 안전 위치에 연결했고 Java 25/격리 PG·Paper off/on 검사를 통과했다. 실제 바인딩은 기존 거주/자원/지옥·개인 거주이며 초보 자원/엔드 물리 월드 확장은 미구현이다. TPA/Home 명령·전투/사망/최종 보상·실제 클라이언트/동접/운영 수용은 남아 있다. 저장 구성은 [ADR-0031](decisions/0031-auraskills-economy-integration.md)의 Aura YAML+기존 PG 병행을 유지한다.
+[공통 전투·TPA 배치](combat-travel-verification.md)로 유효 피해의 30초 태그·PG 묶음 저장/복원·일반 이동/로비/재접속 제한, 수락형 TPA와 요청 ID/세대·최종 전투/레벨/ACL 재검사를 연결했다. 기본 비활성이고 PvE 포함 여부는 활성화 전에 명시해야 한다. 실제 Player의 공격/수락/이동·외부 Home·동접/운영 수용은 미검증이며, 새 Home 명령·소유자 PvP/사망/부적·최종 보상·초보 자원/엔드 물리 확장은 남아 있다.
+
+[AuraSkills 기술 검증](auraskills-technical-verification.md) 뒤 [1차 정식 통합](auraskills-admission-verification.md)으로 optional 공개 API bridge·6역할 조건 엔진·기존 월드/개인 ACL 공통 admission을 구현했다. 메뉴·비동기 이동 최종 검사·포탈/리스폰·초기 로그인 안전 위치에 연결했고 Java 25/격리 PG·Paper off/on 검사를 통과했다. 실제 바인딩은 기존 거주/자원/지옥·개인 거주이며 초보 자원/엔드 물리 월드 확장은 미구현이다. TPA/전투 후속 구현은 위 공통 전투 배치를 따르며 Home 명령·사망/최종 보상·실제 클라이언트/동접/운영 수용은 남아 있다. 저장 구성은 [ADR-0031](decisions/0031-auraskills-economy-integration.md)의 Aura YAML+기존 PG 병행을 유지한다.
 
 **현재 우선순위:** 사용자 요청으로 스토리 모드의 추가 개발은 보류하고, [로비·경제 멀티서버 네트워크](decisions/0025-lobby-economy-network.md)를 먼저 구현한다. 기존 스토리 코드/데이터/미검증은 보존하며, 오프라인 던전 목표·스토리 채집 물리 배치 질문도 스토리 재개 전까지 보류한다. 운영 서비스 중단/전환이나 실제 클라이언트 시험을 요청한 것은 아니다.
 

@@ -1,0 +1,6 @@
+# Merge into a reviewed survival economy backend config. Feature stays off by default.
+combat-travel:
+  enabled: false
+  # Before enabling, explicitly choose include-pve: true or false.
+  # include-pve: <decision required>
+  request-seconds: 60

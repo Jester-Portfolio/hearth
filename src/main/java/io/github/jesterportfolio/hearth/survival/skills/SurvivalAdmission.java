@@ -19,6 +19,9 @@ import static io.github.jesterportfolio.hearth.survival.skills.WorldAccessPolicy
 public final class SurvivalAdmission implements Listener,AutoCloseable {
     public interface Boundary {
         boolean ready(); boolean connected(Player player);
+        default boolean travelAllowed(Player player){return true;}
+        default String travelReason(Player player){return "현재 이동할 수 없습니다.";}
+        default boolean loginPublic(){return false;}
         Map<SurvivalWorld,World> worlds(); HousingRuntime housing();
         Location publicEntry(); void portal(Player player,SurvivalWorld target); void evict(Player player);
     }
@@ -37,7 +40,7 @@ public final class SurvivalAdmission implements Listener,AutoCloseable {
         pulse=Bukkit.getScheduler().runTaskTimer(plugin,()->{if(!closed&&boundary.ready())for(var player:Bukkit.getOnlinePlayers())if(boundary.connected(player)&&!decision(player.getUniqueId(),player.getLocation()).allowed()&&evicting.add(player.getUniqueId())){boundary.evict(player);Bukkit.getScheduler().runTaskLater(plugin,()->{evicting.remove(player.getUniqueId());if(!closed&&player.isOnline()&&boundary.connected(player)&&!decision(player.getUniqueId(),player.getLocation()).allowed())player.kick(Component.text("입장 조건을 확인할 수 없습니다. 다시 접속해 주세요."));},20);}},20,20);
     }
     public CompletionStage<Void> ready(){return skills.ready();}
-    public void activate(){publicEntry=boundary.publicEntry().clone();common=boundary.worlds().values().stream().map(World::getUID).collect(java.util.stream.Collectors.toUnmodifiableSet());}
+    public void activate(){if(!Bukkit.isPrimaryThread())throw new IllegalStateException("ADMISSION_ACTIVATE_MAIN_THREAD");publicEntry=boundary.publicEntry().clone();common=boundary.worlds().values().stream().map(World::getUID).collect(java.util.stream.Collectors.toUnmodifiableSet());}
     public boolean enabled(){return enabled;}
     public WorldAccessPolicy policy(){return policy;}
     public Role role(World world){
@@ -57,11 +60,11 @@ public final class SurvivalAdmission implements Listener,AutoCloseable {
     public boolean commit(Permit permit,Player player,Location target){return commit(permit,player.getUniqueId(),target);}
     public boolean commit(Permit permit,UUID player,Location target){return permit!=null&&permit.player().equals(player)&&target!=null&&target.getWorld()!=null&&permit.world().equals(target.getWorld().getUID())&&permit.housingGeneration()==generation()&&decision(player,target).allowed();}
     private long generation(){var h=boundary.housing();return h==null?0:h.generation();}
-    @EventHandler(priority=EventPriority.HIGHEST) public void login(AsyncPlayerSpawnLocationEvent event){var entry=publicEntry;if(entry!=null&&(enabled||!common.contains(event.getSpawnLocation().getWorld().getUID())))event.setSpawnLocation(entry.clone());}
+    @EventHandler(priority=EventPriority.HIGHEST) public void login(AsyncPlayerSpawnLocationEvent event){var entry=publicEntry;if(entry!=null&&(enabled||boundary.loginPublic()||!common.contains(event.getSpawnLocation().getWorld().getUID())))event.setSpawnLocation(entry.clone());}
     @EventHandler(priority=EventPriority.HIGHEST) public void respawn(PlayerRespawnEvent event){if(publicEntry!=null&&!allowed(event.getPlayer(),event.getRespawnLocation()))event.setRespawnLocation(publicEntry.clone());}
-    @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void teleport(PlayerTeleportEvent event){if(!boundary.connected(event.getPlayer())||!allowed(event.getPlayer(),event.getTo())){event.setCancelled(true);event.getPlayer().sendMessage(Component.text(decision(event.getPlayer().getUniqueId(),event.getTo()).message()));}}
+    @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void teleport(PlayerTeleportEvent event){if(!boundary.connected(event.getPlayer())||!boundary.travelAllowed(event.getPlayer())||!allowed(event.getPlayer(),event.getTo())){event.setCancelled(true);event.getPlayer().sendMessage(Component.text(!boundary.travelAllowed(event.getPlayer())?boundary.travelReason(event.getPlayer()):decision(event.getPlayer().getUniqueId(),event.getTo()).message()));}}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void portal(PlayerPortalEvent event){
-        event.setCancelled(true);var p=event.getPlayer();if(!boundary.connected(p))return;
+        event.setCancelled(true);var p=event.getPlayer();if(!boundary.connected(p))return;if(!boundary.travelAllowed(p)){p.sendMessage(Component.text(boundary.travelReason(p)));return;}
         if(event.getCause()!=PlayerTeleportEvent.TeleportCause.NETHER_PORTAL){p.sendMessage(Component.text("이 차원은 아직 열리지 않았습니다."));return;}
         var target=p.getWorld().getEnvironment()==World.Environment.NETHER?SurvivalWorld.WILDERNESS:SurvivalWorld.NETHER;
         Bukkit.getScheduler().runTask(plugin,()->{if(!closed&&boundary.connected(p))boundary.portal(p,target);});

@@ -262,3 +262,5 @@ python3 scripts/verify_auraskills.py --help
 CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 2회 한도를 상속한다. 소유 PG 복사본의 기존 스토리/다른 경제 행 보존, 원본 파일 hash와 종료·포트 정리를 검사한다. 결과의 baseline phase PASS와 trial 전체 FAIL을 구분하고, 중간 실패 로그를 덮지 않는다. 실행 증거와 실측 한계는 정본에 한 번만 기록한다.
 
 `verify_auraskills.py --admission`은 [정식 접근 통합](../docs/auraskills-admission-verification.md)의 별도 off/on 두 JVM 검사다. 새 native root에 `stageNativeEconomyRuntime -PnativeEconomyWorkspace=ROOT`로 **현재** 통합 fixture를 먼저 준비한 뒤 기존 `--source` native PASS 복사본·현재 `--plugin`과 기존 고정 Aura/probe를 사용한다. PG `skills` 모드는 거주 경합/실패/권한 철회와 정식 admission 정책을 연결해 검사한다. Player/행동 이벤트는 만들지 않고 실제 로그인/teleport 성공으로 기록하지 않는다. 기존 자원/종료/원본 보존 한도를 유지하며 `--restore`/`--aura-only`와 함께 쓰지 않는다.
+
+`verify_auraskills.py --travel`은 [전투/TPA](../docs/combat-travel-verification.md)의 E009 실제 PG 경합/실패/원본 보존과 Paper prepare/resume 두 JVM 복원이다. native PASS source·새 소유 root·현재 `stageNativeEconomyRuntime` fixture를 사용한다. `--travel-final`은 PG 행렬 재실행 없이 기본 off/최종 on 두 JVM만 확인한다. 기존 제한을 상속하며 다른 trial 모드와 섞지 않는다. 실제 Player/피해/수락/텔레포트 이벤트를 만들지 않는다.

@@ -9,6 +9,15 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth story foundations and optional dedicated economy runtime
 commands:
+  tpa:
+    description: 상대 수락 후 텔레포트 요청
+    usage: /tpa <player>
+  tpaccept:
+    description: 받은 텔레포트 요청 수락
+  tpdeny:
+    description: 받은 텔레포트 요청 거절
+  tpcancel:
+    description: 보낸 텔레포트 요청 취소
   economy:
     description: 잔액·지역 시장·생산·공급망 조회
     aliases: [경제]

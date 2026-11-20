@@ -34,7 +34,7 @@
 | [ADR-0028: 시장 자동 운영·경제 에이전트](0028-autonomous-market-agents.md) | 사용자 자동 시장/경제 에이전트 선택·구현 | 부족량/비축/운송 중 수량·모드 안정화·E007 원자 저장/복원, LLM 기본 해제 |
 | [ADR-0029: 단일 스폰·종류별 상점](0029-single-spawn-shops.md) | 사용자 편의성/단일 거점 결정·구현 | 여러 마을 제외·스폰 종류별 NPC 한 명·공통 `/상점`·원격 구매/판매·새 단일 시장 설정 |
 | [ADR-0030: 공용/개인 거주·자원 월드](0030-residential-and-resource-worlds.md) | 사용자 요구 확정·시스템 구현/격리 검증·수치/운영 미수용 | 공용 건축 제한·크기별 영구 구매/확장·초대 공동 거주·자원 오버월드/지옥·단일 메뉴 |
-| [ADR-0031: 경제 AuraSkills 통합](0031-auraskills-economy-integration.md) | 사용자 채택·기술 검증/방식 선정 | 공개 API·YAML+PG·공통 접근/전투/보상·커스텀 mana 설정 회피, 정식 기능/실제 플레이 별도 |
+| [ADR-0031: 경제 AuraSkills 통합](0031-auraskills-economy-integration.md) | 사용자 채택·기반/접근·전투/TPA 1차 구현 | 공개 API·YAML+PG·공통 접근/전투·수락형 TPA, 사망/보상·실제 플레이/운영 수용 별도 |
 
 각 기록에는 다음 내용을 포함합니다.
 
