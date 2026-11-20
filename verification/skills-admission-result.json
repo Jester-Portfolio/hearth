@@ -1,0 +1,201 @@
+{
+  "date": "2026-11-20",
+  "outcome": "PASS",
+  "scope": "FIRST_PRODUCTION_SKILLS_BRIDGE_AND_WORLD_ADMISSION",
+  "source_commit": "6670e06",
+  "hearth_jar_sha256": "ccc999863444014f1ef5a6ee6c8d052576a98eca0744448466f332a3908c5890",
+  "unit_tests": [
+    {
+      "name": "io.github.jesterportfolio.hearth.survival.SurvivalWorldTest",
+      "tests": 3,
+      "evidence": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/admission-TEST-io.github.jesterportfolio.hearth.survival.SurvivalWorldTest.xml",
+      "sha256": "6a56b6e0368e265bf4d3379d44674eccfc274e27dbb2b68b0a739c9439dff463"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.survival.housing.HousingStateTest",
+      "tests": 3,
+      "evidence": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/admission-TEST-io.github.jesterportfolio.hearth.survival.housing.HousingStateTest.xml",
+      "sha256": "3a5255716177e6e5338d43e6446582de267dae39e9ee332f1477060648803fb5"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.survival.WorldTravelTest",
+      "tests": 10,
+      "evidence": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/admission-TEST-io.github.jesterportfolio.hearth.survival.WorldTravelTest.xml",
+      "sha256": "378e70321c06a66bfd9f75299f387f5e0c9e5ebc126374d05a018f7b6831341c"
+    },
+    {
+      "name": "io.github.jesterportfolio.hearth.survival.skills.WorldAccessPolicyTest",
+      "tests": 9,
+      "evidence": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/admission-TEST-io.github.jesterportfolio.hearth.survival.skills.WorldAccessPolicyTest.xml",
+      "sha256": "cab133f0730f8062072c0c3c80d6159b27b0944900c1191dcd9604c208cdc70b"
+    }
+  ],
+  "checks": {
+    "admission-off": [
+      "registered_world_roles_and_public_fallback",
+      "public_home_never_requires_skill_data",
+      "unregistered_end_is_not_adopted_as_managed_world",
+      "world_menu_contains_denial_reason_without_player",
+      "enabled_feature_refuses_missing_Aura_without_linkage_error",
+      "disabled_feature_works_without_AuraSkills_API_classes"
+    ],
+    "admission-on": [
+      "registered_world_roles_and_public_fallback",
+      "public_home_never_requires_skill_data",
+      "unregistered_end_is_not_adopted_as_managed_world",
+      "world_menu_contains_denial_reason_without_player",
+      "unloaded_offline_record_cannot_enter_resource_world",
+      "below_threshold_is_denied_by_production_bridge",
+      "loaded_public_API_levels_meet_multiple_custom_conditions",
+      "level_reduction_between_prepare_and_commit_is_denied",
+      "permit_is_bound_to_player_and_target_world",
+      "PG_housing_generation_change_invalidates_prepared_move",
+      "real_PG_private_world_ACL_does_not_use_default_skill_levels",
+      "private_world_boundary_is_checked_on_target_location"
+    ]
+  },
+  "database_checks": [
+    "initialized_housing_cannot_be_silently_disabled",
+    "one_owner_concurrent_purchase_has_one_reservation",
+    "reservation_never_debits_money",
+    "request_id_is_bound_to_original_owner",
+    "prepared_world_identity_cannot_be_replaced",
+    "real_SQL_23514_rolls_back_wallet_house_and_receipt_together",
+    "revoked_request_cannot_charge_wallet",
+    "unknown_commit_retains_one_paid_receipt_and_closed_house",
+    "repeat_commit_does_not_charge_again",
+    "activation_preserves_native_inventory_payload_and_world_identity",
+    "expansion_uses_tier_difference_only",
+    "expansion_keeps_original_world_and_total_price",
+    "new_price_version_does_not_reprice_existing_world",
+    "concurrent_invitation_acceptance_has_one_revision_winner",
+    "accepted_resident_and_visitor_have_distinct_permissions",
+    "skills_gate_preserves_PG_accepted_visitor_and_denies_foreign_actor",
+    "resident_can_leave_without_owner_and_loses_access",
+    "skills_gate_denies_after_real_PG_membership_revocation",
+    "concurrent_free_plot_claims_are_distinct",
+    "repeat_plot_claim_is_idempotent",
+    "full_plot_pool_preserves_existing_assignments",
+    "foreign_context_cannot_administer_owned_world",
+    "E008_checksum_mismatch_rejects_without_replacing_original_data"
+  ],
+  "preserved_database_checks": [
+    "original_economy_housing_policy_rows_preserved",
+    "original_economy_gathering_instance_rows_preserved",
+    "original_economy_shipment_rows_preserved",
+    "original_economy_housing_catalog_rows_preserved",
+    "original_economy_market_mode_change_rows_preserved",
+    "original_economy_native_binding_rows_preserved",
+    "original_economy_house_rows_preserved",
+    "original_economy_housing_request_rows_preserved",
+    "original_economy_market_rows_preserved",
+    "original_economy_market_controller_rows_preserved",
+    "original_economy_trade_rows_preserved",
+    "original_economy_house_member_rows_preserved",
+    "original_economy_peer_trade_rows_preserved",
+    "original_economy_tick_flow_rows_preserved",
+    "original_economy_realm_rows_preserved",
+    "original_economy_event_rows_preserved",
+    "original_economy_housing_plot_rows_preserved",
+    "original_economy_account_rows_preserved"
+  ],
+  "trial_summary": {
+    "outcome": "PASS",
+    "failure": null,
+    "cleanup_errors": [],
+    "restore": false,
+    "admission": true,
+    "duration_seconds": 45.96,
+    "processes": {
+      "database": {
+        "pid": 2759010,
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 45.326,
+        "shutdown_seconds": 0.118,
+        "max_sampled_rss_kib": 243020,
+        "observed_cpu_seconds": 2.8,
+        "min_sampled_host_available_kib": 12340188,
+        "sample_count": 481,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-admission-off": {
+        "pid": 2759105,
+        "exit_code": 0,
+        "ready_seconds": 12.802,
+        "duration_seconds": 16.407,
+        "shutdown_seconds": 1.555,
+        "max_sampled_rss_kib": 938356,
+        "observed_cpu_seconds": 24.53,
+        "min_sampled_host_available_kib": 12340188,
+        "sample_count": 167,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-admission-on": {
+        "pid": 2759253,
+        "exit_code": 0,
+        "ready_seconds": 22.554,
+        "duration_seconds": 25.79,
+        "shutdown_seconds": 0.849,
+        "max_sampled_rss_kib": 960760,
+        "observed_cpu_seconds": 31.01,
+        "min_sampled_host_available_kib": 12379668,
+        "sample_count": 270,
+        "checks": [],
+        "timings": [],
+        "states": []
+      }
+    },
+    "source_hashes": {
+      "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/data/global/pg_control": "e1b4609f014c8607a99d53be0e3f265616f79f3308f03ea9444c90128ef1a22c",
+      "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/config.yml": "57c874d088c3f98727939a9cf282e424cc338901054c2c4eadccd8615f7215be",
+      "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+    },
+    "aura_sha256": "de54cbd2e33d65e8b1704751ae4121ed2f5b466ba89c63a1aadf3a3e629d6a40",
+    "hearth_sha256": "ccc999863444014f1ef5a6ee6c8d052576a98eca0744448466f332a3908c5890",
+    "probe_sha256": "27341c8cad99253aab5d3cd83e6ae42c49bea8e05a7868f808ef3a4a13f042e1",
+    "limits": {
+      "cpu": 2,
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "combined_rss_stop_mib": 6144,
+      "host_available_min_mib": 6144,
+      "paper_starts_max": 2
+    },
+    "actual_client": "NOT_RUN",
+    "fake_player": "NOT_USED",
+    "operating_changes": "NONE"
+  },
+  "combined_peak_rss_mib": 1175.02,
+  "evidence": [
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run._gsl8hr_/aura-trial-result.json",
+      "sha256": "d22a75d4f7a08895bcf692f6ec26e6b367876ef1f138f1ab1933a55603b75888"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run._gsl8hr_/database-console.log",
+      "sha256": "a85844da925b1f0c6c37332198b979a06c3cbfdb616a440fbd3503b3b9efd730"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run._gsl8hr_/paper-admission-off-console.log",
+      "sha256": "2563a7e7c11179a2444b6ec903d607dbabb00df889f771f93937c7a903c866ba"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run._gsl8hr_/paper-admission-on-console.log",
+      "sha256": "fa0254fb1022639c2ba8da5b874a51ec4dc9081b23907449c6e98e7b740d2d53"
+    }
+  ],
+  "actual_client": "DEFERRED_BY_USER",
+  "actual_player_events": "NOT_RUN",
+  "fake_player": "NOT_USED",
+  "production_changes": "NONE",
+  "new_physical_novice_or_end_world": "NOT_IMPLEMENTED",
+  "level_balance_values": "UNDECIDED; production template none; fixture only mining20/custom3",
+  "new_TPA_Home_combat_death_reward_features": "NOT_IMPLEMENTED_IN_THIS_BATCH"
+}

@@ -50,6 +50,7 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:26.2.build.134-stable")
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.19")
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.4.4")
+    compileOnly("dev.aurelium:auraskills-api-bukkit:2.4.0")
     compileOnly("com.google.code.gson:gson:2.14.0") // pinned Paper runtime provides Gson
     implementation("org.postgresql:postgresql:$postgresJdbcVersion")
     implementation("com.zaxxer:HikariCP:$hikariVersion")

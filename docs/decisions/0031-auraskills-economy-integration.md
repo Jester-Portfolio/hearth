@@ -1,7 +1,7 @@
 # ADR-0031: 경제 서버 AuraSkills 기반과 Hearth 정책 경계
 
 - 날짜: 2026-11-20
-- 상태: 사용자 AuraSkills 채택·기술 검증/통합 방식 선정. 정식 전체 기능·운영 배포는 이번 범위 밖.
+- 상태: 사용자 AuraSkills 채택·기술 검증 후 [기반/공통 접근 1차 정식 구현](../auraskills-admission-verification.md). 전투/사망/보상·정식 전체 기능·운영 배포는 미완료.
 - 근거: [기술 검증·요구별 결과](../auraskills-technical-verification.md), [구조화 증거](../../verification/auraskills-technical-result.json).
 
 ## 문제

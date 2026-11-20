@@ -20,6 +20,7 @@ def main():
     for name in ('workspace', 'source', 'java', 'plugin', 'probe', 'aura', 'aura-config'):
         p.add_argument('--' + name, type=Path, required=True)
     p.add_argument('--restore', action='store_true')
+    p.add_argument('--admission', action='store_true', help='정식 접근 제어 off/on 및 PG 권한 통합')
     p.add_argument('--aura-only', action='store_true', help='기존 baseline 성공 후 Aura 영향 검사만 실행')
     p.add_argument('--betterhud', type=Path)
     p.add_argument('--accept-eula', action='store_true')
@@ -27,6 +28,8 @@ def main():
     for artifact in (a.java, a.plugin, a.probe, a.aura, a.aura_config):
         if not artifact.is_file():
             p.error('artifact is not a regular file: ' + str(artifact))
+    if a.admission and (a.restore or a.aura_only):
+        p.error('--admission excludes --restore and --aura-only')
     if a.restore and (a.betterhud is None or a.aura_only):
         p.error('--restore requires --betterhud and excludes --aura-only')
     if a.betterhud is not None and not a.betterhud.is_file():
@@ -49,7 +52,11 @@ def main():
         for rel in ('data/global/pg_control', 'server/plugins/Hearth/config.yml', 'server/plugins/Hearth/survival-worlds.properties'):
             before[str(source / rel)] = digest(source / rel)
         for name in ('server', 'data', 'fixture-classes', 'resolved-jars'):
-            copy_tree(source / name, root / name, m.guard)
+            if a.admission and name in ('fixture-classes', 'resolved-jars'):
+                if not (root / name).is_dir():
+                    raise ValueError('STAGE_CURRENT_NATIVE_FIXTURE_FIRST')
+            else:
+                copy_tree(source / name, root / name, m.guard)
         shutil.copy2(source / 'paper.jar', root / 'paper.jar')
         (root / '.hearth-aura-isolated').write_text('Hearth AuraSkills isolated v1\n')
         if a.restore:
@@ -65,7 +72,7 @@ def main():
             raise ValueError('ISOLATED_REALM')
         (root / 'restore-realm.txt').write_text(realm.group(1) + '\n')
         os.environ['HEARTH_ISOLATED_NATIVE_PASSWORD'] = 'isolated-not-a-secret'
-        helper = [str(a.java), '-Xmx128m', '-XX:ActiveProcessorCount=2', '-Djava.io.tmpdir=' + str(root), '-cp', str(root / 'fixture-classes') + ':' + str(root / 'resolved-jars/*') + ':' + str(a.plugin), 'io.github.jesterportfolio.hearth.persistence.NativeEconomyDatabaseFixture', str(root), 'restore']
+        helper = [str(a.java), '-Xmx128m', '-XX:ActiveProcessorCount=2', '-Djava.io.tmpdir=' + str(root), '-cp', str(root / 'fixture-classes') + ':' + str(root / 'resolved-jars/*') + ':' + str(a.plugin), 'io.github.jesterportfolio.hearth.persistence.NativeEconomyDatabaseFixture', str(root), 'skills' if a.admission else 'restore']
         m.launch('database', helper, root)
         m.wait('database', 'HEARTH_NATIVE_DB_READY', seconds=75)
         dbport = int((root / 'db-port.txt').read_text())
@@ -75,9 +82,11 @@ def main():
         with (root / 'server/server.properties').open('a') as f:
             f.write(f'\nserver-ip=127.0.0.1\nserver-port={gameport}\nonline-mode=true\nwhite-list=true\nenforce-whitelist=true\nenable-query=false\nenable-rcon=false\n')
         command = [str(a.java), '-Xms256m', '-Xmx1536m', '-XX:ActiveProcessorCount=2', '-Djava.io.tmpdir=' + str(root), '-Dhearth.aura.verification.root=' + str(root), '-jar', str(root / 'paper.jar'), '--nogui']
-        phases = ['restore'] if a.restore else ['aura'] if a.aura_only else ['baseline', 'aura']
+        if a.admission:
+            config.write_text(config.read_text() + '\nskills:\n  enabled: false\n  access-file: skills-access.properties\n')
+        phases = ['admission-off', 'admission-on'] if a.admission else ['restore'] if a.restore else ['aura'] if a.aura_only else ['baseline', 'aura']
         for phase in phases:
-            if phase != 'baseline':
+            if phase not in ('baseline', 'admission-off'):
                 shutil.copy2(a.aura, plugins / 'AuraSkills.jar')
                 folder = plugins / 'AuraSkills'
                 folder.mkdir(exist_ok=True)
@@ -85,6 +94,10 @@ def main():
                     text = a.aura_config.read_text().replace('check_for_updates: true', 'check_for_updates: false').replace('action_bar:\n  enabled: true', 'action_bar:\n  enabled: false').replace('boss_bar:\n  enabled: true', 'boss_bar:\n  enabled: false')
                     text = text.replace('\nblocked_worlds:\n  - Example', '\nblocked_worlds:\n  - hearth_policy_blocked').replace('\ndisabled_worlds:\n  - Example', '\ndisabled_worlds:\n  - hearth_policy_disabled')
                     (folder / 'config.yml').write_text(text)
+                if a.admission:
+                    config.write_text(config.read_text().replace('skills:\n  enabled: false', 'skills:\n  enabled: true'))
+                    policy='format=1\npublic_home.rules=none\nprivate_home.rules=none\nnovice_resource.rules=none\nresource.rules=mining,craft\nnether.rules=none\nend.rules=none\nrule.mining.kind=specific\nrule.mining.skills=auraskills/mining\nrule.mining.minimum=20\nrule.craft.kind=specific\nrule.craft.skills=hearthprobe/metallurgy\nrule.craft.minimum=3\n'
+                    (plugins / 'Hearth/skills-access.properties').write_text(policy)
                 if a.betterhud:
                     shutil.copy2(a.betterhud, plugins / 'BetterHud.jar')
             name = 'paper-' + phase
@@ -92,11 +105,12 @@ def main():
             m.wait(name, 'HEARTH_SURVIVAL_ECONOMY_READY', seconds=120)
             m.wait(name, 'HEARTH_SURVIVAL_READY worlds=3', seconds=20)
             m.wait(name, 'HEARTH_AURA_PROBE_READY', seconds=15)
-            m.send(name, 'hearthauraprobe ' + phase)
+            expected = 'HEARTH_ACCESS_PROBE PASS' if a.admission else 'HEARTH_AURA_PROBE PASS ' + phase
+            m.send(name, 'hearthsurvivaladmin access-verify' if a.admission else 'hearthauraprobe ' + phase)
             until = min(m.deadline, time.monotonic() + 90)
-            while not any('HEARTH_AURA_PROBE PASS ' + phase in line for line in m.children[name]['lines']):
+            while not any(expected in line for line in m.children[name]['lines']):
                 m.pump()
-                if any('HEARTH_AURA_PROBE FAIL' in line for line in m.children[name]['lines']):
+                if any('HEARTH_AURA_PROBE FAIL' in line or 'HEARTH_ACCESS_PROBE FAIL' in line for line in m.children[name]['lines']):
                     raise RuntimeError('AURA_PROBE_FAILED_' + phase)
                 if m.children[name]['proc'].poll() is not None or time.monotonic() > until:
                     raise RuntimeError('AURA_PROBE_TIMEOUT_' + phase)
@@ -130,7 +144,7 @@ def main():
         cleanup.extend('OWNED_PORT_REMAINS_' + str(number) for number in ports if not port_closed(number))
         if cleanup:
             outcome = 'FAIL'
-        report = dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, restore=a.restore, duration_seconds=round(time.monotonic()-started, 3), processes=m.summary(), combined_samples=m.combined, source_hashes=before, aura_sha256=digest(a.aura), hearth_sha256=digest(a.plugin), probe_sha256=digest(a.probe) if a.probe.is_file() else None, limits=dict(cpu=2, total_seconds=600, work_seconds=550, paper_heap_mib=1536, paper_rss_stop_mib=2560, combined_rss_stop_mib=6144, host_available_min_mib=6144, paper_starts_max=2), actual_client='NOT_RUN', fake_player='NOT_USED', operating_changes='NONE')
+        report = dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, restore=a.restore, admission=a.admission, duration_seconds=round(time.monotonic()-started, 3), processes=m.summary(), combined_samples=m.combined, source_hashes=before, aura_sha256=digest(a.aura), hearth_sha256=digest(a.plugin), probe_sha256=digest(a.probe) if a.probe.is_file() else None, limits=dict(cpu=2, total_seconds=600, work_seconds=550, paper_heap_mib=1536, paper_rss_stop_mib=2560, combined_rss_stop_mib=6144, host_available_min_mib=6144, paper_starts_max=2), actual_client='NOT_RUN', fake_player='NOT_USED', operating_changes='NONE')
         (root / 'aura-trial-result.json').write_text(json.dumps(report, indent=2) + '\n')
         print('AURA', outcome, root / 'aura-trial-result.json', flush=True)
     return 0 if outcome == 'PASS' else 1

@@ -27,3 +27,5 @@ python3 scripts/survival_config.py --output /REVIEWED/NEW_GAME_CONFIG.yml
 `hearthsurvivaladmin status`는 콘솔 상태를, `runtime_health.py --mode survival`은 3개 관리 월드의 집계를 확인한다. `hearthsurvivaladmin verify`는 소유 격리 시험 표식/경로가 있는 콘솔에서만 실행하며 운영 시험 명령이 아니다.
 
 기존 PG 잔액/상점·개인 거래/생산 연결은 [일반 생존 경제 설정](native-economy.md)으로 명시적으로 활성화할 수 있다. 거주 소유/보호 시스템은 [거주 설정](housing.md)을 따르며 실제 지형/운영 수치·야생 리셋/주기·경제 밸런스는 아직 확정하지 않았다. 운영 설치·기존 데이터 이전·서버별 분산 인벤토리·외부 포트 전환도 적용하지 않았다.
+
+선택형 숙련도·레벨 입장 조건은 [AuraSkills 공통 접근 설정](skills.md)을 따른다. 이를 켜면 자원 이동의 데이터 로드/레벨 조건·개인 ACL을 함께 확인하고 재접속을 공용 스폰에서 시작한다. 기존 3월드/경제 binding을 자동 확장하지 않는다.

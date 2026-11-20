@@ -1,0 +1,5 @@
+# Merge this reviewed block into the economy backend config; not a full server config.
+# No operating installation or level thresholds are selected by this example.
+skills:
+  enabled: false
+  access-file: skills-access.properties

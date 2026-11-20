@@ -1,5 +1,9 @@
 # Hearth 주요 변경 이력
 
+## 2026-11-20 — 숙련도 기반·공통 월드 접근 정식 통합
+
+- [AuraSkills 공개 API와 공통 admission](auraskills-admission-verification.md)을 기존 월드 메뉴·이동·거주 ACL·로그인/포탈/리스폰에 연결했다. 조건 엔진·미로드 거부·최종 레벨/권한 재검사와 off/on·실제 PG 권한 검사를 추가했다. 기본 비활성·수치 미정이며 초보 자원/엔드 물리 확장·전투/사망·실제 플레이/운영 적용은 남아 있다.
+
 ## 2026-11-20 — AuraSkills 기술 검증·통합 설계
 
 - [AuraSkills 2.4.0](auraskills-technical-verification.md)의 격리 실행·커스텀 API·modifier·YAML 복원과 공개 소스/저장 계층을 조사했다. [ADR-0031](decisions/0031-auraskills-economy-integration.md)에 YAML+기존 PG·공통 접근/전투/보상 경계와 후속 구현 순서를 기록했다. 정식 전체 기능·운영 설치·실제 클라이언트 시험은 포함하지 않는다.

@@ -9,19 +9,13 @@ import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.InventoryHolder;import org.bukkit.inventory.Inventory;
-import io.papermc.paper.event.player.AsyncPlayerSpawnLocationEvent;
 import io.github.jesterportfolio.hearth.survival.SurvivalWorld;
 import net.kyori.adventure.text.Component;
 
 /** WG의 일반 보호와 별개인 개인 월드 접근/권한 세대와 이동 우회만 닫습니다. */
 public final class HousingAccess implements Listener,AutoCloseable {
- private final HousingRuntime h;private final Location publicEntry;private final Set<UUID> common;
- public HousingAccess(HousingRuntime h){this.h=h;publicEntry=h.boundary.entry(SurvivalWorld.RESIDENCE);common=h.boundary.worlds().values().stream().map(World::getUID).collect(java.util.stream.Collectors.toUnmodifiableSet());Bukkit.getPluginManager().registerEvents(this,h.plugin);}
- @EventHandler public void loginSpawn(AsyncPlayerSpawnLocationEvent e){if(!common.contains(e.getSpawnLocation().getWorld().getUID()))e.setSpawnLocation(publicEntry.clone());}
- @EventHandler(priority=EventPriority.HIGHEST) public void respawn(PlayerRespawnEvent e){if(!h.allowed(e.getPlayer().getUniqueId(),e.getRespawnLocation()))e.setRespawnLocation(publicEntry.clone());}
- @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void teleport(PlayerTeleportEvent e){if(e.getTo()==null||!h.allowed(e.getPlayer().getUniqueId(),e.getTo()))e.setCancelled(true);}
- @EventHandler(priority=EventPriority.HIGHEST) public void portal(PlayerPortalEvent e){e.setCancelled(true);var p=e.getPlayer();if(e.getCause()!=PlayerTeleportEvent.TeleportCause.NETHER_PORTAL){p.sendMessage(Component.text("이 차원은 아직 열리지 않았습니다."));return;}if(!h.ready(p))return;var role=p.getWorld().getEnvironment()==World.Environment.NETHER?SurvivalWorld.WILDERNESS:SurvivalWorld.NETHER;Bukkit.getScheduler().runTask(h.plugin,()->{if(h.ready(p))h.boundary.move(p,h.boundary.token(p),role.label(),()->java.util.concurrent.CompletableFuture.completedFuture(h.boundary.entry(role)));});}
- @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void move(PlayerMoveEvent e){if(e.getTo()!=null&&!h.allowed(e.getPlayer().getUniqueId(),e.getTo()))e.setCancelled(true);}
+ private final HousingRuntime h;
+ public HousingAccess(HousingRuntime h){this.h=h;Bukkit.getPluginManager().registerEvents(this,h.plugin);}
  @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void place(BlockPlaceEvent e){if(!h.writable(e.getPlayer()))e.setCancelled(true);}
  @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void breakBlock(BlockBreakEvent e){if(!h.writable(e.getPlayer()))e.setCancelled(true);}
  @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void interact(PlayerInteractEvent e){if(!h.writable(e.getPlayer()))e.setCancelled(true);}
