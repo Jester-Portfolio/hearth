@@ -142,3 +142,7 @@ economy-rpg:
 # Requires the economy RPG runtime; operating activation/balance are separate.
 hearth-enchants:
   enabled: false
+
+# Optional reusable equipment/sale/config/resource platform.
+hearth-platform:
+  enabled: false

@@ -42,7 +42,7 @@ public final class EnchantEffects {
         register("temporary_block",(c,i,t)->c.runtime.web(c,t!=null?t:c.other(),(int)value(i,"duration",100),Material.matchMaterial(arg(i,"material","COBWEB")),(int)value(i,"radius",1)));
         register("summon",(c,i,t)->{if(t!=null)c.runtime.summon(c,t,EntityType.valueOf(arg(i,"entity","WOLF")),(int)value(i,"amount",1),(int)value(i,"lifetime",1200));});
         register("flight",(c,i,t)->c.runtime.fly(c.player));
-        register("aura_stat",(c,i,t)->c.runtime.stat(c.player,i.definition().id(),arg(i,"stat","auraskills/strength"),value(i,"amount",0)));
+        register("aura_stat",(c,i,t)->c.runtime.stat(c.player,i.definition().id()+"/"+c.slot.name()+"/"+arg(i,"stat","auraskills/strength"),arg(i,"stat","auraskills/strength"),value(i,"amount",0)));
     }
     public static void copyArrow(AbstractArrow source,AbstractArrow target){target.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);target.setDamage(source.getDamage());target.setCritical(source.isCritical());target.setFireTicks(source.getFireTicks());}
     public void register(String id,Module module){if(!id.matches("[a-z][a-z0-9_]{0,40}")||modules.putIfAbsent(id,Objects.requireNonNull(module))!=null)throw new IllegalArgumentException("ENCHANT_MODULE_ID");}

@@ -1,0 +1,15 @@
+package io.github.jesterportfolio.hearth.survival.platform;
+import java.util.*;import java.util.function.*;
+/** 새 registry 선언은 기존 저장 ID를 제거하지 않으며 기동 전 같은 형식/수치 경계를 검사한다. */
+public final class ContentValidation {
+    private ContentValidation(){}
+    public static Set<String> ids(Properties p,String key){String raw=Objects.requireNonNull(p.getProperty(key),key);if(raw.isBlank())return Set.of();var ids=Arrays.stream(raw.split(",",-1)).map(String::strip).toList();if(ids.size()>32||ids.size()!=new HashSet<>(ids).size()||ids.stream().anyMatch(s->!s.matches("[a-z][a-z0-9_]{0,24}")))throw new IllegalArgumentException("RPG_CONTENT_IDS");return Set.copyOf(ids);}
+    private static String text(Properties p,String key){var value=Objects.requireNonNull(p.getProperty(key),key).strip();if(value.isBlank()||value.length()>256)throw new IllegalArgumentException(key);return value;}
+    private static void number(Properties p,String key,double lo,double hi){double value=Double.parseDouble(text(p,key));if(!Double.isFinite(value)||value<lo||value>hi)throw new IllegalArgumentException(key);}
+    public static void validate(Properties before,Properties after,Predicate<String> stat,Predicate<String> trait,Predicate<String> material){for(String key:List.of("custom-skills","custom-stats","gear-stats"))if(!ids(after,key).containsAll(ids(before,key)))throw new IllegalArgumentException("CONFIG_RETAINS_REGISTERED_IDS");var stats=ids(after,"custom-stats");Predicate<String> known=id->stats.stream().anyMatch(s->id.equals("hearth/"+s))||stat.test(id);
+        for(String id:stats){String k="stat."+id+".";text(after,k+"name");if(!trait.test(text(after,k+"trait")))throw new IllegalArgumentException("RPG_TRAIT");number(after,k+"coefficient",-10000,10000);}
+        for(String id:ids(after,"custom-skills")){String k="skill."+id+".";text(after,k+"name");if(!known.test(text(after,k+"passive-stat"))||!Set.of("HEAL","SPEED","HASTE","RESISTANCE").contains(text(after,k+"active-effect")))throw new IllegalArgumentException("RPG_SKILL_REFERENCE");number(after,k+"passive-base",-10000,10000);number(after,k+"passive-per-level",-10000,10000);number(after,k+"active-value",0,10000);number(after,k+"active-seconds",1,600);number(after,k+"active-mana",0,100000);number(after,k+"active-cooldown",1,3600);}
+        for(String id:ids(after,"gear-stats")){String k="gear."+id+".";if(!known.test(text(after,k+"stat"))||!text(after,k+"enchant-key").matches("[a-z0-9._-]+:[a-z0-9/._-]+"))throw new IllegalArgumentException("RPG_GEAR_REFERENCE");number(after,k+"upgrade-per-level",-10000,10000);number(after,k+"enchant-per-level",-10000,10000);number(after,k+"cap",0,1e6);for(String slot:text(after,k+"slots").split(","))if(!Set.of("main_hand","off_hand","head","chest","legs","feet").contains(slot.strip()))throw new IllegalArgumentException("RPG_SLOT");for(String value:text(after,k+"materials").split(","))if(!material.test(value.strip()))throw new IllegalArgumentException("RPG_MATERIAL");}
+        if(!Set.of("actionbar","betterhud","off").contains(text(after,"hud-mode")))throw new IllegalArgumentException("RPG_HUD_MODE");
+    }
+}

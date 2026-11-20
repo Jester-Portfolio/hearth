@@ -36,6 +36,7 @@
 | [ADR-0030: 공용/개인 거주·자원 월드](0030-residential-and-resource-worlds.md) | 사용자 요구 확정·시스템 구현/격리 검증·수치/운영 미수용 | 공용 건축 제한·크기별 영구 구매/확장·초대 공동 거주·자원 오버월드/지옥·단일 메뉴 |
 | [ADR-0031: 경제 AuraSkills 통합](0031-auraskills-economy-integration.md) | 사용자 채택·기반/접근·전투/TPA 1차 구현 | 공개 API·YAML+PG·공통 접근/전투·수락형 TPA, 사망/보상·실제 플레이/운영 수용 별도 |
 | [ADR-0032: 자체 설정형 인챈트](0032-native-enchantment-engine.md) | 사용자 자체 이식 요청·105종 구현/자동 검증 | MIT 출처·독립 효과 엔진·PDC/PG native 거래·정책 연동, 실제 수용 별도 |
+| [ADR-0033: 경제 공통 플랫폼 수명주기](0033-economy-platform-lifecycle.md) | 사용자 8개 작업 일괄 구현·자동 검증 | 강화/판매·출처 합산·설정 이전·자원 세대·관리/백업 복원, 콘텐츠/실제 수용 별도 |
 
 각 기록에는 다음 내용을 포함합니다.
 

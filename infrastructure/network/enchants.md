@@ -105,7 +105,7 @@ WorldGuard·개인 거주 ACL·월드 입장·PvP·전투 이동·사망/부적�
 
 보상 변환은 Hearth 최종 페널티 전에 처리한다. 추가 보너스는 같은 action/producer ID로 RewardCoordinator에 제출하며 이벤트 취소·페널티를 다시 검사한다. `penalty-worlds=novice_resource`로 초보 자원 월드에 고레벨 감소를 지정할 수 있다. 새 rpg-policy 예제는 이 범위이며, 키가 없는 기존 설정은 기존 전체 역할 정책을 유지한다.
 
-자동 판매는 이번 범위에서 새로 구현하지 않았다. `deliveryObserver`는 Telepathy가 **실제로 인벤토리에 넣은 양**과 action/producer를 main thread에서 알린다. 향후 판매 모듈은 그 native 물품을 기존 PG/native 거래로 소비하고 영수증 ID로 중복 지급을 막아야 한다. 알림만으로 화폐를 지급하거나 callback 실패 후 무조건 재시도하지 않는다. Root RewardCoordinator의 API도 추가 생산자/판매 연동 경계로 유지한다.
+`deliveryObserver`는 Telepathy가 **실제로 인벤토리에 넣은 양**과 action/producer를 main thread에서 알린다. [공통 플랫폼](platform.md)의 자동 판매는 이를 검사 예약으로 연결하고, 최신 native 물품을 기존 PG/native 거래로 소비하며 영수증 ID로 중복 지급을 막는다. 알림만으로 화폐를 지급하거나 callback 실패 후 무조건 재시도하지 않는다. Root RewardCoordinator의 API도 추가 생산자/판매 연동 경계로 유지한다.
 
 ## 기록·실패·복구
 
@@ -122,3 +122,5 @@ WorldGuard·개인 거주 ACL·월드 입장·PvP·전투 이동·사망/부적�
 기준은 [CrazyEnchantments 커밋 6ecea9a](https://github.com/Crazy-Crew/CrazyEnchantments/tree/6ecea9a19affa811a8e23dd47fe647482507b82c)이다. MIT·Copyright (c) 2016-2023 CrazyCrew를 [번들 라이선스](../../src/main/resources/META-INF/licenses/CrazyEnchantments-MIT.txt)와 JAR에서 보존한다. 외부 플러그인/원본 바이너리는 배포하지 않는다.
 
 `python3 scripts/import_crazy_enchantments.py --source <깨끗한 고정 source checkout> --output <새 후보 폴더>`는 동일 105종과 manifest를 재생성한다. 기존 출력/운영 설정 덮어쓰기를 거부한다. 후보를 diff로 검토해 반영하며 원본 업데이트를 자동 채택하지 않는다.
+
+[공통 플랫폼](platform.md)의 자동 판매는 이 최종 수집 알림을 실제 인벤토리 검사 예약으로 연결한다. 장비/강화·인챈트의 스탯은 출처별 공통 합산을 사용하고, 자원 세대가 바뀌어도 원래 논리 world key 또는 `role:<role>` 제한을 유지한다.

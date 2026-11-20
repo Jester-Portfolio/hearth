@@ -9,6 +9,9 @@ libraries:
   - 'com.zaxxer:HikariCP:${hikariVersion}'
 description: Hearth story foundations and optional dedicated economy runtime
 commands:
+  hearthplatform:
+    aliases: [플랫폼, 강화, 자동판매]
+    description: 장비·자동 판매·플랫폼 설정 및 관리
   hearthenchants:
     aliases: [인챈트]
     description: Hearth 특수 인챈트 적용·합성·회수·감정 및 관리자 설정
@@ -112,6 +115,8 @@ commands:
     description: Console-only isolated S4 verification
     permission: hearth.verify
 permissions:
+  hearth.platform.admin:
+    default: op
   hearth.enchants.admin:
     default: op
   hearth.story.manage:

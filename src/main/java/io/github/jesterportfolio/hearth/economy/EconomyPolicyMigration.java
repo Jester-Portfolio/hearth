@@ -1,0 +1,18 @@
+package io.github.jesterportfolio.hearth.economy;
+
+import java.sql.*;import java.util.*;
+
+/** 정지한 서버의 명시적 정책 이전. 재고/화폐/인벤토리/진행/운송 행은 수정하지 않는다. */
+public final class EconomyPolicyMigration {
+    private EconomyPolicyMigration(){}
+    public static EconomyContent validate(Properties before,Properties after){var old=EconomyContent.parse(before);var next=EconomyContent.parse(after);var keys=new HashSet<>(before.stringPropertyNames());keys.addAll(after.stringPropertyNames());for(String key:keys)if(!Objects.equals(before.getProperty(key),after.getProperty(key))&&!key.matches("(good\\.[a-z][a-z0-9_]*\\.(base|target)|demand\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*|facility\\.[a-z][a-z0-9_]*\\.(capacity|efficiency)|route\\.[a-z][a-z0-9_]*\\.(amount|delay)|spread|smoothing|max-step|impact|minimum|maximum|tick-millis)"))throw new IllegalArgumentException("POLICY_TOPOLOGY_OR_ID_CHANGE_REQUIRES_ADAPTER");if(!old.regions().equals(next.regions())||!old.goods().keySet().equals(next.goods().keySet())||!next.offline().equals("PAUSE")||next.fixtureBalance()!=0)throw new IllegalArgumentException("POLICY_IDENTITY");return next;}
+    public static void swap(Connection c,UUID realm,UUID request,String kind,String before,String after,boolean rollback)throws Exception{
+        if(!Set.of("economy","market").contains(kind)||!before.matches("[a-f0-9]{64}")||!after.matches("[a-f0-9]{64}"))throw new IllegalArgumentException("POLICY_SCOPE");String expected=rollback?after:before,wanted=rollback?before:after;
+        c.setAutoCommit(false);try{try(var s=c.prepareStatement("SELECT content_hash FROM hearth_economy.realm WHERE realm_id=? FOR UPDATE")){s.setObject(1,realm);try(var r=s.executeQuery()){if(!r.next())throw new SQLException("POLICY_REALM_MISSING");}}String table=kind.equals("economy")?"realm":"market_controller",column=kind.equals("economy")?"content_hash":"policy_hash";String actual;try(var s=c.prepareStatement("SELECT "+column+" FROM hearth_economy."+table+" WHERE realm_id=? FOR UPDATE")){s.setObject(1,realm);try(var r=s.executeQuery()){if(!r.next())throw new SQLException("POLICY_ROW_MISSING");actual=r.getString(1);}}
+            if(!Set.of(expected,wanted).contains(actual))throw new SQLException("POLICY_CAS");
+            try(var s=c.prepareStatement("SELECT name,before_hash,after_hash FROM hearth_economy.platform_config_change WHERE realm_id=? AND request_id=?")){s.setObject(1,realm);s.setObject(2,request);try(var r=s.executeQuery()){if(r.next()){if(!r.getString(1).equals("offline/"+kind)||!r.getString(2).equals(before)||!r.getString(3).equals(after))throw new SQLException("POLICY_REQUEST_CONFLICT");}else try(var insert=c.prepareStatement("INSERT INTO hearth_economy.platform_config_change VALUES(?,?,?,?,?,'PREPARED',now())")){insert.setObject(1,realm);insert.setObject(2,request);insert.setString(3,"offline/"+kind);insert.setString(4,before);insert.setString(5,after);insert.executeUpdate();}}}
+            if(!actual.equals(wanted))try(var s=c.prepareStatement("UPDATE hearth_economy."+table+" SET "+column+"=?,revision=revision+1 WHERE realm_id=? AND "+column+"=?")){s.setString(1,wanted);s.setObject(2,realm);s.setString(3,expected);if(s.executeUpdate()!=1)throw new SQLException("POLICY_CAS");}
+            try(var s=c.prepareStatement("UPDATE hearth_economy.platform_config_change SET state=? WHERE realm_id=? AND request_id=?")){s.setString(1,rollback?"ROLLED_BACK":"COMMITTED");s.setObject(2,realm);s.setObject(3,request);s.executeUpdate();}c.commit();
+        }catch(Exception e){c.rollback();throw e;}finally{c.setAutoCommit(true);}
+    }
+}

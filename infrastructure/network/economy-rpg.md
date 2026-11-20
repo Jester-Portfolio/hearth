@@ -43,9 +43,11 @@
 
 고레벨 페널티는 `penalty.kind=specific|average|sum|all`, `penalty.skills`, `penalty.minimum`으로 결정한다. 조건 충족 시 최종 채취/사냥 아이템 50% 무드랍, 바닐라 XP 별도 50% 무드랍, 최종 Aura XP ×0.5다. Fortune/Looting 결과를 다시 계산하지 않는다. 기본/파생 XP 이벤트를 중복 구독하지 않는다. Aura 전체 벌목/광역 채굴이 보호·최종 drop 이벤트를 호출하도록 설정을 투영하며, 취소된 벌목 블록에 XP가 생기는 2.4.0 경로도 방어한다.
 
-향후 커스텀 드랍·특수 인챈트·자동 판매 생산자는 같은 행동 ID로 `RpgRewards.deliver(action, producer, finalItems, giveOrSell)`에 최종 결과를 제출한다. 같은 producer는 한 번만 지급/판매한다. 실패/불명 후 재지급하지 않는다. 정상 숙련도 획득은 `gainXp`를 거쳐 이벤트에 제출한다. 임의 플러그인의 raw XP·직접 지급/직접 판매까지 Bukkit listener 하나로 통제한다고 보장하지 않는다.
+추가 커스텀 드랍·특수 인챈트 등 보상 생산자는 같은 행동 ID로 `RpgRewards.deliver(action, producer, finalItems, giveOrSell)`에 최종 결과를 제출한다. 같은 producer는 한 번만 지급/판매한다. 실패/불명 후 재지급하지 않는다. 정상 숙련도 획득은 `gainXp`를 거쳐 이벤트에 제출한다. 임의 플러그인의 raw XP·직접 지급/직접 판매까지 Bukkit listener 하나로 통제한다고 보장하지 않는다.
 
 `hud-mode=actionbar|betterhud|off`. 기본은 추가 팩이 필요 없는 actionbar다. 선택 BetterHud는 고정 버전 2.1.0-SNAPSHOT-448·`merge-boss-bar: false`에서 공개 문자열 `[hearth_rpg]`를 제공한다. 운영자가 준비한 `hearth_rpg` HUD는 `default: false`로 둔다. 클라이언트의 팩 성공·실제 actor가 확인된 경우만 표시하고 세션/TTL을 확인한다. 정의/팩/호환 조건이 안 되면 actionbar로 돌아간다. 기존 HUD/팩 파일을 덮어쓰거나 자동 BetterHud reload를 하지 않는다. Aura 기본 actionbar/bossbar는 중복 방지를 위해 끈다.
+
+[공통 플랫폼](platform.md)은 강화 실제 작업/정산·자동 판매·장비/패시브/인챈트 출처 합산·설정/정지 정책 이전·자원 세대를 이 기반에 추가한다. bridge와 실제 작업의 범위를 구분하고 같은 저장/보호 정본을 사용한다.
 
 ## 보존·백업
 

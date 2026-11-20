@@ -1,0 +1,4 @@
+# Merge into an existing survival economy RPG backend; no operating activation implied.
+hearth-platform:
+  enabled: false
+# First enabled start installs platform.properties without replacing an existing file.

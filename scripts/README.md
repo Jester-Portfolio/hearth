@@ -274,3 +274,9 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 `import_crazy_enchantments.py --source CLEAN_PINNED_CHECKOUT --output NEW_CANDIDATE`는 고정 MIT 소스의 105개 정의/manifest/라이선스를 새 후보에 생성한다. dirty/wrong commit/기존 출력은 거부하며 운영 설정을 덮어쓰지 않는다. [대응표](../docs/enchant-port-map.md)와 diff를 검토한다.
 
 `verify_auraskills.py --enchants`는 새 소유 native root에 현재 `stageNativeEconomyRuntime -PnativeEconomyWorkspace=ROOT` fixture를 준비한 뒤 기존 Aura PASS cold source/고정 JAR를 받아 E011 PG 13개와 준비/복원 두 Paper를 실행한다. `--enchants-effects-final --enchants-final-phase effects|arrows`는 같은 계약의 PASS source에서 변경된 임시 블록/화살 API만 한 JVM으로 재검사하며 DB 회귀를 반복하지 않는다. 기존 필수 인자·소유 표식/localhost·CPU/RSS/600초·최대 두 JVM/원본 보존을 유지한다. Player를 만들거나 실제 행동을 대체하지 않는다. 상세 실행 증거와 한계는 [검증 기록](../docs/enchant-system-verification.md), 설정/명령은 [운영 가이드](../infrastructure/network/enchants.md)를 따른다.
+
+## 경제 공통 플랫폼
+
+`verify_auraskills.py --platform`은 기존 Aura/native PASS cold source에서 E012 PG 행렬과 준비/복원 두 Paper를 실행한다. `--platform-db-evidence ROOT`는 PG15개/정상 종료와 관련 store/DDL/fixture 바이트가 같은 경우만 기존 DB 증거를 재사용하고 신규 정지 정책 CLI5개는 실행한다. `--platform-contexts`는 실제 전체 백업에서 복원한 cold source에서 활성+후속 pending 세대/논리 월드 제한을 두 JVM으로 확인한다. `--platform-final`은 이후 Player 접근 경계 등 좁은 변경의 복원 한 JVM이며 기존 DB/전체 행렬을 반복하지 않는다. 공통 필수 인자·소유/localhost/EULA·CPU/RSS/600초·최대 두 Paper와 실제 Player 합성 금지를 유지한다.
+
+`verify_platform_backup.py --source PASSED_ROOT --workspace OWNED_PLATFORM_ROOT --restored-source FRESH_NATIVE_ROOT`는 기존 정지 전체 Paper/PG 백업 도구의 CPU2/90초/12GiB 한도에서 bundle/manifest 검증·복원본을 만든다. 서비스를 시작하지 않으며 복원본 JVM 수용은 위의 별도 context 시험으로 기록한다. [통합 증거](../docs/economy-platform-verification.md)와 [명령/설정·정지 정책 도구](../infrastructure/network/platform.md)를 따른다.

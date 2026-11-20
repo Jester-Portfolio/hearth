@@ -280,3 +280,13 @@ tasks.register<Jar>("auraProbeJar") {
     archiveClassifier.set("aura-probe")
     from(auraProbe.output, auraModel.output)
 }
+
+// 정지 서버의 검토된 정책 이전. 운영 실행에는 별도 승인이 필요합니다.
+tasks.register<JavaExec>("nativePolicyTool") {
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets.main.get().output + configurations.compileClasspath.get() + configurations.runtimeClasspath.get()
+    mainClass.set("io.github.jesterportfolio.hearth.administration.NativePolicyTool")
+    maxHeapSize = "256m"
+    jvmArgs("-XX:ActiveProcessorCount=2", "-Djava.io.tmpdir=/home/server/hearth-tmp/gradle-tmp")
+    doFirst { args(providers.gradleProperty("policyAction").get(),providers.gradleProperty("policyPaper").get(),providers.gradleProperty("policyKind").get(),providers.gradleProperty("policyCandidate").get(),providers.gradleProperty("policyPlan").get(),providers.gradleProperty("policyOffline").get()) }
+}

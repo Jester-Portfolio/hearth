@@ -6,6 +6,8 @@
 
 ## 프로젝트 목표·현재 단계
 
+[경제 공통 플랫폼 8개 일괄 배치](economy-platform-verification.md)로 실제 강화 작업·자동 판매·출처별 능력치 합산·설정/정지 정책 이전과 롤백·자원 세대 교체·공통 관리/관측을 기존 엔진에 연결했다. 관련 고유 단위/회귀51개·PG15개·정지 정책 CLI5개, 실제 자원 교체/두 JVM과 전체 백업 복원본의 두 JVM을 검증했다. 기본 비활성·운영 미적용이며 콘텐츠/밸런스·실제 클라이언트·지속 부하 수용은 별도다. [플랫폼 운영 가이드](../infrastructure/network/platform.md)를 따른다.
+
 [자체 인챈트](enchant-system-verification.md)는 CrazyEnchantments 고정 소스 **105/105종에 실행 규칙/모듈을 대응**하고 책 적용·합성·선택 회수·감정/지급·관리 GUI/YAML·PG E011/native 거래와 기존 보호/보상 정책을 연결했다. 관련 단위/PG·두 Paper JVM 저장 복원과 최종 효과 영향 검사를 통과했다. **구현 대응률은 실제 플레이 검증률이 아니다.** 기본 비활성·실제 클라이언트/다인·부하/운영 배포는 미검증이며 수치/획득처는 추후 밸런싱한다. [운영 가이드](../infrastructure/network/enchants.md)를 따른다.
 
 [경제 RPG 잔여 시스템 일괄 통합](economy-rpg-verification.md)으로 초보 자원/엔드 물리 확장, 월드/개인 소유자 PvP, 사망 확률/부적/독립 XP·원본 HOLD, 개별 오브젝트 권한/간접 보호, 최종 보상, 강화/커스텀 능력과 편의 UI/HUD를 연결했다. 기존 [공통 입장](auraskills-admission-verification.md)·[30초 전투/수락형 TPA](combat-travel-verification.md)를 재사용하며 새 Home도 같은 경계로 이동한다. 순수 정책/권한 10개·실제 PG 13개, 공용 5월드/기존 개인 거주의 두 JVM 및 최종 코드 복원을 통과했다. **기본 비활성**, 콘텐츠/레벨·사망 산정/부적 범위 등 미정값은 설정 대기이며 실제 플레이·동접/장기 부하·운영 배포는 미검증이다. 저장은 [ADR-0031](decisions/0031-auraskills-economy-integration.md)의 Aura YAML+기존 PG를 유지한다. [설정/명령](../infrastructure/network/economy-rpg.md)을 따른다.
