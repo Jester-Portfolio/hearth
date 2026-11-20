@@ -1,0 +1,273 @@
+{
+  "date": "2026-11-20",
+  "scope": "survival_housing_system_before_balance_and_layout",
+  "outcome": "PASS",
+  "final_plugin_sha256": "bf5e1717c15366867c32dfd7ab71f72b7f6deec285233dd4637803859083fabe",
+  "java_unique_tests": 37,
+  "java_classes": {
+    "io.github.jesterportfolio.hearth.survival.housing.HousingStateTest": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "io.github.jesterportfolio.hearth.survival.housing.HousingSettingsTest": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "io.github.jesterportfolio.hearth.survival.economy.NativeMenuRulesTest": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "io.github.jesterportfolio.hearth.survival.WorldTravelTest": {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "io.github.jesterportfolio.hearth.survival.economy.NativeTransactionsTest": {
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "unit_evidence": "/home/server/hearth-tmp/hearth-housing.2p4zbq4h/unit-results",
+  "real_PG_checks": {
+    "count": 21,
+    "outcome": "PASS",
+    "checks": [
+      "initialized_housing_cannot_be_silently_disabled",
+      "one_owner_concurrent_purchase_has_one_reservation",
+      "reservation_never_debits_money",
+      "request_id_is_bound_to_original_owner",
+      "prepared_world_identity_cannot_be_replaced",
+      "real_SQL_23514_rolls_back_wallet_house_and_receipt_together",
+      "revoked_request_cannot_charge_wallet",
+      "unknown_commit_retains_one_paid_receipt_and_closed_house",
+      "repeat_commit_does_not_charge_again",
+      "activation_preserves_native_inventory_payload_and_world_identity",
+      "expansion_uses_tier_difference_only",
+      "expansion_keeps_original_world_and_total_price",
+      "new_price_version_does_not_reprice_existing_world",
+      "concurrent_invitation_acceptance_has_one_revision_winner",
+      "accepted_resident_and_visitor_have_distinct_permissions",
+      "resident_can_leave_without_owner_and_loses_access",
+      "concurrent_free_plot_claims_are_distinct",
+      "repeat_plot_claim_is_idempotent",
+      "full_plot_pool_preserves_existing_assignments",
+      "foreign_context_cannot_administer_owned_world",
+      "E008_checksum_mismatch_rejects_without_replacing_original_data"
+    ],
+    "evidence": "/home/server/hearth-tmp/hearth-native-economy-run.qznxvxku/database-console.log"
+  },
+  "runs": [
+    {
+      "scope": "TWO_JVM_FULL",
+      "outcome": "FAIL",
+      "housing": true,
+      "housing_recheck": null,
+      "failure": "RuntimeError: NATIVE_ROLE_HOLD_paper-native-1",
+      "cleanup_errors": [],
+      "duration_seconds": 22.699,
+      "plugin_sha256": "6f9fd0f631da4cb7bc1e8b79c2d2e6dd230763c7e56be7b8b7025f9582c8a7a6",
+      "checks": [],
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "cpu": 2,
+        "combined_rss_stop_mib": 6144,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144
+      },
+      "evidence": "/home/server/hearth-tmp/hearth-native-economy-run.qznxvxku/native-economy-result.json",
+      "process_summary": {
+        "database": {
+          "exit_code": 0,
+          "duration_seconds": 22.093,
+          "ready_seconds": null,
+          "max_sampled_rss_kib": 241352,
+          "min_sampled_host_available_kib": 12499992
+        },
+        "paper-native-1": {
+          "exit_code": 0,
+          "duration_seconds": 18.78,
+          "ready_seconds": 13.04,
+          "max_sampled_rss_kib": 969508,
+          "min_sampled_host_available_kib": 12500204
+        }
+      }
+    },
+    {
+      "scope": "TWO_JVM_FULL",
+      "outcome": "FAIL",
+      "housing": true,
+      "housing_recheck": true,
+      "failure": null,
+      "cleanup_errors": [
+        "OWNED_PORT_REMAINS"
+      ],
+      "duration_seconds": 41.642,
+      "plugin_sha256": "6592e7683e6eb97ef867a68bc2c237828f53b612fbfb6a355eb90e36f4aa7022",
+      "checks": [
+        "original_economy_market_rows_preserved",
+        "original_economy_gathering_instance_rows_preserved",
+        "original_economy_shipment_rows_preserved",
+        "original_economy_trade_rows_preserved",
+        "original_economy_peer_trade_rows_preserved",
+        "original_economy_tick_flow_rows_preserved",
+        "original_economy_realm_rows_preserved",
+        "original_economy_event_rows_preserved",
+        "original_economy_account_rows_preserved",
+        "isolated_copied_spawn_floor_prepared_without_modifying_source_world",
+        "actual_private_flat_world_created_protected_and_activated",
+        "actual_WG_queries_allow_owner_and_deny_nonmember_or_outside_boundary",
+        "purchase_debits_once_without_replacing_native_inventory",
+        "expansion_preserves_world_UUID_seed_and_existing_building",
+        "expansion_charges_only_three_hundred_difference",
+        "actual_WG_member_build_and_readonly_visitor_access_are_distinct",
+        "shared_home_load_is_independent_of_owner_online_state",
+        "revoked_resident_is_removed_from_WG_and_cached_entry_authority",
+        "public_plot_owner_can_build_only_in_assigned_region",
+        "idle_world_unloads_without_deleting_ownership_or_world_files",
+        "on_demand_reload_preserves_existing_building_and_world_identity",
+        "second_JVM_restores_exact_house_owner_tier_and_identity",
+        "second_JVM_restores_revoked_roles_visitor_and_public_plot",
+        "second_JVM_keeps_building_expanded_border_and_WG_protection",
+        "second_JVM_never_recharges_purchase_or_expansion",
+        "original_inactive_worlds_registry_economy_mapping_and_database_control_preserved",
+        "owned_Paper_drains_PG_and_preserves_native_pending_markers_without_real_Player"
+      ],
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "cpu": 2,
+        "combined_rss_stop_mib": 6144,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144
+      },
+      "evidence": "/home/server/hearth-tmp/hearth-native-economy-run.pdoztmq7/native-economy-result.json",
+      "process_summary": {
+        "database": {
+          "exit_code": 0,
+          "duration_seconds": 41.021,
+          "ready_seconds": null,
+          "max_sampled_rss_kib": 232312,
+          "min_sampled_host_available_kib": 12369088
+        },
+        "paper-native-1": {
+          "exit_code": 0,
+          "duration_seconds": 21.843,
+          "ready_seconds": 13.079,
+          "max_sampled_rss_kib": 1043156,
+          "min_sampled_host_available_kib": 12368796
+        },
+        "paper-native-2": {
+          "exit_code": 0,
+          "duration_seconds": 16.376,
+          "ready_seconds": 12.961,
+          "max_sampled_rss_kib": 961128,
+          "min_sampled_host_available_kib": 12579112
+        }
+      }
+    },
+    {
+      "scope": "RESTORE_ONLY",
+      "outcome": "PASS",
+      "housing": true,
+      "housing_recheck": false,
+      "failure": null,
+      "cleanup_errors": [],
+      "duration_seconds": 19.314,
+      "plugin_sha256": "bf5e1717c15366867c32dfd7ab71f72b7f6deec285233dd4637803859083fabe",
+      "checks": [
+        "original_economy_housing_policy_rows_preserved",
+        "original_economy_gathering_instance_rows_preserved",
+        "original_economy_shipment_rows_preserved",
+        "original_economy_housing_catalog_rows_preserved",
+        "original_economy_market_mode_change_rows_preserved",
+        "original_economy_native_binding_rows_preserved",
+        "original_economy_house_rows_preserved",
+        "original_economy_housing_request_rows_preserved",
+        "original_economy_market_rows_preserved",
+        "original_economy_market_controller_rows_preserved",
+        "original_economy_trade_rows_preserved",
+        "original_economy_house_member_rows_preserved",
+        "original_economy_peer_trade_rows_preserved",
+        "original_economy_tick_flow_rows_preserved",
+        "original_economy_realm_rows_preserved",
+        "original_economy_event_rows_preserved",
+        "original_economy_housing_plot_rows_preserved",
+        "original_economy_account_rows_preserved",
+        "isolated_copied_spawn_floor_prepared_without_modifying_source_world",
+        "second_JVM_restores_exact_house_owner_tier_and_identity",
+        "second_JVM_restores_revoked_roles_visitor_and_public_plot",
+        "second_JVM_keeps_building_expanded_border_and_WG_protection",
+        "saved_home_entry_remains_pinned_after_same_chunk_reassignment",
+        "second_JVM_never_recharges_purchase_or_expansion",
+        "readonly_receipt_inspection_does_not_require_runtime_initialization",
+        "original_inactive_worlds_registry_economy_mapping_and_database_control_preserved",
+        "owned_Paper_drains_PG_and_preserves_native_pending_markers_without_real_Player"
+      ],
+      "limits": {
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "cpu": 2,
+        "combined_rss_stop_mib": 6144,
+        "paper_starts_max": 2,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "host_available_min_mib": 6144
+      },
+      "evidence": "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/native-economy-result.json",
+      "process_summary": {
+        "database": {
+          "exit_code": 0,
+          "duration_seconds": 18.674,
+          "ready_seconds": null,
+          "max_sampled_rss_kib": 233824,
+          "min_sampled_host_available_kib": 12602556
+        },
+        "paper-native-2": {
+          "exit_code": 0,
+          "duration_seconds": 16.24,
+          "ready_seconds": 12.82,
+          "max_sampled_rss_kib": 935472,
+          "min_sampled_host_available_kib": 12602556
+        }
+      }
+    }
+  ],
+  "cleanup_followup": {
+    "outcome": "PASS",
+    "scope": "cleanup_only_after_completed_two_JVM_housing_checks",
+    "original_result": "/home/server/hearth-tmp/hearth-native-economy-run.pdoztmq7/native-economy-result.json",
+    "original_sha256": "fceaf34af82d0f56f63ad38cb3ffe69c4e55706feda9a046102c731b4243cbf3",
+    "original_unchanged": true,
+    "all_owned_recorded_PIDs_absent": true,
+    "all_owned_TCP_ports_closed": true,
+    "functional_checks_passed": 27,
+    "server_rerun": false,
+    "explanation": "Binding may fail for TCP TIME_WAIT; ECONNREFUSED confirms no listener after owned processes exited."
+  },
+  "python_socket_checks": {
+    "count": 3,
+    "outcome": "PASS",
+    "evidence": "/home/server/hearth-tmp/hearth-housing.2p4zbq4h/port-tests.log"
+  },
+  "actual_minecraft_client": "NOT_RUN",
+  "fake_Player": "NOT_USED",
+  "operating_changes": "NONE",
+  "balance_and_terrain_acceptance": "DEFERRED",
+  "resource_world_reset": "NOT_IMPLEMENTED_OR_EXECUTED",
+  "default_housing_enabled": false,
+  "default_purchases_enabled": false
+}

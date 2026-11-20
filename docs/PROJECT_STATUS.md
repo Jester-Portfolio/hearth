@@ -1,6 +1,6 @@
 # Hearth 프로젝트 현황
 
-마지막 문서 정리: **2026-11-18**. 구현 확인 기준은 현재 main의 코드와 아래 기능별 검증 기록이다. 문서 정리와 게임 시험은 각 기록의 실행 범위로 구분한다. [과거 현황](PROJECT_STATUS-archive-2026-10-27.md)은 이력으로 보존하며 현재 상태는 이 문서를 우선한다.
+마지막 문서 정리: **2026-11-20**. 구현 확인 기준은 현재 main의 코드와 아래 기능별 검증 기록이다. 문서 정리와 게임 시험은 각 기록의 실행 범위로 구분한다. [과거 현황](PROJECT_STATUS-archive-2026-10-27.md)은 이력으로 보존하며 현재 상태는 이 문서를 우선한다.
 
 [시험 임시 경로](test-workspace-migration-verification.md)는 사용자 승인으로 `/home/server/hearth-tmp`로 이전했다. Python/Java/Gradle과 캐시·JVM/AI 임시 파일에 같은 경계를 적용하고 새 파일시스템에서 두 JVM/PG 복원과 실제 AI를 확인했다. 과거 `/tmp` 증거는 읽기 전용 복사 원본으로 보존하며 운영 마운트/서비스는 바꾸지 않았다.
 
@@ -16,13 +16,13 @@ Hearth는 현대 과학·기술 지식을 마법 없는 중세 세계에서 활�
 
 [로비·경제 네트워크](network-verification.md)는 같은 JAR의 Velocity/Paper 진입점, modern 정품 인증 전달·초기 로비, 서버 선택·경제 저장 후 복귀, HMAC/단일 전환 허가·실패 원본 보존·reload HOLD와 새 private 설정 생성을 연결했다. Java34개/Python7개와 최종 실제 프록시·두 Paper/단일 복사 PG의 13개 확인(38.56초)을 통과했다. 실제 정품 접속/서버 이동·클릭과 이미지/운영 수용은 미검증이다. [설정/사용법](../infrastructure/network/README.md)을 따르며 기존 운영 주소/서비스를 전환하지 않았다.
 
-[일반 생존 3월드](decisions/0026-vanilla-survival-world-selection.md)는 새 `survival` 모드에서 경제 Paper 내부의 거주·야생·지옥과 `/월드` 인벤토리 선택창을 연결했다. 바닐라 개인 데이터/전투/사망 규칙을 사용하며 기존 RPG 경제 PG 데이터를 자동 이전하지 않는다. [검증 기록](survival-world-verification.md)과 [설정 안내](../infrastructure/network/survival.md)를 따른다. [기존 경제 엔진 연결](native-economy-verification.md)로 PG 화폐·상점/근거리 개인 거래·지역 생산/제련/수급/운송·공개 정보와 거래 기록을 추가했다. native 인벤토리는 유지하고 거래 시점 그림자 CAS/원자 PG 거래·실패 HOLD를 사용한다. 거주지 보호/야생 리셋 정책·콘텐츠/실제 플레이·부하/운영 적용은 후속 범위다.
+[일반 생존 3월드](decisions/0026-vanilla-survival-world-selection.md)는 새 `survival` 모드에서 경제 Paper 내부의 거주·야생·지옥과 `/월드` 인벤토리 선택창을 연결했다. 바닐라 개인 데이터/전투/사망 규칙을 사용하며 기존 RPG 경제 PG 데이터를 자동 이전하지 않는다. [검증 기록](survival-world-verification.md)과 [설정 안내](../infrastructure/network/survival.md)를 따른다. [기존 경제 엔진 연결](native-economy-verification.md)로 PG 화폐·상점/근거리 개인 거래·지역 생산/제련/수급/운송·공개 정보와 거래 기록을 추가했다. native 인벤토리는 유지하고 거래 시점 그림자 CAS/원자 PG 거래·실패 HOLD를 사용한다. 거주 기능의 실제 수용/지형·야생 리셋 정책·콘텐츠/실제 플레이·부하/운영 적용은 후속 범위다.
 
 [시장 자동 운영](market-automation-verification.md)은 경제 에이전트가 부족량·도착 예정량·현지 소비/생산 재료를 계산해 출하량을 배분하고 BALANCED/RESTOCK/CONSERVE를 안정적으로 전환한다. 사용자 선택에 따라 **외부 LLM 없이 운영**하며, 기존 생산/가격/거래 엔진과 E007 컨트롤러의 원자 저장·경합/실패 방어·재시작 복원을 연결했다. 선택형 모델 후보 연동은 기본 해제이며 운영 환경에는 적용하지 않았다. [설정/관리](../infrastructure/network/market-automation.md)를 따른다.
 
 현재 경제 서버는 [단일 스폰·종류별 상점](spawn-shops-verification.md)을 기준으로 한다. 여러 마을/방문 동선·스토리식 안내를 추가하지 않으며, 같은 거주 스폰에 종류별 NPC 한 명과 `/상점` 공통 선택창을 둔다. 세 월드 어디서든 구매·판매하고 기존 PG/native 거래·HOLD를 유지한다. 새 예제는 공통 시장 하나/5종/15상품이며 기존 realm은 자동 변환하지 않는다.
 
-[거주/자원 월드 확장 설계](decisions/0030-residential-and-resource-worlds.md)를 추가했다. 기본 거주는 지정 구획만 수정하고, 구매형 개인 거주는 금액별 크기·건축물 보존 확장·초대 공동 거주, 자원용은 오버월드/지옥으로 구분한다. **이번 반영은 설계 문서이며 공용 구획/개인 월드 구매·확장·초대와 네 종류 메뉴는 미구현**이다. 현재 실행 코드는 기존 공통 3월드이며 운영 데이터를 변경하지 않았다.
+[거주 시스템](housing-system-verification.md)을 공통 3월드에 연결했다. `/월드`에서 제한된 기본 거주/구획·구매형 개인 거주·자원 오버월드/지옥으로 진입하며, 구매/차액 확장·초대/방문/해제·영속 월드/권한·포탈/리스폰·저장 종료를 구현했다. Java37개·실제 PG21개와 두 JVM 경로·최종 복원을 검증했다. **시스템/구매는 기본 비활성**, 가격/크기·정원/로드 한도·구획/지형·밸런스는 사용자 지시대로 추후 설정한다. 실제 클라이언트/장기 부하·자원 자동 초기화/운영 적용은 미완료이며 기존 데이터를 변경하지 않았다. [설정/관리](../infrastructure/network/housing.md)를 따른다.
 
 ## 구현·검증 현황
 

@@ -237,3 +237,9 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 ### 단일 스폰 상점
 
 `verify_native_economy.py --spawn-market`는 새 단일 스폰 예제/realm을 사용하고, `.hearth-spawn-shops-isolated` (`Hearth spawn shops isolated v1` + 개행) 표식을 추가한다. 정상 모드와 같은 소유/localhost/자원 한도에서 새 복사본의 NPC 바닥만 준비한다. 기존 세계 원본/운영 지형을 바꾸지 않으며 실제 Player를 만들지 않는다. fixture 완료 표식은 다음 JVM에서 유지한다. 이미 검증된 E006 신규 연결 행렬은 반복하지 않고 helper의 restore 경로에 새 대상 realm ID를 먼저 기록하여 기존 행을 모두 비교한다. 실제 PG 거래·실패/HOLD·같은 스폰의 종류별 실제 NPC·다음 JVM 복원을 함께 검사한다. [단일 스폰 결과/실패 보완과 한계](../docs/spawn-shops-verification.md)를 따른다.
+
+### 거주 시스템
+
+`verify_native_economy.py --housing`는 새 native 소유 경로에 `.hearth-housing-isolated` (`Hearth housing isolated v1` + 개행)와 기존 스폰 시험 표식을 준비한다. 단일 스폰 예제와 거주 테스트용 32/64 크기·100/400 가격을 새 realm에만 사용한다. E008 실제 PG 경합/실패/원본 보존과 실제 Paper/WG의 개인 월드·차액 확장/블록 보존·역할/구획·두 JVM 복원을 묶어 검사한다. Player/클릭/인증을 합성하지 않으며 기존 localhost/자원/시간 한도를 유지한다.
+
+이미 통과한 PG 행렬 뒤 Paper 보완만 확인할 때는 새 소유 경로에서 `--housing --housing-recheck`를 사용한다. 최종 순수 제어/보호 보완의 복원은 `--housing --restore-source PASSED_HOUSING_ROOT`로 한 JVM만 검사한다. 원본 결과의 유일한 실패가 종료 후 OWNED_PORT_REMAINS였을 때만, 소유 경로의 `--cleanup-followup FILE`로 원본 SHA-256/경로·기능/프로세스 정상 종료·독립된 포트/PID 확인 증거를 명시할 수 있다. 일반 실패를 PASS로 바꾸거나 원시 결과를 덮지 않는다. 포트 종료 확인은 bind 실패 시 ECONNREFUSED를 검사해 TIME_WAIT와 실제 listener를 구분하며 `test_native_ports.py`로 회귀한다. [실행 결과/제한](../docs/housing-system-verification.md)을 따른다.

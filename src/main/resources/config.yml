@@ -127,3 +127,8 @@ market-automation:
   low-stock-bps: 5000
   ai-mode: none
   ai-address: http://127.0.0.1:11435/api/generate
+
+# 구매/공동 거주 시스템. 수치와 보호 구획은 별도 검토 설정으로 준비합니다.
+housing:
+  enabled: false
+  content-file: housing.properties

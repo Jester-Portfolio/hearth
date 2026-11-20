@@ -167,7 +167,7 @@ public final class HearthPlugin extends JavaPlugin {
         String phase="REFUSED";int worlds=0,held=0;boolean ai=false;
         if(mode.equals("story")&&storyRuntime!=null){phase=storyRuntime.phase().name();ai=storyRuntime.aiPreparationRecorded();var values=storyRuntime.worlds().values();worlds=values.size();for(var world:values)if(world.state()==io.github.jesterportfolio.hearth.lifecycle.WorldLifecycle.State.ERROR_HOLD||world.state()==io.github.jesterportfolio.hearth.lifecycle.WorldLifecycle.State.RECOVERY_REQUIRED)held++;}
         else if(mode.equals("economy")&&economyRuntime!=null){phase=economyRuntime.phase().name();try{var world=economyRuntime.economy().world;worlds=1;if(world.state()==io.github.jesterportfolio.hearth.lifecycle.WorldLifecycle.State.ERROR_HOLD||world.state()==io.github.jesterportfolio.hearth.lifecycle.WorldLifecycle.State.RECOVERY_REQUIRED)held=1;}catch(NullPointerException unavailable){}}
-        else if(mode.equals("survival")&&survivalRuntime!=null){ai=survivalRuntime.aiPreparationRecorded();phase=survivalRuntime.phase().name();worlds=survivalRuntime.worlds().worlds().size();held=phase.equals("HOLD")?worlds:0;}
+        else if(mode.equals("survival")&&survivalRuntime!=null){ai=survivalRuntime.aiPreparationRecorded();phase=survivalRuntime.phase().name();worlds=survivalRuntime.loadedWorldCount();held=phase.equals("HOLD")?worlds:0;}
         else if(mode.equals("lobby")&&lobbyRuntime!=null){phase=lobbyRuntime.phase().name();worlds=1;held=phase.equals("HOLD")?1:0;}
         else if(mode.equals("story-prepare")&&storyPreparation!=null)phase=storyPreparation.phase().name();
         return new io.github.jesterportfolio.hearth.administration.RuntimeObservation.State(phase,worlds,held,ai);
