@@ -7,7 +7,7 @@ import io.github.jesterportfolio.hearth.survival.enchants.Formula;
 public record PlatformSettings(boolean upgrade, int maxLevel, Formula cost, Formula chance,
         String failure, Map<String,Integer> materials, Set<String> equipment,
         boolean autosell, Set<String> goods, int interval, int quantity,
-        boolean resourceReset, int resetTimeout, String stacking, double statCap) {
+        boolean resourceReset, int resetTimeout, String stacking, double statCap, JobPolicy jobs) {
     public static PlatformSettings parse(Properties p) {
         if (!"1".equals(p.getProperty("version"))) throw new IllegalArgumentException("PLATFORM_VERSION");
         var mats=new TreeMap<String,Integer>();
@@ -17,7 +17,7 @@ public record PlatformSettings(boolean upgrade, int maxLevel, Formula cost, Form
             Map.copyOf(mats),set(p,"upgrade.equipment"),bool(p,"autosell.enabled"),set(p,"autosell.goods"),
             integer(p,"autosell.interval-ticks",20,12000),integer(p,"autosell.max-quantity",1,4096),
             bool(p,"resource-reset.enabled"),integer(p,"resource-reset.timeout-seconds",10,300),required(p,"stats.stacking"),
-            Double.parseDouble(required(p,"stats.cap")));
+            Double.parseDouble(required(p,"stats.cap")),JobPolicy.parse(p,bool(p,"resource-reset.enabled")));
         if(!Set.of("KEEP","DOWN","RESET","DESTROY").contains(result.failure)||
            !Set.of("ADD","MAX_ABSOLUTE").contains(result.stacking)||!Double.isFinite(result.statCap)||result.statCap<=0||result.statCap>1e6||
            result.equipment.isEmpty()||result.equipment.stream().anyMatch(s->!Set.of("armor","helmet","boots","sword","bow","axe","pickaxe","tool","hoe","damaged-items","any").contains(s))||

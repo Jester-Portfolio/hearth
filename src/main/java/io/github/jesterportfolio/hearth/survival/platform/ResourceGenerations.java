@@ -16,10 +16,11 @@ public final class ResourceGenerations {
     public boolean allowed(World world){var role=p.rpg.runtime.worlds().role(world);return role==null||!blocked.contains(role);}
     public boolean busy(){return working;}public List<Reset> pending(){return List.copyOf(pending.values());}public Map<SurvivalWorld,Reset> active(){return Map.copyOf(active);}
     public CompletionStage<Void> open(){return p.store.resets().thenComposeAsync(rows->{CompletionStage<Void> chain=CompletableFuture.completedFuture(null);for(var row:rows){var role=SurvivalWorld.id(row.role());if(row.phase().equals("ACTIVE")){chain=chain.thenComposeAsync(v->load(row,true).thenComposeAsync(at->install(row,at,false),p.owner),p.owner);}else if(Set.of("PREPARING","READY").contains(row.phase())){pending.put(row.request(),row);blocked.add(role);}}return chain;},p.owner);}
-    public CompletionStage<Void> reset(SurvivalWorld role,long seed){
+    public CompletionStage<Void> reset(SurvivalWorld role,long seed){return reset(role,seed,UUID.randomUUID());}
+    public CompletionStage<Void> reset(SurvivalWorld role,long seed,UUID request){
         if(!p.settings().resourceReset()||role==SurvivalWorld.RESIDENCE||working||blocked.contains(role)||p.maintenance())return CompletableFuture.failedFuture(new IllegalStateException("RESET_DISABLED_OR_BUSY"));
         World old=Objects.requireNonNull(p.rpg.runtime.worlds().worlds().get(role));long generation=Optional.ofNullable(active.get(role)).map(Reset::generation).orElse(0L);String terrain=old.getWorldType()==WorldType.FLAT?"FLAT":"NORMAL";
-        working=true;blocked.add(role);deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(p.settings().resetTimeout());long start=System.nanoTime();UUID request=UUID.randomUUID();
+        working=true;blocked.add(role);deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(p.settings().resetTimeout());long start=System.nanoTime();
         return track(p.store.reserve(request,role.id(),old.getUID(),generation,seed,terrain).thenComposeAsync(row->{pending.put(row.request(),row);return load(row,false).thenComposeAsync(at->{guard();at.getWorld().save(true);return p.store.prepared(row,at.getWorld().getUID(),at.getX(),at.getY(),at.getZ()).thenComposeAsync(prepared->{pending.put(prepared.request(),prepared);return evacuate(prepared,at);},p.owner);},p.owner);},p.owner),start);
     }
     public CompletionStage<List<Reset>> inspect(){return p.store.resets().thenApplyAsync(rows->{for(var row:rows)if(Set.of("PREPARING","READY").contains(row.phase())){pending.put(row.request(),row);blocked.add(SurvivalWorld.id(row.role()));}return rows;},p.owner);}

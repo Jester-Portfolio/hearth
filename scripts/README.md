@@ -280,3 +280,7 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 `verify_auraskills.py --platform`은 기존 Aura/native PASS cold source에서 E012 PG 행렬과 준비/복원 두 Paper를 실행한다. `--platform-db-evidence ROOT`는 PG15개/정상 종료와 관련 store/DDL/fixture 바이트가 같은 경우만 기존 DB 증거를 재사용하고 신규 정지 정책 CLI5개는 실행한다. `--platform-contexts`는 실제 전체 백업에서 복원한 cold source에서 활성+후속 pending 세대/논리 월드 제한을 두 JVM으로 확인한다. `--platform-final`은 이후 Player 접근 경계 등 좁은 변경의 복원 한 JVM이며 기존 DB/전체 행렬을 반복하지 않는다. 공통 필수 인자·소유/localhost/EULA·CPU/RSS/600초·최대 두 Paper와 실제 Player 합성 금지를 유지한다.
 
 `verify_platform_backup.py --source PASSED_ROOT --workspace OWNED_PLATFORM_ROOT --restored-source FRESH_NATIVE_ROOT`는 기존 정지 전체 Paper/PG 백업 도구의 CPU2/90초/12GiB 한도에서 bundle/manifest 검증·복원본을 만든다. 서비스를 시작하지 않으며 복원본 JVM 수용은 위의 별도 context 시험으로 기록한다. [통합 증거](../docs/economy-platform-verification.md)와 [명령/설정·정지 정책 도구](../infrastructure/network/platform.md)를 따른다.
+
+## 영속 예약 작업
+
+`verify_auraskills.py --jobs`는 기존 플랫폼 PASS cold 복사본에서 E013 PG 행렬과 jobs-prepare/resume 두 Paper를 검사한다. `--jobs-db-evidence ROOT`는 독립적으로 통과/정상 종료한 PG16개와 JobStore/EconomyStore/JobPolicy·DDL·fixture 바이트가 동일할 때만 재사용한다. `--jobs-final`은 이후 순수 준비 경계 변경의 jobs-ready 한 JVM이며 기존 DB/전체 행렬을 반복하지 않는다. 기존 소유/localhost/EULA·CPU/RSS/600초·최대 두 Paper와 Player 합성 금지를 유지한다. [상세 증거](../docs/platform-jobs-verification.md)와 [설정/작업센터](../infrastructure/network/platform-jobs.md)를 따른다.
