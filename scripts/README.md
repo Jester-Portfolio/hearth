@@ -268,3 +268,9 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 ### 경제 RPG 일괄 통합 검증
 
 `verify_auraskills.py --rpg`는 기존 native PASS의 비활성 cold 복사본에서 E010 PG 경합/실패·공용 5월드와 커스텀 skill/stat/gear/UI를 함께 준비하고 두 Paper JVM에서 복원한다. 현재 `stageNativeEconomyRuntime`으로 fixture를 먼저 준비한다. `--rpg-final`은 RPG PASS cold 복사본에서 최종 변경 코드/PG 행렬과 복원 한 JVM만 실행한다. `--rpg-events-final`은 마지막 방문자 PvP/provider·이벤트 연결만 한 JVM에서 확인한다. `--rpg-db-evidence <이전 root>`는 RpgStore/E010/DB fixture hash가 같고 PG 검사 13개·정상 종료가 확인될 때만 DB 검사를 재사용한다. 코드가 달라지면 재사용을 거부한다. fixture 정책/밸런스 값은 운영값이 아니다. 기존 CPU/RSS/600초/최대 두 JVM·localhost·소유 경계와 실제 Player 합성 금지를 유지한다. 상세 증거는 [일괄 통합 검증](../docs/economy-rpg-verification.md)을 따른다.
+
+## 자체 인챈트 이식·검증
+
+`import_crazy_enchantments.py --source CLEAN_PINNED_CHECKOUT --output NEW_CANDIDATE`는 고정 MIT 소스의 105개 정의/manifest/라이선스를 새 후보에 생성한다. dirty/wrong commit/기존 출력은 거부하며 운영 설정을 덮어쓰지 않는다. [대응표](../docs/enchant-port-map.md)와 diff를 검토한다.
+
+`verify_auraskills.py --enchants`는 새 소유 native root에 현재 `stageNativeEconomyRuntime -PnativeEconomyWorkspace=ROOT` fixture를 준비한 뒤 기존 Aura PASS cold source/고정 JAR를 받아 E011 PG 13개와 준비/복원 두 Paper를 실행한다. `--enchants-effects-final --enchants-final-phase effects|arrows`는 같은 계약의 PASS source에서 변경된 임시 블록/화살 API만 한 JVM으로 재검사하며 DB 회귀를 반복하지 않는다. 기존 필수 인자·소유 표식/localhost·CPU/RSS/600초·최대 두 JVM/원본 보존을 유지한다. Player를 만들거나 실제 행동을 대체하지 않는다. 상세 실행 증거와 한계는 [검증 기록](../docs/enchant-system-verification.md), 설정/명령은 [운영 가이드](../infrastructure/network/enchants.md)를 따른다.

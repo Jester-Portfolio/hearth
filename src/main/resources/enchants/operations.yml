@@ -1,0 +1,43 @@
+# 개발 기본값. 운영 확률/비용/개수는 추후 밸런싱한다.
+version: 1
+enabled: false
+limits:
+  MAIN_HAND: 8
+  OFF_HAND: 8
+  HEAD: 8
+  CHEST: 8
+  LEGS: 8
+  FEET: 8
+type-limits: {}
+APPLY:
+  enabled: true
+  cost: '0'
+  success: '1'
+  destroy: '1'
+  failure: ALL
+  recoverable: true
+  materials: {}
+FUSE:
+  enabled: true
+  cost: '0'
+  success: '1'
+  destroy: '0'
+  failure: ALL
+  recoverable: true
+  materials: {}
+EXTRACT:
+  enabled: true
+  cost: '0'
+  success: '1'
+  destroy: '0'
+  failure: ALL
+  recoverable: true
+  materials: {}
+IDENTIFY:
+  enabled: true
+  cost: '0'
+  success: '1'
+  destroy: '0'
+  failure: KEEP
+  recoverable: true
+  materials: {}

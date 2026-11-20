@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "id": "hearth:ce_hellforged",
+  "name": "HellForged",
+  "enabled": true,
+  "max-level": 4,
+  "equipment": [
+    "damaged-items"
+  ],
+  "slots": [
+    "MAIN_HAND",
+    "OFF_HAND",
+    "HEAD",
+    "CHEST",
+    "LEGS",
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "HellForged",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "TICK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "1000",
+      "effects": [
+        {
+          "type": "durability",
+          "target": "SELF",
+          "amount": "0-level"
+        }
+      ],
+      "chance": "clamp((5+5*level)/100,0,1)"
+    }
+  ]
+}

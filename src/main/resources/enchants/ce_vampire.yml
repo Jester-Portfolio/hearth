@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "hearth:ce_vampire",
+  "name": "Vampire",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Vampire",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "heal",
+          "target": "SELF",
+          "amount": "damage/2"
+        }
+      ],
+      "chance": "clamp((5+5*level)/100,0,1)"
+    }
+  ]
+}

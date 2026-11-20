@@ -1,0 +1,2060 @@
+{
+  "source": "https://github.com/Crazy-Crew/CrazyEnchantments",
+  "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+  "license": "MIT",
+  "total": 105,
+  "rows": [
+    {
+      "id": "hearth:ce_glowing",
+      "source_id": "Glowing",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Helmet",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_glowing.yml",
+      "sha256": "c00a9eb158e1b30ffb0d7fd1de8694a23d432675f1debcdfac587a1712ef1c8a",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_burnshield",
+      "source_id": "BurnShield",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_burnshield.yml",
+      "sha256": "110912f5b0c779f130d3a75ff4904549a95c0dfd645dab2df79ee7d74d985b9e",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_piercing",
+      "source_id": "Piercing",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_piercing.yml",
+      "sha256": "7ebbf2bce36f52a18637e63a7065926a2d9e5341ccc08f294c70d1be5a187841",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_overload",
+      "source_id": "OverLoad",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_overload.yml",
+      "sha256": "410fa45d409fc695b2bcc73279dff6d1bed8f1750c5e9e12d6aa063d6c087662",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_selfdestruct",
+      "source_id": "SelfDestruct",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "explosion"
+      ],
+      "triggers": [
+        "DEATH"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_selfdestruct.yml",
+      "sha256": "630bd097cd29eeafd858167667c196bab6dbdeabee1f28b0c382e9db5f2fb493",
+      "policy_adaptations": [
+        "WorldGuard/PvP and recursion guard; explosion terrain disabled unless explicitly configured; preserve death/charm policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_springs",
+      "source_id": "Springs",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Boots",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_springs.yml",
+      "sha256": "076569f85fd57e38de731c75042d273769a7dfd46f45feb8e2e99182a4bb3def",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_gears",
+      "source_id": "Gears",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Boots",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_gears.yml",
+      "sha256": "9f04a63b2b1ce1c30b4e4cd67b930857657e5d01ef33a7373efc89117d32b88f",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_hulk",
+      "source_id": "Hulk",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_hulk.yml",
+      "sha256": "c66ca4e5b85b22a23ba0574f9c466ac5fd84ac9e67c4239c5c202f2cf25edcb4",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_mermaid",
+      "source_id": "Mermaid",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Helmet",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_mermaid.yml",
+      "sha256": "c4fe9e3c0ae856b6c82cdbf90cef7dd5bc3d7f40aabc6c3b4bcb43baadc10327",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_ninja",
+      "source_id": "Ninja",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_ninja.yml",
+      "sha256": "a0e98d19878872995d9585eda6b3a661470eeda93fd5c36a2ad0d9d0c4c428d8",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_vampire",
+      "source_id": "Vampire",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_vampire.yml",
+      "sha256": "bfe0ca9ead300965ea125b688518eae2707f1548be2165a36c911a41b3ed87ae",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_lifesteal",
+      "source_id": "LifeSteal",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_lifesteal.yml",
+      "sha256": "2b56d381b4b4308c56388f0c4360180fe227cb27c9d44071ccc7777d08603dd8",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_doctor",
+      "source_id": "Doctor",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_doctor.yml",
+      "sha256": "e57d04740f3a1dd13d2407dcf611c1aa16c63c1a5a234d990476b67a92385d8a",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_boom",
+      "source_id": "Boom",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "explosion"
+      ],
+      "triggers": [
+        "ARROW_IMPACT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_boom.yml",
+      "sha256": "1dd6657aa93605c37ee416fe013380ad544cb8e493b035c872858e9c3dd2bcad",
+      "policy_adaptations": [
+        "WorldGuard/PvP and recursion guard; explosion terrain disabled unless explicitly configured; preserve death/charm policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_venom",
+      "source_id": "Venom",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Bow",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_venom.yml",
+      "sha256": "dc85c00fdeabea4f443a317772e373a3828c0ce6ff7bebf4dc4b83baad7bc059",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_doubledamage",
+      "source_id": "DoubleDamage",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_doubledamage.yml",
+      "sha256": "8322ce6d88b4909627fec2c0bc30bb0e311d4ccd1dde38a31ddea4fb76469b90",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_slowmo",
+      "source_id": "SlowMo",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_slowmo.yml",
+      "sha256": "5a1c360a98d9e1c6040d31783f22bccb15c91f121db152110de68d85e3f842fc",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_blindness",
+      "source_id": "Blindness",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_blindness.yml",
+      "sha256": "508e5a929c86cc752e5c19ca498e994497c062f32fdab008f30943c879a76c4f",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_viper",
+      "source_id": "Viper",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_viper.yml",
+      "sha256": "11d39ffce6a981554157544fb0dfd7dab0f52b7c28e07cbf24694ec8c054473a",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_antigravity",
+      "source_id": "AntiGravity",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Boots",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_antigravity.yml",
+      "sha256": "051e2b4bfccfab0c38932c4e2194979a3a5ac7a547ea5f0b7a3781e645a9aa87",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_fastturn",
+      "source_id": "FastTurn",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Sword",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_fastturn.yml",
+      "sha256": "0bc7eca99b8c259d96defe1c7baeb7be3974599ecdbeb7a3e462b3600bfdfc46",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_lightweight",
+      "source_id": "LightWeight",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_lightweight.yml",
+      "sha256": "0aa69cf8bcaaaf8b05dbd1f58fad74947ac66f9d967748b00f0779a7280df461",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_blessed",
+      "source_id": "Blessed",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "cleanse"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_blessed.yml",
+      "sha256": "3073502b4371542f6eba0e4df160b903e299766b45a87a999dad61ef66c47d04",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_feedme",
+      "source_id": "FeedMe",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "food"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_feedme.yml",
+      "sha256": "1057e750b09835c09648b09894473bdc39deb98cdda48dc59b14cc04001fc551",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_dizzy",
+      "source_id": "Dizzy",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_dizzy.yml",
+      "sha256": "149014b7b87c805dc03766e9c2e67a875e43acbf804dee25082ce74b39e94917",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_berserk",
+      "source_id": "Berserk",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_berserk.yml",
+      "sha256": "43ca24ce33c8efda5203d8a9063343624085fe26b4dad5a9072c12eec27fd422",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_cursed",
+      "source_id": "Cursed",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_cursed.yml",
+      "sha256": "c4878b88674af5bf08133d901e2d4ec88ad55b866d5bd4854ca336316420a5ba",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_rekt",
+      "source_id": "Rekt",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_rekt.yml",
+      "sha256": "b98ed55bec90203235574608d87f6499aa64c6872eb0a1519737a9efa99d9201",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_treefeller",
+      "source_id": "TreeFeller",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "area_break"
+      ],
+      "triggers": [
+        "BREAK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_treefeller.yml",
+      "sha256": "2c46f334605ccfb666b628f635f7dfa17c183fd5d610f2bebfd268149aeb612c",
+      "policy_adaptations": [
+        "loaded bounded cells; per-cell protection; normal break/reward/durability path"
+      ]
+    },
+    {
+      "id": "hearth:ce_enlightened",
+      "source_id": "Enlightened",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_enlightened.yml",
+      "sha256": "d6b1ab34fccbab8259e0d8f7c9207085af09bfed93ccf44db6869a69c72c7646",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_freeze",
+      "source_id": "Freeze",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_freeze.yml",
+      "sha256": "17497ea0defe58c7c8f44fc871d7f04cbf9166cf0a792b0013ee02b058ff8e6e",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_fortify",
+      "source_id": "Fortify",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_fortify.yml",
+      "sha256": "60392b27c5e3c2fad8ef6b1ef48a1e7fd9b13c3c6f8ef7a9254621bd50862d15",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_molten",
+      "source_id": "Molten",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "fire"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_molten.yml",
+      "sha256": "61c11e6b77c3db748d10d2d549c6aa4d3e93060663048470e31b4f875db17c90",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_paingiver",
+      "source_id": "PainGiver",
+      "source_enabled": true,
+      "source_max_level": 4,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_paingiver.yml",
+      "sha256": "68ebf1ba4a20ab8489a379027beaaccd688102dd60a891c29dfaf6e957eea516",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_savior",
+      "source_id": "Savior",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_savior.yml",
+      "sha256": "2cc941d4eaa8b87b7c2546e6233ce370f3fc2bcece51cce18462f66ea886b788",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_nursery",
+      "source_id": "Nursery",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_nursery.yml",
+      "sha256": "cca8d0965dafa1c262180d5a08b1a7bc3d7a321cd7c468c20b13efefb4885e28",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_autosmelt",
+      "source_id": "AutoSmelt",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Pickaxe",
+      "effects": [
+        "smelt"
+      ],
+      "triggers": [
+        "DROP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_autosmelt.yml",
+      "sha256": "a79be5227aa22a00a1ee53840ca17135da92963af42d4780fc270e375f4457e3",
+      "policy_adaptations": [
+        "final RewardCoordinator decision; player death XP remains owned by Hearth policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_experience",
+      "source_id": "Experience",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Pickaxe",
+      "effects": [
+        "xp_add"
+      ],
+      "triggers": [
+        "BLOCK_XP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_experience.yml",
+      "sha256": "82ed9634de784066565cd336e5bd4a2ebd5f7e1c42c65f4edaa75934424a942a",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_telepathy",
+      "source_id": "Telepathy",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Tool",
+      "effects": [
+        "collect"
+      ],
+      "triggers": [
+        "DROP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_telepathy.yml",
+      "sha256": "bac859c2e6f71e1867ffae5fa2f54a2a8a93e622a1db18f2196973ef4b192dbc",
+      "policy_adaptations": [
+        "final RewardCoordinator decision; player death XP remains owned by Hearth policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_haste",
+      "source_id": "Haste",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Tool",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_haste.yml",
+      "sha256": "4acb90f575558cb18a5e7595a175702612742f99581373a8fd1b38b7c1c540d8",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_oxygenate",
+      "source_id": "Oxygenate",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Tool",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_oxygenate.yml",
+      "sha256": "d676244b63cf8c41e0afe6bdf27383cc40139e0c02d4c26ef603082d9349b9e5",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_icefreeze",
+      "source_id": "IceFreeze",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Bow",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_icefreeze.yml",
+      "sha256": "132b9c55af131f5153582a705dd214d1b775776e10709575fcc65225c57b3689",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_lightning",
+      "source_id": "Lightning",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Bow",
+      "effects": [
+        "damage",
+        "lightning_visual"
+      ],
+      "triggers": [
+        "ARROW_IMPACT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_lightning.yml",
+      "sha256": "bbe0dcdc6f7f5af1f00e606e65b73f3c2ebe0292241d8e40cb0ebd445b35936d",
+      "policy_adaptations": [
+        "WorldGuard/PvP and recursion guard; explosion terrain disabled unless explicitly configured; preserve death/charm policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_decapitation",
+      "source_id": "Decapitation",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "head_drop"
+      ],
+      "triggers": [
+        "KILL"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_decapitation.yml",
+      "sha256": "0e8db3deaa83f5a51d3b606022bcf7b45b06af706fbca283674ad27be64b3926",
+      "policy_adaptations": [
+        "final RewardCoordinator decision; player death XP remains owned by Hearth policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_confusion",
+      "source_id": "Confusion",
+      "source_enabled": true,
+      "source_max_level": 4,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_confusion.yml",
+      "sha256": "e29383424570d8cc46b9424701019fa461a4def02635352f76287e7361c2ae77",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_disarmer",
+      "source_id": "Disarmer",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "disarm"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_disarmer.yml",
+      "sha256": "0fd648b195ec434d415af0a90bf56fbf94b3d6b0d0310869384c523d76b88be2",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_execute",
+      "source_id": "Execute",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_execute.yml",
+      "sha256": "91987e177aa49d47a72d08325b31d12685fcb3c698ba8848d50ade532a9619c5",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_headless",
+      "source_id": "Headless",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "head_drop"
+      ],
+      "triggers": [
+        "KILL"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_headless.yml",
+      "sha256": "573f9ed7b37c7b68aa9ec704cb71c2d37e381f98bba0951ba44bc8728dc34d83",
+      "policy_adaptations": [
+        "final RewardCoordinator decision; player death XP remains owned by Hearth policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_inquisitive",
+      "source_id": "Inquisitive",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "xp_multiplier"
+      ],
+      "triggers": [
+        "MOB_XP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_inquisitive.yml",
+      "sha256": "48dfaa99fa0ae40201a076a54d0a3142f9c6e3fb97ac480488bc0ef4fece8ce5",
+      "policy_adaptations": [
+        "final RewardCoordinator decision; player death XP remains owned by Hearth policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_insomnia",
+      "source_id": "Insomnia",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "damage",
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP",
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_insomnia.yml",
+      "sha256": "7c781833d0c886d948966611cd3b483d25fbd9ec5695cd4656ddbc6889f0f97e",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_nutrition",
+      "source_id": "Nutrition",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "saturation"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_nutrition.yml",
+      "sha256": "b296cb741e9cb87b48630b2a2515b7fe12b1a6da20b8b257060b6622e4d6c39f",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_obliterate",
+      "source_id": "Obliterate",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "knockback"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_obliterate.yml",
+      "sha256": "1bb237ea2711dbd37e32ad55d5cad58c4896ba7f85bc46af4e855e4a3e9f7ec4",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_paralyze",
+      "source_id": "Paralyze",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "damage",
+        "lightning_visual",
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_paralyze.yml",
+      "sha256": "55fd4710aaaeb123c278dc3f022112395ca0beb3b800000f95e2515cc4c35164",
+      "policy_adaptations": [
+        "WorldGuard/PvP and recursion guard; explosion terrain disabled unless explicitly configured; preserve death/charm policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_skillswipe",
+      "source_id": "SkillSwipe",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "xp_transfer"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_skillswipe.yml",
+      "sha256": "eb712e34853c69ddede247f0f18066b65c35f5a0d601d42a45f26e5f3b864312",
+      "policy_adaptations": [
+        "transfer at most existing vanilla XP; do not create missing XP"
+      ]
+    },
+    {
+      "id": "hearth:ce_snare",
+      "source_id": "Snare",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_snare.yml",
+      "sha256": "a704ca885477ee7f6167ce4675659c0ae0de86e4d1e500371dbfd32ee7dc85cf",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_trap",
+      "source_id": "Trap",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_trap.yml",
+      "sha256": "b2c421f91691568af7d3371093afef1fcd0b655ddf0c380445f5a499d2632a3d",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_wither",
+      "source_id": "Wither",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_wither.yml",
+      "sha256": "6652595828c74ac923788463d508058e703e5fcce297cf6582fdec13dce157cb",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_rage",
+      "source_id": "Rage",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "rage"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_rage.yml",
+      "sha256": "d67c2c761cde570457c40a52fd38812e8d8b2c86bf435e5ec02aa40b5b33e562",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_valor",
+      "source_id": "Valor",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_valor.yml",
+      "sha256": "0b3d7c47573c09a7382cdfb95350f6e8269c780a3c8c60983bd7949c7cbe6d18",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_smokebomb",
+      "source_id": "SmokeBomb",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_smokebomb.yml",
+      "sha256": "ced15a6e0c3a68b11d445ce6a2b93fd1d46fcdf3ae6c3d46c6c5d57279eef53e",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_drunk",
+      "source_id": "Drunk",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_drunk.yml",
+      "sha256": "8074ba385382664195835fd63957570ac9bdb19c13c774653d8464e63dbfbd5e",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_voodoo",
+      "source_id": "Voodoo",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_voodoo.yml",
+      "sha256": "11fba999611c5e86cfc627a4ebe44922394ad3d603afe4963a396f02faa3701e",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_multiarrow",
+      "source_id": "MultiArrow",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Bow",
+      "effects": [
+        "multi_arrow"
+      ],
+      "triggers": [
+        "SHOOT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_multiarrow.yml",
+      "sha256": "75538aac14eb896247f51c495a2f0179e01321ae15039fd3b0e3aac56aeb1930",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_recover",
+      "source_id": "Recover",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "KILL"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_recover.yml",
+      "sha256": "0bc3dcc4b618c223f911c2a4b9dc4f68079d209aa459464e1be9336cc1252a3a",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_cactus",
+      "source_id": "Cactus",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "damage"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_cactus.yml",
+      "sha256": "5bbc9d81ec768671b89f039c0ac1b9a9d76c4c9e67ca361fb6215dacd152741f",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_rocket",
+      "source_id": "Rocket",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Boots",
+      "effects": [
+        "fall_guard",
+        "knockback"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_rocket.yml",
+      "sha256": "8a2ef12042336d0939b46ac37c2b4f38c2e95b746eacfbb5320c7f188b8f2d95",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_adrenaline",
+      "source_id": "Adrenaline",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Boots",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_adrenaline.yml",
+      "sha256": "75906696d0213978764d9be7e408c5eaf51547f4d67660f1107d38ebd3bba096",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_angel",
+      "source_id": "Angel",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_angel.yml",
+      "sha256": "36f87d913a48c6a7924a9882f6899685c68104654b950bfbacc432f41dfdf4fb",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_hellforged",
+      "source_id": "HellForged",
+      "source_enabled": true,
+      "source_max_level": 4,
+      "source_type": "Damaged-Items",
+      "effects": [
+        "durability"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_hellforged.yml",
+      "sha256": "8ea79dff791fc39dbe48df05f877db603ba53fc14ee2f58f5f2c207049127b42",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_commander",
+      "source_id": "Commander",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Helmet",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_commander.yml",
+      "sha256": "54937a9f66a04f2f96569115b373554fcd27956fafc5eae603ce447605b7da59",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_stormcaller",
+      "source_id": "StormCaller",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "damage",
+        "lightning_visual"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_stormcaller.yml",
+      "sha256": "e7570dec7a03857233862ce797da29188b2f8127212ee637e385708c2631b2b9",
+      "policy_adaptations": [
+        "WorldGuard/PvP and recursion guard; explosion terrain disabled unless explicitly configured; preserve death/charm policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_leadership",
+      "source_id": "Leadership",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "leadership"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_leadership.yml",
+      "sha256": "1672e0c2de618fa3c3a13b789b5b8ffb7a0f5a8da40f56056c7821f2c2a086fd",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_implants",
+      "source_id": "Implants",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Helmet",
+      "effects": [
+        "food"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_implants.yml",
+      "sha256": "44b6b7f1ee5f57987d9b6f5744c8aad86bbffe4c3c6df4731a98264b2e5f701a",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_wings",
+      "source_id": "Wings",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Boots",
+      "effects": [
+        "flight"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_wings.yml",
+      "sha256": "f0f5aec7cb23f864044129c40cd6f188880928752d4e9657651b357c125913fa",
+      "policy_adaptations": [
+        "owned private residence/build ACL, admitted world, combat gate, own flight lease only"
+      ]
+    },
+    {
+      "id": "hearth:ce_veinminer",
+      "source_id": "VeinMiner",
+      "source_enabled": true,
+      "source_max_level": 6,
+      "source_type": "Pickaxe",
+      "effects": [
+        "area_break"
+      ],
+      "triggers": [
+        "BREAK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_veinminer.yml",
+      "sha256": "46aa2e7b897306c9941cfbb66476a06b800f30bc49b196691f2336836360f100",
+      "policy_adaptations": [
+        "loaded bounded cells; per-cell protection; normal break/reward/durability path"
+      ]
+    },
+    {
+      "id": "hearth:ce_blast",
+      "source_id": "Blast",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Pickaxe",
+      "effects": [
+        "area_break"
+      ],
+      "triggers": [
+        "BREAK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_blast.yml",
+      "sha256": "b13f1d3673b43b091e8da89e2e8c429134d9dacf63c0d6a1b244a39063b4738b",
+      "policy_adaptations": [
+        "loaded bounded cells; per-cell protection; normal break/reward/durability path"
+      ]
+    },
+    {
+      "id": "hearth:ce_furnace",
+      "source_id": "Furnace",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Pickaxe",
+      "effects": [
+        "smelt"
+      ],
+      "triggers": [
+        "DROP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_furnace.yml",
+      "sha256": "8dbca32cd6affd1ba06f3ae810df72f4743c4afa470fecee60f8aefe037644ea",
+      "policy_adaptations": [
+        "final RewardCoordinator decision; player death XP remains owned by Hearth policy"
+      ]
+    },
+    {
+      "id": "hearth:ce_blizzard",
+      "source_id": "Blizzard",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_blizzard.yml",
+      "sha256": "b6d8797363ff06bd95cf66a5e30507bbc57e017f98886bf99123bcecdb224312",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_acidrain",
+      "source_id": "AcidRain",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_acidrain.yml",
+      "sha256": "6b018d3adc5083fc756f47f7147aef9ee9f80e6e87479bbfaf0559c1bd094a73",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_sandstorm",
+      "source_id": "SandStorm",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_sandstorm.yml",
+      "sha256": "8377a2bf2deb35a03dd4dd8aaf5b07e0dfee87f3d8fd0368c543962971d2e9bf",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_radiant",
+      "source_id": "Radiant",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "fire"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_radiant.yml",
+      "sha256": "5dddfb27ebeab4f60a38834232e72a0c6387d2f32894fef461eaf16b74f97468",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_intimidate",
+      "source_id": "Intimidate",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_intimidate.yml",
+      "sha256": "4f66f928b8e8c63964b2e3599a7197eeb8b85a7794e1d02a4a4431bcebaab43f",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_pull",
+      "source_id": "Pull",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "pull"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_pull.yml",
+      "sha256": "9eadcc959e36a46c8ad12013fc2447ded3553532d9768db32b0a61eb574fbfe1",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_tamer",
+      "source_id": "Tamer",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_tamer.yml",
+      "sha256": "d626888cba73463090e5177c0a7c91c6e9bde55b60ca0f388ef13492b0e47821",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_guards",
+      "source_id": "Guards",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_guards.yml",
+      "sha256": "d80e1c263eb794c1c54ad3a03c05e5c82d8103c61bd69bfc6094f34f9881350e",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_infestation",
+      "source_id": "Infestation",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_infestation.yml",
+      "sha256": "ef43aee776a7703184b254f3b4a6c5e351732e244703ec109f02d54934f1f695",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_necromancer",
+      "source_id": "Necromancer",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_necromancer.yml",
+      "sha256": "8ecd840dfd98045d1c7d1ab1a8dd13b757a0295672d5d542ee1d46d3b0cc5e46",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_beekeeper",
+      "source_id": "BeeKeeper",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_beekeeper.yml",
+      "sha256": "75d3704d2df9f8e254252eb63c3635f0c64d4cf31d9e4eae363f8212026285d4",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_maneuver",
+      "source_id": "Maneuver",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "cancel_damage"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_maneuver.yml",
+      "sha256": "661e0f62d1e2b96849140c780192477d22f9a3672e7ff7584537eaab1ceea8f7",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_crouch",
+      "source_id": "Crouch",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_crouch.yml",
+      "sha256": "e36c9f9675a972fb8a1ee3632e7fdafcedf2d8441c933afb8d3734bb63a50096",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_shockwave",
+      "source_id": "Shockwave",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "knockback"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_shockwave.yml",
+      "sha256": "1107ee71172c27120c41445b70932ff3f9e4c2e7efcf5fb6c833266e155457f9",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_systemreboot",
+      "source_id": "SystemReboot",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "cancel_damage",
+        "heal"
+      ],
+      "triggers": [
+        "DEFEND"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_systemreboot.yml",
+      "sha256": "01bba4bdc4aea353fd3bbb8d83f9b8f6a1536f5fbfd3e391920b17a717d73db0",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_sticky_shot",
+      "source_id": "Sticky-Shot",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "temporary_block"
+      ],
+      "triggers": [
+        "ARROW_IMPACT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_sticky_shot.yml",
+      "sha256": "020ee6126b8fe6700011113d593d17bbace657079ff659c4d0c29361f5759dc1",
+      "policy_adaptations": [
+        "one projectile impact plan; empty cells only; per-cell WG/ACL; temporary restoration and no farming"
+      ]
+    },
+    {
+      "id": "hearth:ce_disorder",
+      "source_id": "Disorder",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Sword",
+      "effects": [
+        "shuffle_hotbar"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_disorder.yml",
+      "sha256": "ac41185a89986240590ee0ca3cc304634a7f381624d3c00fc8f1092559f1acf0",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_charge",
+      "source_id": "Charge",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "KILL"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_charge.yml",
+      "sha256": "abd7df698477287f41f93889d2b2060781e51f70ea3c85738e27c90d57a9a77c",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_revenge",
+      "source_id": "Revenge",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ALLY_DEATH"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_revenge.yml",
+      "sha256": "329d2db55951b85981b70dcac448cae6ac4047cd9db6e59d260750e3115c9655",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_battlecry",
+      "source_id": "BattleCry",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "knockback"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_battlecry.yml",
+      "sha256": "778f92ae949819778b9859a1466384352e95732caea8405ff3ddb5ea674237f5",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_demonforged",
+      "source_id": "DemonForged",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "durability"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_demonforged.yml",
+      "sha256": "ddb653737e96f5f5786297998fb85ad5a1a07c40de023738cdbe8e683e049176",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_famished",
+      "source_id": "Famished",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_famished.yml",
+      "sha256": "b9c4cf2efcb52c23eff200ff069bea816921da7636cf492ddf6106df74c93b8a",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_greenthumb",
+      "source_id": "GreenThumb",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Hoe",
+      "effects": [
+        "farm"
+      ],
+      "triggers": [
+        "INTERACT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_greenthumb.yml",
+      "sha256": "ddda7d4e0ffe05fff1193f6f5a30e4c2b51980043db409867aa3f7951943fdd8",
+      "policy_adaptations": [
+        "loaded bounded cells; per-cell protection; normal break/reward/durability path"
+      ]
+    },
+    {
+      "id": "hearth:ce_harvester",
+      "source_id": "Harvester",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Hoe",
+      "effects": [
+        "area_break"
+      ],
+      "triggers": [
+        "BREAK"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_harvester.yml",
+      "sha256": "57623947785fdfcf4f012072c1ef3d1499ec3df02b03067ba26b71fa2917a3dd",
+      "policy_adaptations": [
+        "loaded bounded cells; per-cell protection; normal break/reward/durability path"
+      ]
+    },
+    {
+      "id": "hearth:ce_tiller",
+      "source_id": "Tiller",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Hoe",
+      "effects": [
+        "farm"
+      ],
+      "triggers": [
+        "INTERACT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_tiller.yml",
+      "sha256": "c8faa05178efbc8edd19b3ccf7d3a8d793eb06e13c01112faf6832d10d976e18",
+      "policy_adaptations": [
+        "loaded bounded cells; per-cell protection; normal break/reward/durability path"
+      ]
+    },
+    {
+      "id": "hearth:ce_planter",
+      "source_id": "Planter",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Hoe",
+      "effects": [
+        "farm"
+      ],
+      "triggers": [
+        "INTERACT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_planter.yml",
+      "sha256": "6b66656d95bd507b5dff3c66ae9acd04f0b0ac3eed9922963a5f1328f5994880",
+      "policy_adaptations": [
+        "loaded bounded cells; per-cell protection; normal break/reward/durability path"
+      ]
+    },
+    {
+      "id": "hearth:ce_cyborg",
+      "source_id": "Cyborg",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_cyborg.yml",
+      "sha256": "96c79af6c5ad602262ae360b3a31f2045ed6594ecb1d599990679f4835a10a67",
+      "policy_adaptations": []
+    },
+    {
+      "id": "hearth:ce_sniper",
+      "source_id": "Sniper",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Bow",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ],
+      "implementation": "IMPLEMENTED",
+      "automated_verification": "FORMULA_TRIGGER_PLAN_AND_REGISTERED_MODULE",
+      "authenticated_client_verification": "NOT_RUN",
+      "definition": "src/main/resources/enchants/ce_sniper.yml",
+      "sha256": "54a9edd8799818e94ebedacfa9346692f0f6e9965bc5114bb342ba1d7e515e41",
+      "policy_adaptations": []
+    }
+  ],
+  "implementation_rate": 1.0,
+  "rate_scope": "105 fixed upstream IDs have configured rules and concrete modules; not 100% actual-client acceptance"
+}

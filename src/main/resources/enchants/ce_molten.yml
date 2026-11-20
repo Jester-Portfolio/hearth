@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "id": "hearth:ce_molten",
+  "name": "Molten",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "armor"
+  ],
+  "slots": [
+    "HEAD",
+    "CHEST",
+    "LEGS",
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Molten",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "DEFEND",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "fire",
+          "target": "OTHER",
+          "amount": "level*40"
+        }
+      ],
+      "chance": "clamp((10+1*level)/100,0,1)"
+    }
+  ]
+}

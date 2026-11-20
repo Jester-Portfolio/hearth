@@ -1,0 +1,5 @@
+# 기존 survival economy RPG backend에 병합한다. 운영 자동 활성화가 아니다.
+hearth-enchants:
+  enabled: false
+# Requires survival-economy + housing + skills/AuraSkills + economy-rpg.
+# Books/transactions also require plugins/Hearth/enchants/operations.yml enabled: true.

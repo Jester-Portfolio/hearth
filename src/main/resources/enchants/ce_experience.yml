@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "hearth:ce_experience",
+  "name": "Experience",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "pickaxe"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Experience",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "BLOCK_XP",
+      "condition": "xp>0",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "xp_add",
+          "target": "SELF",
+          "amount": "level+2"
+        }
+      ],
+      "chance": "clamp((25+25*level)/100,0,1)"
+    }
+  ]
+}

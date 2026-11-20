@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "id": "hearth:ce_nursery",
+  "name": "Nursery",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "armor"
+  ],
+  "slots": [
+    "HEAD",
+    "CHEST",
+    "LEGS",
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Nursery",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "TICK",
+      "condition": "health<max_health",
+      "duration": "100",
+      "cooldown": "1000",
+      "effects": [
+        {
+          "type": "heal",
+          "target": "SELF",
+          "amount": "1"
+        }
+      ],
+      "chance": "clamp((5+5*level)/100,0,1)"
+    }
+  ]
+}

@@ -1,0 +1,1386 @@
+{
+  "source": "https://github.com/Crazy-Crew/CrazyEnchantments",
+  "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+  "license": "MIT",
+  "total": 105,
+  "rows": [
+    {
+      "id": "hearth:ce_glowing",
+      "source_id": "Glowing",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Helmet",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_burnshield",
+      "source_id": "BurnShield",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_piercing",
+      "source_id": "Piercing",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ]
+    },
+    {
+      "id": "hearth:ce_overload",
+      "source_id": "OverLoad",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_selfdestruct",
+      "source_id": "SelfDestruct",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "explosion"
+      ],
+      "triggers": [
+        "DEATH"
+      ]
+    },
+    {
+      "id": "hearth:ce_springs",
+      "source_id": "Springs",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Boots",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_gears",
+      "source_id": "Gears",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Boots",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_hulk",
+      "source_id": "Hulk",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_mermaid",
+      "source_id": "Mermaid",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Helmet",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_ninja",
+      "source_id": "Ninja",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_vampire",
+      "source_id": "Vampire",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_lifesteal",
+      "source_id": "LifeSteal",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_doctor",
+      "source_id": "Doctor",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ]
+    },
+    {
+      "id": "hearth:ce_boom",
+      "source_id": "Boom",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "explosion"
+      ],
+      "triggers": [
+        "ARROW_IMPACT"
+      ]
+    },
+    {
+      "id": "hearth:ce_venom",
+      "source_id": "Venom",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Bow",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ]
+    },
+    {
+      "id": "hearth:ce_doubledamage",
+      "source_id": "DoubleDamage",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_slowmo",
+      "source_id": "SlowMo",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_blindness",
+      "source_id": "Blindness",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_viper",
+      "source_id": "Viper",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_antigravity",
+      "source_id": "AntiGravity",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Boots",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_fastturn",
+      "source_id": "FastTurn",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Sword",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_lightweight",
+      "source_id": "LightWeight",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_blessed",
+      "source_id": "Blessed",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "cleanse"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_feedme",
+      "source_id": "FeedMe",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "food"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_dizzy",
+      "source_id": "Dizzy",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_berserk",
+      "source_id": "Berserk",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_cursed",
+      "source_id": "Cursed",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_rekt",
+      "source_id": "Rekt",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Axe",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_treefeller",
+      "source_id": "TreeFeller",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "area_break"
+      ],
+      "triggers": [
+        "BREAK"
+      ]
+    },
+    {
+      "id": "hearth:ce_enlightened",
+      "source_id": "Enlightened",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_freeze",
+      "source_id": "Freeze",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_fortify",
+      "source_id": "Fortify",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_molten",
+      "source_id": "Molten",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "fire"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_paingiver",
+      "source_id": "PainGiver",
+      "source_enabled": true,
+      "source_max_level": 4,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_savior",
+      "source_id": "Savior",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_nursery",
+      "source_id": "Nursery",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "heal"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_autosmelt",
+      "source_id": "AutoSmelt",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Pickaxe",
+      "effects": [
+        "smelt"
+      ],
+      "triggers": [
+        "DROP"
+      ]
+    },
+    {
+      "id": "hearth:ce_experience",
+      "source_id": "Experience",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Pickaxe",
+      "effects": [
+        "xp_add"
+      ],
+      "triggers": [
+        "BLOCK_XP"
+      ]
+    },
+    {
+      "id": "hearth:ce_telepathy",
+      "source_id": "Telepathy",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Tool",
+      "effects": [
+        "collect"
+      ],
+      "triggers": [
+        "DROP"
+      ]
+    },
+    {
+      "id": "hearth:ce_haste",
+      "source_id": "Haste",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Tool",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_oxygenate",
+      "source_id": "Oxygenate",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Tool",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_icefreeze",
+      "source_id": "IceFreeze",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Bow",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ]
+    },
+    {
+      "id": "hearth:ce_lightning",
+      "source_id": "Lightning",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Bow",
+      "effects": [
+        "damage",
+        "lightning_visual"
+      ],
+      "triggers": [
+        "ARROW_IMPACT"
+      ]
+    },
+    {
+      "id": "hearth:ce_decapitation",
+      "source_id": "Decapitation",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "head_drop"
+      ],
+      "triggers": [
+        "KILL"
+      ]
+    },
+    {
+      "id": "hearth:ce_confusion",
+      "source_id": "Confusion",
+      "source_enabled": true,
+      "source_max_level": 4,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_disarmer",
+      "source_id": "Disarmer",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "disarm"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_execute",
+      "source_id": "Execute",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_headless",
+      "source_id": "Headless",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "head_drop"
+      ],
+      "triggers": [
+        "KILL"
+      ]
+    },
+    {
+      "id": "hearth:ce_inquisitive",
+      "source_id": "Inquisitive",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "xp_multiplier"
+      ],
+      "triggers": [
+        "MOB_XP"
+      ]
+    },
+    {
+      "id": "hearth:ce_insomnia",
+      "source_id": "Insomnia",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "damage",
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP",
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_nutrition",
+      "source_id": "Nutrition",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "saturation"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_obliterate",
+      "source_id": "Obliterate",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "knockback"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_paralyze",
+      "source_id": "Paralyze",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "damage",
+        "lightning_visual",
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_skillswipe",
+      "source_id": "SkillSwipe",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "xp_transfer"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_snare",
+      "source_id": "Snare",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_trap",
+      "source_id": "Trap",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_wither",
+      "source_id": "Wither",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_rage",
+      "source_id": "Rage",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "rage"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_valor",
+      "source_id": "Valor",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_smokebomb",
+      "source_id": "SmokeBomb",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_drunk",
+      "source_id": "Drunk",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_voodoo",
+      "source_id": "Voodoo",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_multiarrow",
+      "source_id": "MultiArrow",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Bow",
+      "effects": [
+        "multi_arrow"
+      ],
+      "triggers": [
+        "SHOOT"
+      ]
+    },
+    {
+      "id": "hearth:ce_recover",
+      "source_id": "Recover",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "KILL"
+      ]
+    },
+    {
+      "id": "hearth:ce_cactus",
+      "source_id": "Cactus",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "damage"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_rocket",
+      "source_id": "Rocket",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Boots",
+      "effects": [
+        "fall_guard",
+        "knockback"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_adrenaline",
+      "source_id": "Adrenaline",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Boots",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_angel",
+      "source_id": "Angel",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_hellforged",
+      "source_id": "HellForged",
+      "source_enabled": true,
+      "source_max_level": 4,
+      "source_type": "Damaged-Items",
+      "effects": [
+        "durability"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_commander",
+      "source_id": "Commander",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Helmet",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_stormcaller",
+      "source_id": "StormCaller",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "damage",
+        "lightning_visual"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_leadership",
+      "source_id": "Leadership",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "leadership"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_implants",
+      "source_id": "Implants",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Helmet",
+      "effects": [
+        "food"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_wings",
+      "source_id": "Wings",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Boots",
+      "effects": [
+        "flight"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_veinminer",
+      "source_id": "VeinMiner",
+      "source_enabled": true,
+      "source_max_level": 6,
+      "source_type": "Pickaxe",
+      "effects": [
+        "area_break"
+      ],
+      "triggers": [
+        "BREAK"
+      ]
+    },
+    {
+      "id": "hearth:ce_blast",
+      "source_id": "Blast",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Pickaxe",
+      "effects": [
+        "area_break"
+      ],
+      "triggers": [
+        "BREAK"
+      ]
+    },
+    {
+      "id": "hearth:ce_furnace",
+      "source_id": "Furnace",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Pickaxe",
+      "effects": [
+        "smelt"
+      ],
+      "triggers": [
+        "DROP"
+      ]
+    },
+    {
+      "id": "hearth:ce_blizzard",
+      "source_id": "Blizzard",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_acidrain",
+      "source_id": "AcidRain",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_sandstorm",
+      "source_id": "SandStorm",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_radiant",
+      "source_id": "Radiant",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "fire"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_intimidate",
+      "source_id": "Intimidate",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "TICK"
+      ]
+    },
+    {
+      "id": "hearth:ce_pull",
+      "source_id": "Pull",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "pull"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ]
+    },
+    {
+      "id": "hearth:ce_tamer",
+      "source_id": "Tamer",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_guards",
+      "source_id": "Guards",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_infestation",
+      "source_id": "Infestation",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_necromancer",
+      "source_id": "Necromancer",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_beekeeper",
+      "source_id": "BeeKeeper",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Armor",
+      "effects": [
+        "summon"
+      ],
+      "triggers": [
+        "ATTACK",
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_maneuver",
+      "source_id": "Maneuver",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "cancel_damage"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_crouch",
+      "source_id": "Crouch",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "damage_multiplier"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_shockwave",
+      "source_id": "Shockwave",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "knockback"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_systemreboot",
+      "source_id": "SystemReboot",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Armor",
+      "effects": [
+        "cancel_damage",
+        "heal"
+      ],
+      "triggers": [
+        "DEFEND"
+      ]
+    },
+    {
+      "id": "hearth:ce_sticky_shot",
+      "source_id": "Sticky-Shot",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Bow",
+      "effects": [
+        "temporary_block"
+      ],
+      "triggers": [
+        "ARROW_IMPACT"
+      ]
+    },
+    {
+      "id": "hearth:ce_disorder",
+      "source_id": "Disorder",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Sword",
+      "effects": [
+        "shuffle_hotbar"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_charge",
+      "source_id": "Charge",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "KILL"
+      ]
+    },
+    {
+      "id": "hearth:ce_revenge",
+      "source_id": "Revenge",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ALLY_DEATH"
+      ]
+    },
+    {
+      "id": "hearth:ce_battlecry",
+      "source_id": "BattleCry",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "knockback"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_demonforged",
+      "source_id": "DemonForged",
+      "source_enabled": true,
+      "source_max_level": 5,
+      "source_type": "Axe",
+      "effects": [
+        "durability"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_famished",
+      "source_id": "Famished",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Sword",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ATTACK"
+      ]
+    },
+    {
+      "id": "hearth:ce_greenthumb",
+      "source_id": "GreenThumb",
+      "source_enabled": true,
+      "source_max_level": 3,
+      "source_type": "Hoe",
+      "effects": [
+        "farm"
+      ],
+      "triggers": [
+        "INTERACT"
+      ]
+    },
+    {
+      "id": "hearth:ce_harvester",
+      "source_id": "Harvester",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Hoe",
+      "effects": [
+        "area_break"
+      ],
+      "triggers": [
+        "BREAK"
+      ]
+    },
+    {
+      "id": "hearth:ce_tiller",
+      "source_id": "Tiller",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Hoe",
+      "effects": [
+        "farm"
+      ],
+      "triggers": [
+        "INTERACT"
+      ]
+    },
+    {
+      "id": "hearth:ce_planter",
+      "source_id": "Planter",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Hoe",
+      "effects": [
+        "farm"
+      ],
+      "triggers": [
+        "INTERACT"
+      ]
+    },
+    {
+      "id": "hearth:ce_cyborg",
+      "source_id": "Cyborg",
+      "source_enabled": true,
+      "source_max_level": 1,
+      "source_type": "Armor",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "EQUIP"
+      ]
+    },
+    {
+      "id": "hearth:ce_sniper",
+      "source_id": "Sniper",
+      "source_enabled": true,
+      "source_max_level": 2,
+      "source_type": "Bow",
+      "effects": [
+        "potion"
+      ],
+      "triggers": [
+        "ARROW_HIT"
+      ]
+    }
+  ]
+}

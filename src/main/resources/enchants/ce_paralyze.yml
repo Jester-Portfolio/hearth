@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "hearth:ce_paralyze",
+  "name": "Paralyze",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Paralyze",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "damage",
+          "target": "ENEMIES",
+          "amount": "5",
+          "radius": "2"
+        },
+        {
+          "type": "lightning_visual",
+          "target": "OTHER"
+        },
+        {
+          "type": "potion",
+          "target": "OTHER",
+          "potion": "SLOWNESS",
+          "amount": "2",
+          "duration": "60"
+        },
+        {
+          "type": "potion",
+          "target": "OTHER",
+          "potion": "MINING_FATIGUE",
+          "amount": "2",
+          "duration": "60"
+        }
+      ],
+      "chance": "clamp((15+5*level)/100,0,1)"
+    }
+  ]
+}

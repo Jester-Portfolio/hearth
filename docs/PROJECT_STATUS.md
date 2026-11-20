@@ -6,6 +6,8 @@
 
 ## 프로젝트 목표·현재 단계
 
+[자체 인챈트](enchant-system-verification.md)는 CrazyEnchantments 고정 소스 **105/105종에 실행 규칙/모듈을 대응**하고 책 적용·합성·선택 회수·감정/지급·관리 GUI/YAML·PG E011/native 거래와 기존 보호/보상 정책을 연결했다. 관련 단위/PG·두 Paper JVM 저장 복원과 최종 효과 영향 검사를 통과했다. **구현 대응률은 실제 플레이 검증률이 아니다.** 기본 비활성·실제 클라이언트/다인·부하/운영 배포는 미검증이며 수치/획득처는 추후 밸런싱한다. [운영 가이드](../infrastructure/network/enchants.md)를 따른다.
+
 [경제 RPG 잔여 시스템 일괄 통합](economy-rpg-verification.md)으로 초보 자원/엔드 물리 확장, 월드/개인 소유자 PvP, 사망 확률/부적/독립 XP·원본 HOLD, 개별 오브젝트 권한/간접 보호, 최종 보상, 강화/커스텀 능력과 편의 UI/HUD를 연결했다. 기존 [공통 입장](auraskills-admission-verification.md)·[30초 전투/수락형 TPA](combat-travel-verification.md)를 재사용하며 새 Home도 같은 경계로 이동한다. 순수 정책/권한 10개·실제 PG 13개, 공용 5월드/기존 개인 거주의 두 JVM 및 최종 코드 복원을 통과했다. **기본 비활성**, 콘텐츠/레벨·사망 산정/부적 범위 등 미정값은 설정 대기이며 실제 플레이·동접/장기 부하·운영 배포는 미검증이다. 저장은 [ADR-0031](decisions/0031-auraskills-economy-integration.md)의 Aura YAML+기존 PG를 유지한다. [설정/명령](../infrastructure/network/economy-rpg.md)을 따른다.
 
 **현재 우선순위:** 사용자 요청으로 스토리 모드의 추가 개발은 보류하고, [로비·경제 멀티서버 네트워크](decisions/0025-lobby-economy-network.md)를 먼저 구현한다. 기존 스토리 코드/데이터/미검증은 보존하며, 오프라인 던전 목표·스토리 채집 물리 배치 질문도 스토리 재개 전까지 보류한다. 운영 서비스 중단/전환이나 실제 클라이언트 시험을 요청한 것은 아니다.

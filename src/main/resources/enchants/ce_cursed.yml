@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_cursed",
+  "name": "Cursed",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "axe"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Cursed",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "OTHER",
+          "potion": "MINING_FATIGUE",
+          "amount": "1",
+          "duration": "(level+9)*20"
+        }
+      ],
+      "chance": "clamp((10+5*level)/100,0,1)"
+    }
+  ]
+}

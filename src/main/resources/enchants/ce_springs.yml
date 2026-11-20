@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_springs",
+  "name": "Springs",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "boots"
+  ],
+  "slots": [
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Springs",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "EQUIP",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "JUMP_BOOST",
+          "amount": "level-1",
+          "duration": "60"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

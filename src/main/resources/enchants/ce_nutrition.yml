@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "hearth:ce_nutrition",
+  "name": "Nutrition",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Nutrition",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "saturation",
+          "target": "SELF",
+          "amount": "2*level"
+        }
+      ],
+      "chance": "clamp((15+5*level)/100,0,1)"
+    }
+  ]
+}

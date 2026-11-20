@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "id": "hearth:ce_smokebomb",
+  "name": "SmokeBomb",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "armor"
+  ],
+  "slots": [
+    "HEAD",
+    "CHEST",
+    "LEGS",
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "SmokeBomb",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "DEFEND",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "OTHER",
+          "potion": "SLOWNESS",
+          "amount": "1",
+          "duration": "60"
+        },
+        {
+          "type": "potion",
+          "target": "OTHER",
+          "potion": "BLINDNESS",
+          "amount": "0",
+          "duration": "60"
+        }
+      ],
+      "chance": "clamp((5+5*level)/100,0,1)"
+    }
+  ]
+}

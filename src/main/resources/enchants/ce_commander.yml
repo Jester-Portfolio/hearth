@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_commander",
+  "name": "Commander",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "helmet"
+  ],
+  "slots": [
+    "HEAD"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Commander",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "TICK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "1000",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "ALLIES",
+          "potion": "HASTE",
+          "amount": "1",
+          "duration": "60"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

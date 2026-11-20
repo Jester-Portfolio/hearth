@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "id": "hearth:ce_systemreboot",
+  "name": "SystemReboot",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "armor"
+  ],
+  "slots": [
+    "HEAD",
+    "CHEST",
+    "LEGS",
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "SystemReboot",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "DEFEND",
+      "condition": "health<=damage",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "heal",
+          "target": "SELF",
+          "amount": "max_health"
+        },
+        {
+          "type": "cancel_damage",
+          "target": "SELF"
+        }
+      ],
+      "chance": "clamp((10+5*level)/100,0,1)"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "id": "hearth:ce_lightning",
+  "name": "Lightning",
+  "enabled": true,
+  "max-level": 1,
+  "equipment": [
+    "bow"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Lightning",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ARROW_IMPACT",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "lightning_visual",
+          "target": "OTHER"
+        },
+        {
+          "type": "damage",
+          "target": "ENEMIES",
+          "amount": "5",
+          "radius": "2"
+        }
+      ],
+      "chance": "clamp((25+10*level)/100,0,1)"
+    }
+  ]
+}

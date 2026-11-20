@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_execute",
+  "name": "Execute",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Execute",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "target_health<=8",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "STRENGTH",
+          "amount": "3",
+          "duration": "3+level*20"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

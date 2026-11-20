@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "id": "hearth:ce_telepathy",
+  "name": "Telepathy",
+  "enabled": true,
+  "max-level": 1,
+  "equipment": [
+    "tool"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Telepathy",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "DROP",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "collect",
+          "target": "SELF"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

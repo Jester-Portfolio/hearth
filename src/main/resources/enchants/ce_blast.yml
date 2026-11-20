@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "id": "hearth:ce_blast",
+  "name": "Blast",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "pickaxe"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Blast",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "BREAK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "area_break",
+          "target": "BLOCK",
+          "mode": "blast",
+          "amount": "level"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

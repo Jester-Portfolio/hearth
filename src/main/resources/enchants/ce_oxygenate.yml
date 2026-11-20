@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_oxygenate",
+  "name": "Oxygenate",
+  "enabled": true,
+  "max-level": 1,
+  "equipment": [
+    "tool"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Oxygenate",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "EQUIP",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "WATER_BREATHING",
+          "amount": "5",
+          "duration": "60"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "hearth:ce_furnace",
+  "name": "Furnace",
+  "enabled": true,
+  "max-level": 1,
+  "equipment": [
+    "pickaxe"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Furnace",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "DROP",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "smelt",
+          "target": "BLOCK",
+          "bonus": "0"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

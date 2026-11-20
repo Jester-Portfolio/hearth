@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "id": "hearth:ce_revenge",
+  "name": "Revenge",
+  "enabled": true,
+  "max-level": 1,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Revenge",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ALLY_DEATH",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "SPEED",
+          "amount": "1",
+          "duration": "100"
+        },
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "REGENERATION",
+          "amount": "0",
+          "duration": "100"
+        },
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "HASTE",
+          "amount": "1",
+          "duration": "100"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

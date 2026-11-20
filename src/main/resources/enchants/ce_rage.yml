@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_rage",
+  "name": "Rage",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Rage",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "rage",
+          "target": "SELF",
+          "increment": "0.1*level",
+          "maximum": "5",
+          "expiry": "4000"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

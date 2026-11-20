@@ -1,0 +1,29 @@
+# 새 ID로 저장: plugins/Hearth/enchants/my_haste.yml
+version: 1
+id: hearth:my_haste
+name: 나만의 헤이스트
+enabled: false
+max-level: 3
+equipment: [tool]
+slots: [MAIN_HAND]
+conflicts: [hearth:ce_haste]
+worlds: [] # 비어 있으면 Hearth가 허용한 월드. key를 나열하면 추가로 제한한다.
+rules:
+  - trigger: EQUIP
+    condition: '1'
+    chance: '1'
+    cooldown: '0' # 밀리초. 같은 ID의 다른 장비/트리거와 공유한다.
+    duration: '60' # tick
+    effects:
+      - type: potion
+        target: SELF
+        potion: HASTE
+        amount: 'level-1' # Bukkit amplifier, 0이 1단계
+        duration: '60'
+operations:
+  FUSE:
+    success: 'max(.1,1-level*.1)'
+    failure: KEEP
+  EXTRACT:
+    recoverable: true
+    success: '.5'

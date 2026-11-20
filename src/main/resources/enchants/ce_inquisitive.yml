@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "hearth:ce_inquisitive",
+  "name": "Inquisitive",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Inquisitive",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "MOB_XP",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "xp_multiplier",
+          "target": "SELF",
+          "amount": "level+1"
+        }
+      ],
+      "chance": "clamp((50+25*level)/100,0,1)"
+    }
+  ]
+}

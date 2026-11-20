@@ -1,0 +1,1210 @@
+{
+  "date": "2026-11-20",
+  "base_git_commit": "b520de9",
+  "implementation": {
+    "source_url": "https://github.com/Crazy-Crew/CrazyEnchantments",
+    "source_commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "license": "MIT",
+    "source_count": 105,
+    "implemented_definition_count": 105,
+    "implementation_mapping_rate": 1.0,
+    "rate_scope": "Definitions have executable rule plans and concrete effect modules; NOT authenticated client acceptance rate",
+    "source_effect_primitive_count": 31,
+    "total_effect_primitive_count": 32,
+    "mapping": "verification/enchant-port-mapping.json",
+    "mapping_sha256": "ddf3ffa14b82ab7e20310e82cf22324db067e6d464b167e037a41488b71a2e63",
+    "external_crazyenchantments_runtime_dependency": false
+  },
+  "artifact": {
+    "path": "/home/server/hearth-tmp/hearth-enchants.Mx7C1ug2/Hearth-enchants-reviewed.jar",
+    "sha256": "ccf59b0c313e3d0da4c38eea652ecf9f1d013948f05f119bfb25bccd9825bfd3"
+  },
+  "source_files": [
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/economy/EnchantStore.java",
+      "sha256": "34951057c0d32788e9010fd7c329f23d4f01ca06012a44456d1fcd490de1ee29"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantCatalog.java",
+      "sha256": "c654be821c355553d54888c08e36da816bf1e1f907427e1686389e799b2c4d33"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantDefinition.java",
+      "sha256": "d5a0422d429c937400e4cbc49bee3faf16b0b79a4bbc84bf9830b567fa8f8816"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantEffects.java",
+      "sha256": "f093a88f75dcbf3e514338d8ffd5ca858e8f783edcb79af8c76ac5a74b9cdded"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantEngine.java",
+      "sha256": "fcb07d92c6bec057f5353e7ed180b833860f65e7c3eda27f084d86666034aac3"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantExtension.java",
+      "sha256": "94aa24ee951836fccd00a116cf575b11d2a2676a3a6c20b55c3e58d3ddf63bc6"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantItems.java",
+      "sha256": "0ace77774c133f3c2020de48d085064452d6c8f5967d69077dccf2b7c637f3d9"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantMenus.java",
+      "sha256": "08b1c790c20ca19dbae227ce9a8a54c9d4cedf6037d4a0bb91c8d7a200b9fb41"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantOperations.java",
+      "sha256": "85d5bfa4879d192b80f71ad6638573400da0db0d6038fc4ef5cdd5b97862bcd5"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantRuntime.java",
+      "sha256": "09d301d5a79b7b242fc3796313dbde148fd29d41876156f438f3ad035d4b13bd"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/survival/enchants/Formula.java",
+      "sha256": "cf96a50c053f3d5cd051d56853e7c911f54021c446fe04e03190b13f61fc665b"
+    },
+    {
+      "path": "src/main/java/io/github/jesterportfolio/hearth/verification/EnchantVerification.java",
+      "sha256": "8d3c157105a499b547c30ddf301ef4a35dc79c5699dc251d730a87c14299c2ac"
+    },
+    {
+      "path": "src/main/resources/db/economy/E011__enchant_operations.sql",
+      "sha256": "b25916454d1edfb1a3c14998c32e6f2551a3475c0f187380ad431d48d7dda19d"
+    },
+    {
+      "path": "src/main/resources/enchants/catalog.json",
+      "sha256": "245bf6cf59669bfe1c0df5b61eabb481672cd14f0209ba02a81590369c222c71"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_acidrain.yml",
+      "sha256": "6b018d3adc5083fc756f47f7147aef9ee9f80e6e87479bbfaf0559c1bd094a73"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_adrenaline.yml",
+      "sha256": "75906696d0213978764d9be7e408c5eaf51547f4d67660f1107d38ebd3bba096"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_angel.yml",
+      "sha256": "36f87d913a48c6a7924a9882f6899685c68104654b950bfbacc432f41dfdf4fb"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_antigravity.yml",
+      "sha256": "051e2b4bfccfab0c38932c4e2194979a3a5ac7a547ea5f0b7a3781e645a9aa87"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_autosmelt.yml",
+      "sha256": "a79be5227aa22a00a1ee53840ca17135da92963af42d4780fc270e375f4457e3"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_battlecry.yml",
+      "sha256": "778f92ae949819778b9859a1466384352e95732caea8405ff3ddb5ea674237f5"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_beekeeper.yml",
+      "sha256": "75d3704d2df9f8e254252eb63c3635f0c64d4cf31d9e4eae363f8212026285d4"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_berserk.yml",
+      "sha256": "43ca24ce33c8efda5203d8a9063343624085fe26b4dad5a9072c12eec27fd422"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_blast.yml",
+      "sha256": "b13f1d3673b43b091e8da89e2e8c429134d9dacf63c0d6a1b244a39063b4738b"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_blessed.yml",
+      "sha256": "3073502b4371542f6eba0e4df160b903e299766b45a87a999dad61ef66c47d04"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_blindness.yml",
+      "sha256": "508e5a929c86cc752e5c19ca498e994497c062f32fdab008f30943c879a76c4f"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_blizzard.yml",
+      "sha256": "b6d8797363ff06bd95cf66a5e30507bbc57e017f98886bf99123bcecdb224312"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_boom.yml",
+      "sha256": "1dd6657aa93605c37ee416fe013380ad544cb8e493b035c872858e9c3dd2bcad"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_burnshield.yml",
+      "sha256": "110912f5b0c779f130d3a75ff4904549a95c0dfd645dab2df79ee7d74d985b9e"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_cactus.yml",
+      "sha256": "5bbc9d81ec768671b89f039c0ac1b9a9d76c4c9e67ca361fb6215dacd152741f"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_charge.yml",
+      "sha256": "abd7df698477287f41f93889d2b2060781e51f70ea3c85738e27c90d57a9a77c"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_commander.yml",
+      "sha256": "54937a9f66a04f2f96569115b373554fcd27956fafc5eae603ce447605b7da59"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_confusion.yml",
+      "sha256": "e29383424570d8cc46b9424701019fa461a4def02635352f76287e7361c2ae77"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_crouch.yml",
+      "sha256": "e36c9f9675a972fb8a1ee3632e7fdafcedf2d8441c933afb8d3734bb63a50096"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_cursed.yml",
+      "sha256": "c4878b88674af5bf08133d901e2d4ec88ad55b866d5bd4854ca336316420a5ba"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_cyborg.yml",
+      "sha256": "96c79af6c5ad602262ae360b3a31f2045ed6594ecb1d599990679f4835a10a67"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_decapitation.yml",
+      "sha256": "0e8db3deaa83f5a51d3b606022bcf7b45b06af706fbca283674ad27be64b3926"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_demonforged.yml",
+      "sha256": "ddb653737e96f5f5786297998fb85ad5a1a07c40de023738cdbe8e683e049176"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_disarmer.yml",
+      "sha256": "0fd648b195ec434d415af0a90bf56fbf94b3d6b0d0310869384c523d76b88be2"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_disorder.yml",
+      "sha256": "ac41185a89986240590ee0ca3cc304634a7f381624d3c00fc8f1092559f1acf0"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_dizzy.yml",
+      "sha256": "149014b7b87c805dc03766e9c2e67a875e43acbf804dee25082ce74b39e94917"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_doctor.yml",
+      "sha256": "e57d04740f3a1dd13d2407dcf611c1aa16c63c1a5a234d990476b67a92385d8a"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_doubledamage.yml",
+      "sha256": "8322ce6d88b4909627fec2c0bc30bb0e311d4ccd1dde38a31ddea4fb76469b90"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_drunk.yml",
+      "sha256": "8074ba385382664195835fd63957570ac9bdb19c13c774653d8464e63dbfbd5e"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_enlightened.yml",
+      "sha256": "d6b1ab34fccbab8259e0d8f7c9207085af09bfed93ccf44db6869a69c72c7646"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_execute.yml",
+      "sha256": "91987e177aa49d47a72d08325b31d12685fcb3c698ba8848d50ade532a9619c5"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_experience.yml",
+      "sha256": "82ed9634de784066565cd336e5bd4a2ebd5f7e1c42c65f4edaa75934424a942a"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_famished.yml",
+      "sha256": "b9c4cf2efcb52c23eff200ff069bea816921da7636cf492ddf6106df74c93b8a"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_fastturn.yml",
+      "sha256": "0bc7eca99b8c259d96defe1c7baeb7be3974599ecdbeb7a3e462b3600bfdfc46"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_feedme.yml",
+      "sha256": "1057e750b09835c09648b09894473bdc39deb98cdda48dc59b14cc04001fc551"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_fortify.yml",
+      "sha256": "60392b27c5e3c2fad8ef6b1ef48a1e7fd9b13c3c6f8ef7a9254621bd50862d15"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_freeze.yml",
+      "sha256": "17497ea0defe58c7c8f44fc871d7f04cbf9166cf0a792b0013ee02b058ff8e6e"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_furnace.yml",
+      "sha256": "8dbca32cd6affd1ba06f3ae810df72f4743c4afa470fecee60f8aefe037644ea"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_gears.yml",
+      "sha256": "9f04a63b2b1ce1c30b4e4cd67b930857657e5d01ef33a7373efc89117d32b88f"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_glowing.yml",
+      "sha256": "c00a9eb158e1b30ffb0d7fd1de8694a23d432675f1debcdfac587a1712ef1c8a"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_greenthumb.yml",
+      "sha256": "ddda7d4e0ffe05fff1193f6f5a30e4c2b51980043db409867aa3f7951943fdd8"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_guards.yml",
+      "sha256": "d80e1c263eb794c1c54ad3a03c05e5c82d8103c61bd69bfc6094f34f9881350e"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_harvester.yml",
+      "sha256": "57623947785fdfcf4f012072c1ef3d1499ec3df02b03067ba26b71fa2917a3dd"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_haste.yml",
+      "sha256": "4acb90f575558cb18a5e7595a175702612742f99581373a8fd1b38b7c1c540d8"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_headless.yml",
+      "sha256": "573f9ed7b37c7b68aa9ec704cb71c2d37e381f98bba0951ba44bc8728dc34d83"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_hellforged.yml",
+      "sha256": "8ea79dff791fc39dbe48df05f877db603ba53fc14ee2f58f5f2c207049127b42"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_hulk.yml",
+      "sha256": "c66ca4e5b85b22a23ba0574f9c466ac5fd84ac9e67c4239c5c202f2cf25edcb4"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_icefreeze.yml",
+      "sha256": "132b9c55af131f5153582a705dd214d1b775776e10709575fcc65225c57b3689"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_implants.yml",
+      "sha256": "44b6b7f1ee5f57987d9b6f5744c8aad86bbffe4c3c6df4731a98264b2e5f701a"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_infestation.yml",
+      "sha256": "ef43aee776a7703184b254f3b4a6c5e351732e244703ec109f02d54934f1f695"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_inquisitive.yml",
+      "sha256": "48dfaa99fa0ae40201a076a54d0a3142f9c6e3fb97ac480488bc0ef4fece8ce5"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_insomnia.yml",
+      "sha256": "7c781833d0c886d948966611cd3b483d25fbd9ec5695cd4656ddbc6889f0f97e"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_intimidate.yml",
+      "sha256": "4f66f928b8e8c63964b2e3599a7197eeb8b85a7794e1d02a4a4431bcebaab43f"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_leadership.yml",
+      "sha256": "1672e0c2de618fa3c3a13b789b5b8ffb7a0f5a8da40f56056c7821f2c2a086fd"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_lifesteal.yml",
+      "sha256": "2b56d381b4b4308c56388f0c4360180fe227cb27c9d44071ccc7777d08603dd8"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_lightning.yml",
+      "sha256": "bbe0dcdc6f7f5af1f00e606e65b73f3c2ebe0292241d8e40cb0ebd445b35936d"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_lightweight.yml",
+      "sha256": "0aa69cf8bcaaaf8b05dbd1f58fad74947ac66f9d967748b00f0779a7280df461"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_maneuver.yml",
+      "sha256": "661e0f62d1e2b96849140c780192477d22f9a3672e7ff7584537eaab1ceea8f7"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_mermaid.yml",
+      "sha256": "c4fe9e3c0ae856b6c82cdbf90cef7dd5bc3d7f40aabc6c3b4bcb43baadc10327"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_molten.yml",
+      "sha256": "61c11e6b77c3db748d10d2d549c6aa4d3e93060663048470e31b4f875db17c90"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_multiarrow.yml",
+      "sha256": "75538aac14eb896247f51c495a2f0179e01321ae15039fd3b0e3aac56aeb1930"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_necromancer.yml",
+      "sha256": "8ecd840dfd98045d1c7d1ab1a8dd13b757a0295672d5d542ee1d46d3b0cc5e46"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_ninja.yml",
+      "sha256": "a0e98d19878872995d9585eda6b3a661470eeda93fd5c36a2ad0d9d0c4c428d8"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_nursery.yml",
+      "sha256": "cca8d0965dafa1c262180d5a08b1a7bc3d7a321cd7c468c20b13efefb4885e28"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_nutrition.yml",
+      "sha256": "b296cb741e9cb87b48630b2a2515b7fe12b1a6da20b8b257060b6622e4d6c39f"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_obliterate.yml",
+      "sha256": "1bb237ea2711dbd37e32ad55d5cad58c4896ba7f85bc46af4e855e4a3e9f7ec4"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_overload.yml",
+      "sha256": "410fa45d409fc695b2bcc73279dff6d1bed8f1750c5e9e12d6aa063d6c087662"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_oxygenate.yml",
+      "sha256": "d676244b63cf8c41e0afe6bdf27383cc40139e0c02d4c26ef603082d9349b9e5"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_paingiver.yml",
+      "sha256": "68ebf1ba4a20ab8489a379027beaaccd688102dd60a891c29dfaf6e957eea516"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_paralyze.yml",
+      "sha256": "55fd4710aaaeb123c278dc3f022112395ca0beb3b800000f95e2515cc4c35164"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_piercing.yml",
+      "sha256": "7ebbf2bce36f52a18637e63a7065926a2d9e5341ccc08f294c70d1be5a187841"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_planter.yml",
+      "sha256": "6b66656d95bd507b5dff3c66ae9acd04f0b0ac3eed9922963a5f1328f5994880"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_pull.yml",
+      "sha256": "9eadcc959e36a46c8ad12013fc2447ded3553532d9768db32b0a61eb574fbfe1"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_radiant.yml",
+      "sha256": "5dddfb27ebeab4f60a38834232e72a0c6387d2f32894fef461eaf16b74f97468"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_rage.yml",
+      "sha256": "d67c2c761cde570457c40a52fd38812e8d8b2c86bf435e5ec02aa40b5b33e562"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_recover.yml",
+      "sha256": "0bc3dcc4b618c223f911c2a4b9dc4f68079d209aa459464e1be9336cc1252a3a"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_rekt.yml",
+      "sha256": "b98ed55bec90203235574608d87f6499aa64c6872eb0a1519737a9efa99d9201"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_revenge.yml",
+      "sha256": "329d2db55951b85981b70dcac448cae6ac4047cd9db6e59d260750e3115c9655"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_rocket.yml",
+      "sha256": "8a2ef12042336d0939b46ac37c2b4f38c2e95b746eacfbb5320c7f188b8f2d95"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_sandstorm.yml",
+      "sha256": "8377a2bf2deb35a03dd4dd8aaf5b07e0dfee87f3d8fd0368c543962971d2e9bf"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_savior.yml",
+      "sha256": "2cc941d4eaa8b87b7c2546e6233ce370f3fc2bcece51cce18462f66ea886b788"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_selfdestruct.yml",
+      "sha256": "630bd097cd29eeafd858167667c196bab6dbdeabee1f28b0c382e9db5f2fb493"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_shockwave.yml",
+      "sha256": "1107ee71172c27120c41445b70932ff3f9e4c2e7efcf5fb6c833266e155457f9"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_skillswipe.yml",
+      "sha256": "eb712e34853c69ddede247f0f18066b65c35f5a0d601d42a45f26e5f3b864312"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_slowmo.yml",
+      "sha256": "5a1c360a98d9e1c6040d31783f22bccb15c91f121db152110de68d85e3f842fc"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_smokebomb.yml",
+      "sha256": "ced15a6e0c3a68b11d445ce6a2b93fd1d46fcdf3ae6c3d46c6c5d57279eef53e"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_snare.yml",
+      "sha256": "a704ca885477ee7f6167ce4675659c0ae0de86e4d1e500371dbfd32ee7dc85cf"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_sniper.yml",
+      "sha256": "54a9edd8799818e94ebedacfa9346692f0f6e9965bc5114bb342ba1d7e515e41"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_springs.yml",
+      "sha256": "076569f85fd57e38de731c75042d273769a7dfd46f45feb8e2e99182a4bb3def"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_sticky_shot.yml",
+      "sha256": "020ee6126b8fe6700011113d593d17bbace657079ff659c4d0c29361f5759dc1"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_stormcaller.yml",
+      "sha256": "e7570dec7a03857233862ce797da29188b2f8127212ee637e385708c2631b2b9"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_systemreboot.yml",
+      "sha256": "01bba4bdc4aea353fd3bbb8d83f9b8f6a1536f5fbfd3e391920b17a717d73db0"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_tamer.yml",
+      "sha256": "d626888cba73463090e5177c0a7c91c6e9bde55b60ca0f388ef13492b0e47821"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_telepathy.yml",
+      "sha256": "bac859c2e6f71e1867ffae5fa2f54a2a8a93e622a1db18f2196973ef4b192dbc"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_tiller.yml",
+      "sha256": "c8faa05178efbc8edd19b3ccf7d3a8d793eb06e13c01112faf6832d10d976e18"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_trap.yml",
+      "sha256": "b2c421f91691568af7d3371093afef1fcd0b655ddf0c380445f5a499d2632a3d"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_treefeller.yml",
+      "sha256": "2c46f334605ccfb666b628f635f7dfa17c183fd5d610f2bebfd268149aeb612c"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_valor.yml",
+      "sha256": "0b3d7c47573c09a7382cdfb95350f6e8269c780a3c8c60983bd7949c7cbe6d18"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_vampire.yml",
+      "sha256": "bfe0ca9ead300965ea125b688518eae2707f1548be2165a36c911a41b3ed87ae"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_veinminer.yml",
+      "sha256": "46aa2e7b897306c9941cfbb66476a06b800f30bc49b196691f2336836360f100"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_venom.yml",
+      "sha256": "dc85c00fdeabea4f443a317772e373a3828c0ce6ff7bebf4dc4b83baad7bc059"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_viper.yml",
+      "sha256": "11d39ffce6a981554157544fb0dfd7dab0f52b7c28e07cbf24694ec8c054473a"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_voodoo.yml",
+      "sha256": "11fba999611c5e86cfc627a4ebe44922394ad3d603afe4963a396f02faa3701e"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_wings.yml",
+      "sha256": "f0f5aec7cb23f864044129c40cd6f188880928752d4e9657651b357c125913fa"
+    },
+    {
+      "path": "src/main/resources/enchants/ce_wither.yml",
+      "sha256": "6652595828c74ac923788463d508058e703e5fcce297cf6582fdec13dce157cb"
+    },
+    {
+      "path": "src/main/resources/enchants/operations.yml",
+      "sha256": "71640b3e9fa2a274ba33199be78104a0e4131b9a2f25a300637dc0297a5f9501"
+    }
+  ],
+  "unit_verification": {
+    "outcome": "PASS",
+    "unique_enchant_tests": 8,
+    "related_rpg_policy_tests": 10,
+    "existing_native_transaction_journal_tests": 15,
+    "execution": "Incremental affected subsets; not a single 33-test rerun",
+    "logs": [
+      {
+        "path": "/home/server/hearth-tmp/hearth-enchants.Mx7C1ug2/unit-1.log",
+        "sha256": "550de1967987736e0dc893f7bb2b152625c1c07f7679d56c2148a0a7bfa3c936"
+      },
+      {
+        "path": "/home/server/hearth-tmp/hearth-enchants.Mx7C1ug2/build-1.log",
+        "sha256": "a45e9b96401e91dd2bfc74c58474428d600fcd37579f02f66361fd878421d157"
+      },
+      {
+        "path": "/home/server/hearth-tmp/hearth-enchants.Mx7C1ug2/final-batch-build.log",
+        "sha256": "8c25c0d23d49e54f39c9b6f9c3390860faeac6cde6d579cf4defb088a4816b91"
+      },
+      {
+        "path": "/home/server/hearth-tmp/hearth-enchants.Mx7C1ug2/effects-final-build.log",
+        "sha256": "87adec977068126241a212cbacd01e8fab983c93b42bb28f24b94e8e85f9dce7"
+      },
+      {
+        "path": "/home/server/hearth-tmp/hearth-enchants.Mx7C1ug2/reviewed-final-build.log",
+        "sha256": "5c8e7793db06a0e96b2ac7c2d79fb8397814bcd510aa431e03ab02d56cc1f35c"
+      },
+      {
+        "path": "/home/server/hearth-tmp/hearth-enchants.Mx7C1ug2/import-check.log",
+        "sha256": "6b6ba7b6b356ad1c81ac0e519b839df155196a694cab5ce5e3c99c574b6b1c6a"
+      }
+    ]
+  },
+  "trials": [
+    {
+      "scope": "E011/105 definitions/book plans/two JVM restoration",
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.ZwiXgrhI/aura-trial-result.json",
+      "sha256": "4abc1c487728fa2e4012c356531ada2dc1ce0bbfe7234bf666d01564f757bfd9",
+      "outcome": "PASS",
+      "failure": null,
+      "cleanup_errors": [],
+      "duration_seconds": 51.796,
+      "hearth_sha256": "219a0e4649e0d6f914e1fc317ea97b47eb2d2575622ebedd51fccd7914fd793b",
+      "processes": {
+        "database": {
+          "pid": 2800842,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 51.041,
+          "shutdown_seconds": 0.139,
+          "max_sampled_rss_kib": 237508,
+          "observed_cpu_seconds": 2.64,
+          "min_sampled_host_available_kib": 11908848,
+          "sample_count": 441,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-prepare": {
+          "pid": 2800938,
+          "exit_code": 0,
+          "ready_seconds": 19.79,
+          "duration_seconds": 23.832,
+          "shutdown_seconds": 1.211,
+          "max_sampled_rss_kib": 1316216,
+          "observed_cpu_seconds": 38.41,
+          "min_sampled_host_available_kib": 12088992,
+          "sample_count": 203,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-resume": {
+          "pid": 2801156,
+          "exit_code": 0,
+          "ready_seconds": 20.148,
+          "duration_seconds": 24.222,
+          "shutdown_seconds": 1.197,
+          "max_sampled_rss_kib": 1395136,
+          "observed_cpu_seconds": 39.26,
+          "min_sampled_host_available_kib": 11908848,
+          "sample_count": 203,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "peak_combined_rss_kib": 1632092,
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "source_hashes_preserved": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.zdV7Qfhu/data/global/pg_control": "567678fbec5bfcdfca760ddac35304a6848f68df85c4c7d797fb2528412f3d40",
+        "/home/server/hearth-tmp/hearth-native-economy-run.zdV7Qfhu/server/plugins/Hearth/config.yml": "90a0ac8c97b3427b78717340cb57638fd23683c07063e07f3681c4cbc5da0b0e",
+        "/home/server/hearth-tmp/hearth-native-economy-run.zdV7Qfhu/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "logs": [
+        {
+          "path": "/home/server/hearth-tmp/hearth-native-economy-run.ZwiXgrhI/database-console.log",
+          "sha256": "95c1969154b8f318be2b44ef2ef4a67511d9a5a876cb7cab54f71ff0ab6453ef",
+          "enchant_checks": [
+            "E011_upgrade_is_idempotent_and_existing_migration_checksums_match",
+            "concurrent_same_request_pays_and_applies_PG_shadow_once",
+            "replay_has_no_inventory_payload_for_automatic_regrant",
+            "request_owner_and_roll_fingerprint_are_immutable",
+            "foreign_context_issuer_is_denied",
+            "pending_inspection_is_read_only_owner_scoped_and_includes_fixed_roll",
+            "stale_revision_never_replaces_original_native_shadow",
+            "revoked_native_session_does_not_charge_or_write_receipt",
+            "receipt_SQL_failure_rolls_back_wallet_and_material_shadow",
+            "failed_extraction_outcome_and_cost_are_committed_once",
+            "coalesced_cooldown_save_never_shortens_deadline",
+            "history_is_actor_scoped_and_records_success_and_failure",
+            "E011_checksum_mismatch_keeps_inventory_money_and_receipts"
+          ],
+          "enchant_check_count": 13
+        },
+        {
+          "path": "/home/server/hearth-tmp/hearth-native-economy-run.ZwiXgrhI/paper-enchants-prepare-console.log",
+          "sha256": "f69a7f7efa485ca27c7c202936c32d99a184080f85f76268220b198cb3079119",
+          "enchant_checks": [
+            "all_105_source_IDs_load_without_external_CrazyEnchantments",
+            "external_CE_plugin_is_absent",
+            "registered_effect_hearth:ce_battlecry_knockback",
+            "registered_effect_hearth:ce_nutrition_saturation",
+            "registered_effect_hearth:ce_hellforged_durability",
+            "registered_effect_hearth:ce_springs_potion",
+            "registered_effect_hearth:ce_furnace_smelt",
+            "registered_effect_hearth:ce_blast_area_break",
+            "registered_effect_hearth:ce_lightweight_potion",
+            "registered_effect_hearth:ce_charge_potion",
+            "registered_effect_hearth:ce_charge_potion",
+            "registered_effect_hearth:ce_cyborg_potion",
+            "registered_effect_hearth:ce_cyborg_potion",
+            "registered_effect_hearth:ce_cyborg_potion",
+            "registered_effect_hearth:ce_feedme_food",
+            "registered_effect_hearth:ce_cactus_damage",
+            "registered_effect_hearth:ce_oxygenate_potion",
+            "registered_effect_hearth:ce_doubledamage_damage_multiplier",
+            "registered_effect_hearth:ce_leadership_leadership",
+            "registered_effect_hearth:ce_sandstorm_potion",
+            "registered_effect_hearth:ce_insomnia_potion",
+            "registered_effect_hearth:ce_insomnia_potion",
+            "registered_effect_hearth:ce_insomnia_potion",
+            "registered_effect_hearth:ce_insomnia_damage",
+            "registered_effect_hearth:ce_wither_potion",
+            "registered_effect_hearth:ce_multiarrow_multi_arrow",
+            "registered_effect_hearth:ce_headless_head_drop",
+            "registered_effect_hearth:ce_rocket_knockback",
+            "registered_effect_hearth:ce_rocket_fall_guard",
+            "registered_effect_hearth:ce_treefeller_area_break",
+            "registered_effect_hearth:ce_veinminer_area_break",
+            "registered_effect_hearth:ce_sticky_shot_temporary_block",
+            "registered_effect_hearth:ce_rage_rage",
+            "registered_effect_hearth:ce_intimidate_potion",
+            "registered_effect_hearth:ce_freeze_potion",
+            "registered_effect_hearth:ce_demonforged_durability",
+            "registered_effect_hearth:ce_rekt_damage_multiplier",
+            "registered_effect_hearth:ce_blizzard_potion",
+            "registered_effect_hearth:ce_voodoo_potion",
+            "registered_effect_hearth:ce_savior_damage_multiplier",
+            "registered_effect_hearth:ce_nursery_heal",
+            "registered_effect_hearth:ce_maneuver_cancel_damage",
+            "registered_effect_hearth:ce_snare_potion",
+            "registered_effect_hearth:ce_snare_potion",
+            "registered_effect_hearth:ce_overload_potion",
+            "registered_effect_hearth:ce_skillswipe_xp_transfer",
+            "registered_effect_hearth:ce_inquisitive_xp_multiplier",
+            "registered_effect_hearth:ce_autosmelt_smelt",
+            "registered_effect_hearth:ce_antigravity_potion",
+            "registered_effect_hearth:ce_paingiver_potion",
+            "registered_effect_hearth:ce_valor_potion",
+            "registered_effect_hearth:ce_piercing_damage_multiplier",
+            "registered_effect_hearth:ce_beekeeper_summon",
+            "registered_effect_hearth:ce_beekeeper_summon",
+            "registered_effect_hearth:ce_systemreboot_heal",
+            "registered_effect_hearth:ce_systemreboot_cancel_damage",
+            "registered_effect_hearth:ce_fortify_potion",
+            "registered_effect_hearth:ce_vampire_heal",
+            "registered_effect_hearth:ce_lifesteal_heal",
+            "registered_effect_hearth:ce_obliterate_knockback",
+            "registered_effect_hearth:ce_disarmer_disarm",
+            "registered_effect_hearth:ce_adrenaline_potion",
+            "registered_effect_hearth:ce_recover_potion",
+            "registered_effect_hearth:ce_recover_potion",
+            "registered_effect_hearth:ce_trap_potion",
+            "registered_effect_hearth:ce_hulk_potion",
+            "registered_effect_hearth:ce_hulk_potion",
+            "registered_effect_hearth:ce_hulk_potion",
+            "registered_effect_hearth:ce_selfdestruct_explosion",
+            "registered_effect_hearth:ce_sniper_potion",
+            "registered_effect_hearth:ce_tiller_farm",
+            "registered_effect_hearth:ce_doctor_heal",
+            "registered_effect_hearth:ce_berserk_potion",
+            "registered_effect_hearth:ce_berserk_potion",
+            "registered_effect_hearth:ce_gears_potion",
+            "registered_effect_hearth:ce_disorder_shuffle_hotbar",
+            "registered_effect_hearth:ce_slowmo_potion",
+            "registered_effect_hearth:ce_crouch_damage_multiplier",
+            "registered_effect_hearth:ce_pull_pull",
+            "registered_effect_hearth:ce_viper_potion",
+            "registered_effect_hearth:ce_angel_potion",
+            "registered_effect_hearth:ce_drunk_potion",
+            "registered_effect_hearth:ce_drunk_potion",
+            "registered_effect_hearth:ce_drunk_potion",
+            "registered_effect_hearth:ce_acidrain_potion",
+            "registered_effect_hearth:ce_tamer_summon",
+            "registered_effect_hearth:ce_tamer_summon",
+            "registered_effect_hearth:ce_paralyze_damage",
+            "registered_effect_hearth:ce_paralyze_lightning_visual",
+            "registered_effect_hearth:ce_paralyze_potion",
+            "registered_effect_hearth:ce_paralyze_potion",
+            "registered_effect_hearth:ce_molten_fire",
+            "registered_effect_hearth:ce_greenthumb_farm",
+            "registered_effect_hearth:ce_dizzy_potion",
+            "registered_effect_hearth:ce_boom_explosion",
+            "registered_effect_hearth:ce_experience_xp_add",
+            "registered_effect_hearth:ce_famished_potion",
+            "registered_effect_hearth:ce_haste_potion",
+            "registered_effect_hearth:ce_fastturn_damage_multiplier",
+            "registered_effect_hearth:ce_smokebomb_potion",
+            "registered_effect_hearth:ce_smokebomb_potion",
+            "registered_effect_hearth:ce_cursed_potion",
+            "registered_effect_hearth:ce_wings_flight",
+            "registered_effect_hearth:ce_blindness_potion",
+            "registered_effect_hearth:ce_glowing_potion",
+            "registered_effect_hearth:ce_implants_food",
+            "registered_effect_hearth:ce_telepathy_collect",
+            "registered_effect_hearth:ce_confusion_potion",
+            "registered_effect_hearth:ce_commander_potion",
+            "registered_effect_hearth:ce_blessed_cleanse",
+            "registered_effect_hearth:ce_venom_potion",
+            "registered_effect_hearth:ce_stormcaller_lightning_visual",
+            "registered_effect_hearth:ce_stormcaller_damage",
+            "registered_effect_hearth:ce_mermaid_potion",
+            "registered_effect_hearth:ce_revenge_potion",
+            "registered_effect_hearth:ce_revenge_potion",
+            "registered_effect_hearth:ce_revenge_potion",
+            "registered_effect_hearth:ce_lightning_lightning_visual",
+            "registered_effect_hearth:ce_lightning_damage",
+            "registered_effect_hearth:ce_necromancer_summon",
+            "registered_effect_hearth:ce_necromancer_summon",
+            "registered_effect_hearth:ce_shockwave_knockback",
+            "registered_effect_hearth:ce_radiant_fire",
+            "registered_effect_hearth:ce_ninja_potion",
+            "registered_effect_hearth:ce_ninja_potion",
+            "registered_effect_hearth:ce_infestation_summon",
+            "registered_effect_hearth:ce_infestation_summon",
+            "registered_effect_hearth:ce_infestation_summon",
+            "registered_effect_hearth:ce_infestation_summon",
+            "registered_effect_hearth:ce_icefreeze_potion",
+            "registered_effect_hearth:ce_burnshield_potion",
+            "registered_effect_hearth:ce_decapitation_head_drop",
+            "registered_effect_hearth:ce_guards_summon",
+            "registered_effect_hearth:ce_guards_summon",
+            "registered_effect_hearth:ce_planter_farm",
+            "registered_effect_hearth:ce_execute_potion",
+            "registered_effect_hearth:ce_enlightened_heal",
+            "registered_effect_hearth:ce_harvester_area_break",
+            "apply_adds_only_selected_ID_without_mutating_original",
+            "vanilla_enchant_upgrade_foreign_lore_and_PDC_are_preserved",
+            "failed_apply_protection_consumes_book_scroll_and_preserves_gear",
+            "unprotected_destruction_is_a_fixed_recorded_outcome",
+            "success_booster_is_applied_once_and_consumed",
+            "same_ID_and_level_two_books_produce_exactly_one_next_level_book",
+            "two_books_in_one_stack_do_not_duplicate_or_lose_extra_materials",
+            "fusion_failure_policy_ALL",
+            "fusion_failure_policy_ONE",
+            "fusion_failure_policy_KEEP",
+            "different_book_levels_are_refused_before_consumption",
+            "selected_extraction_only_preserves_other_data_probability_0.0",
+            "selected_extraction_only_preserves_other_data_probability_1.0",
+            "identification_reveals_fixed_metadata_without_reroll",
+            "new_PDC_books_and_gear_roundtrip_native_41_slot_codec",
+            "actual_Paper_non_player_heal_primitive_changes_health_without_fake_Player",
+            "admin_clone_is_disabled_new_ID_and_preserves_source",
+            "invalid_reload_keeps_previous_catalog_generation",
+            "real_PG_receipt_and_cooldown_prepared_for_next_JVM"
+          ],
+          "enchant_check_count": 157
+        },
+        {
+          "path": "/home/server/hearth-tmp/hearth-native-economy-run.ZwiXgrhI/paper-enchants-resume-console.log",
+          "sha256": "4fa560477983392aac95d767ba592abd9cc73e24a9187a9551c5ab5c076b074f",
+          "enchant_checks": [
+            "all_105_source_IDs_load_without_external_CrazyEnchantments",
+            "external_CE_plugin_is_absent",
+            "registered_effect_hearth:ce_rage_rage",
+            "registered_effect_hearth:ce_fastturn_damage_multiplier",
+            "registered_effect_hearth:ce_mermaid_potion",
+            "registered_effect_hearth:ce_vampire_heal",
+            "registered_effect_hearth:ce_cactus_damage",
+            "registered_effect_hearth:ce_planter_farm",
+            "registered_effect_hearth:ce_maneuver_cancel_damage",
+            "registered_effect_hearth:ce_experience_xp_add",
+            "registered_effect_hearth:ce_famished_potion",
+            "registered_effect_hearth:ce_obliterate_knockback",
+            "registered_effect_hearth:ce_commander_potion",
+            "registered_effect_hearth:ce_wings_flight",
+            "registered_effect_hearth:ce_burnshield_potion",
+            "registered_effect_hearth:ce_crouch_damage_multiplier",
+            "registered_effect_hearth:ce_hellforged_durability",
+            "registered_effect_hearth:ce_drunk_potion",
+            "registered_effect_hearth:ce_drunk_potion",
+            "registered_effect_hearth:ce_drunk_potion",
+            "registered_effect_hearth:ce_doubledamage_damage_multiplier",
+            "registered_effect_hearth:ce_fortify_potion",
+            "registered_effect_hearth:ce_battlecry_knockback",
+            "registered_effect_hearth:ce_leadership_leadership",
+            "registered_effect_hearth:ce_disorder_shuffle_hotbar",
+            "registered_effect_hearth:ce_hulk_potion",
+            "registered_effect_hearth:ce_hulk_potion",
+            "registered_effect_hearth:ce_hulk_potion",
+            "registered_effect_hearth:ce_recover_potion",
+            "registered_effect_hearth:ce_recover_potion",
+            "registered_effect_hearth:ce_freeze_potion",
+            "registered_effect_hearth:ce_paingiver_potion",
+            "registered_effect_hearth:ce_furnace_smelt",
+            "registered_effect_hearth:ce_insomnia_potion",
+            "registered_effect_hearth:ce_insomnia_potion",
+            "registered_effect_hearth:ce_insomnia_potion",
+            "registered_effect_hearth:ce_insomnia_damage",
+            "registered_effect_hearth:ce_acidrain_potion",
+            "registered_effect_hearth:ce_treefeller_area_break",
+            "registered_effect_hearth:ce_sticky_shot_temporary_block",
+            "registered_effect_hearth:ce_lightning_lightning_visual",
+            "registered_effect_hearth:ce_lightning_damage",
+            "registered_effect_hearth:ce_trap_potion",
+            "registered_effect_hearth:ce_voodoo_potion",
+            "registered_effect_hearth:ce_boom_explosion",
+            "registered_effect_hearth:ce_molten_fire",
+            "registered_effect_hearth:ce_oxygenate_potion",
+            "registered_effect_hearth:ce_veinminer_area_break",
+            "registered_effect_hearth:ce_revenge_potion",
+            "registered_effect_hearth:ce_revenge_potion",
+            "registered_effect_hearth:ce_revenge_potion",
+            "registered_effect_hearth:ce_implants_food",
+            "registered_effect_hearth:probe_copy_potion",
+            "registered_effect_hearth:ce_sniper_potion",
+            "registered_effect_hearth:ce_ninja_potion",
+            "registered_effect_hearth:ce_ninja_potion",
+            "registered_effect_hearth:ce_pull_pull",
+            "registered_effect_hearth:ce_demonforged_durability",
+            "registered_effect_hearth:ce_skillswipe_xp_transfer",
+            "registered_effect_hearth:ce_tamer_summon",
+            "registered_effect_hearth:ce_tamer_summon",
+            "registered_effect_hearth:ce_necromancer_summon",
+            "registered_effect_hearth:ce_necromancer_summon",
+            "registered_effect_hearth:ce_wither_potion",
+            "registered_effect_hearth:ce_snare_potion",
+            "registered_effect_hearth:ce_snare_potion",
+            "registered_effect_hearth:ce_confusion_potion",
+            "registered_effect_hearth:ce_paralyze_damage",
+            "registered_effect_hearth:ce_paralyze_lightning_visual",
+            "registered_effect_hearth:ce_paralyze_potion",
+            "registered_effect_hearth:ce_paralyze_potion",
+            "registered_effect_hearth:ce_overload_potion",
+            "registered_effect_hearth:ce_enlightened_heal",
+            "registered_effect_hearth:ce_blessed_cleanse",
+            "registered_effect_hearth:ce_charge_potion",
+            "registered_effect_hearth:ce_charge_potion",
+            "registered_effect_hearth:ce_antigravity_potion",
+            "registered_effect_hearth:ce_intimidate_potion",
+            "registered_effect_hearth:ce_springs_potion",
+            "registered_effect_hearth:ce_nursery_heal",
+            "registered_effect_hearth:ce_beekeeper_summon",
+            "registered_effect_hearth:ce_beekeeper_summon",
+            "registered_effect_hearth:ce_infestation_summon",
+            "registered_effect_hearth:ce_infestation_summon",
+            "registered_effect_hearth:ce_infestation_summon",
+            "registered_effect_hearth:ce_infestation_summon",
+            "registered_effect_hearth:ce_lifesteal_heal",
+            "registered_effect_hearth:ce_angel_potion",
+            "registered_effect_hearth:ce_doctor_heal",
+            "registered_effect_hearth:ce_greenthumb_farm",
+            "registered_effect_hearth:ce_cursed_potion",
+            "registered_effect_hearth:ce_lightweight_potion",
+            "registered_effect_hearth:ce_harvester_area_break",
+            "registered_effect_hearth:ce_rocket_knockback",
+            "registered_effect_hearth:ce_rocket_fall_guard",
+            "registered_effect_hearth:ce_viper_potion",
+            "registered_effect_hearth:ce_blast_area_break",
+            "registered_effect_hearth:ce_shockwave_knockback",
+            "registered_effect_hearth:ce_autosmelt_smelt",
+            "registered_effect_hearth:ce_blindness_potion",
+            "registered_effect_hearth:ce_sandstorm_potion",
+            "registered_effect_hearth:ce_guards_summon",
+            "registered_effect_hearth:ce_guards_summon",
+            "registered_effect_hearth:ce_disarmer_disarm",
+            "registered_effect_hearth:ce_glowing_potion",
+            "registered_effect_hearth:ce_decapitation_head_drop",
+            "registered_effect_hearth:ce_feedme_food",
+            "registered_effect_hearth:ce_nutrition_saturation",
+            "registered_effect_hearth:ce_berserk_potion",
+            "registered_effect_hearth:ce_berserk_potion",
+            "registered_effect_hearth:ce_piercing_damage_multiplier",
+            "registered_effect_hearth:ce_radiant_fire",
+            "registered_effect_hearth:ce_valor_potion",
+            "registered_effect_hearth:ce_rekt_damage_multiplier",
+            "registered_effect_hearth:ce_adrenaline_potion",
+            "registered_effect_hearth:ce_headless_head_drop",
+            "registered_effect_hearth:ce_tiller_farm",
+            "registered_effect_hearth:ce_icefreeze_potion",
+            "registered_effect_hearth:ce_telepathy_collect",
+            "registered_effect_hearth:ce_multiarrow_multi_arrow",
+            "registered_effect_hearth:ce_savior_damage_multiplier",
+            "registered_effect_hearth:ce_dizzy_potion",
+            "registered_effect_hearth:ce_selfdestruct_explosion",
+            "registered_effect_hearth:ce_blizzard_potion",
+            "registered_effect_hearth:ce_cyborg_potion",
+            "registered_effect_hearth:ce_cyborg_potion",
+            "registered_effect_hearth:ce_cyborg_potion",
+            "registered_effect_hearth:ce_inquisitive_xp_multiplier",
+            "registered_effect_hearth:ce_slowmo_potion",
+            "registered_effect_hearth:ce_venom_potion",
+            "registered_effect_hearth:ce_haste_potion",
+            "registered_effect_hearth:ce_stormcaller_lightning_visual",
+            "registered_effect_hearth:ce_stormcaller_damage",
+            "registered_effect_hearth:ce_execute_potion",
+            "registered_effect_hearth:ce_smokebomb_potion",
+            "registered_effect_hearth:ce_smokebomb_potion",
+            "registered_effect_hearth:ce_systemreboot_heal",
+            "registered_effect_hearth:ce_systemreboot_cancel_damage",
+            "registered_effect_hearth:ce_gears_potion",
+            "apply_adds_only_selected_ID_without_mutating_original",
+            "vanilla_enchant_upgrade_foreign_lore_and_PDC_are_preserved",
+            "failed_apply_protection_consumes_book_scroll_and_preserves_gear",
+            "unprotected_destruction_is_a_fixed_recorded_outcome",
+            "success_booster_is_applied_once_and_consumed",
+            "same_ID_and_level_two_books_produce_exactly_one_next_level_book",
+            "two_books_in_one_stack_do_not_duplicate_or_lose_extra_materials",
+            "fusion_failure_policy_ALL",
+            "fusion_failure_policy_ONE",
+            "fusion_failure_policy_KEEP",
+            "different_book_levels_are_refused_before_consumption",
+            "selected_extraction_only_preserves_other_data_probability_0.0",
+            "selected_extraction_only_preserves_other_data_probability_1.0",
+            "identification_reveals_fixed_metadata_without_reroll",
+            "new_PDC_books_and_gear_roundtrip_native_41_slot_codec",
+            "actual_Paper_non_player_heal_primitive_changes_health_without_fake_Player",
+            "new_Paper_JVM_restores_immutable_operation_receipt",
+            "new_Paper_JVM_preserves_proc_cooldown_deadline",
+            "new_Paper_JVM_reads_admin_clone_from_same_YAML_authority"
+          ],
+          "enchant_check_count": 158
+        }
+      ]
+    },
+    {
+      "scope": "changed sticky-shot/grid/config validation",
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.fUEPlInF/aura-trial-result.json",
+      "sha256": "3c1835c2c8a6b19c375bb4cf3e9d47fc2133cff49fc9dc40fffd88cd9d0b0b74",
+      "outcome": "PASS",
+      "failure": null,
+      "cleanup_errors": [],
+      "duration_seconds": 27.5,
+      "hearth_sha256": "61f9bb674cf58da2183cfb5e208dcc81b5b8ac5e1f66ce031510f56d9d6deea9",
+      "processes": {
+        "database": {
+          "pid": 2802600,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 26.726,
+          "shutdown_seconds": 0.117,
+          "max_sampled_rss_kib": 222140,
+          "observed_cpu_seconds": 2.31,
+          "min_sampled_host_available_kib": 12162052,
+          "sample_count": 232,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-effects": {
+          "pid": 2802677,
+          "exit_code": 0,
+          "ready_seconds": 20.376,
+          "duration_seconds": 24.299,
+          "shutdown_seconds": 1.296,
+          "max_sampled_rss_kib": 1308144,
+          "observed_cpu_seconds": 39.5,
+          "min_sampled_host_available_kib": 12162052,
+          "sample_count": 204,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "peak_combined_rss_kib": 1530016,
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "source_hashes_preserved": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.ZwiXgrhI/data/global/pg_control": "2792a3c02aecc064c0af9ddb47fc5bebd41c0ac73a3f4a4f2ce9e73bb8a3b4d8",
+        "/home/server/hearth-tmp/hearth-native-economy-run.ZwiXgrhI/server/plugins/Hearth/config.yml": "d41e86098bb85f69e9d0db8075dbeca7bf4120f5c3c5140ad2b16a89abc90e53",
+        "/home/server/hearth-tmp/hearth-native-economy-run.ZwiXgrhI/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "logs": [
+        {
+          "path": "/home/server/hearth-tmp/hearth-native-economy-run.fUEPlInF/database-console.log",
+          "sha256": "8c004e1b473918878d954c4282348f1cc4b39590c7886ce13a608bc7a1bb95d6",
+          "enchant_checks": [],
+          "enchant_check_count": 0
+        },
+        {
+          "path": "/home/server/hearth-tmp/hearth-native-economy-run.fUEPlInF/paper-enchants-effects-console.log",
+          "sha256": "34ee61b2c0e874656a7f1fae08c8e98e25e17073b44ec78462318b0df58e8ba7",
+          "enchant_checks": [
+            "sticky_shot_covers_entity_and_block_impact_with_one_chance_plan",
+            "actual_loaded_Paper_three_by_three_temporary_block_geometry",
+            "temporary_block_plan_excludes_existing_player_blocks",
+            "GUI_effect_validation_rejects_unknown_potion_before_file_or_generation_change"
+          ],
+          "enchant_check_count": 4
+        }
+      ]
+    },
+    {
+      "scope": "changed extra-arrow attributes",
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.7MCxKcXu/aura-trial-result.json",
+      "sha256": "d67dac3e0d67c118b3d372335f0816f1ab115b132762e0e8ea3aef4fcd3e4da8",
+      "outcome": "PASS",
+      "failure": null,
+      "cleanup_errors": [],
+      "duration_seconds": 27.056,
+      "hearth_sha256": "6afd41acfe9e87ea1bf30855119eb055fe9a5dcd2d32d2d830b20f403f9ff5ff",
+      "processes": {
+        "database": {
+          "pid": 2803727,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 26.27,
+          "shutdown_seconds": 0.117,
+          "max_sampled_rss_kib": 232256,
+          "observed_cpu_seconds": 2.35,
+          "min_sampled_host_available_kib": 12105860,
+          "sample_count": 224,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-arrows": {
+          "pid": 2803823,
+          "exit_code": 0,
+          "ready_seconds": 19.917,
+          "duration_seconds": 23.825,
+          "shutdown_seconds": 1.207,
+          "max_sampled_rss_kib": 1371900,
+          "observed_cpu_seconds": 38.62,
+          "min_sampled_host_available_kib": 12105860,
+          "sample_count": 196,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "peak_combined_rss_kib": 1603840,
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "source_hashes_preserved": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.fUEPlInF/data/global/pg_control": "65cbb0a74ec6032e200e9b316e9ac85baf3aec4f33c348ee53bb5d776f9fa571",
+        "/home/server/hearth-tmp/hearth-native-economy-run.fUEPlInF/server/plugins/Hearth/config.yml": "822c1f80a7117baddb3fe95a0c8ef4293545316a6c894fb3dacfe3a3bc5e3b59",
+        "/home/server/hearth-tmp/hearth-native-economy-run.fUEPlInF/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "logs": [
+        {
+          "path": "/home/server/hearth-tmp/hearth-native-economy-run.7MCxKcXu/database-console.log",
+          "sha256": "8a8299e4cba67e6a46a77488bc8f76b128461e0cc5498fc6d3b9745664c0c8b3",
+          "enchant_checks": [],
+          "enchant_check_count": 0
+        },
+        {
+          "path": "/home/server/hearth-tmp/hearth-native-economy-run.7MCxKcXu/paper-enchants-arrows-console.log",
+          "sha256": "e44174ea2d791df211422b7de9a2d217a369ed290c9a78ca42c5d4ce1dc8a1cf",
+          "enchant_checks": [
+            "actual_Paper_extra_arrow_preserves_damage_critical_flame_without_duplicating_ammunition"
+          ],
+          "enchant_check_count": 1
+        }
+      ]
+    },
+    {
+      "scope": "final context guards and release artifact enable/arrow API",
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.szxWfjC4/aura-trial-result.json",
+      "sha256": "4fcfd52b192608a25291d65cd9255bb11948925b3bda09365eb0ebf7abccde3f",
+      "outcome": "PASS",
+      "failure": null,
+      "cleanup_errors": [],
+      "duration_seconds": 27.888,
+      "hearth_sha256": "ccf59b0c313e3d0da4c38eea652ecf9f1d013948f05f119bfb25bccd9825bfd3",
+      "processes": {
+        "database": {
+          "pid": 2805444,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 27.103,
+          "shutdown_seconds": 0.12,
+          "max_sampled_rss_kib": 233124,
+          "observed_cpu_seconds": 2.31,
+          "min_sampled_host_available_kib": 12125560,
+          "sample_count": 233,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-arrows": {
+          "pid": 2805541,
+          "exit_code": 0,
+          "ready_seconds": 20.899,
+          "duration_seconds": 24.679,
+          "shutdown_seconds": 1.192,
+          "max_sampled_rss_kib": 1346652,
+          "observed_cpu_seconds": 39.57,
+          "min_sampled_host_available_kib": 12125560,
+          "sample_count": 205,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "peak_combined_rss_kib": 1579536,
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "source_hashes_preserved": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.7MCxKcXu/data/global/pg_control": "49775e9c848124014a08d8042059f2139a07457d936bb4c895489060cc317d77",
+        "/home/server/hearth-tmp/hearth-native-economy-run.7MCxKcXu/server/plugins/Hearth/config.yml": "3fb68a9d76afed062b17a574ef023b2acb8b875692d2be35fbea43c4a6378ed8",
+        "/home/server/hearth-tmp/hearth-native-economy-run.7MCxKcXu/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "logs": [
+        {
+          "path": "/home/server/hearth-tmp/hearth-native-economy-run.szxWfjC4/database-console.log",
+          "sha256": "8b7f1839433fd7ed8eb4e7934c065269a88be125fb0118e4abf00da9eafd66b6",
+          "enchant_checks": [],
+          "enchant_check_count": 0
+        },
+        {
+          "path": "/home/server/hearth-tmp/hearth-native-economy-run.szxWfjC4/paper-enchants-arrows-console.log",
+          "sha256": "0c84212f4c6a31be8856a7e31e838f36c7930336181ae93e5243a160d1ac3850",
+          "enchant_checks": [
+            "actual_Paper_extra_arrow_preserves_damage_critical_flame_without_duplicating_ammunition"
+          ],
+          "enchant_check_count": 1
+        }
+      ]
+    }
+  ],
+  "initial_failures": [
+    {
+      "scope": "unit fixture",
+      "cause": "Adrenaline fixture health 5 did not satisfy <=4",
+      "resolution": "Correct fixture health 3 and rerun affected class",
+      "path": "/home/server/hearth-tmp/hearth-enchants.Mx7C1ug2/unit-1.log"
+    },
+    {
+      "scope": "isolated verification helper",
+      "cause": "PaperInventoryCodec called in DB callback instead of owner thread",
+      "resolution": "Move verification continuation to owner executor; production ownership requirement retained",
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.MZI0EteM/aura-trial-result.json"
+    },
+    {
+      "scope": "preflight only",
+      "cause": "Incorrect JAR filename case",
+      "resolution": "Use actual capitalized Hearth artifact and freeze new reviewed JAR; no process started"
+    }
+  ],
+  "actual_authenticated_client": "NOT_RUN_USER_DEFERRED",
+  "fake_player": "NOT_USED",
+  "operating_changes": "NONE",
+  "unverified": [
+    "105-enchant authenticated gameplay/GUI clicks",
+    "multiplayer combat/trade/TPA and policy bypass scenarios",
+    "sustained CPU/RSS/MSPT/TPS and load acceptance",
+    "hard-crash manual recovery acceptance",
+    "future auto-sale implementation",
+    "operating deployment"
+  ],
+  "content_balance": "DEFERRED_USER_POLICY"
+}

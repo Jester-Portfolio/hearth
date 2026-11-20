@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "id": "hearth:ce_rocket",
+  "name": "Rocket",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "boots"
+  ],
+  "slots": [
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Rocket",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "DEFEND",
+      "condition": "health<=8",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "knockback",
+          "target": "SELF",
+          "amount": "2",
+          "vertical": "1"
+        },
+        {
+          "type": "fall_guard",
+          "target": "SELF",
+          "duration": "160"
+        }
+      ],
+      "chance": "clamp((15+5*level)/100,0,1)"
+    }
+  ]
+}

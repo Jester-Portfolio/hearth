@@ -138,3 +138,7 @@ economy-rpg:
   enabled: false
   policy-file: rpg-policy.properties
   content-file: rpg-content.properties
+
+# Requires the economy RPG runtime; operating activation/balance are separate.
+hearth-enchants:
+  enabled: false

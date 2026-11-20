@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_mermaid",
+  "name": "Mermaid",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "helmet"
+  ],
+  "slots": [
+    "HEAD"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Mermaid",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "EQUIP",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "WATER_BREATHING",
+          "amount": "level-1",
+          "duration": "60"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

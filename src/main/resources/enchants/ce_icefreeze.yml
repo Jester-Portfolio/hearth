@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_icefreeze",
+  "name": "IceFreeze",
+  "enabled": true,
+  "max-level": 1,
+  "equipment": [
+    "bow"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "IceFreeze",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ARROW_HIT",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "OTHER",
+          "potion": "SLOWNESS",
+          "amount": "1",
+          "duration": "100"
+        }
+      ],
+      "chance": "clamp((25+10*level)/100,0,1)"
+    }
+  ]
+}

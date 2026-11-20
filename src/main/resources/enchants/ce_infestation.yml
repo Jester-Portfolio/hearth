@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "id": "hearth:ce_infestation",
+  "name": "Infestation",
+  "enabled": true,
+  "max-level": 2,
+  "equipment": [
+    "armor"
+  ],
+  "slots": [
+    "HEAD",
+    "CHEST",
+    "LEGS",
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Infestation",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "120000",
+      "effects": [
+        {
+          "type": "summon",
+          "target": "OTHER",
+          "entity": "ENDERMITE",
+          "amount": "level*3",
+          "lifetime": "1200"
+        },
+        {
+          "type": "summon",
+          "target": "OTHER",
+          "entity": "SILVERFISH",
+          "amount": "level*3",
+          "lifetime": "1200"
+        }
+      ],
+      "chance": "1"
+    },
+    {
+      "trigger": "DEFEND",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "120000",
+      "effects": [
+        {
+          "type": "summon",
+          "target": "OTHER",
+          "entity": "ENDERMITE",
+          "amount": "level*3",
+          "lifetime": "1200"
+        },
+        {
+          "type": "summon",
+          "target": "OTHER",
+          "entity": "SILVERFISH",
+          "amount": "level*3",
+          "lifetime": "1200"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

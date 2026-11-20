@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "hearth:ce_implants",
+  "name": "Implants",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "helmet"
+  ],
+  "slots": [
+    "HEAD"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Implants",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "TICK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "1000",
+      "effects": [
+        {
+          "type": "food",
+          "target": "SELF",
+          "amount": "level"
+        }
+      ],
+      "chance": "clamp((5+5*level)/100,0,1)"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "id": "hearth:ce_disorder",
+  "name": "Disorder",
+  "enabled": true,
+  "max-level": 1,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Disorder",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "shuffle_hotbar",
+          "target": "OTHER"
+        }
+      ],
+      "chance": "clamp((1+0*level)/100,0,1)"
+    }
+  ]
+}

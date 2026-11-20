@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "hearth:ce_greenthumb",
+  "name": "GreenThumb",
+  "enabled": true,
+  "max-level": 3,
+  "equipment": [
+    "hoe"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "GreenThumb",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "INTERACT",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "farm",
+          "target": "BLOCK",
+          "mode": "grow"
+        }
+      ],
+      "chance": "clamp((10+10*level)/100,0,1)"
+    }
+  ]
+}

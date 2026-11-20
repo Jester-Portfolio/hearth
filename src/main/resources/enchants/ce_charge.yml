@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "id": "hearth:ce_charge",
+  "name": "Charge",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Charge",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "KILL",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "ALLIES",
+          "potion": "SPEED",
+          "amount": "1",
+          "duration": "200"
+        },
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "SPEED",
+          "amount": "1",
+          "duration": "200"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

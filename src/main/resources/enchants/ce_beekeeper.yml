@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "id": "hearth:ce_beekeeper",
+  "name": "BeeKeeper",
+  "enabled": true,
+  "max-level": 2,
+  "equipment": [
+    "armor"
+  ],
+  "slots": [
+    "HEAD",
+    "CHEST",
+    "LEGS",
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "BeeKeeper",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "120000",
+      "effects": [
+        {
+          "type": "summon",
+          "target": "OTHER",
+          "entity": "BEE",
+          "amount": "level",
+          "lifetime": "1200"
+        }
+      ],
+      "chance": "1"
+    },
+    {
+      "trigger": "DEFEND",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "120000",
+      "effects": [
+        {
+          "type": "summon",
+          "target": "OTHER",
+          "entity": "BEE",
+          "amount": "level",
+          "lifetime": "1200"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

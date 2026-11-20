@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "id": "hearth:ce_demonforged",
+  "name": "DemonForged",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "axe"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "DemonForged",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "durability",
+          "target": "OTHER",
+          "amount": "1",
+          "random_armor": "true"
+        }
+      ],
+      "chance": "clamp((10+5*level)/100,0,1)"
+    }
+  ]
+}

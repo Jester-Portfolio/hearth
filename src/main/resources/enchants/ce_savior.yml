@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "id": "hearth:ce_savior",
+  "name": "Savior",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "armor"
+  ],
+  "slots": [
+    "HEAD",
+    "CHEST",
+    "LEGS",
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Savior",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "DEFEND",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "damage_multiplier",
+          "target": "SELF",
+          "amount": ".5"
+        }
+      ],
+      "chance": "clamp((15+5*level)/100,0,1)"
+    }
+  ]
+}

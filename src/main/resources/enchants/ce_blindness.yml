@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_blindness",
+  "name": "Blindness",
+  "enabled": true,
+  "max-level": 2,
+  "equipment": [
+    "sword"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Blindness",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ATTACK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "OTHER",
+          "potion": "BLINDNESS",
+          "amount": "level-1",
+          "duration": "60"
+        }
+      ],
+      "chance": "clamp((5+1*level)/100,0,1)"
+    }
+  ]
+}

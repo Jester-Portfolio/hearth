@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "hearth:ce_venom",
+  "name": "Venom",
+  "enabled": true,
+  "max-level": 5,
+  "equipment": [
+    "bow"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Venom",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "ARROW_HIT",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "OTHER",
+          "potion": "POISON",
+          "amount": "level-1",
+          "duration": "40"
+        }
+      ],
+      "chance": "clamp((10+5*level)/100,0,1)"
+    }
+  ]
+}

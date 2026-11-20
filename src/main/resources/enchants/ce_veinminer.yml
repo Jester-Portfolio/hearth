@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "id": "hearth:ce_veinminer",
+  "name": "VeinMiner",
+  "enabled": true,
+  "max-level": 6,
+  "equipment": [
+    "pickaxe"
+  ],
+  "slots": [
+    "MAIN_HAND"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "VeinMiner",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "BREAK",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "area_break",
+          "target": "BLOCK",
+          "mode": "vein",
+          "amount": "level"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

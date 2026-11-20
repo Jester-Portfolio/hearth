@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "id": "hearth:ce_wings",
+  "name": "Wings",
+  "enabled": true,
+  "max-level": 1,
+  "equipment": [
+    "boots"
+  ],
+  "slots": [
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Wings",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "EQUIP",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "flight",
+          "target": "SELF"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

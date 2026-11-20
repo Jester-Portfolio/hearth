@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "hearth:ce_hulk",
+  "name": "Hulk",
+  "enabled": true,
+  "max-level": 2,
+  "equipment": [
+    "armor"
+  ],
+  "slots": [
+    "HEAD",
+    "CHEST",
+    "LEGS",
+    "FEET"
+  ],
+  "worlds": [],
+  "conflicts": [],
+  "source": {
+    "project": "CrazyEnchantments",
+    "commit": "6ecea9a19affa811a8e23dd47fe647482507b82c",
+    "id": "Hulk",
+    "enabled": true
+  },
+  "rules": [
+    {
+      "trigger": "EQUIP",
+      "condition": "1",
+      "duration": "100",
+      "cooldown": "0",
+      "effects": [
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "STRENGTH",
+          "amount": "level-1",
+          "duration": "60"
+        },
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "RESISTANCE",
+          "amount": "level-1",
+          "duration": "60"
+        },
+        {
+          "type": "potion",
+          "target": "SELF",
+          "potion": "SLOWNESS",
+          "amount": "level-1",
+          "duration": "60"
+        }
+      ],
+      "chance": "1"
+    }
+  ]
+}

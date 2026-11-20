@@ -9,14 +9,14 @@ import io.github.jesterportfolio.hearth.survival.skills.WorldAccessPolicy.Role;
 public record RpgPolicy(Map<Role,Death> deaths,DropUnit dropUnit,XpScope xpScope,Rounding rounding,
                         Set<CharmScope> charmScopes,boolean lostXpOrbs,boolean penaltyEnabled,
                         WorldAccessPolicy.Rule penaltyRule,Set<Role> xpBlocked,Set<Role> abilitiesBlocked,
-                        Map<String,Double> itemRates) {
+                        Map<String,Double> itemRates,Set<Role> penaltyWorlds) {
     public enum DropUnit { ITEM,STACK,UNSET }
     public enum XpScope { VANILLA_TOTAL,VANILLA_PROGRESS,AURA_PROGRESS,BOTH_TOTAL,BOTH_PROGRESS,UNSET }
     public enum Rounding { FLOOR,CEIL,NEAREST,UNSET }
     public enum CharmScope { ITEMS,VANILLA_XP,AURA_XP }
     public enum XpLoss { NONE,THIRD,VANILLA,UNSET }
     public record Death(XpLoss loss,Double dropRate){public Death{Objects.requireNonNull(loss);if(dropRate!=null&&(!Double.isFinite(dropRate)||dropRate<0||dropRate>1))throw new IllegalArgumentException("RPG_DEATH_RATE");}}
-    public RpgPolicy {deaths=Map.copyOf(deaths);charmScopes=Set.copyOf(charmScopes);xpBlocked=Set.copyOf(xpBlocked);abilitiesBlocked=Set.copyOf(abilitiesBlocked);itemRates=Map.copyOf(itemRates);if(deaths.size()!=Role.values().length||penaltyEnabled&&penaltyRule==null)throw new IllegalArgumentException("RPG_POLICY");for(double p:itemRates.values())if(!Double.isFinite(p)||p<0||p>1)throw new IllegalArgumentException("RPG_ITEM_RATE");}
+    public RpgPolicy {penaltyWorlds=Set.copyOf(penaltyWorlds);deaths=Map.copyOf(deaths);charmScopes=Set.copyOf(charmScopes);xpBlocked=Set.copyOf(xpBlocked);abilitiesBlocked=Set.copyOf(abilitiesBlocked);itemRates=Map.copyOf(itemRates);if(deaths.size()!=Role.values().length||penaltyEnabled&&penaltyRule==null)throw new IllegalArgumentException("RPG_POLICY");for(double p:itemRates.values())if(!Double.isFinite(p)||p<0||p>1)throw new IllegalArgumentException("RPG_ITEM_RATE");}
     public boolean ready(Role role){if(role==null)return false;var p=deaths.get(role);return p!=null&&p.dropRate()!=null&&p.loss()!=XpLoss.UNSET&&(p.dropRate()==0||dropUnit!=DropUnit.UNSET)&&(p.loss()!=XpLoss.THIRD||xpScope!=XpScope.UNSET&&rounding!=Rounding.UNSET);}
     public long remainingThird(long before){if(before<0||rounding==Rounding.UNSET)throw new IllegalArgumentException("RPG_XP_UNSET");long loss=switch(rounding){case FLOOR->before/3;case CEIL->before/3+(before%3==0?0:1);case NEAREST->before/3+(before%3>=2?1:0);default->throw new IllegalStateException();};return before-loss;}
     public boolean vanillaLoss(){return Set.of(XpScope.VANILLA_TOTAL,XpScope.VANILLA_PROGRESS,XpScope.BOTH_TOTAL,XpScope.BOTH_PROGRESS).contains(xpScope);}
@@ -39,7 +39,7 @@ public record RpgPolicy(Map<Role,Death> deaths,DropUnit dropUnit,XpScope xpScope
         var scopes=EnumSet.noneOf(CharmScope.class);String raw=p.getProperty("charm.scopes","none");if(!raw.equals("none"))for(String scope:raw.split(","))scopes.add(CharmScope.valueOf(scope.strip().toUpperCase(Locale.ROOT)));
         boolean penalty=bool(p,"penalty.enabled");WorldAccessPolicy.Rule rule=null;if(penalty)rule=new WorldAccessPolicy.Rule(WorldAccessPolicy.Kind.valueOf(required(p,"penalty.kind").toUpperCase(Locale.ROOT)),Arrays.stream(required(p,"penalty.skills").split(",")).map(String::strip).toList(),Integer.parseInt(required(p,"penalty.minimum")));
         var rates=new HashMap<String,Double>();for(String key:p.stringPropertyNames())if(key.startsWith("item-rate."))rates.put(key.substring(10),Double.parseDouble(p.getProperty(key)));
-        return new RpgPolicy(d,DropUnit.valueOf(required(p,"drop-unit").toUpperCase(Locale.ROOT)),XpScope.valueOf(required(p,"xp-scope").toUpperCase(Locale.ROOT)),Rounding.valueOf(required(p,"xp-rounding").toUpperCase(Locale.ROOT)),scopes,bool(p,"lost-xp-orbs"),penalty,rule,roles(p,"xp-blocked"),roles(p,"abilities-blocked"),rates);
+        return new RpgPolicy(d,DropUnit.valueOf(required(p,"drop-unit").toUpperCase(Locale.ROOT)),XpScope.valueOf(required(p,"xp-scope").toUpperCase(Locale.ROOT)),Rounding.valueOf(required(p,"xp-rounding").toUpperCase(Locale.ROOT)),scopes,bool(p,"lost-xp-orbs"),penalty,rule,roles(p,"xp-blocked"),roles(p,"abilities-blocked"),rates,p.containsKey("penalty-worlds")?roles(p,"penalty-worlds"):EnumSet.allOf(Role.class));
     }
     public static String required(Properties p,String k){return Objects.requireNonNull(p.getProperty(k),k).strip();}
     public static boolean bool(Properties p,String k){String raw=required(p,k);if(!Set.of("true","false").contains(raw))throw new IllegalArgumentException(k);return Boolean.parseBoolean(raw);}
