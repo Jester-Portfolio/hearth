@@ -1,0 +1,104 @@
+{
+  "date": "2026-11-20",
+  "outcome": "PASS",
+  "workspace": "/home/server/hearth-tmp/hearth-native-economy-run.66s7l92t",
+  "source": "/home/server/hearth-tmp/hearth-native-economy-run.e05836si",
+  "hearth_sha256": "2977e8c78792a51cb2a8957deeb8bb664b74b2bb63434f23013d7569cde0e29a",
+  "units": {
+    "ConfigurationRecoveryTest": 10,
+    "PlatformTest": 17,
+    "JobPolicyTest": 10
+  },
+  "database_checks": 10,
+  "paper_checks": {
+    "prepare": 13,
+    "resume": 7
+  },
+  "duration_seconds": 55.36,
+  "max_sampled_combined_rss_kib": 1640180,
+  "processes": {
+    "database": {
+      "pid": 2845583,
+      "exit_code": 0,
+      "ready_seconds": null,
+      "duration_seconds": 54.478,
+      "shutdown_seconds": 0.142,
+      "max_sampled_rss_kib": 230416,
+      "observed_cpu_seconds": 2.71,
+      "min_sampled_host_available_kib": 12064248,
+      "sample_count": 483,
+      "checks": [],
+      "timings": [],
+      "states": []
+    },
+    "paper-config-prepare": {
+      "pid": 2845668,
+      "exit_code": 0,
+      "ready_seconds": 20.861,
+      "duration_seconds": 26.547,
+      "shutdown_seconds": 1.209,
+      "max_sampled_rss_kib": 1318792,
+      "observed_cpu_seconds": 40.98,
+      "min_sampled_host_available_kib": 12155672,
+      "sample_count": 229,
+      "checks": [],
+      "timings": [],
+      "states": []
+    },
+    "paper-config-resume": {
+      "pid": 2845929,
+      "exit_code": 0,
+      "ready_seconds": 20.581,
+      "duration_seconds": 24.971,
+      "shutdown_seconds": 1.053,
+      "max_sampled_rss_kib": 1410088,
+      "observed_cpu_seconds": 39.77,
+      "min_sampled_host_available_kib": 12064248,
+      "sample_count": 218,
+      "checks": [],
+      "timings": [],
+      "states": []
+    }
+  },
+  "limits": {
+    "cpu": 2,
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "combined_rss_stop_mib": 6144,
+    "host_available_min_mib": 6144,
+    "paper_starts_max": 2
+  },
+  "cleanup_errors": [],
+  "source_hashes": {
+    "/home/server/hearth-tmp/hearth-native-economy-run.e05836si/data/global/pg_control": "855f213e1d01162ce570b762d61f0ef8e59e032ec0b7c0041436afd9dae3370a",
+    "/home/server/hearth-tmp/hearth-native-economy-run.e05836si/server/plugins/Hearth/config.yml": "48451ce020e8e0f7c8bce7d4a26b4a3d0708e20421942cba8679077d8bc2bad9",
+    "/home/server/hearth-tmp/hearth-native-economy-run.e05836si/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+  },
+  "actual_client": "NOT_RUN",
+  "fake_player": "NOT_USED",
+  "operating_changes": "NONE",
+  "raw_report_sha256": "1ea31c2c32e53a61d67819ece4edaafda99f7a40b4c8c8e91d23dd3ed87917f8",
+  "evidence": {
+    "database-console.log": "5eb0381312627ce2fd4790f39273c222add0926b6fbab1403593b53ef0a79fcd",
+    "paper-config-prepare-console.log": "6d827ab88737fe8e14c58bc57b865bdae762c2cf01a3b96b516f78eea7c1255b",
+    "paper-config-resume-console.log": "31c5e01a2b9473aee34291bd12db60a581d4d41787b65eeb865f5763d4fad45b",
+    "config-expected.properties": "2b4b24f82440670f14f72eec9715a2ecd48cd5573d09e246481a61f404e65a8f",
+    "trial-console.log": "41bd7459533fb901a20d8b9905a4fe4eb66c9965a454553b00fa76e1ae8f1e76"
+  },
+  "not_verified": [
+    "authenticated admin inventory clicks",
+    "online-player live configuration transitions",
+    "long load",
+    "operating deployment/restart",
+    "power failure"
+  ],
+  "unit_evidence": {
+    "/home/server/hearth-tmp/hearth-native-economy-run.66s7l92t/unit-evidence/TEST-io.github.jesterportfolio.hearth.survival.ConfigurationRecoveryTest.xml": "7186007c6c503fe185fe01c2b45e821133545fcbbf42084c43ecc24e1a5357ce",
+    "/home/server/hearth-tmp/hearth-native-economy-run.66s7l92t/unit-evidence/TEST-io.github.jesterportfolio.hearth.survival.PlatformTest.xml": "15ffba5f3ab04b022629396bf2c48337bdd0fcef4b478c09506c294780ccee24",
+    "/home/server/hearth-tmp/hearth-native-economy-run.66s7l92t/unit-evidence/TEST-io.github.jesterportfolio.hearth.survival.JobPolicyTest.xml": "3321a5afe6e73ba9078120b94706963946e7171cae2713ada2e61650381b8b32",
+    "/home/server/hearth-tmp/hearth-native-economy-run.66s7l92t/unit-evidence/config-build-final.log": "da7fad33fc5b56742958d4ee92eefd1249f0fdd0d0d27cd83206d96ae740eb59",
+    "/home/server/hearth-tmp/hearth-native-economy-run.66s7l92t/unit-evidence/config-jar.log": "821bb6ab057157234f2569cce4dedf089fd4db92598a45b207147e02bb5d0d45"
+  }
+}

@@ -26,7 +26,7 @@ public final class JobRuntime implements AutoCloseable {
     public Snapshot snapshot(){return snapshot;}public Set<String> kinds(){return Set.copyOf(handlers.keySet());}public boolean busy(){return busy;}public boolean held(){return uncertain||snapshot.active().isPresent();}
     public String summary(){return "종류="+handlers.keySet()+" 예약="+snapshot.schedules()+" 활성="+snapshot.active().map(j->j.id()+"/"+j.state()+"/"+j.target()).orElse("없음")+" 최근="+snapshot.jobs().size()+" 불명="+uncertain;}
     private long now(){return p.rpg.runtime.economy().logicalTick();}
-    public CompletionStage<Void> open(){return store.recover().thenAcceptAsync(state->snapshot=state,p.owner).thenCompose(v->configure(p.settings().jobs())).thenRunAsync(()->opened=true,p.owner);}
+    public CompletionStage<Void> open(){return store.recover().thenAcceptAsync(state->snapshot=state,p.owner).thenCompose(v->p.maintenance()?CompletableFuture.completedFuture(null):configure(p.settings().jobs())).thenRunAsync(()->opened=true,p.owner);}
     public CompletionStage<Void> configure(JobPolicy policy){if(busy)return CompletableFuture.failedFuture(new IllegalStateException("JOB_BUSY"));return store.configure(policy.active(),now()).thenAcceptAsync(state->{snapshot=state;lastTick=-1;},p.owner);}
     public CompletionStage<Snapshot> refresh(){return store.snapshot().thenApplyAsync(state->{snapshot=state;uncertain=false;return state;},p.owner);}
     public CompletionStage<Optional<Job>> inspect(UUID id){return store.inspect(id);}

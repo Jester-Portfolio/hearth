@@ -35,6 +35,7 @@ def main():
     for name in ('workspace', 'source', 'java', 'plugin', 'probe', 'aura', 'aura-config'):
         p.add_argument('--' + name, type=Path, required=True)
     p.add_argument('--restore', action='store_true')
+    p.add_argument('--config-workbench', action='store_true', help='설정 작업대·E012 경합/실패·두 JVM 롤백 보류 복구')
     p.add_argument('--jobs-final', action='store_true', help='완료한 작업 복사본에서 최종 준비 경계 한 JVM 확인')
     p.add_argument('--jobs-db-evidence', type=Path, help='동일 E013/JobStore/fixture의 통과 DB 행렬 재사용')
     p.add_argument('--jobs', action='store_true', help='E013 예약 작업·실제 dispatch와 두 JVM HOLD/확정 복원')
@@ -58,6 +59,8 @@ def main():
     a = p.parse_args()
     if a.platform_contexts:
         a.platform_final = True
+    if a.config_workbench:
+        a.rpg_final = True
     if a.jobs_final:
         a.jobs = True
     if a.jobs or a.platform or a.platform_final:
@@ -149,7 +152,7 @@ def main():
             keys=[name for name in current.namelist() if name.startswith(('io/github/jesterportfolio/hearth/economy/PlatformStore','io/github/jesterportfolio/hearth/economy/EnchantStore','io/github/jesterportfolio/hearth/economy/EconomyPolicyMigration','io/github/jesterportfolio/hearth/economy/EconomyStore','db/economy/'))]
             if any(previous.read(name)!=current.read(name) for name in keys) or digest(evidence/'fixture-classes/io/github/jesterportfolio/hearth/persistence/PlatformDatabaseChecks.class')!=digest(root/'fixture-classes/io/github/jesterportfolio/hearth/persistence/PlatformDatabaseChecks.class'):
                 raise ValueError('SAME_PLATFORM_DATABASE_CODE_REQUIRED')
-        if a.jobs_final:
+        if a.jobs_final or a.config_workbench:
             shutil.copy2(source/'jobs-expected.properties', root/'jobs-expected.properties')
         if a.jobs_db_evidence:
             evidence=isolated_paths.workspace(a.jobs_db_evidence,'hearth-native-economy-run.')
@@ -162,7 +165,7 @@ def main():
             keys=[name for name in current.namelist() if name.startswith(('io/github/jesterportfolio/hearth/economy/JobStore','io/github/jesterportfolio/hearth/economy/EconomyStore','io/github/jesterportfolio/hearth/survival/platform/JobPolicy','db/economy/'))]
             if any(previous.read(name)!=current.read(name) for name in keys) or digest(evidence/'fixture-classes/io/github/jesterportfolio/hearth/persistence/JobsDatabaseChecks.class')!=digest(root/'fixture-classes/io/github/jesterportfolio/hearth/persistence/JobsDatabaseChecks.class'):
                 raise ValueError('SAME_JOBS_DATABASE_CODE_REQUIRED')
-        helper = [str(a.java), '-Xmx128m', '-XX:ActiveProcessorCount=2', '-Djava.io.tmpdir=' + str(root), '-cp', str(root / 'fixture-classes') + ':' + str(root / 'resolved-jars/*') + ':' + str(a.plugin), 'io.github.jesterportfolio.hearth.persistence.NativeEconomyDatabaseFixture', str(root), 'restore' if a.jobs_final or a.jobs_db_evidence or a.platform_final or a.enchants_effects_final else 'jobs' if a.jobs else 'platform-cli' if a.platform_db_evidence else 'platform' if a.platform else 'enchants' if a.enchants else 'rpg' if a.rpg and not a.rpg_db_evidence else 'restore' if a.rpg else 'travel' if a.travel and not a.travel_final else 'restore' if a.travel_final else 'skills' if a.admission else 'restore']
+        helper = [str(a.java), '-Xmx128m', '-XX:ActiveProcessorCount=2', '-Djava.io.tmpdir=' + str(root), '-cp', str(root / 'fixture-classes') + ':' + str(root / 'resolved-jars/*') + ':' + str(a.plugin), 'io.github.jesterportfolio.hearth.persistence.NativeEconomyDatabaseFixture', str(root), 'config' if a.config_workbench else 'restore' if a.jobs_final or a.jobs_db_evidence or a.platform_final or a.enchants_effects_final else 'jobs' if a.jobs else 'platform-cli' if a.platform_db_evidence else 'platform' if a.platform else 'enchants' if a.enchants else 'rpg' if a.rpg and not a.rpg_db_evidence else 'restore' if a.rpg else 'travel' if a.travel and not a.travel_final else 'restore' if a.travel_final else 'skills' if a.admission else 'restore']
         m.launch('database', helper, root)
         m.wait('database', 'HEARTH_NATIVE_DB_READY', seconds=75)
         dbport = int((root / 'db-port.txt').read_text())
@@ -195,7 +198,7 @@ def main():
             good=re.search(r'^goods=([^,\n]+)',(plugins/'Hearth'/content_file).read_text(),re.M).group(1)
             properties=properties.replace('autosell.goods=','autosell.goods='+good)
             (plugins / 'Hearth/platform.properties').write_text(properties)
-        phases = ['jobs-ready'] if a.jobs_final else ['jobs-prepare','jobs-resume'] if a.jobs else ['platform-context-prepare','platform-context-resume'] if a.platform_contexts else ['platform-resume'] if a.platform_final else ['platform-prepare','platform-resume'] if a.platform else ['enchants-'+a.enchants_final_phase] if a.enchants_effects_final else ['enchants-prepare','enchants-resume'] if a.enchants else ['rpg-events'] if a.rpg_events_final else ['rpg-resume'] if a.rpg_final else ['rpg-prepare', 'rpg-resume'] if a.rpg else ['travel-off', 'travel-prepare'] if a.travel_final else ['travel-prepare', 'travel-resume'] if a.travel else ['admission-off', 'admission-on'] if a.admission else ['restore'] if a.restore else ['aura'] if a.aura_only else ['baseline', 'aura']
+        phases = ['config-prepare','config-resume'] if a.config_workbench else ['jobs-ready'] if a.jobs_final else ['jobs-prepare','jobs-resume'] if a.jobs else ['platform-context-prepare','platform-context-resume'] if a.platform_contexts else ['platform-resume'] if a.platform_final else ['platform-prepare','platform-resume'] if a.platform else ['enchants-'+a.enchants_final_phase] if a.enchants_effects_final else ['enchants-prepare','enchants-resume'] if a.enchants else ['rpg-events'] if a.rpg_events_final else ['rpg-resume'] if a.rpg_final else ['rpg-prepare', 'rpg-resume'] if a.rpg else ['travel-off', 'travel-prepare'] if a.travel_final else ['travel-prepare', 'travel-resume'] if a.travel else ['admission-off', 'admission-on'] if a.admission else ['restore'] if a.restore else ['aura'] if a.aura_only else ['baseline', 'aura']
         for phase in phases:
             if a.rpg and phase == 'rpg-resume':
                 content=plugins / 'Hearth/rpg-content.properties'
@@ -226,12 +229,12 @@ def main():
             m.wait(name, 'HEARTH_SURVIVAL_ECONOMY_READY', seconds=120)
             m.wait(name, 'HEARTH_SURVIVAL_READY worlds='+('5' if a.rpg else '3'), seconds=20)
             m.wait(name, 'HEARTH_AURA_PROBE_READY', seconds=15)
-            expected = 'HEARTH_JOBS_PROBE PASS '+phase.removeprefix('jobs-') if a.jobs else 'HEARTH_PLATFORM_PROBE PASS '+phase.removeprefix('platform-') if a.platform or a.platform_final else 'HEARTH_ENCHANT_PROBE PASS '+a.enchants_final_phase if a.enchants_effects_final else 'HEARTH_ENCHANT_PROBE PASS ' + phase.removeprefix('enchants-') if a.enchants else 'HEARTH_RPG_PROBE PASS ' + phase.removeprefix('rpg-') if a.rpg else 'HEARTH_ACCESS_PROBE PASS' if phase == 'travel-off' else 'HEARTH_COMBAT_PROBE PASS ' + phase.removeprefix('travel-') if a.travel else 'HEARTH_ACCESS_PROBE PASS' if a.admission else 'HEARTH_AURA_PROBE PASS ' + phase
-            m.send(name, 'hearthplatform jobs-verify '+phase.removeprefix('jobs-') if a.jobs else 'hearthplatform verify '+phase.removeprefix('platform-') if a.platform or a.platform_final else 'hearthenchants verify '+a.enchants_final_phase if a.enchants_effects_final else 'hearthenchants verify '+phase.removeprefix('enchants-') if a.enchants else 'hearthsurvivaladmin rpg-verify ' + phase.removeprefix('rpg-') if a.rpg else 'hearthsurvivaladmin access-verify' if phase == 'travel-off' else 'hearthsurvivaladmin travel-verify ' + phase.removeprefix('travel-') if a.travel else 'hearthsurvivaladmin access-verify' if a.admission else 'hearthauraprobe ' + phase)
+            expected = 'HEARTH_CONFIG_PROBE PASS '+phase.removeprefix('config-') if a.config_workbench else 'HEARTH_JOBS_PROBE PASS '+phase.removeprefix('jobs-') if a.jobs else 'HEARTH_PLATFORM_PROBE PASS '+phase.removeprefix('platform-') if a.platform or a.platform_final else 'HEARTH_ENCHANT_PROBE PASS '+a.enchants_final_phase if a.enchants_effects_final else 'HEARTH_ENCHANT_PROBE PASS ' + phase.removeprefix('enchants-') if a.enchants else 'HEARTH_RPG_PROBE PASS ' + phase.removeprefix('rpg-') if a.rpg else 'HEARTH_ACCESS_PROBE PASS' if phase == 'travel-off' else 'HEARTH_COMBAT_PROBE PASS ' + phase.removeprefix('travel-') if a.travel else 'HEARTH_ACCESS_PROBE PASS' if a.admission else 'HEARTH_AURA_PROBE PASS ' + phase
+            m.send(name, 'hearthplatform config-verify '+phase.removeprefix('config-') if a.config_workbench else 'hearthplatform jobs-verify '+phase.removeprefix('jobs-') if a.jobs else 'hearthplatform verify '+phase.removeprefix('platform-') if a.platform or a.platform_final else 'hearthenchants verify '+a.enchants_final_phase if a.enchants_effects_final else 'hearthenchants verify '+phase.removeprefix('enchants-') if a.enchants else 'hearthsurvivaladmin rpg-verify ' + phase.removeprefix('rpg-') if a.rpg else 'hearthsurvivaladmin access-verify' if phase == 'travel-off' else 'hearthsurvivaladmin travel-verify ' + phase.removeprefix('travel-') if a.travel else 'hearthsurvivaladmin access-verify' if a.admission else 'hearthauraprobe ' + phase)
             until = min(m.deadline, time.monotonic() + 90)
             while not any(expected in line for line in m.children[name]['lines']):
                 m.pump()
-                if any('HEARTH_JOBS_PROBE FAIL' in line or 'HEARTH_PLATFORM_PROBE FAIL' in line or 'HEARTH_ENCHANT_PROBE FAIL' in line or 'HEARTH_RPG_PROBE FAIL' in line or 'HEARTH_RPG_HOLD' in line or 'HEARTH_COMBAT_PROBE FAIL' in line or 'HEARTH_COMBAT_TRAVEL_HOLD' in line or 'HEARTH_AURA_PROBE FAIL' in line or 'HEARTH_ACCESS_PROBE FAIL' in line for line in m.children[name]['lines']):
+                if any('HEARTH_CONFIG_PROBE FAIL' in line or 'HEARTH_JOBS_PROBE FAIL' in line or 'HEARTH_PLATFORM_PROBE FAIL' in line or 'HEARTH_ENCHANT_PROBE FAIL' in line or 'HEARTH_RPG_PROBE FAIL' in line or 'HEARTH_RPG_HOLD' in line or 'HEARTH_COMBAT_PROBE FAIL' in line or 'HEARTH_COMBAT_TRAVEL_HOLD' in line or 'HEARTH_AURA_PROBE FAIL' in line or 'HEARTH_ACCESS_PROBE FAIL' in line for line in m.children[name]['lines']):
                     raise RuntimeError('AURA_PROBE_FAILED_' + phase)
                 if m.children[name]['proc'].poll() is not None or time.monotonic() > until:
                     raise RuntimeError('AURA_PROBE_TIMEOUT_' + phase)
@@ -265,7 +268,7 @@ def main():
         cleanup.extend('OWNED_PORT_REMAINS_' + str(number) for number in ports if not port_closed(number))
         if cleanup:
             outcome = 'FAIL'
-        report = dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, restore=a.restore, jobs=a.jobs, jobs_final=a.jobs_final, jobs_db_evidence=str(a.jobs_db_evidence) if a.jobs_db_evidence else None, platform=a.platform, platform_final=a.platform_final, platform_contexts=a.platform_contexts, platform_db_evidence=str(a.platform_db_evidence) if a.platform_db_evidence else None, enchants=a.enchants, enchants_effects_final=a.enchants_effects_final, rpg=a.rpg, rpg_final=a.rpg_final, rpg_events_final=a.rpg_events_final, rpg_db_evidence=str(a.rpg_db_evidence) if a.rpg_db_evidence else None, admission=a.admission, travel=a.travel, travel_final=a.travel_final, duration_seconds=round(time.monotonic()-started, 3), processes=m.summary(), combined_samples=m.combined, source_hashes=before, aura_sha256=digest(a.aura), hearth_sha256=digest(a.plugin), probe_sha256=digest(a.probe) if a.probe.is_file() else None, limits=dict(cpu=2, total_seconds=600, work_seconds=550, paper_heap_mib=1536, paper_rss_stop_mib=2560, combined_rss_stop_mib=6144, host_available_min_mib=6144, paper_starts_max=2), actual_client='NOT_RUN', fake_player='NOT_USED', operating_changes='NONE')
+        report = dict(outcome=outcome, failure=failure, cleanup_errors=cleanup, restore=a.restore, config_workbench=a.config_workbench, jobs=a.jobs, jobs_final=a.jobs_final, jobs_db_evidence=str(a.jobs_db_evidence) if a.jobs_db_evidence else None, platform=a.platform, platform_final=a.platform_final, platform_contexts=a.platform_contexts, platform_db_evidence=str(a.platform_db_evidence) if a.platform_db_evidence else None, enchants=a.enchants, enchants_effects_final=a.enchants_effects_final, rpg=a.rpg, rpg_final=a.rpg_final, rpg_events_final=a.rpg_events_final, rpg_db_evidence=str(a.rpg_db_evidence) if a.rpg_db_evidence else None, admission=a.admission, travel=a.travel, travel_final=a.travel_final, duration_seconds=round(time.monotonic()-started, 3), processes=m.summary(), combined_samples=m.combined, source_hashes=before, aura_sha256=digest(a.aura), hearth_sha256=digest(a.plugin), probe_sha256=digest(a.probe) if a.probe.is_file() else None, limits=dict(cpu=2, total_seconds=600, work_seconds=550, paper_heap_mib=1536, paper_rss_stop_mib=2560, combined_rss_stop_mib=6144, host_available_min_mib=6144, paper_starts_max=2), actual_client='NOT_RUN', fake_player='NOT_USED', operating_changes='NONE')
         (root / 'aura-trial-result.json').write_text(json.dumps(report, indent=2) + '\n')
         print('AURA', outcome, root / 'aura-trial-result.json', flush=True)
     return 0 if outcome == 'PASS' else 1

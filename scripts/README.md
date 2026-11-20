@@ -284,3 +284,7 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 ## 영속 예약 작업
 
 `verify_auraskills.py --jobs`는 기존 플랫폼 PASS cold 복사본에서 E013 PG 행렬과 jobs-prepare/resume 두 Paper를 검사한다. `--jobs-db-evidence ROOT`는 독립적으로 통과/정상 종료한 PG16개와 JobStore/EconomyStore/JobPolicy·DDL·fixture 바이트가 동일할 때만 재사용한다. `--jobs-final`은 이후 순수 준비 경계 변경의 jobs-ready 한 JVM이며 기존 DB/전체 행렬을 반복하지 않는다. 기존 소유/localhost/EULA·CPU/RSS/600초·최대 두 Paper와 Player 합성 금지를 유지한다. [상세 증거](../docs/platform-jobs-verification.md)와 [설정/작업센터](../infrastructure/network/platform-jobs.md)를 따른다.
+
+## 설정 작업대·중단 복구
+
+`verify_auraskills.py --config-workbench`는 완료된 예약 작업 cold 복사본과 jobs-expected.properties를 사용해 설정 PG10개와 config-prepare/resume 두 Paper JVM을 검사한다. stageNativeEconomyRuntime으로 현재 fixture를 준비하고 다른 시험 모드 없이 실행한다. 기존 자원 교체/전체 RPG 행렬은 반복하지 않는다. 원본 보존·정품/Player 합성 금지·localhost·CPU/RSS/600초/두 Paper 한도는 기존과 같다. [검증 기록](../docs/platform-configuration-verification.md)을 따른다.

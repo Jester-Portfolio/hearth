@@ -38,23 +38,29 @@ RewardCoordinator에서 이미 감소한 보상에 판매 시 페널티를 다�
 
 ## 설정 후보·리로드·복구
 
-관리 권한은 `hearth.platform.admin`(기본 op)이다. 관리자 GUI는 상태·리로드·후보 생성/적용/롤백·보류 세대를 공통으로 보여 준다. CLI와 GUI는 같은 실행 API/정본을 사용한다.
+관리 권한은 `hearth.platform.admin`(기본 op)이다. `/플랫폼 admin` → **설정 변경 작업대** 또는 `/플랫폼 config`로 후보/보류 목록을 연다. 개별 후보를 선택하면 로컬/PG 상태·원본/후보 해시·현재 파일 위치(BEFORE/AFTER/EXTERNAL)·최대 13줄의 비교 미리보기를 확인하고 적용/롤백한다. 미리보기는 줄 위치 기준 요약이며 전체 diff가 아니다. 상세 내용은 보존한 before/after 파일을 비교한다. GUI와 명령은 같은 API/정본을 사용한다.
 
 ```text
-/플랫폼 admin
-/플랫폼 status
-/플랫폼 reload
-/플랫폼 history
 /플랫폼 config-stage platform.properties tuning.candidate
-/플랫폼 config-apply <후보 UUID>
-/플랫폼 config-rollback <후보 UUID>
+/플랫폼 config list
+/플랫폼 config inspect <후보 UUID>
+/플랫폼 config apply <후보 UUID>
+/플랫폼 config rollback <후보 UUID>
+/플랫폼 config recover
+/플랫폼 history
 ```
 
-candidate는 Hearth 데이터 폴더의 `이름.candidate` 일반 파일이다. 허용 정본은 `platform.properties`, 기본 이름의 `rpg-policy.properties`/`rpg-content.properties`, `enchants/<ID>.yml`/`operations.yml`이다. 네트워크·인증/DB 접속 설정은 이 라이브 도구가 수정하지 않는다. 다른 이름/기존 불변 데이터 구조를 바꾸는 설정은 명시적 어댑터가 필요하다.
+기존 config-apply/config-rollback 명령도 유지한다. candidate는 Hearth 데이터 폴더의 `이름.candidate` 일반 파일이다. 허용 정본은 `platform.properties`, 기본 이름의 `rpg-policy.properties`/`rpg-content.properties`, `enchants/<ID>.yml`/`operations.yml`이다. 네트워크·인증/DB 접속 설정은 이 도구가 수정하지 않는다. 다른 이름/불변 데이터 구조를 바꾸는 설정에는 어댑터가 필요하다.
 
-후보 생성은 현재 파일 해시·원본·후보·검증 결과를 `platform-changes/<UUID>/`에 보존한다. 적용 직전 외부 변경/증거 변경/경로/용량을 다시 검사한다. 파일별 원자 공개와 E012 상태를 결합하며 전체 파일+PG를 한 분산 트랜잭션으로 간주하지 않는다. 중간 오류는 유지보수/HOLD로 닫고 같은 UUID로 적용을 재개하거나 명시적으로 롤백한다. 임시 `.writing`/저널을 지워 성공으로 꾸미지 않는다.
+후보는 `platform-changes/<UUID>/`에 원본(before)·후보(after)·해시·manifest를 보존한다. 적용/롤백 의도(PREPARING/ROLLBACK_PREPARING)를 로컬에 먼저 기록하고 E012 PG를 PREPARED로 만든 뒤 원자 파일 교체 → live 설정/예약 구성 → PG 확정 → 로컬 확정 순으로 진행한다. ROLLBACK_APPLIED는 파일만 복원한 **미완료** 상태이며 PG까지 확정한 ROLLED_BACK과 구분한다. 전체 파일+PG는 하나의 분산 트랜잭션이 아니다.
 
-platform/인챈트는 검증 후 리로드한다. RPG 정책/registry는 재시작이 필요하며 온라인 0명일 때만 적용하고 새 입장을 유지보수로 닫는다. 기존 등록 ID 제거·월드 key/seed/terrain 변경은 거부한다. 정책 리로드처럼 보이게 기존 런타임만 남겨 두고 접속을 계속 허용하지 않는다. 정상 drain 후 이전/새 파일과 같은 상태로 기동한다. 숫자/설정 롤백은 아이템/잔액을 과거 값으로 되돌리지 않는다.
+기동 시 로컬과 PG 전체 기록(각 최대4096개)을 대조한다. 중간 상태·누락/변조/부분 생성 증거·식별자/상태 불일치는 유지보수로 닫고 자동 예약 구성/dispatch도 보류한다. 구버전 ROLLED_BACK이라도 PG가 PREPARED/COMMITTED이면 미확정으로 취급한다. 문제가 있는 후보 이외의 후보를 교차 적용하지 않는다. 원본/후보가 같고 현재 파일이 양쪽 해시 중 하나일 때만 같은 UUID로 적용/롤백을 재개한다. 외부 수정이나 충돌하는 `.platform-writing`은 보존하고 덮어쓰지 않는다. 남은 임시 파일이 보존된 목표와 정확히 같으면 기존 쓰기만 완료할 수 있다.
+
+복구는 `config list` → `config inspect UUID` → 같은 UUID의 apply/rollback 순서다. 성공한 live 변경은 다른 미확정 기록이 없으면 설정 유지보수를 해제한다. 외부 파일을 운영자가 보존한 정상본으로 복원한 후에는 `config recover`가 전체 저널/PG 일치·현재 platform/인챈트 설정·예약 구성을 재검증하고 live 설정을 다시 읽는다. 조회(list/inspect)만으로 유지보수를 해제하지 않는다. 부분 생성/누락 증거를 자동 삭제·재작성하거나 PG 기록만 확정하는 명령은 없다. 증거가 불명하면 원본/백업 확인 후 수동 대응한다.
+
+platform/인챈트는 live 적용한다. RPG 정책/registry는 온라인 0명일 때만 적용하며 **같은 프로세스에서 recover를 해도 재시작 요구는 유지**한다. 정상 drain 후 같은 파일과 DB로 새 프로세스를 시작한다. 미완료 저널은 새 프로세스에서도 자동 해제하지 않는다. 기존 등록 ID 제거·월드 key/seed/terrain 변경은 거부한다. 설정 롤백은 장비/잔액을 과거로 되돌리지 않으며 native/사망/세계/작업 HOLD를 해제하지 않는다. 전역 HOLD에서 관리자 접속을 우회하지 않으므로 기존 콘솔을 쓴다. 운영 프로세스 재시작에는 별도 승인이 필요하다.
+
+일반 reload는 준비 상태에서만 허용하며 예약 정책 변경은 config 경로를 사용한다. 파일/PG 조회는 기동·명시적 관리 요청/설정 작업에서만 수행하고 tick 경로에는 추가하지 않는다. [후속 검증 기록](../../docs/platform-configuration-verification.md)을 참고한다.
 
 ## 정지 상태의 경제·시장 정책 이전
 
