@@ -1,5 +1,9 @@
 # Hearth 주요 변경 이력
 
+## 2026-11-20 — AuraSkills 기술 검증·통합 설계
+
+- [AuraSkills 2.4.0](auraskills-technical-verification.md)의 격리 실행·커스텀 API·modifier·YAML 복원과 공개 소스/저장 계층을 조사했다. [ADR-0031](decisions/0031-auraskills-economy-integration.md)에 YAML+기존 PG·공통 접근/전투/보상 경계와 후속 구현 순서를 기록했다. 정식 전체 기능·운영 설치·실제 클라이언트 시험은 포함하지 않는다.
+
 ## 2026-11-20 — 거주 구매 확장 공동 거주 시스템
 
 - [거주 시스템](housing-system-verification.md)의 공용 구획 보호·개인 월드 구매/차액 확장·초대/방문/해제·동적 월드/이동/저장 종료를 기존 경제와 통합했다. 세부 수치·지형/밸런스와 실제 플레이/운영 수용은 분리하며 시스템/구매는 기본 비활성이다.

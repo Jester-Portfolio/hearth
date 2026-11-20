@@ -1,6 +1,6 @@
 # Hearth 개발 로드맵
 
-마지막 정리: 2026-11-17. [현재 구현·검증 상태](PROJECT_STATUS.md), [설계 정본 ADR](decisions/README.md), [작업·검증 정책](DEVELOPMENT_WORKFLOW.md)을 함께 사용한다. [이전 로드맵](ROADMAP-archive-2026-10-27.md)은 이력으로 보존한다. 아래 계획은 새 기능 구현·실행·운영 변경의 일괄 승인이 아니며 일정·밸런스·미정 기술을 확정하지 않는다.
+마지막 정리: 2026-11-20. [현재 구현·검증 상태](PROJECT_STATUS.md), [설계 정본 ADR](decisions/README.md), [작업·검증 정책](DEVELOPMENT_WORKFLOW.md)을 함께 사용한다. [이전 로드맵](ROADMAP-archive-2026-10-27.md)은 이력으로 보존한다. 아래 계획은 새 기능 구현·실행·운영 변경의 일괄 승인이 아니며 일정·밸런스·미정 기술을 확정하지 않는다.
 
 ## 개발 목표와 상태 기준
 
@@ -12,6 +12,8 @@ Hearth의 목표는 현대 과학·기술 지식을 활용하는 싱글·소규�
 - **보류**: 재개 조건·사용자 결정을 기다림.
 
 ## 현재 개발 우선순위 — 멀티서버 네트워크
+
+경제 숙련도/레벨/스탯은 사용자 지시에 따라 [AuraSkills](auraskills-technical-verification.md)를 채택했다. 이번 범위는 기술 검증·통합 방식 선정까지다. 후속 정식 구현은 [ADR-0031](decisions/0031-auraskills-economy-integration.md)의 기반/공통 접근 → 전투/사망 → 장비/최종 보상 → UI/운영 수용 배치 순서를 따른다. 구체 레벨·수치/밸런싱은 추후 결정하며 실제 클라이언트 시험은 계속 보류한다.
 
 2026-11-18 사용자 요청으로 스토리 모드의 추가 개발을 보류한다. [ADR-0025](decisions/0025-lobby-economy-network.md)의 Velocity 프록시·로비/경제 Paper, 정품 modern forwarding·고정 경로·경제 저장 후 서버 이동을 한 배치로 구현/검증한다. 기존 스토리 B안은 보존하며 진행별 서버 분리/A안 전환을 뜻하지 않는다. 실제 접속/전환·운영 예산·배포 적용은 별도 수용/승인 경계다. [설정/플레이 경로](../infrastructure/network/README.md)를 따른다.
 

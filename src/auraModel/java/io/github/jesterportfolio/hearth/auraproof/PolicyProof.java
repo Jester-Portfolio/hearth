@@ -1,0 +1,24 @@
+package io.github.jesterportfolio.hearth.auraproof;
+
+import java.util.*;
+import java.util.random.RandomGenerator;
+
+/** 기술 검증 전용 순수 모델. 게임 이벤트나 정식 리스너를 등록하지 않습니다. */
+public final class PolicyProof {
+ private PolicyProof(){}
+ public enum Role{PUBLIC_HOME,PRIVATE_HOME,NOVICE_RESOURCE,RESOURCE,NETHER,END}
+ public enum Scope{SPECIFIC,AVERAGE,SUM,ALL}
+ public enum DropUnit{ITEM,STACK}
+ public record Stack(String identity,int amount){public Stack{if(identity==null||amount<1||amount>64)throw new IllegalArgumentException("STACK");}}
+ public record Split(List<Stack> kept,List<Stack> dropped,int consumedCharms){public Split{kept=List.copyOf(kept);dropped=List.copyOf(dropped);}}
+ public record LevelRule(Scope scope,List<String> skills,int threshold){public LevelRule{skills=List.copyOf(skills);if(scope==null||skills.isEmpty()||new HashSet<>(skills).size()!=skills.size()||threshold<0||scope==Scope.SPECIFIC&&skills.size()!=1)throw new IllegalArgumentException("LEVEL_RULE");}public boolean allows(boolean loaded,Map<String,Integer> levels){if(!loaded||skills.stream().anyMatch(s->!levels.containsKey(s)||levels.get(s)<0))return false;long sum=skills.stream().mapToLong(levels::get).sum();return switch(scope){case SPECIFIC->levels.get(skills.getFirst())>=threshold;case AVERAGE->sum>=(long)threshold*skills.size();case SUM->sum>=threshold;case ALL->skills.stream().allMatch(s->levels.get(s)>=threshold);};}}
+ public static Split split(List<Stack> input,double rate,DropUnit unit,boolean charm,RandomGenerator rng){if(!Double.isFinite(rate)||rate<0||rate>1)throw new IllegalArgumentException("RATE");var kept=new ArrayList<Stack>();var lost=new ArrayList<Stack>();boolean consume=charm;for(var s:input){int amount=s.amount();if(consume&&s.identity().equals("charm")){amount--;consume=false;}int drop=0;if(!charm){if(unit==DropUnit.STACK)drop=rng.nextDouble()<rate?amount:0;else for(int i=0;i<amount;i++)if(rng.nextDouble()<rate)drop++;}if(amount-drop>0)kept.add(new Stack(s.identity(),amount-drop));if(drop>0)lost.add(new Stack(s.identity(),drop));}if(consume)throw new IllegalArgumentException("MISSING_CHARM");return new Split(kept,lost,charm?1:0);}
+ public static boolean pvp(Role role,boolean privateOwnerSetting){return switch(role){case PUBLIC_HOME,NOVICE_RESOURCE->false;case PRIVATE_HOME->privateOwnerSetting;default->true;};}
+ public static double dropRate(Role role){return switch(role){case PRIVATE_HOME,NOVICE_RESOURCE->0;case RESOURCE,NETHER->.05;case END->.30;case PUBLIC_HOME->throw new IllegalStateException("PUBLIC_HOME_POLICY_UNDECIDED");};}
+ public static long loseThird(long xp){if(xp<0)throw new IllegalArgumentException();return xp-xp/3;}
+ public record RewardDecision(boolean itemsSuppressed,boolean vanillaXpSuppressed,double skillFactor){}
+ public static final class RewardOnce{private final Map<UUID,RewardDecision> decisions=new HashMap<>();public RewardDecision begin(UUID action,boolean penalized,RandomGenerator rng){return decisions.computeIfAbsent(action,k->penalized?new RewardDecision(rng.nextDouble()<.5,rng.nextDouble()<.5,.5):new RewardDecision(false,false,1));}public void finish(UUID action){decisions.remove(action);}}
+ public static final class Combat{private final Map<UUID,Long> until=new HashMap<>();private final long duration;public Combat(long duration){if(duration<=0)throw new IllegalArgumentException();this.duration=duration;}public void hit(UUID attacker,UUID victim,long now){until.merge(attacker,Math.addExact(now,duration),Math::max);until.merge(victim,Math.addExact(now,duration),Math::max);}public boolean blocked(UUID player,long now){return until.getOrDefault(player,Long.MIN_VALUE)>now;}public long deadline(UUID player){return until.getOrDefault(player,Long.MIN_VALUE);}public void restore(UUID player,long deadline){until.merge(player,deadline,Math::max);}}
+ public record Admission(boolean loaded,boolean levelAllowed,boolean housingAllowed,boolean combatBlocked,long generation){public boolean allows(){return loaded&&levelAllowed&&housingAllowed&&!combatBlocked;}public boolean commit(Admission current){return allows()&&current.allows()&&generation==current.generation;}}
+ public static final class Tpa{private final UUID requester,recipient;private final long expires;private boolean accepted,used;public Tpa(UUID requester,UUID recipient,long expires){if(requester.equals(recipient))throw new IllegalArgumentException();this.requester=requester;this.recipient=recipient;this.expires=expires;}public boolean accept(UUID actor,long now,Admission requesterState,Admission recipientState){if(used||accepted||!actor.equals(recipient)||now>=expires||!requesterState.allows()||!recipientState.allows())return false;accepted=true;return true;}public boolean move(long now,Admission prepared,Admission current,Admission recipientState){if(!accepted||used||now>=expires||!prepared.commit(current)||!recipientState.allows())return false;used=true;return true;}}
+}

@@ -1,0 +1,8 @@
+name: HearthAuraProbe
+version: 1
+main: io.github.jesterportfolio.hearth.auraprobe.AuraProbePlugin
+api-version: '26.2'
+softdepend: [Hearth, WorldGuard, AuraSkills, BetterHud]
+commands:
+  hearthauraprobe:
+    description: Isolated console-only technical verification

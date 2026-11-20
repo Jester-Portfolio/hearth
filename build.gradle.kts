@@ -255,3 +255,27 @@ tasks.register("stageNativeEconomyRuntime") {
         copy { from(configurations[integrationTest.runtimeClasspathConfigurationName]); into(target) }
     }
 }
+
+// 기술 검증 전용. Aura 코드/모델은 정식 Hearth JAR과 운영 의존성에 포함하지 않습니다.
+val auraModel by sourceSets.creating
+sourceSets.test { compileClasspath += auraModel.output; runtimeClasspath += auraModel.output }
+tasks.named("compileTestJava") { dependsOn(tasks.named(auraModel.compileJavaTaskName)) }
+val auraProbe by sourceSets.creating {
+    compileClasspath += sourceSets.main.get().compileClasspath + auraModel.output
+    runtimeClasspath += output + compileClasspath
+}
+val auraArtifact = providers.gradleProperty("auraSkillsJar")
+if (auraArtifact.isPresent) dependencies.add(auraProbe.compileOnlyConfigurationName, files(auraArtifact.get()))
+val verifyAuraArtifact by tasks.registering {
+    doLast {
+        require(auraArtifact.isPresent) { "-PauraSkillsJar=<official pinned AuraSkills 2.4.0 JAR> is required" }
+        val path = file(auraArtifact.get())
+        require(MessageDigest.getInstance("SHA-256").digest(path.readBytes()).joinToString("") { "%02x".format(it) } == "de54cbd2e33d65e8b1704751ae4121ed2f5b466ba89c63a1aadf3a3e629d6a40") { "AuraSkills artifact mismatch" }
+    }
+}
+tasks.named(auraProbe.compileJavaTaskName) { dependsOn(verifyAuraArtifact, tasks.named(auraModel.compileJavaTaskName)) }
+tasks.register<Jar>("auraProbeJar") {
+    dependsOn(tasks.named(auraProbe.classesTaskName))
+    archiveClassifier.set("aura-probe")
+    from(auraProbe.output, auraModel.output)
+}

@@ -1,0 +1,318 @@
+{
+  "date": "2026-11-20",
+  "scope": "TECHNICAL_FEASIBILITY_AND_DESIGN_ONLY",
+  "verdict": "BASELINE_USABLE_WITH_DOCUMENTED_LIMITATIONS",
+  "official_version": "2.4.0",
+  "official_source_commit": "148cb00d29bf6d3733adc2477129f1361ee894da",
+  "official_jar_sha256": "de54cbd2e33d65e8b1704751ae4121ed2f5b466ba89c63a1aadf3a3e629d6a40",
+  "hearth_jar_sha256": "bf5e1717c15366867c32dfd7ab71f72b7f6deec285233dd4637803859083fabe",
+  "probe_jar_sha256": "27341c8cad99253aab5d3cd83e6ae42c49bea8e05a7868f808ef3a4a13f042e1",
+  "unit_tests": {
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "targeted_changed_test_rerun": {
+      "tests": 1,
+      "failures": 0,
+      "name": "expired_requests_and_changed_housing_generation_are_denied"
+    }
+  },
+  "phases": [
+    {
+      "phase": "baseline",
+      "measurement": {
+        "phase": "baseline",
+        "online_players": 0,
+        "java": "25.0.5",
+        "paper": "26.2-134-3e24be0 (MC: 26.2)",
+        "server_thread_cpu_ms": 331.476187,
+        "heap_used_bytes": 480752992,
+        "tick_interval_p50_ms": 50.003382,
+        "tick_interval_p95_ms": 50.090079,
+        "observed_mspt_p50": 0.9911349702970297,
+        "observed_mspt_p95": 1.1870477821782177,
+        "tps_1m": 19.675803424605036,
+        "plugins": {
+          "Hearth": "0.1.0-SNAPSHOT:true",
+          "WorldGuard": "7.0.19+2400-f395a16:true",
+          "WorldEdit": "7.4.4+7546-f9e033f:true",
+          "AuraSkills": "ABSENT",
+          "BetterHud": "ABSENT"
+        },
+        "checks": [],
+        "actual_player_events": false
+      },
+      "paper_process": {
+        "pid": 2751069,
+        "exit_code": 0,
+        "ready_seconds": 13.042,
+        "duration_seconds": 40.554,
+        "shutdown_seconds": 1.032,
+        "max_sampled_rss_kib": 965040,
+        "observed_cpu_seconds": 26.18,
+        "min_sampled_host_available_kib": 12558904,
+        "sample_count": 354,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "combined_peak_rss_mib": 1186.273,
+      "source_trial_outcome": "FAIL",
+      "cleanup_errors": []
+    },
+    {
+      "phase": "aura",
+      "measurement": {
+        "phase": "aura",
+        "online_players": 0,
+        "java": "25.0.5",
+        "paper": "26.2-134-3e24be0 (MC: 26.2)",
+        "server_thread_cpu_ms": 303.90025,
+        "heap_used_bytes": 475004928,
+        "tick_interval_p50_ms": 50.001354,
+        "tick_interval_p95_ms": 50.086884,
+        "observed_mspt_p50": 0.6997984653465346,
+        "observed_mspt_p95": 1.568934891089109,
+        "tps_1m": 19.366922449248626,
+        "plugins": {
+          "Hearth": "0.1.0-SNAPSHOT:true",
+          "WorldGuard": "7.0.19+2400-f395a16:true",
+          "WorldEdit": "7.4.4+7546-f9e033f:true",
+          "AuraSkills": "2.4.0:true",
+          "BetterHud": "ABSENT"
+        },
+        "checks": [
+          "official_AuraSkills_enabled_and_SkillsLoadEvent_observed",
+          "custom_skill_stat_passive_and_mana_ability_registered",
+          "loaded_passive_formula_and_active_mana_cooldown_data_are_available",
+          "unloaded_API_user_is_not_admitted_as_level_ready",
+          "official_WorldGuard_hook_registers_AuraSkills_region_flags",
+          "WG_queries_separate_named_member_chest_access_from_building",
+          "WG_public_container_access_and_PvP_denial_do_not_require_public_building",
+          "WG_region_PvP_flag_can_be_changed_for_private_owner_policy",
+          "configured_world_XP_and_ability_disable_lists_are_loaded",
+          "raw_API_xp_levels_custom_skill_without_fabricated_Player",
+          "normal_XP_pipeline_does_not_simulate_player_events_for_offline_data",
+          "mana_API_consume_contract_is_independent_of_player_activation",
+          "stable_modifier_identity_prevents_duplicate_equipment_stats",
+          "modifier_removal_restores_previous_stat_total",
+          "Aura_item_modifier_preserves_vanilla_enchant_and_custom_upgrade_PDC",
+          "item_modifier_and_custom_metadata_survive_Paper_item_serialization",
+          "real_YAML_userdata_is_written_for_synthetic_offline_record",
+          "bounded_100_record_YAML_write_read_benchmark_completed_off_main_thread",
+          "bounded_cached_level_read_benchmark_completed_without_database_calls"
+        ],
+        "actual_player_events": false
+      },
+      "paper_process": {
+        "pid": 2753333,
+        "exit_code": 0,
+        "ready_seconds": 22.136,
+        "duration_seconds": 50.305,
+        "shutdown_seconds": 1.147,
+        "max_sampled_rss_kib": 967388,
+        "observed_cpu_seconds": 33.03,
+        "min_sampled_host_available_kib": 12427520,
+        "sample_count": 473,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "combined_peak_rss_mib": 1174.184,
+      "source_trial_outcome": "PASS",
+      "cleanup_errors": []
+    },
+    {
+      "phase": "restore",
+      "measurement": {
+        "phase": "restore",
+        "online_players": 0,
+        "java": "25.0.5",
+        "paper": "26.2-134-3e24be0 (MC: 26.2)",
+        "server_thread_cpu_ms": 259.667335,
+        "heap_used_bytes": 629854800,
+        "tick_interval_p50_ms": 50.002374,
+        "tick_interval_p95_ms": 50.114717,
+        "observed_mspt_p50": 0.6257203267326732,
+        "observed_mspt_p95": 1.288653504950495,
+        "tps_1m": 19.652999423760388,
+        "plugins": {
+          "Hearth": "0.1.0-SNAPSHOT:true",
+          "WorldGuard": "7.0.19+2400-f395a16:true",
+          "WorldEdit": "7.4.4+7546-f9e033f:true",
+          "AuraSkills": "2.4.0:true",
+          "BetterHud": "2.1.0-SNAPSHOT-448:true"
+        },
+        "checks": [
+          "official_AuraSkills_enabled_and_SkillsLoadEvent_observed",
+          "custom_skill_stat_passive_and_mana_ability_registered",
+          "loaded_passive_formula_and_active_mana_cooldown_data_are_available",
+          "unloaded_API_user_is_not_admitted_as_level_ready",
+          "official_WorldGuard_hook_registers_AuraSkills_region_flags",
+          "WG_queries_separate_named_member_chest_access_from_building",
+          "WG_public_container_access_and_PvP_denial_do_not_require_public_building",
+          "WG_region_PvP_flag_can_be_changed_for_private_owner_policy",
+          "configured_world_XP_and_ability_disable_lists_are_loaded",
+          "second_JVM_restores_custom_skill_level_XP_and_mana_from_YAML",
+          "second_JVM_restores_named_custom_stat_modifier",
+          "fixed_BetterHud_and_AuraSkills_and_Hearth_coexist_at_boot"
+        ],
+        "actual_player_events": false
+      },
+      "paper_process": {
+        "pid": 2754167,
+        "exit_code": 0,
+        "ready_seconds": 22.699,
+        "duration_seconds": 50.824,
+        "shutdown_seconds": 0.965,
+        "max_sampled_rss_kib": 1348496,
+        "observed_cpu_seconds": 39.35,
+        "min_sampled_host_available_kib": 12101708,
+        "sample_count": 452,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "combined_peak_rss_mib": 1543.367,
+      "source_trial_outcome": "PASS",
+      "cleanup_errors": []
+    }
+  ],
+  "yaml_io": {
+    "offline_records": 100,
+    "write_ms": 231.703073,
+    "read_ms": 67.844294,
+    "simultaneous_players": 0
+  },
+  "cached_api": {
+    "reads": 100000,
+    "milliseconds": 12.329065,
+    "checksum": 500000
+  },
+  "recommended_storage": "AuraSkills YAML single writer + existing Hearth PostgreSQL",
+  "actual_client": "DEFERRED_BY_USER",
+  "fake_player": "NOT_USED",
+  "production_changes": "NONE",
+  "upstream_mana_key_mismatch": "SkillRegistry mana_abilities vs SkillLoader mana_ability; content override verified",
+  "resolved_failed_trials": [
+    {
+      "root": "/home/server/hearth-tmp/hearth-native-economy-run.so5tff5o",
+      "outcome": "FAIL",
+      "failure": "RuntimeError: AURA_PROBE_FAILED_aura",
+      "cleanup_errors": [],
+      "result_sha256": "b5358cd84839b67e119f7f705a49b65713096f0737062aef0d5a929cee5f9a84"
+    },
+    {
+      "root": "/home/server/hearth-tmp/hearth-native-economy-run.iqrmimpv",
+      "outcome": "FAIL",
+      "failure": "RuntimeError: AURA_PROBE_FAILED_aura",
+      "cleanup_errors": [],
+      "result_sha256": "2fb7a2a1811fe2e589cc7ba3f0bfb488b812730c045578e6b9da87d93709f779"
+    },
+    {
+      "root": "/home/server/hearth-tmp/hearth-native-economy-run.dfv8j_0y",
+      "outcome": "FAIL",
+      "failure": "RuntimeError: AURA_PROBE_FAILED_aura",
+      "cleanup_errors": [],
+      "result_sha256": "c768bda30a7ad04b74878e1d78649db84b57911697ec836eb7a7519c33871c7e"
+    }
+  ],
+  "artifact_evidence": [
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.so5tff5o/aura-baseline-result.json",
+      "sha256": "3253badfbb36a0a1654e0251c724444e82b94b751be9b2cf321cc96edf809f73"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.so5tff5o/aura-trial-result.json",
+      "sha256": "b5358cd84839b67e119f7f705a49b65713096f0737062aef0d5a929cee5f9a84"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.so5tff5o/paper-baseline-console.log",
+      "sha256": "39240365f1f0bbe58e530f2001f6d6364175758318b684f52c0e74b300378394"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.so5tff5o/database-console.log",
+      "sha256": "66d21eaf4ee130b16401ffde31864ab4f0ddd1960568c8e5d88d39e03d243daf"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.94yqpep1/aura-aura-result.json",
+      "sha256": "2cf137612c142a1b789305c58e794d1874173a44991c7306fae8ddf0e881d8e5"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.94yqpep1/aura-trial-result.json",
+      "sha256": "a0c398b81b3f40161241a4a0bf858b8ee01383b1164e6eb9076147891cfdcf9e"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.94yqpep1/paper-aura-console.log",
+      "sha256": "ef4d44e8786f68831d91493a57020c5bf4d82d08277e80243d119c321530d3c5"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.94yqpep1/database-console.log",
+      "sha256": "b8fc1821cabda0c9127949db37788ebe3dee2b61452f8c5ff04eb4676e19b4ba"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.y8fa4k6t/aura-restore-result.json",
+      "sha256": "177da65856d369b67c5b39ae8a843f952eaa9b6d41905a01457b6ec2a0c71c63"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.y8fa4k6t/aura-trial-result.json",
+      "sha256": "a2b0296f549e60f5cbc7fd97cfb5bdb4355823f2ed939da43203160bc9a654e5"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.y8fa4k6t/paper-restore-console.log",
+      "sha256": "45c2296b1a9f13e6eb74bebb922fb43fe0e4cb3b7e7e786346a12f8cef9815a6"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.y8fa4k6t/database-console.log",
+      "sha256": "e2578c9824d11d8effe00dd22ef0e292e7d6811b05b3d8b38e0e0ee78e3e0d86"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.94yqpep1/aura-yaml-io.json",
+      "sha256": "6b865d285804d744f3aadc6b209c460e3458d9a9e2ff345e51dbfbc7271ac71e"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-native-economy-run.94yqpep1/aura-api-cache-bench.json",
+      "sha256": "4667756206bcb0ac83e2c0bbac7efe994b1ffae41fcd80950ce738e05c99d3c1"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/policy-proof-16.xml",
+      "sha256": "80a2e31021636d54a4c5b5cc71cf1061357b03eac146adb8e972831c3952ff8f"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/policy-targeted.xml",
+      "sha256": "272be7b67b5aa7136457cd45987baafd2d6f10681c3669de641f0f692b23cb85"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/probe-build-level.log",
+      "sha256": "548f3717d6e01902d6a284091d79dd180c455b0298351fc81a3477954632ae0b"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/policy-targeted.log",
+      "sha256": "43264d69b9a78e8d9dbca680e38f60c3a62ae0257fb26c21fe49ae70862ab602"
+    },
+    {
+      "path": "/home/server/hearth-tmp/hearth-aura-research.w0i17svr/configurate-loader-bytecode.txt",
+      "sha256": "36f60f9cb6c087653913e7eb46dd203bbf992dc1aed50d931e187cada9e613be"
+    }
+  ],
+  "not_verified": [
+    "actual passives and mana activation effects",
+    "player mining, loot, damage, death and charm events",
+    "TPA/Home/portal/login/respawn bypass prevention",
+    "indirect region theft or custom-plugin protection bypass",
+    "rendered HUD and resource pack",
+    "actual concurrent players and long-running load",
+    "MySQL, PostgreSQL adapter and migration execution",
+    "power loss, abrupt termination and coordinated full backup recovery"
+  ],
+  "limits": {
+    "cpu": 2,
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "combined_rss_stop_mib": 6144,
+    "host_available_min_mib": 6144,
+    "paper_starts_max": 2
+  }
+}

@@ -1,5 +1,7 @@
 # S4 사전 조사 — 기성 플러그인 적합성 검토
 
+2026-11-20 경제 숙련도 기반의 사용자 AuraSkills 채택과 후속 기술 검증은 [별도 정본](auraskills-technical-verification.md) 및 [ADR-0031](decisions/0031-auraskills-economy-integration.md)을 따른다. 공식 2.4.0 소스/실제 Paper API·YAML 복원을 확인했으며 공개 API+Hearth 정책·YAML/기존 PG 병행을 권장한다. 아래 과거 WG/WE/MV 검토 범위를 소급 변경하지 않는다.
+
 - 최초 확인·재확인일: 2026-10-25 (Asia/Seoul). 최초 기준 `be4a291`·이번 재확인 기준 `2df743f74d6b17bddebb9f7acfd9ff20c88f05dd`. 기존 검토를 보완하며 결과 커밋은 Git 이력으로 확인합니다.
 - 최초 조사 범위(2026-10-25): 공식 배포 메타데이터·문서·공개 소스 열람, 다운로드/실행 없음. **2026-10-26 S4-1 후속 구현·최소 runtime smoke 결과는 마지막 절에 별도로 기록**합니다. 조사와 실제 시험을 구분합니다.
 - 상태: WorldGuard는 [ADR-0014](decisions/0014-worldguard-protection-engine.md)의 채택을 유지합니다. WorldEdit는 도구 및 의존성 검토 대상, Multiverse-Core는 미채택 후보입니다. 아래 버전은 조사 시점의 관측값이며 Hearth 설치 버전 확정이 아닙니다.

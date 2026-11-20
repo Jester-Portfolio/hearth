@@ -243,3 +243,20 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 `verify_native_economy.py --housing`는 새 native 소유 경로에 `.hearth-housing-isolated` (`Hearth housing isolated v1` + 개행)와 기존 스폰 시험 표식을 준비한다. 단일 스폰 예제와 거주 테스트용 32/64 크기·100/400 가격을 새 realm에만 사용한다. E008 실제 PG 경합/실패/원본 보존과 실제 Paper/WG의 개인 월드·차액 확장/블록 보존·역할/구획·두 JVM 복원을 묶어 검사한다. Player/클릭/인증을 합성하지 않으며 기존 localhost/자원/시간 한도를 유지한다.
 
 이미 통과한 PG 행렬 뒤 Paper 보완만 확인할 때는 새 소유 경로에서 `--housing --housing-recheck`를 사용한다. 최종 순수 제어/보호 보완의 복원은 `--housing --restore-source PASSED_HOUSING_ROOT`로 한 JVM만 검사한다. 원본 결과의 유일한 실패가 종료 후 OWNED_PORT_REMAINS였을 때만, 소유 경로의 `--cleanup-followup FILE`로 원본 SHA-256/경로·기능/프로세스 정상 종료·독립된 포트/PID 확인 증거를 명시할 수 있다. 일반 실패를 PASS로 바꾸거나 원시 결과를 덮지 않는다. 포트 종료 확인은 bind 실패 시 ECONNREFUSED를 검사해 TIME_WAIT와 실제 listener를 구분하며 `test_native_ports.py`로 회귀한다. [실행 결과/제한](../docs/housing-system-verification.md)을 따른다.
+
+## AuraSkills 기술 검증 전용
+
+[기술 검증 정본](../docs/auraskills-technical-verification.md)을 따른다. `src/auraModel`은 순수 정책 proof, `src/auraProbe`는 별도 격리 콘솔 JAR이다. 정식 Hearth 기능/명령이나 운영 설치를 만들지 않는다. 모델/fixture의 오프라인 데이터는 Player 행동 시험을 대체하지 않는다.
+
+```bash
+# JAVA_HOME/GRADLE_USER_HOME/TMPDIR는 기존 /home/server/hearth-tmp 시험 설정을 사용한다.
+# AURA_JAR는 정본의 공식 2.4.0 SHA-256과 일치하는 외부 다운로드 경로다.
+gradle test --tests '*PolicyProofTest' auraProbeJar -PauraSkillsJar="$AURA_JAR"
+python3 scripts/verify_auraskills.py --help
+```
+
+`verify_auraskills.py`는 새 사용자 소유 `hearth-native-economy-run.*` 경로와 `.hearth-native-economy-isolated` 표식(`Hearth native economy isolated v1` + 개행), 기존 EULA 승인 범위의 `--accept-eula`를 요구한다. 인자는 `--workspace`, `--source`, `--java`, `--plugin`, `--probe`, `--aura`, `--aura-config`다. source는 이전 native PASS·정리 완료·비활성 Paper/PG root이며 fixture-classes/resolved-jars를 포함한다. probe는 `build/libs/hearth-0.1.0-SNAPSHOT-aura-probe.jar`, aura-config는 고정 upstream `common/src/main/resources/config.yml`이다. 설정은 복사본에서만 수정한다.
+
+기본은 기준선/Aura 두 Paper다. 이미 성공한 기준선 이후 영향 재검사는 `--aura-only`로 Aura만 실행한다. 새 JVM 복원은 이전 **Aura trial 전체 PASS** root를 source로 사용해 `--restore --betterhud FIXED_HUD_JAR`로 한 Paper만 실행한다. 복원은 같은 probe로 custom 등록을 다시 수행하고 저장된 level/XP/mana/modifier와 BetterHud enable을 확인한다. client·가짜 Player·운영 접속은 사용하지 않는다.
+
+CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 2회 한도를 상속한다. 소유 PG 복사본의 기존 스토리/다른 경제 행 보존, 원본 파일 hash와 종료·포트 정리를 검사한다. 결과의 baseline phase PASS와 trial 전체 FAIL을 구분하고, 중간 실패 로그를 덮지 않는다. 실행 증거와 실측 한계는 정본에 한 번만 기록한다.
