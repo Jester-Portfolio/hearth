@@ -6,6 +6,8 @@
 
 ## 프로젝트 목표·현재 단계
 
+[네트워크 전체 복구 후속](network-recovery-verification.md)으로 proxy/lobby/economy/전체 PG와 검토 후보를 같은 정지 snapshot으로 묶고, 새 경로/수용 초기화·literal 환경 전달·PG 포함 역할별 기동 검사·프록시 실행 표식을 연결했다. Java19·Python35개 고유 검사와 실제 복원본 Velocity/두 Paper/PG의 14개 확인을 통과했다. 현재 상태·원본 계정/보관 ID·스토리 값·정상 종료/표식 보존을 확인했으며 실제 클라이언트·이미지/운영 전환·장기 부하는 별도다.
+
 [공통 운영 수명주기 후속](platform-operations-verification.md)으로 설정 파일 worker·E014 이력/과거 자원 세대 보관·공통 진입 차단/재개·보류를 반영한 외부 관측·네트워크 배포 후보를 구현했다. 원본 ID/행·파일을 유지하고 hot 상한만 분리한다. Java73·Python22·PG12/정지 CLI5·실제 두 JVM과 최종 공통 진입/복원 경계를 확인했다. 운영 삭제/보존 기간·실제 정품 플레이/동접 장기 부하·이미지/서비스/운영 적용은 별도다. [관리 가이드](../infrastructure/network/platform-operations.md)를 따른다.
 
 [설정 변경 작업대·복구](platform-configuration-verification.md)로 후보/PG 대조·변경 비교·적용/롤백 GUI와 명령을 연결했다. 파일만 복원한 롤백과 PG 확정을 구분하고, 새 JVM에서도 미확정 기록의 유지보수/예약 차단을 유지한다. 정상 확정 후 설정 유지보수만 해제하며 재시작 요구/다른 모듈 HOLD는 보존한다. 단위/회귀37개·PG10개·실제 Paper 두 JVM20개 검사가 통과했다. 실제 관리자 클릭·접속자 포함 변경·장기 부하/운영 적용은 미검증이다.

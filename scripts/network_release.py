@@ -58,6 +58,19 @@ def yaml_fields(text):
         if not value:stack.append((indent,key))
     return result
 
+def read_env(path):
+    raw=regular(path).read_bytes()
+    if len(raw)>16384 or any(b not in (10,) and not 32<=b<=126 for b in raw):raise ValueError('RELEASE_ENV_ENCODING')
+    values={}
+    for line in raw.decode('ascii').split('\n'):
+        if not line or line.startswith('#'):continue
+        if '=' not in line:raise ValueError('RELEASE_ENV_FORMAT')
+        key,value=line.split('=',1)
+        if key in values:raise ValueError('RELEASE_ENV_DUPLICATE')
+        values[key]=value
+    if set(values)!={'HEARTH_VELOCITY_SECRET','HEARTH_NETWORK_SECRET','HEARTH_DB_PASSWORD'} or any(not v for v in values.values()) or not re.fullmatch('[a-f0-9]{64}',values['HEARTH_VELOCITY_SECRET']) or not re.fullmatch('[a-f0-9]{64}',values['HEARTH_NETWORK_SECRET']):raise ValueError('RELEASE_SECRETS')
+    return values
+
 def review(spec):
     if set(spec) != {'format','host_cpu','host_memory_mib','services','backup','acceptance'} or spec['format'] != 1:
         raise ValueError('RELEASE_SCHEMA')
@@ -112,9 +125,7 @@ def review(spec):
     for role in ('proxy','lobby','economy'):
         root=Path(spec['services'][role]['data']);env=root/'runtime.env'
         if env.stat().st_mode & 0o077:raise ValueError('RELEASE_SECRET_MODE')
-        values=dict(line.split('=',1) for line in env.read_text().splitlines() if line and not line.startswith('#'))
-        if set(values) != {'HEARTH_VELOCITY_SECRET','HEARTH_NETWORK_SECRET','HEARTH_DB_PASSWORD'} or any(not v for v in values.values()) or not re.fullmatch('[a-f0-9]{64}',values['HEARTH_VELOCITY_SECRET']) or not re.fullmatch('[a-f0-9]{64}',values['HEARTH_NETWORK_SECRET']):
-            raise ValueError('RELEASE_SECRETS')
+        values=read_env(env)
         tokens.append(values);jars.append(digest(root/'plugins/Hearth.jar'))
     if tokens[0] != tokens[1] or tokens[0] != tokens[2] or len(set(jars)) != 1 or (Path(proxy['data'])/'forwarding.secret').read_text().strip() != tokens[0]['HEARTH_VELOCITY_SECRET']:
         raise ValueError('RELEASE_NETWORK_IDENTITY')
@@ -146,28 +157,28 @@ def generate(spec, output):
     if output.exists() or output.is_symlink() or output.parent != output.parent.resolve(strict=True):
         raise ValueError('RELEASE_FRESH_OUTPUT')
     # Candidate only. Missing acceptance gates stay explicit and block launch review.
-    result={'format':1,'status':'CANDIDATE','review':spec,'files':files,'acceptance_complete':all(spec['acceptance'].values())}
+    result={'format':2,'status':'CANDIDATE','review':spec,'files':files,'acceptance_complete':all(spec['acceptance'].values())}
     output.mkdir(mode=0o700)
     services={}
     for role,s in spec['services'].items():
         services[role]={'image':s['image'],'user':f"{s['uid']}:{s['gid']}",'network_mode':'host','read_only':True,'restart':'no','cpus':s['cpu'],'mem_limit':str(s['memory_mib'])+'m','stop_grace_period':str(s['stop_seconds'])+'s','pids_limit':s['pids'],'cap_drop':['ALL'],'security_opt':['no-new-privileges:true'],
           'working_dir':'/data','volumes':[{'type':'bind','source':s['data'],'target':'/data','bind':{'create_host_path':False}}],
           'environment':{'HEARTH_NETWORK_APPROVAL':'${HEARTH_NETWORK_APPROVAL:?separate operating approval required}'}}
-        if role!='postgres':
-            services[role]['env_file']=[str(Path(s['data'])/'runtime.env')]
+        manifest='format=2\nrole='+role+'\nacceptance-complete='+str(result['acceptance_complete']).lower()+'\njar='+s['jar']+'\n'
+        for path,sha in files.items():
+            try:relative=Path(path).relative_to(Path(s['data']))
+            except ValueError:continue
+            manifest+='file.'+str(relative)+'='+sha+'\n'
+        (output/(role+'.properties')).write_text(manifest)
+        services[role]['environment'].update(HEARTH_ROLE=role,HEARTH_LAUNCH_SHA256=hashlib.sha256(manifest.encode()).hexdigest())
         if role=='postgres':
-            services[role]['entrypoint']=['/bin/sh','/review/postgres-entrypoint.sh']
+            services[role]['entrypoint']=['/bin/sh','/review/network-postgres-entrypoint.sh']
             services[role]['environment'].update(HEARTH_OPERATING_APPROVAL='${HEARTH_NETWORK_APPROVAL:?separate operating approval required}',HEARTH_PG_PORT=str(s['port']),PGDATA='/data')
+            launch_files=['network-postgres-entrypoint.sh','postgres-entrypoint.sh','runtime-env.sh','postgres.properties']
         else:
-            manifest='format=1\nacceptance-complete='+str(result['acceptance_complete']).lower()+'\njar='+s['jar']+'\n'
-            for path,sha in files.items():
-                try:relative=Path(path).relative_to(Path(s['data']))
-                except ValueError:continue
-                manifest+='file.'+str(relative)+'='+sha+'\n'
-            (output/(role+'.properties')).write_text(manifest)
             services[role]['entrypoint']=['/bin/sh','/review/network-entrypoint.sh']
-            services[role]['environment'].update(HEARTH_ROLE=role,HEARTH_HEAP_MIB=str(s['heap_mib']),HEARTH_CPUS=str(max(1,int(s['cpu']))),HEARTH_LAUNCH_SHA256=hashlib.sha256(manifest.encode()).hexdigest())
-        launch_files=['postgres-entrypoint.sh'] if role=='postgres' else ['network-entrypoint.sh','NetworkLaunchCheck.java',role+'.properties']
+            services[role]['environment'].update(HEARTH_HEAP_MIB=str(s['heap_mib']),HEARTH_CPUS=str(max(1,int(s['cpu']))))
+            launch_files=['network-entrypoint.sh','runtime-env.sh','NetworkLaunchCheck.java',role+'.properties']
         for filename in launch_files:
             services[role]['volumes'].append({'type':'bind','source':str(output/filename),'target':'/review/'+filename,'read_only':True,'bind':{'create_host_path':False}})
         services[role]['tmpfs']=[f"/run/hearth:rw,nosuid,nodev,noexec,size=128m,uid={s['uid']},gid={s['gid']},mode=0700"]
@@ -176,7 +187,7 @@ def generate(spec, output):
         services[role]['depends_on']={'postgres':{'condition':'service_healthy'}}
     services['proxy']['depends_on']={role:{'condition':'service_started'} for role in ('lobby','economy')}
     repository=Path(__file__).resolve().parent.parent
-    for source in ('infrastructure/deployment/network-entrypoint.sh','infrastructure/deployment/postgres-entrypoint.sh','src/main/java/io/github/jesterportfolio/hearth/administration/NetworkLaunchCheck.java'):
+    for source in ('infrastructure/deployment/network-entrypoint.sh','infrastructure/deployment/postgres-entrypoint.sh','infrastructure/deployment/network-postgres-entrypoint.sh','infrastructure/deployment/runtime-env.sh','src/main/java/io/github/jesterportfolio/hearth/administration/NetworkLaunchCheck.java'):
         shutil.copy2(repository/source,output/Path(source).name)
     (output/'compose.json').write_text(json.dumps({'name':'hearth-'+re.search(r'(?m)^network-id=([a-f0-9-]{36})$',(Path(spec['services']['proxy']['data'])/'plugins/hearth-network/network.properties').read_text()).group(1).replace('-',''),'services':services},indent=2)+'\n')
     for artifact in output.iterdir():
@@ -186,14 +197,18 @@ def generate(spec, output):
     (output/'release.json').write_text(json.dumps(result,indent=2)+'\n');(output/'release.json').chmod(0o444)
     return result
 
-def inspect(manifest):
+def artifacts(manifest):
     result=json.loads(regular(manifest).read_text())
     names={'compose.json','backup-policy.json','proxy.properties','lobby.properties','economy.properties','network-entrypoint.sh','postgres-entrypoint.sh','NetworkLaunchCheck.java'}
-    if set(result) != {'format','status','review','files','acceptance_complete','artifacts'} or result['format'] != 1 or set(result['artifacts']) != names or any(digest(Path(manifest).parent/name) != result['artifacts'][name] for name in names):
-        raise ValueError('RELEASE_ARTIFACT_CHANGED')
-    if result['status'] != 'CANDIDATE' or result['files'] != review(result['review']) or result['acceptance_complete'] != all(result['review']['acceptance'].values()):
-        raise ValueError('RELEASE_CHANGED')
-    return {'unchanged':True,'acceptance_complete':all(result['review']['acceptance'].values()),'operating_approval':'SEPARATE_REQUIRED'}
+    if result.get('format')==2:names|={'postgres.properties','network-postgres-entrypoint.sh','runtime-env.sh'}
+    if set(result)!={'format','status','review','files','acceptance_complete','artifacts'} or result['format'] not in (1,2) or result['status']!='CANDIDATE' or set(result['artifacts'])!=names or any(digest(Path(manifest).parent/name)!=result['artifacts'][name] for name in names):raise ValueError('RELEASE_ARTIFACT_CHANGED')
+    if result['acceptance_complete']!=all(result['review']['acceptance'].values()):raise ValueError('RELEASE_ACCEPTANCE')
+    return result
+
+def inspect(manifest):
+    result=artifacts(manifest)
+    if result['files']!=review(result['review']):raise ValueError('RELEASE_CHANGED')
+    return {'unchanged':True,'acceptance_complete':result['acceptance_complete'],'operating_approval':'SEPARATE_REQUIRED'}
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('plan','inspect'));p.add_argument('input',type=Path);p.add_argument('--output',type=Path);a=p.parse_args()

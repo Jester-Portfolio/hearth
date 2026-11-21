@@ -39,6 +39,7 @@
 | [ADR-0033: 경제 공통 플랫폼 수명주기](0033-economy-platform-lifecycle.md) | 사용자 8개 작업 일괄 구현·자동 검증 | 강화/판매·출처 합산·설정 이전·자원 세대·관리/백업 복원, 콘텐츠/실제 수용 별도 |
 | [ADR-0034: 공통 영속 예약 작업](0034-persistent-platform-jobs.md) | 플랫폼 후속 구현·자동 검증 | 경제 논리 시계·고정 의도/시드·작업센터·재시작 HOLD·효과 확인, 주기/운영 수용 별도 |
 | [ADR-0035: 플랫폼 이력·월드 보관과 운영 진단](0035-platform-operations-and-retention.md) | 잔여 플랫폼 일괄 구현·운영 미적용 | E014 hot/cold·불변 ID·파일 worker·보류 관측·네트워크 후보 |
+| [ADR-0036: 네트워크 전체 snapshot·기동 바인딩](0036-network-snapshot-and-launch-binding.md) | 후속 구현·격리 복원/기동 PASS·운영 미적용 | 네 역할/전체 PG 동시 보존·외부 영수증·수용 초기화·literal env/역할 기동 |
 
 각 기록에는 다음 내용을 포함합니다.
 

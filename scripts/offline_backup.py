@@ -12,6 +12,8 @@ import stat
 import time
 
 FORMAT = 'hearth-offline-backup-v1'
+NETWORK_FORMAT = 'hearth-network-backup-v1'
+ROOTS = {FORMAT: {'paper','postgres'}, NETWORK_FORMAT: {'proxy','lobby','economy','postgres'}}
 MAX_FILES = 100_000
 MAX_BYTES = 12 * 1024**3
 MAX_SECONDS = 90
@@ -144,7 +146,10 @@ def assert_offline(roots, stack):
 
 def create(roots, destination, *, offline_confirmed=False, budget=None):
     require(offline_confirmed, 'OFFLINE_CONFIRMATION_REQUIRED')
-    require(set(roots) in ({'paper', 'postgres'}, {'paper', 'postgres', 'assets'}), 'BACKUP_ROOTS_REQUIRED')
+    labels=set(roots)-{'assets'}
+    formats=[name for name,required in ROOTS.items() if labels==required]
+    require(len(formats)==1, 'BACKUP_ROOTS_REQUIRED')
+    format_name=formats[0]
     budget = budget or Budget()
     roots = {label: canonical_directory(root) for label, root in roots.items()}
     paths = list(roots.values())
@@ -181,7 +186,7 @@ def create(roots, destination, *, offline_confirmed=False, budget=None):
                 if not row['directory']:
                     require(file_hash(source/row['path'],budget) == expected[label+'/'+row['path']]['sha256'], 'SOURCE_CONTENT_CHANGED')
         assert_offline(roots, stack)
-        manifest = dict(format=FORMAT, created_utc=datetime.now(timezone.utc).isoformat(), consistency='operator_confirmed_clean_stop', postgres_major=(roots['postgres']/'PG_VERSION').read_text().strip(), files=records, bytes=total)
+        manifest = dict(format=format_name, created_utc=datetime.now(timezone.utc).isoformat(), consistency='operator_confirmed_clean_stop', postgres_major=(roots['postgres']/'PG_VERSION').read_text().strip(), files=records, bytes=total)
         raw = (json.dumps(manifest,ensure_ascii=False,sort_keys=True,indent=2)+'\n').encode()
         require(len(raw) <= 32*1024**2, 'MANIFEST_SIZE_LIMIT')
         # The final manifest is the completion marker; partial directories are retained without it.
@@ -200,17 +205,17 @@ def verify(bundle, expected_sha256, *, budget=None):
     raw = manifest_file.read_bytes()
     require(isinstance(expected_sha256,str) and len(expected_sha256)==64 and hashlib.sha256(raw).hexdigest()==expected_sha256, 'MANIFEST_RECEIPT_MISMATCH')
     manifest = json.loads(raw)
-    require(manifest.get('format')==FORMAT and manifest.get('consistency')=='operator_confirmed_clean_stop', 'UNKNOWN_BACKUP_FORMAT')
+    require(manifest.get('format') in ROOTS and manifest.get('consistency')=='operator_confirmed_clean_stop', 'UNKNOWN_BACKUP_FORMAT')
     records = manifest['files']; require(isinstance(records,list) and len(records)<=MAX_FILES, 'BACKUP_FILE_LIMIT')
     index = {}
     for row in records:
         name = str(relative(row['path']))
         require(name not in index and type(row.get('directory')) is bool, 'DUPLICATE_OR_INVALID_MANIFEST_ENTRY')
-        require(name.split('/')[0] in {'paper','postgres','assets'}, 'UNKNOWN_BACKUP_ROOT')
+        require(name.split('/')[0] in ROOTS[manifest['format']] | {'assets'}, 'UNKNOWN_BACKUP_ROOT')
         if not row['directory']:
             require(type(row.get('size')) is int and row['size']>=0 and type(row.get('mode')) is int and row['mode'] & ~0o700 == 0 and isinstance(row.get('sha256'),str) and len(row['sha256'])==64, 'INVALID_MANIFEST_FILE')
         index[name] = row
-    require(all(x in index and index[x]['directory'] for x in ('paper','postgres')), 'BACKUP_ROOTS_REQUIRED')
+    require(all(x in index and index[x]['directory'] for x in ROOTS[manifest['format']]), 'BACKUP_ROOTS_REQUIRED')
     payload = canonical_directory(bundle/'payload')
     actual = inventory(payload,budget)
     require(set(r['path'] for r in actual)==set(index), 'PAYLOAD_MEMBERS_MISMATCH')
@@ -243,7 +248,7 @@ def restore(bundle, destination, expected_sha256, *, budget=None):
             require(digest==row['sha256'], 'BUNDLE_CHANGED_DURING_RESTORE')
     # Revalidate the archived source after extraction. Never mutate or start restored services.
     verify(bundle,expected_sha256,budget=budget)
-    receipt = dict(format=FORMAT, manifest_sha256=expected_sha256, files_restored=len(manifest['files']), bytes=manifest['bytes'], services_started=False)
+    receipt = dict(format=manifest['format'], manifest_sha256=expected_sha256, files_restored=len(manifest['files']), bytes=manifest['bytes'], services_started=False)
     with (target/'restore-receipt.json').open('x') as stream:
         os.chmod(target/'restore-receipt.json',0o600);json.dump(receipt,stream,sort_keys=True);stream.write('\n');stream.flush();os.fsync(stream.fileno())
     return receipt

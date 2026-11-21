@@ -64,3 +64,5 @@ python3 scripts/runtime_health.py --log /REVIEWED/SERVER/logs/latest.log \
 ## 경제 멀티서버 후보
 
 기존 2서비스 검토 후보와 별도로 [network_release.py 및 검토 양식](../network/platform-operations.md#네트워크-배포-후보)은 준비된 proxy/lobby/economy/postgres를 묶는다. 불변 원본/생성 파일·현대 인증 전달·이미지/예산·백업 정책을 검사하고 수용 미완료/별도 승인 없이는 Java 기동을 거부한다. Docker compose config만 격리 예제로 확인했으며 이미지 빌드/서비스 적용은 진행하지 않았다. format2 상태 보고의 `$.platform.*`와 controller_ready는 설정/월드/작업 보류도 반영한다. 실제 Zabbix 설치/수집·운영 백업 스케줄은 별도다.
+
+format2 네트워크 후보의 PG도 역할별 수용/검토 파일 SHA를 먼저 검사한다. runtime.env는 dotenv 보간 없이 검토한 원문으로 전달한다. 네 역할의 일관 보존/새 경로 복원과 수용 초기화는 [네트워크 복구](../network/network-recovery.md)를 따른다.

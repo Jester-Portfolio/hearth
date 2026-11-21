@@ -9,7 +9,9 @@ case "${HEARTH_ROLE:-}" in proxy|lobby|economy) ;; *) refuse;; esac
 case "${HEARTH_HEAP_MIB:-}:${HEARTH_CPUS:-}" in *[!0-9:]*|:|:*) refuse;; esac
 [ "$HEARTH_HEAP_MIB" -gt 0 ] && [ "$HEARTH_CPUS" -gt 0 ] || refuse
 [ -d /run/hearth ] && [ ! -e /run/hearth/boot-id ] || refuse
-jar=$(java -Xmx128m -XX:ActiveProcessorCount=1 -Djava.io.tmpdir=/run/hearth /review/NetworkLaunchCheck.java /data "/review/${HEARTH_ROLE}.properties" "${HEARTH_LAUNCH_SHA256:-}") || refuse
+jar=$(java -Xmx128m -XX:ActiveProcessorCount=1 -Djava.io.tmpdir=/run/hearth /review/NetworkLaunchCheck.java /data "/review/${HEARTH_ROLE}.properties" "${HEARTH_LAUNCH_SHA256:-}" "$HEARTH_ROLE") || refuse
+. /review/runtime-env.sh
+hearth_load_env /data/runtime.env || refuse
 [ -r /proc/sys/kernel/random/uuid ] || refuse
 boot=$(cat /proc/sys/kernel/random/uuid)
 printf '%s\n' "$boot" > /run/hearth/boot-id

@@ -294,3 +294,7 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 `verify_auraskills.py --platform-operations`는 E014 PG12/정지 정책 CLI5·실제 retired 월드 보관/복원과 두 JVM 보류를 검사한다. 완료한 복사본의 `--platform-operations-final`은 변경된 준비/공통 진입/보관 조회를 한 JVM으로 확인하고 실제 format2 보고서를 약12초 관측한다. 기존 CPU/RSS/시간·정품/Player 합성 금지 경계를 유지한다.
 
 `network_release.py plan|inspect`는 준비된 4서비스의 불변 파일/예산/백업·수용 상태를 묶고, `platform_soak.py`는 현재 실제 상태 보고만 bounded 관측한다. 서비스를 시작하거나 부하/Player를 합성하지 않는다. 사용법/미검증은 [운영 가이드](../infrastructure/network/platform-operations.md), 상세 증거는 [검증 기록](../docs/platform-operations-verification.md)을 따른다.
+
+## 네트워크 전체 복구
+
+`network_recovery.py create|verify|restore`는 기존 network_release 후보와 proxy/lobby/economy/전체 PG를 한 snapshot에 묶고 새 경로로만 복원한다. 기존 단일 Paper backup-v1도 유지한다. `verify_network_recovery.py`는 성공/정지한 소유 경제·로비 자료로 준비한 묶음을 복원해 실제 Velocity1/Paper2/PG1을 기존 CPU/RSS/600초·localhost/EULA/Player 합성 금지 한도에서 검사한다. 서비스를 자동 배포하거나 부하/Player를 합성하지 않는다. [사용법](../infrastructure/network/network-recovery.md)과 [증거](../docs/network-recovery-verification.md)를 따른다.
