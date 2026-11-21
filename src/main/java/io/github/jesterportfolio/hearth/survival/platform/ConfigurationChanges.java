@@ -10,6 +10,7 @@ import java.io.*;
 public final class ConfigurationChanges {
     public record Plan(UUID id,String name,String before,String after,boolean restart,Path directory){}
     public record Scan(List<Plan> plans,List<String> issues) {public Scan{plans=List.copyOf(plans);issues=List.copyOf(issues);}}
+    public record Input(byte[] before,byte[] after){}
     public record Detail(Plan plan,String state,String current,String position,List<String> preview){}
     @FunctionalInterface public interface Validator {void validate(String name,byte[] before,byte[] after)throws Exception;}
     private static final Set<String> STATES=Set.of("STAGED","PREPARING","APPLYING","APPLIED","COMMITTED","ROLLBACK_PREPARING","ROLLING_BACK","ROLLBACK_APPLIED","ROLLED_BACK");
@@ -27,8 +28,13 @@ public final class ConfigurationChanges {
         var plan=new Plan(id,name,hash(before),hash(after),name.startsWith("rpg-"),dir);var p=new Properties();p.setProperty("version","1");p.setProperty("id",id.toString());p.setProperty("name",name);p.setProperty("before",plan.before);p.setProperty("after",plan.after);p.setProperty("restart",Boolean.toString(plan.restart));p.setProperty("state","STAGED");save(dir.resolve("manifest.properties"),p,false);sync(changes);return plan;
     }
     private Properties manifest(Plan plan)throws Exception{var p=new Properties();try(var in=new ByteArrayInputStream(read(plan.directory.resolve("manifest.properties")))){p.load(in);}return p;}
+    public Input candidate(String name,String candidate)throws Exception{if(!candidate.matches("[a-zA-Z0-9_-]{1,64}\\.candidate"))throw new IOException("CONFIG_CANDIDATE_NAME");return new Input(read(file(name)),read(root.resolve(candidate)));}
+    public Input input(Plan plan,boolean rollback)throws Exception{return new Input(read(file(plan.name)),read(plan.directory.resolve(rollback?"before":"after")));}
+    private Path archived(UUID id){return root.resolve("platform-archive/config").resolve(id.toString());}
+    public boolean hot(UUID id){return Files.exists(changes.resolve(id.toString()),LinkOption.NOFOLLOW_LINKS);}
+    public boolean archived(Plan plan){return plan.directory.equals(archived(plan.id));}
     public Plan plan(UUID id)throws Exception{
-        Path dir=changes.resolve(id.toString());if(!dir.equals(dir.toRealPath()))throw new IOException("CONFIG_PATH");
+        Path dir=changes.resolve(id.toString());if(!Files.exists(dir,LinkOption.NOFOLLOW_LINKS))dir=archived(id);if(!dir.equals(dir.toRealPath()))throw new IOException("CONFIG_PATH");
         var p=manifest(new Plan(id,null,null,null,false,dir));String name=p.getProperty("name");
         if(!"1".equals(p.getProperty("version"))||!id.toString().equals(p.getProperty("id"))||!STATES.contains(p.getProperty("state",""))||!Boolean.toString(name!=null&&name.startsWith("rpg-")).equals(p.getProperty("restart")))throw new IOException("CONFIG_VERSION");
         var plan=new Plan(id,name,p.getProperty("before"),p.getProperty("after"),name.startsWith("rpg-"),dir);file(plan.name);
@@ -58,8 +64,9 @@ public final class ConfigurationChanges {
         mark(plan,rollback?"ROLLBACK_APPLIED":"APPLIED");
     }
     public Scan scan()throws Exception{
-        var out=new ArrayList<Plan>();var issues=new ArrayList<String>();try(var paths=Files.list(changes)){var all=paths.sorted().limit(4097).toList();if(all.size()>4096)throw new IOException("CONFIG_CAPACITY");for(var path:all){String key=path.getFileName().toString();try{UUID id=UUID.fromString(key);if(!id.toString().equals(key))throw new IOException("CONFIG_DIRECTORY");out.add(plan(id));}catch(Exception e){issues.add("CONFIG_EVIDENCE "+clip(key)+" "+e.getClass().getSimpleName());}}}return new Scan(out,issues);
+        var out=new ArrayList<Plan>();var issues=new ArrayList<String>();try(var paths=Files.list(changes)){var all=paths.limit(4097).sorted().toList();if(all.size()>4096)throw new IOException("CONFIG_CAPACITY");for(var path:all){String key=path.getFileName().toString();try{UUID id=UUID.fromString(key);if(!id.toString().equals(key))throw new IOException("CONFIG_DIRECTORY");out.add(plan(id));}catch(Exception e){issues.add("CONFIG_EVIDENCE "+clip(key)+" "+e.getClass().getSimpleName());}}}return new Scan(out,issues);
     }
+    public void archive(Plan expected)throws Exception{var actual=plan(expected.id);if(!actual.equals(expected))throw new IOException("CONFIG_PLAN_CHANGED");if(!Set.of("COMMITTED","ROLLED_BACK").contains(state(actual)))throw new IOException("CONFIG_PENDING_REVIEW");Path destination=archived(actual.id);Files.createDirectories(destination.getParent());if(!destination.getParent().equals(destination.getParent().toRealPath()))throw new IOException("CONFIG_PATH");if(actual.directory.equals(destination))return;if(Files.exists(destination,LinkOption.NOFOLLOW_LINKS))throw new IOException("CONFIG_ARCHIVE_CONFLICT");Files.move(actual.directory,destination,StandardCopyOption.ATOMIC_MOVE);sync(changes);sync(destination.getParent());}
     public List<Plan> pending()throws Exception{var scan=scan();if(!scan.issues.isEmpty())throw new IOException("CONFIG_EVIDENCE_REVIEW");var out=new ArrayList<Plan>();for(var plan:scan.plans)if(pendingState(state(plan)))out.add(plan);return List.copyOf(out);}
     private static void sync(Path dir)throws Exception{try(var channel=FileChannel.open(dir,StandardOpenOption.READ)){channel.force(true);}}
     private static void writeNew(Path path,byte[] bytes)throws Exception{Files.write(path,bytes,StandardOpenOption.CREATE_NEW);try(var channel=FileChannel.open(path,StandardOpenOption.WRITE)){channel.force(true);}}

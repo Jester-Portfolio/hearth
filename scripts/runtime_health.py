@@ -48,7 +48,7 @@ def unique(pairs):
     return result
 
 def validate(row, boot, mode, now, max_age):
-    if not isinstance(row, dict) or set(row) != FIELDS:
+    if not isinstance(row, dict) or set(row) != FIELDS | ({'platform'} if row.get('format') == 2 else set()):
         raise Unavailable('REPORT_SCHEMA')
     for key in ('format','pid','observed_ms','worlds','held_worlds','heap_used_bytes'):
         if type(row[key]) is not int or row[key] < (1 if key in ('format','pid') else 0):
@@ -59,11 +59,19 @@ def validate(row, boot, mode, now, max_age):
     for key in ('tps','mspt'):
         if type(row[key]) not in (int,float) or not math.isfinite(row[key]) or row[key] < 0:
             raise Unavailable('REPORT_NUMBER')
-    if row['format'] != 1 or row['mode'] not in ('story','economy','story-prepare','lobby','survival') or row['phase'] not in PHASES:
+    if row['format'] not in (1,2) or row['mode'] not in ('story','economy','story-prepare','lobby','survival') or row['phase'] not in PHASES:
         raise Unavailable('REPORT_SCHEMA')
     if row['boot'] != boot or row['mode'] != mode:
         raise Unavailable('BOOT_OR_MODE_MISMATCH')
-    if row['held_worlds'] > row['worlds'] or row['controller_ready'] != (row['phase'] == 'READY' and row['held_worlds'] == 0):
+    platform = row.get('platform', {})
+    if row['format'] == 2:
+        keys = {'enabled','ready','maintenance','config_busy','config_held','vault_held','job_held','io_pending','sales','generation','reset_pending'}
+        if not isinstance(platform, dict) or set(platform) != keys or any(type(v) is not int or v < 0 for v in platform.values()):
+            raise Unavailable('PLATFORM_SCHEMA')
+        if any(platform[k] not in (0,1) for k in ('enabled','ready','maintenance','config_busy','job_held')):
+            raise Unavailable('PLATFORM_NUMBER')
+    platform_ready = not platform or platform['ready'] == 1 and all(platform[k] == 0 for k in ('job_held','reset_pending','maintenance','config_busy','config_held','vault_held'))
+    if row['held_worlds'] > row['worlds'] or row['controller_ready'] != (row['phase'] == 'READY' and row['held_worlds'] == 0 and platform_ready):
         raise Unavailable('REPORT_INVARIANT')
     age = now - row['observed_ms'] / 1000
     if age < -5 or age > max_age:

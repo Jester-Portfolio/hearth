@@ -1,0 +1,8 @@
+package io.github.jesterportfolio.hearth.administration;
+import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;import java.nio.file.*;import java.security.*;import java.util.*;import static org.junit.jupiter.api.Assertions.*;
+class NetworkLaunchCheckTest {
+ @TempDir Path root;
+ String hash(Path p)throws Exception{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(p)));}
+ @Test void exactReviewedArtifactIsRequiredAndChangedInputRefuses()throws Exception{Path jar=root.resolve("server.jar"),manifest=root.resolve("launch.properties");Files.writeString(jar,"jar");Files.writeString(manifest,"format=1\nacceptance-complete=true\njar=server.jar\nfile.server.jar="+hash(jar)+"\n");String seal=hash(manifest);assertEquals("server.jar",NetworkLaunchCheck.validate(root,manifest,seal));Files.writeString(jar,"other");assertThrows(Exception.class,()->NetworkLaunchCheck.validate(root,manifest,seal));}
+ @Test void MissingAcceptanceAndManifestChangesRefuse()throws Exception{Path jar=root.resolve("server.jar"),manifest=root.resolve("launch.properties");Files.writeString(jar,"jar");Files.writeString(manifest,"format=1\nacceptance-complete=false\njar=server.jar\nfile.server.jar="+hash(jar)+"\n");assertThrows(Exception.class,()->NetworkLaunchCheck.validate(root,manifest,hash(manifest)));assertThrows(Exception.class,()->NetworkLaunchCheck.validate(root,manifest,"a".repeat(64)));}
+}

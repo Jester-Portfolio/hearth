@@ -288,3 +288,9 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 ## 설정 작업대·중단 복구
 
 `verify_auraskills.py --config-workbench`는 완료된 예약 작업 cold 복사본과 jobs-expected.properties를 사용해 설정 PG10개와 config-prepare/resume 두 Paper JVM을 검사한다. stageNativeEconomyRuntime으로 현재 fixture를 준비하고 다른 시험 모드 없이 실행한다. 기존 자원 교체/전체 RPG 행렬은 반복하지 않는다. 원본 보존·정품/Player 합성 금지·localhost·CPU/RSS/600초/두 Paper 한도는 기존과 같다. [검증 기록](../docs/platform-configuration-verification.md)을 따른다.
+
+## 공통 플랫폼 운영 후속
+
+`verify_auraskills.py --platform-operations`는 E014 PG12/정지 정책 CLI5·실제 retired 월드 보관/복원과 두 JVM 보류를 검사한다. 완료한 복사본의 `--platform-operations-final`은 변경된 준비/공통 진입/보관 조회를 한 JVM으로 확인하고 실제 format2 보고서를 약12초 관측한다. 기존 CPU/RSS/시간·정품/Player 합성 금지 경계를 유지한다.
+
+`network_release.py plan|inspect`는 준비된 4서비스의 불변 파일/예산/백업·수용 상태를 묶고, `platform_soak.py`는 현재 실제 상태 보고만 bounded 관측한다. 서비스를 시작하거나 부하/Player를 합성하지 않는다. 사용법/미검증은 [운영 가이드](../infrastructure/network/platform-operations.md), 상세 증거는 [검증 기록](../docs/platform-operations-verification.md)을 따른다.

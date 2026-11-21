@@ -19,6 +19,8 @@ import io.github.jesterportfolio.hearth.network.*;
 public final class SurvivalRuntime implements Listener,AutoCloseable {
     public enum Phase{STARTING,READY,DRAINING,DRAINED,HOLD,CLOSED}
     private io.github.jesterportfolio.hearth.survival.rpg.RpgAura rpgAura;private io.github.jesterportfolio.hearth.survival.rpg.RpgRuntime rpg;
+    public boolean platformTransactionsAllowed(){return rpg==null||rpg.platform==null||rpg.platform.ready()&&!rpg.platform.configurationBusy();}
+    public java.util.Map<String,Long> platformDiagnostics(){return rpg==null||rpg.platform==null?java.util.Map.of():rpg.platform.diagnostics();}
     public io.github.jesterportfolio.hearth.survival.rpg.RpgRuntime rpg(){return Objects.requireNonNull(rpg);}
     public Object sessionToken(Player p){return token(p);}
     public boolean current(Player p){return same(p,token(p));}
@@ -64,7 +66,7 @@ public final class SurvivalRuntime implements Listener,AutoCloseable {
     private Object token(Player p){var link=links.get(p.getUniqueId());return link!=null&&link.player()==p?link.token():null;}
     private boolean same(Player p,Object token){var l=links.get(p.getUniqueId());return phase==Phase.READY&&l!=null&&l.player()==p&&l.token()==token&&p.isOnline()&&Bukkit.getPlayer(p.getUniqueId())==p;}
     private boolean available(Player p){return baseAvailable(p)&&(economy==null||!economy.busy(p));}
-    private boolean baseAvailable(Player p){var l=links.get(p.getUniqueId());return l!=null&&same(p,l.token())&&!p.isDead()&&!frozen.contains(l.token())&&!travel.busy(p.getUniqueId())&&!moves.containsKey(p.getUniqueId())&&(housing==null||!housing.busy(p.getUniqueId()))&&(network==null||network.phase(p.getUniqueId()).isEmpty());}
+    private boolean baseAvailable(Player p){var l=links.get(p.getUniqueId());return platformTransactionsAllowed()&&l!=null&&same(p,l.token())&&!p.isDead()&&!frozen.contains(l.token())&&!travel.busy(p.getUniqueId())&&!moves.containsKey(p.getUniqueId())&&(housing==null||!housing.busy(p.getUniqueId()))&&(network==null||network.phase(p.getUniqueId()).isEmpty());}
     private boolean blocked(Player p){var l=links.get(p.getUniqueId());return phase!=Phase.READY||l==null||l.player()!=p||frozen.contains(l.token())||!admission.allowed(p,p.getLocation());}
     private void selectWorld(Player p,Object token,SurvivalWorld role){if(!admission.allowed(p,worlds.entry(role))){p.sendMessage(Component.text(admission.reason(p,role)));return;}selectLocation(p,token,role.label(),()->CompletableFuture.completedFuture(worlds.entry(role)));}
     private CompletionStage<Boolean> selectLocation(Player p,Object token,String label,java.util.function.Supplier<CompletionStage<Location>> destination){return selectLocation(p,token,label,destination,()->true,false);}

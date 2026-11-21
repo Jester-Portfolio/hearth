@@ -54,7 +54,7 @@ RewardCoordinator에서 이미 감소한 보상에 판매 시 페널티를 다�
 
 후보는 `platform-changes/<UUID>/`에 원본(before)·후보(after)·해시·manifest를 보존한다. 적용/롤백 의도(PREPARING/ROLLBACK_PREPARING)를 로컬에 먼저 기록하고 E012 PG를 PREPARED로 만든 뒤 원자 파일 교체 → live 설정/예약 구성 → PG 확정 → 로컬 확정 순으로 진행한다. ROLLBACK_APPLIED는 파일만 복원한 **미완료** 상태이며 PG까지 확정한 ROLLED_BACK과 구분한다. 전체 파일+PG는 하나의 분산 트랜잭션이 아니다.
 
-기동 시 로컬과 PG 전체 기록(각 최대4096개)을 대조한다. 중간 상태·누락/변조/부분 생성 증거·식별자/상태 불일치는 유지보수로 닫고 자동 예약 구성/dispatch도 보류한다. 구버전 ROLLED_BACK이라도 PG가 PREPARED/COMMITTED이면 미확정으로 취급한다. 문제가 있는 후보 이외의 후보를 교차 적용하지 않는다. 원본/후보가 같고 현재 파일이 양쪽 해시 중 하나일 때만 같은 UUID로 적용/롤백을 재개한다. 외부 수정이나 충돌하는 `.platform-writing`은 보존하고 덮어쓰지 않는다. 남은 임시 파일이 보존된 목표와 정확히 같으면 기존 쓰기만 완료할 수 있다.
+기동 시 로컬과 PG의 현재 기록(각 최대4096개)을 대조한다. 확정 이력의 보관/UUID 조회는 [운영 후속](platform-operations.md)을 따른다. 중간 상태·누락/변조/부분 생성 증거·식별자/상태 불일치는 유지보수로 닫고 자동 예약 구성/dispatch도 보류한다. 구버전 ROLLED_BACK이라도 PG가 PREPARED/COMMITTED이면 미확정으로 취급한다. 문제가 있는 후보 이외의 후보를 교차 적용하지 않는다. 원본/후보가 같고 현재 파일이 양쪽 해시 중 하나일 때만 같은 UUID로 적용/롤백을 재개한다. 외부 수정이나 충돌하는 `.platform-writing`은 보존하고 덮어쓰지 않는다. 남은 임시 파일이 보존된 목표와 정확히 같으면 기존 쓰기만 완료할 수 있다.
 
 복구는 `config list` → `config inspect UUID` → 같은 UUID의 apply/rollback 순서다. 성공한 live 변경은 다른 미확정 기록이 없으면 설정 유지보수를 해제한다. 외부 파일을 운영자가 보존한 정상본으로 복원한 후에는 `config recover`가 전체 저널/PG 일치·현재 platform/인챈트 설정·예약 구성을 재검증하고 live 설정을 다시 읽는다. 조회(list/inspect)만으로 유지보수를 해제하지 않는다. 부분 생성/누락 증거를 자동 삭제·재작성하거나 PG 기록만 확정하는 명령은 없다. 증거가 불명하면 원본/백업 확인 후 수동 대응한다.
 

@@ -1,0 +1,186 @@
+{
+  "date": "2026-11-21",
+  "base_git_commit": "0a0a274",
+  "scope": "Economy platform operations, retention, bounded file work, common admission, telemetry, deployment candidate; no operating activation",
+  "outcome": "PASS",
+  "artifact": {
+    "path": "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/Hearth-operations-release.jar",
+    "sha256": "6a7a906c5286de6c56b6ff1d55c9b7822f1f232d82a46a3f139e6524f58647ea"
+  },
+  "java_units": {
+    "io.github.jesterportfolio.hearth.survival.JobPolicyTest": 10,
+    "io.github.jesterportfolio.hearth.survival.PlatformOperationsTest": 6,
+    "io.github.jesterportfolio.hearth.administration.NetworkLaunchCheckTest": 2,
+    "io.github.jesterportfolio.hearth.survival.ConfigurationRecoveryTest": 10,
+    "io.github.jesterportfolio.hearth.survival.PlatformTest": 17,
+    "io.github.jesterportfolio.hearth.administration.RuntimeReportTest": 3,
+    "io.github.jesterportfolio.hearth.survival.RpgPolicyTest": 10,
+    "io.github.jesterportfolio.hearth.survival.economy.NativeTransactionsTest": 15
+  },
+  "java_unique_tests": 73,
+  "python_tests": {
+    "network_release": 7,
+    "runtime_health": 12,
+    "platform_soak": 3
+  },
+  "database": {
+    "checks": 12,
+    "policy_cli_checks": 5,
+    "byte_identical_contract_entries": 48,
+    "bulk_read_queries": 128,
+    "elapsed_ms": 637,
+    "p95_us": 40235,
+    "max_us": 48073
+  },
+  "paper": {
+    "two_JVM_checks": {
+      "prepare": 7,
+      "resume": 8
+    },
+    "final_JVM_checks": 9,
+    "final_soak": {
+      "format": 1,
+      "outcome": "PASS",
+      "samples": 3,
+      "failed_samples": 0,
+      "duration_seconds": 12.112681983038783,
+      "max_heap_mib": 679.0,
+      "max_mspt": 18.885963418367346,
+      "min_tps": 19.1463059670068,
+      "actual_client": "NOT_RUN",
+      "workload": "existing real activity only; no generated load"
+    }
+  },
+  "trials": {
+    "/home/server/hearth-tmp/hearth-native-economy-run.a29t6y0y": {
+      "outcome": "PASS",
+      "seconds": 55.379,
+      "cleanup_errors": [],
+      "max_combined_rss_kib": 1644856,
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.66s7l92t/data/global/pg_control": "f33a590927775dc1c549175dcf146cf735d926d9f940a7c6079ebb7c730b7ef9",
+        "/home/server/hearth-tmp/hearth-native-economy-run.66s7l92t/server/plugins/Hearth/config.yml": "97747e5f1adcc1c254f92b373cd75ffbf0027df91f3d69efd231bed9c716b431",
+        "/home/server/hearth-tmp/hearth-native-economy-run.66s7l92t/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "report_sha256": "3983092e6e81be2f795bdb4ef3f540d8198f4a16f10e0aa1e0ab9dfc2b17168c",
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      }
+    },
+    "/home/server/hearth-tmp/hearth-native-economy-run.5d3_bhvm": {
+      "outcome": "PASS",
+      "seconds": 42.083,
+      "cleanup_errors": [],
+      "max_combined_rss_kib": 1663652,
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.a29t6y0y/data/global/pg_control": "6f49d21932a2baec7cfe13eb4f640222eb0de4a788f16b260a5a6c86b21e3de1",
+        "/home/server/hearth-tmp/hearth-native-economy-run.a29t6y0y/server/plugins/Hearth/config.yml": "b41d4c686df6061a49b75cad910fb01a4e62a7e5f3014901985716ef650ef9a0",
+        "/home/server/hearth-tmp/hearth-native-economy-run.a29t6y0y/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "report_sha256": "3d08008599234c459a233c7d062b8400040914e297f431d47e3118b85301e44f",
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      }
+    },
+    "/home/server/hearth-tmp/hearth-native-economy-run.1xzefp86": {
+      "outcome": "PASS",
+      "seconds": 41.238,
+      "cleanup_errors": [],
+      "max_combined_rss_kib": 1594920,
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.5d3_bhvm/data/global/pg_control": "cc672d249c7498f6d868af5e73b77f3e4370ecb605386d6fcfbc7208125399ae",
+        "/home/server/hearth-tmp/hearth-native-economy-run.5d3_bhvm/server/plugins/Hearth/config.yml": "a1a50da3df0ad481d8ae3a344d3d15cf5edfea4beab4943264a34d683d9c71ad",
+        "/home/server/hearth-tmp/hearth-native-economy-run.5d3_bhvm/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "report_sha256": "a9550cc70710de7d3e01de0c831b32d3719d09eec609537c220d8a313ad938dc",
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      }
+    },
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k": {
+      "outcome": "PASS",
+      "seconds": 41.633,
+      "cleanup_errors": [],
+      "max_combined_rss_kib": 1642344,
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.1xzefp86/data/global/pg_control": "4d3771f35a371db6f28b9c9d1b0f9d8096170047acf388c0c6f9fece01c7d088",
+        "/home/server/hearth-tmp/hearth-native-economy-run.1xzefp86/server/plugins/Hearth/config.yml": "daa5c44aa3eeeec07683909c1df63f723a621f6c937e1577b274cd3ac7447dd0",
+        "/home/server/hearth-tmp/hearth-native-economy-run.1xzefp86/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "report_sha256": "c1a53130914f308e568bb7691adfbb3a6bdc77694f715a5f1b887b53d95d2239",
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      }
+    }
+  },
+  "evidence": {
+    "/home/server/hearth-tmp/hearth-native-economy-run.a29t6y0y/aura-trial-result.json": "3983092e6e81be2f795bdb4ef3f540d8198f4a16f10e0aa1e0ab9dfc2b17168c",
+    "/home/server/hearth-tmp/hearth-native-economy-run.a29t6y0y/database-console.log": "148025961349cc17ce2c16275fd8202f6e1256173ad73248dcda4ffcf4e43bce",
+    "/home/server/hearth-tmp/hearth-native-economy-run.a29t6y0y/trial-console.log": "d47bcbd38d6e64fb10888905e1cf5e39d7019a8aed54051a6f1c627d12d8a3b1",
+    "/home/server/hearth-tmp/hearth-native-economy-run.a29t6y0y/paper-operations-prepare-console.log": "61302efb8754185a663dec8ccb8be66d533cf3d3825a22f15a275e7ba2e21959",
+    "/home/server/hearth-tmp/hearth-native-economy-run.a29t6y0y/paper-operations-resume-console.log": "7dbe3d7bc9a81e9120d19ed6bbe546478d3837b83bb8e6f80f6078ee23b729d0",
+    "/home/server/hearth-tmp/hearth-native-economy-run.5d3_bhvm/aura-trial-result.json": "3d08008599234c459a233c7d062b8400040914e297f431d47e3118b85301e44f",
+    "/home/server/hearth-tmp/hearth-native-economy-run.5d3_bhvm/database-console.log": "4fae0d0b83630593f693de228a8d80181fd3174f51685042ad3094fc69f447f3",
+    "/home/server/hearth-tmp/hearth-native-economy-run.5d3_bhvm/trial-console.log": "11f57441d271f10690d64e03374fae8db471dfb245756e99fab69857786cc6a0",
+    "/home/server/hearth-tmp/hearth-native-economy-run.5d3_bhvm/paper-operations-ready-console.log": "9f5dc9d32fa9d242b1b41a2c13110647ce4f904142a4c2a19a96ca46cd6de85b",
+    "/home/server/hearth-tmp/hearth-native-economy-run.1xzefp86/aura-trial-result.json": "a9550cc70710de7d3e01de0c831b32d3719d09eec609537c220d8a313ad938dc",
+    "/home/server/hearth-tmp/hearth-native-economy-run.1xzefp86/database-console.log": "043996a5250ef5f0f3cb0a87359fc30d7cc4fc16c11f43d60239172aa5257fd5",
+    "/home/server/hearth-tmp/hearth-native-economy-run.1xzefp86/trial-console.log": "d3385c07c157656967ecf1226a23ceb367d6420b4a93de261f231fd55b225d5b",
+    "/home/server/hearth-tmp/hearth-native-economy-run.1xzefp86/paper-operations-ready-console.log": "8936f3993a4d0a6f60e7ed78575ff62a5721f8b16fee9dea0753e1eb52341206",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/aura-trial-result.json": "c1a53130914f308e568bb7691adfbb3a6bdc77694f715a5f1b887b53d95d2239",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/database-console.log": "6b1507e081873ca9939cac13d3ceace38a742775c87da05679c6da0782a0bfa1",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/trial-console.log": "ebf4e2162e14d87daca46aaa48bcd50c444241cceec69de43f18cbd91d84afd3",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/paper-operations-ready-console.log": "38adebe4216497ad7c581b04b867f423053b7158e26707285b317238eb3d0e0f",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/TEST-io.github.jesterportfolio.hearth.survival.JobPolicyTest.xml": "662e6fda6fb30a24b21908e417f73c6b3e1ea17c090ab183ddf3ea7078f8da4a",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/TEST-io.github.jesterportfolio.hearth.survival.PlatformOperationsTest.xml": "43dfc408f3734d5a4f1302ef350e5602450339b738713eeb7563bba68c6c044b",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/TEST-io.github.jesterportfolio.hearth.administration.NetworkLaunchCheckTest.xml": "bc85a93dd084ff6d0b420ba5c4de339fccab53c88f047e5dace0c286fbd19521",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/TEST-io.github.jesterportfolio.hearth.survival.ConfigurationRecoveryTest.xml": "4dbe9a1270574ab4aba9f78e1531d403119dbcb7420d6160de5e48de517c8485",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/TEST-io.github.jesterportfolio.hearth.survival.PlatformTest.xml": "d3db08995c142f21a4f187e80a53855cfbfc9b3c85e184bbb83c6b256970cd7e",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/TEST-io.github.jesterportfolio.hearth.administration.RuntimeReportTest.xml": "8cb3ce1aa26cd4ff0488a57a42c91490a659bc78dd5c07f9b1783904f2cdaeb2",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/TEST-io.github.jesterportfolio.hearth.survival.RpgPolicyTest.xml": "bf864d637103970ac1fb28c73fb20c77c6932a7124f7af69f004e2d1b18ee94e",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/TEST-io.github.jesterportfolio.hearth.survival.economy.NativeTransactionsTest.xml": "7bd915b1d2187aa388b94c57da46dac8ae2e3ab4733286fcc0df8c2305292737",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/operations-acceptance-tests.log": "6531bfb17c8ac1e3070623cf817480a28bcb35604e175362be83cebd691dd9dc",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/operations-admission-build.log": "683c6cf5ca669deb7690502ec2e799e093771d6ae2b5af650f87d327c21439cd",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/operations-network-accepted.log": "aeb8eab8eeb87c97d150804b54d470279b25d480780ccf79e9464381ccfc401a",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/operations-health-final.log": "b732dfec8c0375327090c38fd95f394ad1a59a2e726c312503cb4db055ff80d4",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/operations-soak-final.log": "199ba496f288116d36c62f29346d4fbf0bd75745a1c893abfcbdaa4c6d5b1033",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/operations-compose-accepted.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/operations-soak-result.json": "3b7aa3c996774032a2309d1980922bfc939a9186fb11fb1e72b36b33efc31268",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/operations-observations.jsonl": "6edd5ac92609f1e72ebcb0e3befa3fe62674b9fa862bef1da8c5aea67e000c1e",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/deployment-fixture/candidate/release.json": "0c510257067c834cf60b1ccd7c802b2838db8d783001d333f841d403122c94a9",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/unit-evidence/operations-network-id-final.log": "f2721cc9cb3d134f60a1bf73126fed3e817b8fe6b8bc7ffce675fa27dcd16183",
+    "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/deployment-fixture/candidate-networkid/release.json": "7af8420ca4f0e80f3729fc5c1ab4f7e4ff7a810bbb0b198cb5c94980354cb55c"
+  },
+  "actual_client": "NOT_RUN",
+  "operating_changes": "NONE",
+  "long_player_load": "NOT_RUN",
+  "docker": "compose config only; images and services NOT_RUN"
+}

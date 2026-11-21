@@ -1,0 +1,99 @@
+{
+  "format": 1,
+  "host_cpu": null,
+  "host_memory_mib": null,
+  "services": {
+    "proxy": {
+      "data": "",
+      "image": "",
+      "cpu": null,
+      "memory_mib": null,
+      "heap_mib": null,
+      "port": null,
+      "uid": null,
+      "gid": null,
+      "jar": "server.jar",
+      "inputs": [
+        "velocity.toml",
+        "forwarding.secret",
+        "plugins/hearth-network/network.properties",
+        "plugins/Hearth.jar",
+        "runtime.env"
+      ],
+      "stop_seconds": null,
+      "pids": null
+    },
+    "lobby": {
+      "data": "",
+      "image": "",
+      "cpu": null,
+      "memory_mib": null,
+      "heap_mib": null,
+      "port": null,
+      "uid": null,
+      "gid": null,
+      "jar": "server.jar",
+      "inputs": [
+        "server.properties",
+        "plugins/Hearth/config.yml",
+        "config/paper-global.yml",
+        "plugins/Hearth.jar",
+        "runtime.env",
+        "eula.txt"
+      ],
+      "stop_seconds": null,
+      "pids": null
+    },
+    "economy": {
+      "data": "",
+      "image": "",
+      "cpu": null,
+      "memory_mib": null,
+      "heap_mib": null,
+      "port": null,
+      "uid": null,
+      "gid": null,
+      "jar": "server.jar",
+      "inputs": [
+        "server.properties",
+        "plugins/Hearth/config.yml",
+        "config/paper-global.yml",
+        "plugins/Hearth.jar",
+        "runtime.env",
+        "eula.txt"
+      ],
+      "stop_seconds": null,
+      "pids": null
+    },
+    "postgres": {
+      "data": "",
+      "image": "",
+      "cpu": null,
+      "memory_mib": null,
+      "heap_mib": null,
+      "port": null,
+      "uid": null,
+      "gid": null,
+      "jar": "",
+      "inputs": [
+        "PG_VERSION",
+        "postgresql.conf"
+      ],
+      "stop_seconds": null,
+      "pids": null
+    }
+  },
+  "backup": {
+    "interval_seconds": null,
+    "retain": null,
+    "offsite": "",
+    "rpo_seconds": null,
+    "rto_seconds": null
+  },
+  "acceptance": {
+    "client": false,
+    "load": false,
+    "restore": false,
+    "release_regression": false
+  }
+}

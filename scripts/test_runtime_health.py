@@ -16,6 +16,12 @@ class RuntimeHealthTests(unittest.TestCase):
         self.boot_file.write_text(self.boot+'\n')
         self.log = self.root/'latest.log'
         self.row = dict(format=1,boot=self.boot,pid=19,observed_ms=100000,mode='story',phase='READY',controller_ready=True,worlds=2,held_worlds=0,ai_preparation_recorded=False,tps=20,mspt=4,heap_used_bytes=1024)
+    def test_platform_hold_overrides_live_controller_and_schema_is_bounded(self):
+        platform=dict(enabled=1,ready=1,maintenance=0,config_busy=0,config_held=0,vault_held=0,job_held=0,io_pending=0,sales=0,generation=0,reset_pending=0)
+        self.row.update(format=2,platform=platform);self.write();self.assertTrue(self.read()['controller_ready'])
+        platform['job_held']=1;self.row['controller_ready']=False;self.write();self.assertFalse(self.read()['controller_ready'])
+        platform['private_player']=3;self.write()
+        with self.assertRaises(health.Unavailable):self.read()
     def write(self,row=None,prefix='[01:02:03] [Server thread/INFO]: [Hearth] HEARTH_RUNTIME_REPORT '):
         self.log.write_text(prefix+json.dumps(self.row if row is None else row)+'\n')
     def read(self,**args):

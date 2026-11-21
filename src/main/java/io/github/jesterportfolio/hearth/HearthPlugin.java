@@ -170,7 +170,7 @@ public final class HearthPlugin extends JavaPlugin {
         else if(mode.equals("survival")&&survivalRuntime!=null){ai=survivalRuntime.aiPreparationRecorded();phase=survivalRuntime.phase().name();worlds=survivalRuntime.loadedWorldCount();held=phase.equals("HOLD")?worlds:0;}
         else if(mode.equals("lobby")&&lobbyRuntime!=null){phase=lobbyRuntime.phase().name();worlds=1;held=phase.equals("HOLD")?1:0;}
         else if(mode.equals("story-prepare")&&storyPreparation!=null)phase=storyPreparation.phase().name();
-        return new io.github.jesterportfolio.hearth.administration.RuntimeObservation.State(phase,worlds,held,ai);
+        return new io.github.jesterportfolio.hearth.administration.RuntimeObservation.State(phase,worlds,held,ai,mode.equals("survival")&&survivalRuntime!=null?survivalRuntime.platformDiagnostics():java.util.Map.of());
     });}catch(RuntimeException invalid){getLogger().warning("HEARTH_RUNTIME_OBSERVATION_REFUSED");}}
 
     @Override public void onDisable() {

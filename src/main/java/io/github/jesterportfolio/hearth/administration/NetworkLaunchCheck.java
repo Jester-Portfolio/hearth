@@ -1,0 +1,10 @@
+package io.github.jesterportfolio.hearth.administration;
+import java.nio.file.*;import java.util.*;import java.io.*;import java.security.*;
+/** JDK25 source launcher도 지원하는 의존성 없는 불변 입력 검사. 운영 승인은 별도로 요구한다. */
+public final class NetworkLaunchCheck {
+ public static String validate(Path root,Path manifest,String expected)throws Exception{
+  root=root.toRealPath();if(!manifest.toAbsolutePath().equals(manifest.toRealPath())||Files.size(manifest)>65536||!digest(manifest).equals(expected))throw new IOException("NETWORK_LAUNCH_MANIFEST");var p=new Properties();try(var in=Files.newBufferedReader(manifest)){p.load(in);}if(!"1".equals(p.getProperty("format"))||!"true".equals(p.getProperty("acceptance-complete")))throw new IOException("NETWORK_ACCEPTANCE_REQUIRED");String jar=p.getProperty("jar","");if(!jar.matches("[A-Za-z0-9_./-]+")||jar.contains(".."))throw new IOException("NETWORK_JAR");int count=0;for(String k:p.stringPropertyNames())if(k.startsWith("file.")){if(++count>128)throw new IOException("NETWORK_INPUT_LIMIT");String name=k.substring(5);Path relative=Path.of(name);if(relative.isAbsolute()||!name.matches("[A-Za-z0-9_./-]+")||name.contains(".."))throw new IOException("NETWORK_INPUT_PATH");Path f=root.resolve(name);if(!f.equals(f.toRealPath())||!Files.isRegularFile(f,LinkOption.NOFOLLOW_LINKS)||!digest(f).equals(p.getProperty(k)))throw new IOException("NETWORK_INPUT_CHANGED");}if(count<1||!p.containsKey("file."+jar)||Files.exists(root.resolve("plugins/Hearth/survival-runtime.active")))throw new IOException("NETWORK_INPUTS");return jar;
+ }
+ private static String digest(Path f)throws Exception{var d=MessageDigest.getInstance("SHA-256");try(var in=Files.newInputStream(f)){byte[] b=new byte[65536];for(int n;(n=in.read(b))!=-1;)d.update(b,0,n);}return HexFormat.of().formatHex(d.digest());}
+ public static void main(String[] args){try{if(args.length!=3||Runtime.version().feature()!=25)throw new IOException("NETWORK_JAVA25");System.out.println(validate(Path.of(args[0]),Path.of(args[1]),args[2]));}catch(Exception e){System.err.println("HEARTH_NETWORK_LAUNCH_REFUSED");System.exit(2);}}
+}
