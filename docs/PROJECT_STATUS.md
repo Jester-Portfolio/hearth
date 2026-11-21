@@ -6,6 +6,8 @@
 
 ## 프로젝트 목표·현재 단계
 
+[수용 기록·배포 연결](network-acceptance-verification.md)로 입력/JAR·설정/예산·기동 코드·경제 ID에 묶인 CAS 저널, 증거 보존/중단 재개, 같은 네트워크의 롤백 대조와 format3 Java/PG 기동 차단을 구현했다. Python37·Java6개 및 독립 JVM/Compose 구문 검사를 통과했다. 기존 실제 snapshot 연결은 확인했으며 새 검토 범위의 실제 클라이언트/부하/복원 실행/전체 릴리스 수용은 NOT_RUN으로 보존했다. 운영 미적용이다.
+
 [네트워크 전체 복구 후속](network-recovery-verification.md)으로 proxy/lobby/economy/전체 PG와 검토 후보를 같은 정지 snapshot으로 묶고, 새 경로/수용 초기화·literal 환경 전달·PG 포함 역할별 기동 검사·프록시 실행 표식을 연결했다. Java19·Python35개 고유 검사와 실제 복원본 Velocity/두 Paper/PG의 14개 확인을 통과했다. 현재 상태·원본 계정/보관 ID·스토리 값·정상 종료/표식 보존을 확인했으며 실제 클라이언트·이미지/운영 전환·장기 부하는 별도다.
 
 [공통 운영 수명주기 후속](platform-operations-verification.md)으로 설정 파일 worker·E014 이력/과거 자원 세대 보관·공통 진입 차단/재개·보류를 반영한 외부 관측·네트워크 배포 후보를 구현했다. 원본 ID/행·파일을 유지하고 hot 상한만 분리한다. Java73·Python22·PG12/정지 CLI5·실제 두 JVM과 최종 공통 진입/복원 경계를 확인했다. 운영 삭제/보존 기간·실제 정품 플레이/동접 장기 부하·이미지/서비스/운영 적용은 별도다. [관리 가이드](../infrastructure/network/platform-operations.md)를 따른다.

@@ -24,13 +24,15 @@ hearth_pg_manifest() {
   command -v sha256sum >/dev/null 2>&1 || return 2
   [ -f "$manifest" ] && [ ! -L "$manifest" ] || return 2
   [ "$(sha256sum "$manifest" | cut -d ' ' -f 1)" = "$expected" ] || return 2
-  format=; role=; accepted=; count=0
+  format=; role=; accepted=; count=0; scope=; acceptance_sha=
   while IFS='=' read -r key value || [ -n "$key" ]; do
     case "$key" in
       format) [ -z "$format" ] || return 2; format=$value;;
       role) [ -z "$role" ] || return 2; role=$value;;
       acceptance-complete) [ -z "$accepted" ] || return 2; accepted=$value;;
       jar) [ -z "$value" ] || return 2;;
+      scope) [ -z "$scope" ] || return 2; scope=$value;;
+      acceptance-sha256) [ -z "$acceptance_sha" ] || return 2; acceptance_sha=$value;;
       file.*)
         name=${key#file.}
         case "$name" in ''|/*|*..*|*//*|*[!A-Za-z0-9_./-]*) return 2;; esac
@@ -45,5 +47,38 @@ hearth_pg_manifest() {
       *) return 2;;
     esac
   done < "$manifest"
-  [ "$format:$role:$accepted" = 2:postgres:true ] && [ "$count" -gt 0 ]
+  [ "$role:$accepted" = postgres:true ] && [ "$count" -gt 0 ] || return 2
+  case "$format" in
+    2) return 0;;
+    3) hearth_acceptance "$(dirname "$manifest")/acceptance.properties" "$acceptance_sha" "$scope";;
+    *) return 2;;
+  esac
 }
+
+hearth_acceptance() (
+  certificate=$1; expected_sha=$2; expected_scope=$3
+  [ -f "$certificate" ] && [ ! -L "$certificate" ] || return 2
+  [ "$(sha256sum "$certificate" | cut -d ' ' -f 1)" = "$expected_sha" ] || return 2
+  complete=; format=; scope=; head=; count=0; seen='|'
+  while IFS='=' read -r key value || [ -n "$key" ]; do
+    case "$key" in
+      format) [ -z "$format" ] || return 2; format=$value;;
+      complete) [ -z "$complete" ] || return 2; complete=$value;;
+      scope) [ -z "$scope" ] || return 2; scope=$value;;
+      head) [ -z "$head" ] || return 2; head=$value;;
+      client|load|restore|release_regression|rollback)
+        case "$seen" in *"|$key|"*) return 2;; esac
+        seen=$seen$key'|'
+        case "$value" in *[!a-f0-9]*|'') return 2;; esac
+        [ "${#value}" = 64 ] && [ "$value" != 0000000000000000000000000000000000000000000000000000000000000000 ] || return 2
+        count=$((count+1));;
+      *) return 2;;
+    esac
+  done < "$certificate"
+  [ "$format:$complete:$scope:$count" = "1:true:$expected_scope:5" ] || return 2
+  case "$scope$head" in *[!a-f0-9]*) return 2;; esac
+  [ "${#scope}:${#head}" = 64:64 ] || return 2
+  state=$(dirname "$certificate")/acceptance-state
+  [ ! -e "$state/pending.json" ] && [ -f "$state/head.json" ] && [ ! -L "$state/head.json" ] || return 2
+  [ "$(sha256sum "$state/head.json" | cut -d ' ' -f 1)" = "$head" ]
+)

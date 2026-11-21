@@ -40,6 +40,7 @@
 | [ADR-0034: 공통 영속 예약 작업](0034-persistent-platform-jobs.md) | 플랫폼 후속 구현·자동 검증 | 경제 논리 시계·고정 의도/시드·작업센터·재시작 HOLD·효과 확인, 주기/운영 수용 별도 |
 | [ADR-0035: 플랫폼 이력·월드 보관과 운영 진단](0035-platform-operations-and-retention.md) | 잔여 플랫폼 일괄 구현·운영 미적용 | E014 hot/cold·불변 ID·파일 worker·보류 관측·네트워크 후보 |
 | [ADR-0036: 네트워크 전체 snapshot·기동 바인딩](0036-network-snapshot-and-launch-binding.md) | 후속 구현·격리 복원/기동 PASS·운영 미적용 | 네 역할/전체 PG 동시 보존·외부 영수증·수용 초기화·literal env/역할 기동 |
+| [ADR-0037: 검토 범위에 연결된 수용 기록](0037-network-acceptance-dossier.md) | 후속 구현·운영 미적용 | scope/CAS 증거·짝이 맞는 롤백·format3 기동 차단·중단 재개 |
 
 각 기록에는 다음 내용을 포함합니다.
 

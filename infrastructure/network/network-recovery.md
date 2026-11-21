@@ -31,9 +31,9 @@ python3 scripts/network_release.py inspect /PRIVATE/fresh-restored/candidate/rel
 
 복원 실행자의 UID/GID와 프로필의 소유자 선택이 달라지면 먼저 별도 검토가 필요하다. 자동 chown이나 root 가정은 없다. 기존 경로·다른 시점의 PG/월드를 섞지 않고 문제가 있으면 부분 복원본과 원본을 함께 보존한다. 임의 비밀 회전·포트 변경은 이 복원의 대상이 아니다.
 
-## format2 기동 연결
+## 역할별 기동 연결
 
-새 network_release 후보는 Java 세 역할과 PG 모두에 역할별 properties/검토 SHA/수용 상태를 묶는다. Java는 JDK25/비root·원본 입력·역할·실행 표식·세계 잠금을 확인한다. PG도 false 수용 표시나 바뀐 파일이면 postgres 실행 전에 거부한다. PG 이미지에는 POSIX sh/sha256sum와 검토한 버전의 PostgreSQL 도구가 필요하다. 과거 format1 후보는 기존 파일 그대로 검사/백업할 수 있으며 복원 뒤에는 format2로 재생성한다.
+새 network_release 후보는 Java 세 역할과 PG 모두에 역할별 properties/검토 SHA/수용 상태를 묶는다. Java는 JDK25/비root·원본 입력·역할·실행 표식·세계 잠금을 확인한다. PG도 false 수용 표시나 바뀐 파일이면 postgres 실행 전에 거부한다. PG 이미지에는 POSIX sh/sha256sum와 검토한 버전의 PostgreSQL 도구가 필요하다. 과거 format1/2 후보는 기존 파일 그대로 검사/백업할 수 있으며 복원 뒤에는 현재 format3로 재생성하며 수용 표시는 초기화한다. format3의 [수용 저널](network-acceptance.md)과 증거는 완료 후보의 snapshot assets에 보존하지만 새 복원 후보의 완료 표시로 승계하지 않는다.
 
 runtime.env는 Compose env_file에서 제거했다. 검토한 세 환경값을 실제 진입점에서 원문 그대로 읽어 export하며 $, 따옴표, 공백, #, =를 dotenv 보간하거나 eval하지 않는다. 중복 키·제어 문자/줄바꿈 값·알 수 없는 변수는 거부한다. 비밀 값을 명령 출력이나 영수증에 복사하지 않는다. 프록시는 proxy-runtime.active를 소유하고, 연결자0/정상 종료/동일 파일 확인 뒤에만 정리한다. 남은 표식은 수동 확인 대상으로 보존한다.
 

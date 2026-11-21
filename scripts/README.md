@@ -298,3 +298,7 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 ## 네트워크 전체 복구
 
 `network_recovery.py create|verify|restore`는 기존 network_release 후보와 proxy/lobby/economy/전체 PG를 한 snapshot에 묶고 새 경로로만 복원한다. 기존 단일 Paper backup-v1도 유지한다. `verify_network_recovery.py`는 성공/정지한 소유 경제·로비 자료로 준비한 묶음을 복원해 실제 Velocity1/Paper2/PG1을 기존 CPU/RSS/600초·localhost/EULA/Player 합성 금지 한도에서 검사한다. 서비스를 자동 배포하거나 부하/Player를 합성하지 않는다. [사용법](../infrastructure/network/network-recovery.md)과 [증거](../docs/network-recovery-verification.md)를 따른다.
+
+## 네트워크 수용 기록
+
+`network_acceptance.py init|status|record|resume|rollback|seal`은 같은 검토 범위의 운영자 보고·증거 SHA·검증한 네트워크 롤백을 CAS 저널로 묶는다. 실제 시험/운영 승인을 대신하지 않으며 미실행/실패·pending·변경된 head는 신규 format3 완료 후보/기동을 차단한다. [절차](../infrastructure/network/network-acceptance.md)와 [검증 결과](../docs/network-acceptance-verification.md)를 따른다.

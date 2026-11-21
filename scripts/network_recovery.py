@@ -34,6 +34,9 @@ def create(manifest,destination,*,offline_confirmed=False,budget=None):
     budget=budget or backup.Budget();out=backup.fresh(out);assets=out/'source-review';assets.mkdir(mode=0o700)
     for name in ['release.json',*sorted(review['artifacts'])]:
         p=source.parent/name;backup.copy_file(p,assets/name,backup.fingerprint(backup.owned(p)),budget)
+    if review.get('format')==3 and review.get('attestation'):
+        import network_acceptance
+        network_acceptance.export(Path(review['attestation']['dossier']),review['attestation']['head'],assets/'audit',budget=budget)
     receipt=backup.create({**roots,'assets':assets},out/'bundle',offline_confirmed=True,budget=budget)
     release.inspect(source);stopped(roots);backup.require(release.digest(source)==original,'REVIEW_CHANGED')
     value={'format':FORMAT,'bundle':'bundle','backup_manifest_sha256':receipt['manifest_sha256'],'source_release_sha256':original,'services_started':False}

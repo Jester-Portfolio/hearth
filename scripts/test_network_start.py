@@ -17,3 +17,15 @@ class NetworkStartTests(unittest.TestCase):
  def check_pg(self,m):return subprocess.run(['/bin/sh','-c','. "$1"; hearth_pg_manifest "$2" "$3" "$4"','fixture',str(self.helper),str(self.root),str(m),hashlib.sha256(m.read_bytes()).hexdigest()],capture_output=True).returncode
  def test_postgres_has_its_own_acceptance_and_file_hash_gate(self):
   m=self.pg_manifest(False);self.assertNotEqual(0,self.check_pg(m));m=self.pg_manifest(True);self.assertEqual(0,self.check_pg(m));(self.root/'PG_VERSION').write_text('18\n');self.assertNotEqual(0,self.check_pg(m))
+ def reviewed(self):
+  head=self.root/'acceptance-state/head.json';head.parent.mkdir();head.write_text('synthetic current result')
+  cert=self.root/'acceptance.properties';cert.write_bytes(network_release.certificate_bytes({'scope':'a'*64},{'head':hashlib.sha256(head.read_bytes()).hexdigest(),**{k:'b'*64 for k in ('client','load','restore','release_regression','rollback')}}))
+  return head,cert
+ def manifested(self,cert):
+  m=self.pg_manifest(True);m.write_text(m.read_text().replace('format=2','format=3')+'scope='+'a'*64+'\nacceptance-sha256='+hashlib.sha256(cert.read_bytes()).hexdigest()+'\n');return m
+ def test_current_head_and_pending_update_gate_postgres_like_java_roles(self):
+  head,cert=self.reviewed();m=self.manifested(cert);self.assertEqual(0,self.check_pg(m));original=head.read_bytes();head.write_text('new FAIL');self.assertNotEqual(0,self.check_pg(m));head.write_bytes(original)
+  (head.parent/'pending.json').write_text('interrupted result');self.assertNotEqual(0,self.check_pg(m));self.assertTrue((head.parent/'pending.json').exists())
+ def test_duplicate_evidence_and_scope_mismatch_do_not_pass_certificate(self):
+  head,cert=self.reviewed();original=cert.read_text();cert.write_text(original.replace('load=','client='));m=self.manifested(cert);self.assertNotEqual(0,self.check_pg(m))
+  cert.write_text(original.replace('scope='+'a'*64,'scope='+'c'*64));m=self.manifested(cert);self.assertNotEqual(0,self.check_pg(m))

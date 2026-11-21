@@ -1,0 +1,63 @@
+{
+  "date": "2026-11-21",
+  "base_git_commit": "ab2f547",
+  "outcome": "PASS",
+  "scope": "Scope-bound acceptance journal, paired rollback and standalone launch guards; no operating activation",
+  "workspace": "/home/server/hearth-tmp/hearth-acceptance.upzkf98r",
+  "final_checks_seconds": 5.145,
+  "python_unique_tests": {
+    "network_config": 7,
+    "network_release": 7,
+    "network_recovery": 6,
+    "network_start": 5,
+    "network_acceptance": 12
+  },
+  "java_unique_tests": {
+    "NetworkLaunchCheckTest": 6
+  },
+  "standalone_java_final_exit_codes": [
+    0,
+    2
+  ],
+  "guard_fixture": "synthetic files, no Player or Minecraft events",
+  "compose_config_exit_code": 0,
+  "code_change_scope_invalidated": true,
+  "incomplete_sealing_refused": true,
+  "current_states": {
+    "client": "NOT_RUN",
+    "load": "NOT_RUN",
+    "restore": "NOT_RUN",
+    "release_regression": "NOT_RUN",
+    "rollback": "PASS"
+  },
+  "paired_real_snapshot": {
+    "source": "/home/server/hearth-tmp/hearth-network-run.x49kifdq/snapshot",
+    "recovery_sha256": "f7218ed40a7ed23b9fe94d2170467a2dbfe077e241b822b1f8754b31f92b45ca"
+  },
+  "historical_source_semantics": "Existing stopped real snapshot verified; prior acceptance not inherited by this new scope",
+  "services_started": false,
+  "actual_client": "NOT_RUN",
+  "load_acceptance": "NOT_RUN",
+  "full_release_regression": "NOT_RUN",
+  "operating_applied": false,
+  "unchanged_Paper_PG_Velocity_integration": "not repeated; previous network-recovery-result.json retained",
+  "previous_private_result_sha256": "bfbfd3501f58db0163724c6c11bc64ac1d3a1cb5d5db84ddfcb35d15df22f3c8",
+  "evidence": {
+    "/home/server/hearth-tmp/hearth-acceptance.upzkf98r/final-status.json": "0a7b3e9040fa384f796b70a2e110dfc64a2e3acc912712273e54e992481ffaa3",
+    "/home/server/hearth-tmp/hearth-acceptance.upzkf98r/final-guard-0.log": "1361d9b0ad1efd3a28ab18a9f0da37f2e9b90902c1d39ca6a5cb1e4e2aa24bf1",
+    "/home/server/hearth-tmp/hearth-acceptance.upzkf98r/final-guard-1.log": "0e8dbba7412d1ed014702883e6486ac9fd9db34aae383e88bd72c799dcde1b8c",
+    "/home/server/hearth-tmp/hearth-acceptance.upzkf98r/final-compose.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/home/server/hearth-tmp/hearth-acceptance.upzkf98r/scope-test.log": "a74157e4f452f46b4be5e1ff4b5147b2e8372a03265c2e08dda0b642a4b06763",
+    "/home/server/hearth-tmp/hearth-acceptance.upzkf98r/candidate-final/release.json": "436da34f31e8c3bcbfd45cfd8725bde35c38c6108cefee8320dde01d066883e8",
+    "/home/server/hearth-tmp/hearth-acceptance.upzkf98r/dossier-final/state/head.json": "35fb891c00315de0f88e553949e8f3d737754247793d95294e1788a29b879217",
+    "/home/server/projects/hearth/build/test-results/test/TEST-io.github.jesterportfolio.hearth.administration.NetworkLaunchCheckTest.xml": "bacc757151fe68eadefa59d46f7323c0693f6b4e73d98dd4580d52fc53b937ca",
+    "/home/server/projects/hearth/scripts/network_acceptance.py": "263e8b257e8e5c7b47923a356047b5dcb98fa85ab4f5f1d878f4e9a4d90ff926",
+    "/home/server/projects/hearth/scripts/network_release.py": "43c0d84feb39d5a7665d1380cbfe98886e6f982490419208aa0ae5c6cc34c5ae",
+    "/home/server/projects/hearth/scripts/network_recovery.py": "68017a7fd3acad2731e295528e62670bde2fa81a49d6130cd51a01bf5fc40a98",
+    "/home/server/projects/hearth/scripts/test_network_acceptance.py": "7f8e35e5c70c56761ebe4ed8791e745603e70106f37e6c747e8acb2f8797c48b",
+    "/home/server/projects/hearth/scripts/test_network_start.py": "596fad2df729b77ed857f7d8580bccb4add0a9c46c7a2e957f4bba24c7f392b8",
+    "/home/server/projects/hearth/infrastructure/deployment/runtime-env.sh": "31565962c5146fde2e2e878bed50fed5d123ceb6a421f24f2367817357a0f93b",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/administration/NetworkLaunchCheck.java": "366077e1c6321c92bbb29135c3715b6f51dd21b51f63621587c997921d43701d",
+    "/home/server/hearth-tmp/hearth-acceptance.upzkf98r/python-batch-console.txt": "e02448e6a244f2ddadd9dfea0ba9bc8a8aa8138e86e6b3b6f69adec84355f300"
+  }
+}
