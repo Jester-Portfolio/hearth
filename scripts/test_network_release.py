@@ -47,3 +47,16 @@ class NetworkReleaseTest(unittest.TestCase):
  def test_security_flags_in_other_sections_do_not_override_disabled_forwarding(self):
   p=self.root/'economy/config/paper-global.yml';p.write_text(p.read_text().replace('enabled: true','enabled: false')+'other:\n  enabled: true\n')
   with self.assertRaises(ValueError):release.review(self.spec)
+
+ def test_unlisted_critical_inputs_and_new_rules_are_automatically_bound(self):
+  data=self.root/'economy/plugins/Hearth';(data/'native-economy.properties').write_text('realm=00000000-0000-0000-0000-000000000002\ngroup=00000000-0000-0000-0000-000000000003\n');(data/'enchants').mkdir();rule=data/'enchants/custom.yml';rule.write_text('original rule')
+  out=self.root/'critical';profile=release.generate(self.spec,out);self.assertEqual(4,profile['format']);self.assertIn('critical-sha256='+release.critical_digest(self.root/'economy'),(out/'economy.properties').read_text())
+  for path in [rule,data/'native-economy.properties',data/'new-policy.properties',self.root/'economy/plugins/Extra.jar']:
+   original=path.read_bytes() if path.exists() else None;path.write_bytes((original or b'')+b'changed')
+   with self.assertRaises(ValueError):release.inspect(out/'release.json')
+   if original is None:path.unlink()
+   else:path.write_bytes(original)
+ def test_critical_discovery_keeps_userdata_out_and_rejects_links(self):
+  data=self.root/'economy/plugins';users=data/'AuraSkills/userdata';users.mkdir(parents=True);before=release.critical_digest(self.root/'economy');(users/'player.yml').write_text('dynamic XP');self.assertEqual(before,release.critical_digest(self.root/'economy'))
+  (data/'Hearth/enchants').mkdir();(data/'Hearth/enchants/link.yml').symlink_to(users/'player.yml')
+  with self.assertRaises(ValueError):release.critical_digest(self.root/'economy')

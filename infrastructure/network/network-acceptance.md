@@ -43,11 +43,11 @@ python3 scripts/network_acceptance.py seal --dossier /PRIVATE/dossier \
 python3 scripts/network_release.py inspect /PRIVATE/fresh-complete-candidate/release.json
 ```
 
-seal은 네 종류의 최신 PASS·같은 scope·검증한 롤백을 모두 요구하고 롤백을 다시 확인한다. all-true 불리언 입력만으로는 format3 완료 후보를 생성할 수 없다. 원래 미완료 후보·기록은 유지한다. 완료 후보를 새 저널의 원본으로 사용하지 않는다. 입력/JAR/설정/예산/경로/경제 바인딩/기동 코드가 바뀌면 새 미완료 후보와 저널을 만든다. 과거 기록을 자동 승계하지 않는다.
+seal은 네 종류의 최신 PASS·같은 scope·검증한 롤백을 모두 요구하고 롤백을 다시 확인한다. all-true 불리언 입력만으로는 format4 완료 후보를 생성할 수 없다. 원래 미완료 후보·기록은 유지한다. 완료 후보를 새 저널의 원본으로 사용하지 않는다. 입력/JAR/설정/예산/경로/경제 바인딩/기동 코드가 바뀌면 새 미완료 후보와 저널을 만든다. 과거 기록을 자동 승계하지 않는다.
 
-format3는 acceptance.properties의 scope·증거 SHA·head를 네 역할의 기동 검사에 묶는다. Compose에는 raw 증거 대신 공개 가능한 state 디렉터리만 읽기 전용 마운트한다. 파일 교체를 관측할 수 있도록 head 파일 자체가 아닌 디렉터리를 마운트한다. 이후 FAIL/NOT_RUN 또는 추가 기록·미확정 기록으로 head가 바뀌면 기존 완료 후보의 inspect와 새 기동이 거부된다. 다시 PASS가 모여도 새 head로 완료 후보를 만들어야 한다. 이미 실행 중인 서비스는 자동 중단하지 않는다.
+format4는 acceptance.properties의 scope·증거 SHA·head를 네 역할의 기동 검사에 묶는다. Compose에는 raw 증거 대신 공개 가능한 state 디렉터리만 읽기 전용 마운트한다. 파일 교체를 관측할 수 있도록 head 파일 자체가 아닌 디렉터리를 마운트한다. 이후 FAIL/NOT_RUN 또는 추가 기록·미확정 기록으로 head가 바뀌면 기존 완료 후보의 inspect와 새 기동이 거부된다. 다시 PASS가 모여도 새 head로 완료 후보를 만들어야 한다. 이미 실행 중인 서비스는 자동 중단하지 않는다.
 
-별도 운영 승인·비root·JDK25·입력 해시·정지/실행 표식과 세션 잠금 검사는 그대로 필요하다. 과거 format1/2 후보의 정적 검증/역사 복구는 유지하지만 신규 후보/복원 후보는 format3다. 실제 복원은 새 경로이고 수용 표시를 모두 false로 초기화한다. 완료 후보를 snapshot에 넣을 때는 해당 시점의 저널/증거도 private assets에 보존한다. 역사 자료가 live 저널로 자동 재사용되지는 않는다.
+별도 운영 승인·비root·JDK25·입력 해시·정지/실행 표식과 세션 잠금 검사는 그대로 필요하다. 과거 format1/2/3 후보의 정적 검증/역사 복구는 유지하지만 신규 후보/복원 후보는 format4다. 실제 복원은 새 경로이고 수용 표시를 모두 false로 초기화한다. 완료 후보를 snapshot에 넣을 때는 해당 시점의 저널/증거도 private assets에 보존한다. 역사 자료가 live 저널로 자동 재사용되지는 않는다.
 
 ## 기록 도중 중단
 
@@ -58,3 +58,5 @@ python3 scripts/network_acceptance.py resume --dossier /PRIVATE/dossier --expect
 ```
 
 증거/event 저장 전에 중단됐다면 동일 head·동일 입력/증거의 record를 재요청한다. 다른 결과로 pending을 덮어쓰지 않는다. 손상·누락·충돌은 원본을 보존하고 거부하며, 저널 파일이나 pending을 임의 삭제해 완료 상태를 만들지 않는다. 이 도구는 게임 보상/아이템 효과를 재실행하지 않는다.
+
+format4는 [중요 입력 자동 대조](../../docs/platform-hardening-verification.md)의 설정/플러그인 목록을 기동 시 재계산한다. 새 규칙/플러그인 추가와 경제 바인딩 파일 변경도 새 후보 검토가 필요하다.

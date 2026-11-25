@@ -45,7 +45,7 @@ def main():
     p.add_argument('--platform-contexts', action='store_true', help='최종/백업 복원의 active+pending 세대 두 JVM 영향 검사')
     p.add_argument('--platform-db-evidence', type=Path, help='동일 E012/DB 코드의 통과 증거 재사용; 새 CLI 검사는 실행')
     p.add_argument('--platform-final', action='store_true', help='동일 계약의 최종/백업 복원 한 JVM 검사')
-    p.add_argument('--enchants-final-phase', choices=('effects','arrows'), default='effects')
+    p.add_argument('--enchants-final-phase', choices=('effects','arrows','hardening'), default='effects')
     p.add_argument('--enchants-effects-final', action='store_true', help='완료한 cold 복사본에서 최종 투사체/설정 변경만 한 JVM 검사')
     p.add_argument('--enchants', action='store_true', help='자체 인챈트 105종·북 작업·E011·두 JVM 복원 1묶음')
     p.add_argument('--rpg-events-final', action='store_true', help='변경된 이벤트 등록/방문자 PvP 연결만 한 JVM 검사')

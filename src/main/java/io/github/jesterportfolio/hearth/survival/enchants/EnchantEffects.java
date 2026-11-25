@@ -9,6 +9,7 @@ import org.bukkit.*;import org.bukkit.block.*;import org.bukkit.block.data.Ageab
 public final class EnchantEffects {
     @FunctionalInterface public interface Module {void apply(Context context,EnchantEngine.Invocation invocation,LivingEntity target);}
     public record Context(EnchantRuntime runtime,Player player,LivingEntity other,Block block,Event event,ItemStack item,EquipmentSlot slot){}
+    private final Map<String,Consumer<EnchantDefinition.Effect>> validators=new HashMap<>();
     private final Map<String,Module> modules=new LinkedHashMap<>();
     public EnchantEffects(){
         register("potion",(c,i,t)->{if(t!=null){var type=Registry.POTION_EFFECT_TYPE.get(NamespacedKey.minecraft(arg(i,"potion","SPEED").toLowerCase(Locale.ROOT)));if(type==null)throw new IllegalArgumentException("ENCHANT_POTION");c.runtime.potion(t,new PotionEffect(type,(int)Math.clamp(value(i,"duration",i.duration()),1,120000),(int)Math.clamp(value(i,"amount",0),0,255)),c.player,c.event==null);}});
@@ -46,6 +47,8 @@ public final class EnchantEffects {
     }
     public static void copyArrow(AbstractArrow source,AbstractArrow target){target.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);target.setDamage(source.getDamage());target.setCritical(source.isCritical());target.setFireTicks(source.getFireTicks());}
     public void register(String id,Module module){if(!id.matches("[a-z][a-z0-9_]{0,40}")||modules.putIfAbsent(id,Objects.requireNonNull(module))!=null)throw new IllegalArgumentException("ENCHANT_MODULE_ID");}
+    public void register(String id,Module module,Consumer<EnchantDefinition.Effect> validator){Objects.requireNonNull(validator);register(id,module);validators.put(id,validator);}
+    public void validate(EnchantDefinition.Effect effect){var validator=validators.get(effect.type());if(validator!=null)validator.accept(effect);}
     public Set<String> types(){return Set.copyOf(modules.keySet());}
     public void apply(Context c,EnchantEngine.Invocation i,LivingEntity target){Objects.requireNonNull(modules.get(i.effect().type())).apply(c,i,target);}
     public static String arg(EnchantEngine.Invocation i,String key,String fallback){return i.effect().arguments().getOrDefault(key,fallback);}

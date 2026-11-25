@@ -34,7 +34,7 @@ def create(manifest,destination,*,offline_confirmed=False,budget=None):
     budget=budget or backup.Budget();out=backup.fresh(out);assets=out/'source-review';assets.mkdir(mode=0o700)
     for name in ['release.json',*sorted(review['artifacts'])]:
         p=source.parent/name;backup.copy_file(p,assets/name,backup.fingerprint(backup.owned(p)),budget)
-    if review.get('format')==3 and review.get('attestation'):
+    if review.get('format',0)>=3 and review.get('attestation'):
         import network_acceptance
         network_acceptance.export(Path(review['attestation']['dossier']),review['attestation']['head'],assets/'audit',budget=budget)
     receipt=backup.create({**roots,'assets':assets},out/'bundle',offline_confirmed=True,budget=budget)
@@ -60,6 +60,12 @@ def verify(directory,expected,*,budget=None):
             except ValueError:continue
             matches.append(role+'/'+rel.as_posix())
         backup.require(len(matches)==1 and index.get(matches[0],{}).get('sha256')==sha,'NETWORK_SNAPSHOT_IDENTITY')
+    if profile['format']>=4:
+        # Recompute the original scope on snapshot paths to bind the critical input inventory.
+        for role,s in profile['review']['services'].items():
+            original=Path(s['data']);expected=release.critical_digest(payload/role)
+            props=(payload/'assets'/f'{role}.properties').read_text()
+            backup.require('critical-sha256='+expected+'\n' in props,'NETWORK_CRITICAL_IDENTITY')
     return receipt,profile
 
 def restore(directory,destination,expected,*,budget=None):

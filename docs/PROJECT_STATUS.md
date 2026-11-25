@@ -1,10 +1,12 @@
 # Hearth 프로젝트 현황
 
-마지막 문서 정리: **2026-11-21**. 구현 확인 기준은 현재 main의 코드와 아래 기능별 검증 기록이다. 문서 정리와 게임 시험은 각 기록의 실행 범위로 구분한다. [과거 현황](PROJECT_STATUS-archive-2026-10-27.md)은 이력으로 보존하며 현재 상태는 이 문서를 우선한다.
+마지막 문서 정리: **2026-11-25**. 구현 확인 기준은 현재 main의 코드와 아래 기능별 검증 기록이다. 문서 정리와 게임 시험은 각 기록의 실행 범위로 구분한다. [과거 현황](PROJECT_STATUS-archive-2026-10-27.md)은 이력으로 보존하며 현재 상태는 이 문서를 우선한다.
 
 [시험 임시 경로](test-workspace-migration-verification.md)는 사용자 승인으로 `/home/server/hearth-tmp`로 이전했다. Python/Java/Gradle과 캐시·JVM/AI 임시 파일에 같은 경계를 적용하고 새 파일시스템에서 두 JVM/PG 복원과 실제 AI를 확인했다. 과거 `/tmp` 증거는 읽기 전용 복사 원본으로 보존하며 운영 마운트/서비스는 바꾸지 않았다.
 
 ## 프로젝트 목표·현재 단계
+
+[플랫폼 보완 4개](platform-hardening-verification.md)로 format4의 중요 입력 자동 발견/기동·snapshot 대조, 임시 블록 기록 worker/회전·저장 후 설치, 효과별 설정 검증과 플레이어 캐시 정리를 수정했다. Python40·Java22개, 독립 JDK25와 격리 Paper/PG5개를 통과했다. 실제 Player·장기 부하·운영 적용은 미실행이다.
 
 [수용 기록·배포 연결](network-acceptance-verification.md)로 입력/JAR·설정/예산·기동 코드·경제 ID에 묶인 CAS 저널, 증거 보존/중단 재개, 같은 네트워크의 롤백 대조와 format3 Java/PG 기동 차단을 구현했다. Python37·Java6개 및 독립 JVM/Compose 구문 검사를 통과했다. 기존 실제 snapshot 연결은 확인했으며 새 검토 범위의 실제 클라이언트/부하/복원 실행/전체 릴리스 수용은 NOT_RUN으로 보존했다. 운영 미적용이다.
 

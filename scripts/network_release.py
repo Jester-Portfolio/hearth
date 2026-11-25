@@ -152,6 +152,29 @@ def review(spec):
         raise ValueError('RELEASE_ACCEPTANCE')
     return files
 
+def critical_digest(root):
+    """Static plugin inputs, independently rediscovered at launch (including additions)."""
+    root=Path(root);paths=[]
+    plugins=root/'plugins'
+    if plugins.exists():
+        paths.extend(plugins.glob('*.jar'))
+        hearth=plugins/'Hearth'
+        if hearth.exists():
+            paths.extend(p for p in hearth.iterdir() if p.suffix in ('.yml','.yaml','.properties'))
+            enchants=hearth/'enchants'
+            if enchants.exists():paths.extend(enchants.rglob('*'))
+        for name in ('AuraSkills','WorldGuard','WorldEdit','BetterHud'):
+            folder=plugins/name
+            if folder.exists():paths.extend(p for p in folder.rglob('*') if p.suffix in ('.yml','.yaml','.conf') and not any(x in ('userdata','users','backups','logs') for x in p.relative_to(folder).parts))
+    if any(p.is_symlink() for p in paths):raise ValueError('RELEASE_CRITICAL_LINK')
+    paths=sorted(set(p for p in paths if not p.is_dir()),key=lambda p:p.relative_to(root).as_posix())
+    if len(paths)>4096:raise ValueError('RELEASE_CRITICAL_LIMIT')
+    h=hashlib.sha256()
+    for p in paths:
+        if p.stat().st_size>16*1024*1024:raise ValueError('RELEASE_CRITICAL_SIZE')
+        h.update((p.relative_to(root).as_posix()+'='+digest(p)+'\n').encode())
+    return h.hexdigest()
+
 ADAPTERS=('network-entrypoint.sh','postgres-entrypoint.sh','network-postgres-entrypoint.sh','runtime-env.sh','NetworkLaunchCheck.java')
 ADAPTER_PATHS=('infrastructure/deployment/network-entrypoint.sh','infrastructure/deployment/postgres-entrypoint.sh','infrastructure/deployment/network-postgres-entrypoint.sh','infrastructure/deployment/runtime-env.sh','src/main/java/io/github/jesterportfolio/hearth/administration/NetworkLaunchCheck.java')
 
@@ -163,15 +186,16 @@ def native_identity(root):
     values=dict(re.findall(r'^([^#\s=]+)=(.*)$',path.read_text(),re.M));identity={k:str(uuid.UUID(values[k])) for k in ('realm','group')}
     return identity,digest(path)
 
-def make_context(spec,files,adapters):
+def make_context(spec,files,adapters,include_critical=True):
     normalized=json.loads(json.dumps(spec));normalized['acceptance']={k:False for k in normalized['acceptance']}
     props=dict(re.findall(r'^([^#\s=]+)=(.*)$',(Path(spec['services']['proxy']['data'])/'plugins/hearth-network/network.properties').read_text(),re.M))
     native,binding=native_identity(spec['services']['economy']['data']);identity={'network':str(uuid.UUID(props['network-id'])),**native}
     body={'review':normalized,'files':files,'adapters':adapters,'identity':identity,'binding':binding}
+    if include_critical:body['critical']={role:critical_digest(value['data']) for role,value in spec['services'].items()}
     scope=hashlib.sha256(json.dumps(body,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return {'scope':scope,'identity':identity,'binding':binding}
 
-def context(profile):return make_context(profile['review'],profile['files'],{k:profile['artifacts'][k] for k in ADAPTERS})
+def context(profile):return make_context(profile['review'],profile['files'],{k:profile['artifacts'][k] for k in ADAPTERS},profile['format']>=4)
 
 def certificate_bytes(context,value=None):
     keys=('client','load','restore','release_regression','rollback')
@@ -192,7 +216,7 @@ def generate(spec, output, *, evidence=None):
     if output.exists() or output.is_symlink() or output.parent != output.parent.resolve(strict=True):
         raise ValueError('RELEASE_FRESH_OUTPUT')
     # Candidate only. Missing acceptance gates stay explicit and block launch review.
-    result={'format':3,'status':'CANDIDATE','review':spec,'files':files,'acceptance_complete':complete,'context':scope,'attestation':({'dossier':certificate['dossier'],'head':certificate['head']} if certificate else None)}
+    result={'format':4,'status':'CANDIDATE','review':spec,'files':files,'acceptance_complete':complete,'context':scope,'attestation':({'dossier':certificate['dossier'],'head':certificate['head']} if certificate else None)}
     output.mkdir(mode=0o700)
     (output/'acceptance.properties').write_bytes(cert)
     services={}
@@ -200,7 +224,7 @@ def generate(spec, output, *, evidence=None):
         services[role]={'image':s['image'],'user':f"{s['uid']}:{s['gid']}",'network_mode':'host','read_only':True,'restart':'no','cpus':s['cpu'],'mem_limit':str(s['memory_mib'])+'m','stop_grace_period':str(s['stop_seconds'])+'s','pids_limit':s['pids'],'cap_drop':['ALL'],'security_opt':['no-new-privileges:true'],
           'working_dir':'/data','volumes':[{'type':'bind','source':s['data'],'target':'/data','bind':{'create_host_path':False}}],
           'environment':{'HEARTH_NETWORK_APPROVAL':'${HEARTH_NETWORK_APPROVAL:?separate operating approval required}'}}
-        manifest='format=3\nrole='+role+'\nacceptance-complete='+str(result['acceptance_complete']).lower()+'\nscope='+scope['scope']+'\nacceptance-sha256='+hashlib.sha256(cert).hexdigest()+'\njar='+s['jar']+'\n'
+        manifest='format=4\ncritical-sha256='+critical_digest(s['data'])+'\nrole='+role+'\nacceptance-complete='+str(result['acceptance_complete']).lower()+'\nscope='+scope['scope']+'\nacceptance-sha256='+hashlib.sha256(cert).hexdigest()+'\njar='+s['jar']+'\n'
         for path,sha in files.items():
             try:relative=Path(path).relative_to(Path(s['data']))
             except ValueError:continue
@@ -239,17 +263,17 @@ def generate(spec, output, *, evidence=None):
 def artifacts(manifest):
     result=json.loads(regular(manifest).read_text())
     names={'compose.json','backup-policy.json','proxy.properties','lobby.properties','economy.properties','network-entrypoint.sh','postgres-entrypoint.sh','NetworkLaunchCheck.java'}
-    if result.get('format') in (2,3):names|={'postgres.properties','network-postgres-entrypoint.sh','runtime-env.sh'}
-    if result.get('format')==3:names|={'acceptance.properties'}
-    fields={'format','status','review','files','acceptance_complete','artifacts'}|({'context','attestation'} if result.get('format')==3 else set())
-    if set(result)!=fields or result['format'] not in (1,2,3) or result['status']!='CANDIDATE' or set(result['artifacts'])!=names or any(digest(Path(manifest).parent/name)!=result['artifacts'][name] for name in names):raise ValueError('RELEASE_ARTIFACT_CHANGED')
+    if result.get('format') in (2,3,4):names|={'postgres.properties','network-postgres-entrypoint.sh','runtime-env.sh'}
+    if result.get('format')>=3:names|={'acceptance.properties'}
+    fields={'format','status','review','files','acceptance_complete','artifacts'}|({'context','attestation'} if result.get('format')>=3 else set())
+    if set(result)!=fields or result['format'] not in (1,2,3,4) or result['status']!='CANDIDATE' or set(result['artifacts'])!=names or any(digest(Path(manifest).parent/name)!=result['artifacts'][name] for name in names):raise ValueError('RELEASE_ARTIFACT_CHANGED')
     if result['acceptance_complete']!=all(result['review']['acceptance'].values()):raise ValueError('RELEASE_ACCEPTANCE')
     return result
 
 def inspect(manifest):
     result=artifacts(manifest)
     if result['files']!=review(result['review']):raise ValueError('RELEASE_CHANGED')
-    if result['format']==3:
+    if result['format']>=3:
         if result['context']!=context(result):raise ValueError('RELEASE_SCOPE_CHANGED')
         if result['acceptance_complete']:
             a=result['attestation'];root=Path(a['dossier']);head=root/'state/head.json'

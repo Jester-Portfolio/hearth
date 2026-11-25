@@ -273,7 +273,7 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 
 `import_crazy_enchantments.py --source CLEAN_PINNED_CHECKOUT --output NEW_CANDIDATE`는 고정 MIT 소스의 105개 정의/manifest/라이선스를 새 후보에 생성한다. dirty/wrong commit/기존 출력은 거부하며 운영 설정을 덮어쓰지 않는다. [대응표](../docs/enchant-port-map.md)와 diff를 검토한다.
 
-`verify_auraskills.py --enchants`는 새 소유 native root에 현재 `stageNativeEconomyRuntime -PnativeEconomyWorkspace=ROOT` fixture를 준비한 뒤 기존 Aura PASS cold source/고정 JAR를 받아 E011 PG 13개와 준비/복원 두 Paper를 실행한다. `--enchants-effects-final --enchants-final-phase effects|arrows`는 같은 계약의 PASS source에서 변경된 임시 블록/화살 API만 한 JVM으로 재검사하며 DB 회귀를 반복하지 않는다. 기존 필수 인자·소유 표식/localhost·CPU/RSS/600초·최대 두 JVM/원본 보존을 유지한다. Player를 만들거나 실제 행동을 대체하지 않는다. 상세 실행 증거와 한계는 [검증 기록](../docs/enchant-system-verification.md), 설정/명령은 [운영 가이드](../infrastructure/network/enchants.md)를 따른다.
+`verify_auraskills.py --enchants`는 새 소유 native root에 현재 `stageNativeEconomyRuntime -PnativeEconomyWorkspace=ROOT` fixture를 준비한 뒤 기존 Aura PASS cold source/고정 JAR를 받아 E011 PG 13개와 준비/복원 두 Paper를 실행한다. `--enchants-effects-final --enchants-final-phase effects|arrows|hardening`는 같은 계약의 PASS source에서 변경된 임시 블록/화살 API만 한 JVM으로 재검사하며 DB 회귀를 반복하지 않는다. 기존 필수 인자·소유 표식/localhost·CPU/RSS/600초·최대 두 JVM/원본 보존을 유지한다. Player를 만들거나 실제 행동을 대체하지 않는다. 상세 실행 증거와 한계는 [검증 기록](../docs/enchant-system-verification.md), 설정/명령은 [운영 가이드](../infrastructure/network/enchants.md)를 따른다.
 
 ## 경제 공통 플랫폼
 
@@ -302,3 +302,5 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 ## 네트워크 수용 기록
 
 `network_acceptance.py init|status|record|resume|rollback|seal`은 같은 검토 범위의 운영자 보고·증거 SHA·검증한 네트워크 롤백을 CAS 저널로 묶는다. 실제 시험/운영 승인을 대신하지 않으며 미실행/실패·pending·변경된 head는 신규 format3 완료 후보/기동을 차단한다. [절차](../infrastructure/network/network-acceptance.md)와 [검증 결과](../docs/network-acceptance-verification.md)를 따른다.
+
+`--enchants-final-phase hardening`은 105종의 새 스키마 로드·잘못된 설정의 원본 보존·worker journal 회전/순서를 한 격리 Paper에서 검사한다. Player/행동을 합성하지 않는다. [보완 검증](../docs/platform-hardening-verification.md)을 따른다.

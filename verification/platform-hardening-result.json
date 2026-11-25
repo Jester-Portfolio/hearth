@@ -1,0 +1,103 @@
+{
+  "date": "2026-11-25",
+  "base_git_commit": "a585f39",
+  "outcome": "PASS",
+  "scope": "Four requested hardening fixes: launch critical inventory, asynchronous segmented temporary audit, semantic effect validation, transient player cache cleanup",
+  "python_tests": 40,
+  "java_unique_tests": 22,
+  "java_semantics": "Affected suites passed; schema-only follow-up after trigger validation. Cache cleanup reviewed in source, no synthetic Player.",
+  "independent_java_exit_codes": [
+    0,
+    2,
+    2
+  ],
+  "paper": {
+    "workspace": "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty",
+    "outcome": "PASS",
+    "seconds": 29.582,
+    "checks": 5,
+    "source_hashes": {
+      "/home/server/hearth-tmp/hearth-native-economy-run.szxWfjC4/data/global/pg_control": "65d63f1af421874f616b4fbec40f50a99fb5349410b1d38ef8850000fe0e7ffe",
+      "/home/server/hearth-tmp/hearth-native-economy-run.szxWfjC4/server/plugins/Hearth/config.yml": "1fce7645e09dfdd113684f98492dda1ef1591b6999baeb8dd196e46aa544aca5",
+      "/home/server/hearth-tmp/hearth-native-economy-run.szxWfjC4/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+    },
+    "processes": {
+      "database": {
+        "pid": 3919909,
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 28.807,
+        "shutdown_seconds": 0.432,
+        "max_sampled_rss_kib": 231632,
+        "observed_cpu_seconds": 2.35,
+        "min_sampled_host_available_kib": 12347708,
+        "sample_count": 293,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-enchants-hardening": {
+        "pid": 3920007,
+        "exit_code": 0,
+        "ready_seconds": 21.68,
+        "duration_seconds": 26.048,
+        "shutdown_seconds": 1.404,
+        "max_sampled_rss_kib": 1305932,
+        "observed_cpu_seconds": 40.11,
+        "min_sampled_host_available_kib": 12349784,
+        "sample_count": 261,
+        "checks": [],
+        "timings": [],
+        "states": []
+      }
+    },
+    "limits": {
+      "cpu": 2,
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "combined_rss_stop_mib": 6144,
+      "host_available_min_mib": 6144,
+      "paper_starts_max": 2
+    },
+    "cleanup_errors": []
+  },
+  "preserved_initial_failure": {
+    "workspace": "/home/server/hearth-tmp/hearth-native-economy-run.t4hugtir",
+    "reason": "Relative plugin path could not resolve IsolatedPaths in DB helper; corrected absolute invocation; no Paper started"
+  },
+  "actual_client": "NOT_RUN",
+  "fake_player": "NOT_USED",
+  "operating_changes": "NONE",
+  "unverified": [
+    "Actual delayed temporary placement with authenticated Player",
+    "Live player quit and world transfer",
+    "Long player load and operating deployment"
+  ],
+  "evidence": {
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/launch-0.log": "1361d9b0ad1efd3a28ab18a9f0da37f2e9b90902c1d39ca6a5cb1e4e2aa24bf1",
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/launch-1.log": "0e8dbba7412d1ed014702883e6486ac9fd9db34aae383e88bd72c799dcde1b8c",
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/launch-2.log": "0e8dbba7412d1ed014702883e6486ac9fd9db34aae383e88bd72c799dcde1b8c",
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/launch-result.json": "25d04ec11001636dadfe62747f901861fd12a994a79352a8c8a2c01cdda82479",
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/hardening-python.log": "4e866109bd9e28adb10edc728ba1fb1012fd16d3a3afabcdcb0090954e3016dc",
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/hardening-java.log": "539f4e22c1dc27d717bf02b1d19b88f3c7ef15a0652e27a7cf18b908cc86af56",
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/hardening-schema-final.log": "240d1ba6879c8bdcd76066cfc89ce4b4adbe701132344662e014dc8326b64ece",
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/hardening-stage.log": "dd19f69027838267695954b6487a991e31664cc0032529ee69919d5ac64c0104",
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/hardening-paper-console.log": "2038a3bd169f64730e3a45a553837a50e8be85ba52f61b94816c44f132e1bbfe",
+    "/home/server/hearth-tmp/hearth-hardening.x1buzapb/TEST-io.github.jesterportfolio.hearth.survival.EffectSchemaTest.xml": "122b509a7d4bfed3460ceefee8c9a44ce1a20c6aa6bd92b852f30d6cf1bc027f",
+    "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/aura-trial-result.json": "4bf20399e4c18bc1ac6eb7d8f95a065ebeb67b82af86af03d3e51c0b2f6a0517",
+    "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/paper-enchants-hardening-console.log": "2ea8e38f932ab83c25c3c4fb042bc1093c69bcdd8d7f6ac364d56771ef5e39a9",
+    "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/database-console.log": "3df1808bd2899a6dc1f58ed6fc17eeb53338a1839aeab25e3069183ebec17325",
+    "/home/server/hearth-tmp/hearth-native-economy-run.t4hugtir/aura-trial-result.json": "bad3fe11b5028ae1426cdea6adcb74a451f5719f595a481f33e69da14a7e94a5",
+    "/home/server/hearth-tmp/hearth-native-economy-run.t4hugtir/database-console.log": "52fe41c004edbec781dacd1b335001920c1228e10401fccfa4e9f984671ff9ce",
+    "/home/server/projects/hearth/build/libs/Hearth-0.1.0-SNAPSHOT.jar": "47018a1f0f92f208f924f06137cfd9160e4d85e303871f83980ae1dd36aa10f7",
+    "/home/server/projects/hearth/scripts/network_release.py": "e8078bf153cab3ebf09ac8cc7ad88f167236215ce3f063e5ac7541e4037e966a",
+    "/home/server/projects/hearth/scripts/network_recovery.py": "99e48f40617215289630265263fef10773f5a3a63e76589e8d8088f75fa761bf",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/administration/NetworkLaunchCheck.java": "ee50437f038205462edda6e3e908383b391d89b91a388482dd0d0c5758d2e204",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/enchants/TemporaryJournal.java": "e81909de0338fa7793c5d4e8bea87b9d7d820c1f37d0252858e11f671a5b2f1f",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EffectSchema.java": "70db8e315b3e533a3a84279eb135bebd6f20bd1592c1c82b9427d8a440cc37f5",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantRuntime.java": "7e628ee2a5b554978b2d2c1ea9831e15e9129f6b76968c37372fa2af11046dd1",
+    "/home/server/hearth-tmp/hardening-shell-final.log": "8bbb42e601eda93bac180f109fc0d56a21be08504feb4aa189b0b41e96d9a545"
+  }
+}

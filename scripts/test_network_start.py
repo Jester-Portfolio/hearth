@@ -29,3 +29,5 @@ class NetworkStartTests(unittest.TestCase):
  def test_duplicate_evidence_and_scope_mismatch_do_not_pass_certificate(self):
   head,cert=self.reviewed();original=cert.read_text();cert.write_text(original.replace('load=','client='));m=self.manifested(cert);self.assertNotEqual(0,self.check_pg(m))
   cert.write_text(original.replace('scope='+'a'*64,'scope='+'c'*64));m=self.manifested(cert);self.assertNotEqual(0,self.check_pg(m))
+ def test_format4_postgres_keeps_certificate_gate_and_expected_empty_plugin_inventory(self):
+  head,cert=self.reviewed();m=self.manifested(cert);text=m.read_text().replace('format=3','format=4')+'critical-sha256='+hashlib.sha256(b'').hexdigest()+'\n';m.write_text(text);self.assertEqual(0,self.check_pg(m));m.write_text(text.replace(hashlib.sha256(b'').hexdigest(),'a'*64));self.assertNotEqual(0,self.check_pg(m))

@@ -46,7 +46,7 @@ def locked(root):
 
 def initialize(candidate,destination):
     release.inspect(candidate);profile=release.artifacts(candidate)
-    if profile['format']!=3:raise ValueError('DOSSIER_FORMAT3_REQUIRED')
+    if profile['format'] not in (3,4):raise ValueError('DOSSIER_FORMAT3_REQUIRED')
     if profile['acceptance_complete']:raise ValueError('DOSSIER_UNACCEPTED_BASE_REQUIRED')
     context=release.context(profile)
     root=backup.fresh(destination);(root/'state').mkdir(mode=0o755);(root/'events').mkdir(mode=0o700);(root/'evidence').mkdir(mode=0o700)

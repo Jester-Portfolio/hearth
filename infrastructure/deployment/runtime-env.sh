@@ -24,13 +24,14 @@ hearth_pg_manifest() {
   command -v sha256sum >/dev/null 2>&1 || return 2
   [ -f "$manifest" ] && [ ! -L "$manifest" ] || return 2
   [ "$(sha256sum "$manifest" | cut -d ' ' -f 1)" = "$expected" ] || return 2
-  format=; role=; accepted=; count=0; scope=; acceptance_sha=
+  format=; role=; accepted=; count=0; scope=; acceptance_sha=; critical_sha=
   while IFS='=' read -r key value || [ -n "$key" ]; do
     case "$key" in
       format) [ -z "$format" ] || return 2; format=$value;;
       role) [ -z "$role" ] || return 2; role=$value;;
       acceptance-complete) [ -z "$accepted" ] || return 2; accepted=$value;;
       jar) [ -z "$value" ] || return 2;;
+      critical-sha256) [ -z "$critical_sha" ] || return 2; critical_sha=$value;;
       scope) [ -z "$scope" ] || return 2; scope=$value;;
       acceptance-sha256) [ -z "$acceptance_sha" ] || return 2; acceptance_sha=$value;;
       file.*)
@@ -50,6 +51,7 @@ hearth_pg_manifest() {
   [ "$role:$accepted" = postgres:true ] && [ "$count" -gt 0 ] || return 2
   case "$format" in
     2) return 0;;
+    4) [ "$critical_sha" = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 ] && hearth_acceptance "$(dirname "$manifest")/acceptance.properties" "$acceptance_sha" "$scope";;
     3) hearth_acceptance "$(dirname "$manifest")/acceptance.properties" "$acceptance_sha" "$scope";;
     *) return 2;;
   esac

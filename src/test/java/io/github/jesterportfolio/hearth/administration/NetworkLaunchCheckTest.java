@@ -21,4 +21,8 @@ class NetworkLaunchCheckTest {
   Path m=reviewedManifest();String original=Files.readString(m);Files.writeString(m,original.replace("scope="+"a".repeat(64),"scope="+"b".repeat(64)));assertThrows(Exception.class,()->NetworkLaunchCheck.validate(root,m,hash(m),"economy"));
   Files.writeString(m,original);Files.writeString(root.resolve("acceptance.properties"),"complete=true");assertThrows(Exception.class,()->NetworkLaunchCheck.validate(root,m,hash(m),"economy"));
  }
+ @Test void criticalInputsAreRediscoveredEvenWhenNotInExplicitFileList()throws Exception{
+  Path m=reviewedManifest(),binding=root.resolve("plugins/Hearth/native-economy.properties");Files.createDirectories(binding.getParent());Files.writeString(binding,"realm=one\n");String critical=NetworkLaunchCheck.critical(root);String original=Files.readString(m).replace("format=3","format=4")+"critical-sha256="+critical+"\n";Files.writeString(m,original);assertEquals("server.jar",NetworkLaunchCheck.validate(root,m,hash(m),"economy"));
+  Files.writeString(binding,"realm=another\n");assertThrows(Exception.class,()->NetworkLaunchCheck.validate(root,m,hash(m),"economy"));Files.writeString(binding,"realm=one\n");Path extra=binding.resolveSibling("rpg-policy.properties");Files.writeString(extra,"new policy");assertThrows(Exception.class,()->NetworkLaunchCheck.validate(root,m,hash(m),"economy"));
+ }
 }

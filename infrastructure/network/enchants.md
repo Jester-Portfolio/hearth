@@ -124,3 +124,9 @@ WorldGuard·개인 거주 ACL·월드 입장·PvP·전투 이동·사망/부적�
 `python3 scripts/import_crazy_enchantments.py --source <깨끗한 고정 source checkout> --output <새 후보 폴더>`는 동일 105종과 manifest를 재생성한다. 기존 출력/운영 설정 덮어쓰기를 거부한다. 후보를 diff로 검토해 반영하며 원본 업데이트를 자동 채택하지 않는다.
 
 [공통 플랫폼](platform.md)의 자동 판매는 이 최종 수집 알림을 실제 인벤토리 검사 예약으로 연결한다. 장비/강화·인챈트의 스탯은 출처별 공통 합산을 사용하고, 자원 세대가 바뀌어도 원래 논리 world key 또는 `role:<role>` 제한을 유지한다.
+
+## 기록·설정 안전 보완
+
+[보완 검증](../../docs/platform-hardening-verification.md)에 따라 임시 블록 CREATE를 전용 worker에 저장한 뒤 세션/월드/권한/원본을 재확인해 설치한다. 기록은 `enchants-temporary-<실행 UUID>-<일련번호>.jsonl`로20,000개마다 회전하며 삭제하지 않는다. IO 실패/큐 거부는 새 임시 효과만 보류하고 원본 증거를 남긴다. 운영자는 디스크와 로그를 점검해야 하며 자동 과거 효과 재실행/무손실 복구는 제공하지 않는다.
+
+설정 저장 전 효과별 재료·mode·불리언·알 수 없는 키와 지원 트리거를 검증한다. Java 확장은 `register(id, module, validator)`로 고유 인자 검증을 추가한다. 실제 효과의 개별 활성 설정과 책 작업 허용 설정의 구분은 유지한다.
