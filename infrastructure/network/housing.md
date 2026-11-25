@@ -46,3 +46,7 @@ E008은 가격표·소유권/월드 식별자·결제 요청/영수증·초대/�
 `housing.active`는 정상 종료 확인, `housing-worlds/<ID>.properties`는 group/realm/주택·월드 UUID/seed/입장점, 같은 디렉터리의 `.pending`은 미완료 생성 보존 표식이다. 존재하는 표식을 지워 자동 재생성하거나 정책/소유권을 임의 재확정하지 않는다. 초기화한 정책이 있으면 거주 시스템 전체를 비활성화한 기동도 거부한다. 구매만 닫을 때는 properties의 구매 스위치를 사용한다.
 
 기존 오프라인 백업의 Paper 전체 루트/PG 전체 루트 범위에 개인 월드·WorldGuard·이 메타데이터도 포함된다. 일부 폴더/PG 행만 골라 다른 세대와 섞지 않는다. [설계](../../docs/decisions/0030-residential-and-resource-worlds.md)·[검증/한계](../../docs/housing-system-verification.md)를 따른다. 실제 스폰/상품/가격·플레이/부하·운영 배포와 자원 월드 초기화는 이번에 적용하지 않았다.
+
+## 파일 작업·언로드 실패
+
+입장점 설정/ID 메타파일은 순서 보장 worker로 읽고 저장하며 월드/청크 API는 owner 스레드에서 적용한다. idle 언로드 실패는 해당 집만5초/10초 대기 후 재시도하고 세 번 실패하면 보류한다. 콘솔 `/heartheconomy housing unload-status`, `/heartheconomy housing retry-unload <집 UUID>`로 확인/재시도한다. 월드/원본 파일은 삭제하지 않는다. [보완 검증](../../docs/economy-followup-verification.md)을 따른다.

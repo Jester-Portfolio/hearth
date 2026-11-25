@@ -16,9 +16,17 @@ public final class NativeEconomyLedger {
         var request=new EconomyStore.Request(context,id,offer.key(),quantity,buy,offer.market().revision());
         return shadow(context,payload).thenCompose(stored->store.trade(request,stored,after,valid,probe)).thenApply(receipt->new NativeTransactions.Result(Map.of(context.playerId(),after),receipt,receipt.replay()));
     };}
-    public NativeTransactions.Operation peer(EconomyStore.PeerRequest request,EconomyStore.Probe probe){return (before,valid)->{
-        var first=request.first();var second=request.second();var left=transfer(before.get(first.playerId()),request.firstOffer(),request.secondOffer());var right=transfer(before.get(second.playerId()),request.secondOffer(),request.firstOffer());
-        return shadow(first,before.get(first.playerId())).thenCompose(a->shadow(second,before.get(second.playerId())).thenCompose(b->store.peer(request,a,b,left,right,valid,probe))).thenApply(receipt->new NativeTransactions.Result(Map.of(first.playerId(),left,second.playerId(),right),receipt,receipt.replay()));
+    public NativeTransactions.Operation peer(EconomyStore.PeerRequest request,EconomyStore.Probe probe){return peer(request,probe,Map.of());}
+    public NativeTransactions.Operation peer(EconomyStore.PeerRequest request,EconomyStore.Probe probe,Map<UUID,Map<Integer,NativeItemExchange.Quote>> quotes){return (before,valid)->{
+        var first=request.first();var second=request.second();var codec=new PaperInventoryCodec();
+        var leftItems=codec.decode(before.get(first.playerId()));var rightItems=codec.decode(before.get(second.playerId()));
+        var toRight=NativeItemExchange.take(leftItems,request.firstOffer().items(),quotes.getOrDefault(first.playerId(),Map.of()));var toLeft=NativeItemExchange.take(rightItems,request.secondOffer().items(),quotes.getOrDefault(second.playerId(),Map.of()));
+        // Remove both outgoing sets before filling the freed slots with the incoming sets.
+        var leftBase=codec.encode(leftItems);var rightBase=codec.encode(rightItems);
+        var left=transfer(leftBase,request.firstOffer(),request.secondOffer());var right=transfer(rightBase,request.secondOffer(),request.firstOffer());
+        leftItems=codec.decode(left);rightItems=codec.decode(right);NativeItemExchange.insert(leftItems,toLeft);NativeItemExchange.insert(rightItems,toRight);
+        final var leftAfter=codec.encode(leftItems);final var rightAfter=codec.encode(rightItems);
+        return shadow(first,before.get(first.playerId())).thenCompose(a->shadow(second,before.get(second.playerId())).thenCompose(b->store.peer(request,a,b,leftAfter,rightAfter,valid,probe))).thenApply(receipt->new NativeTransactions.Result(Map.of(first.playerId(),leftAfter,second.playerId(),rightAfter),receipt,receipt.replay()));
     };}
     private InventoryPayload transfer(InventoryPayload before,PeerTrade.Offer outgoing,PeerTrade.Offer incoming){var result=before;for(var e:new TreeMap<>(outgoing.goods()).entrySet())result=items.change(result,e.getKey(),e.getValue(),false);for(var e:new TreeMap<>(incoming.goods()).entrySet())result=items.change(result,e.getKey(),e.getValue(),true);return result;}
 }

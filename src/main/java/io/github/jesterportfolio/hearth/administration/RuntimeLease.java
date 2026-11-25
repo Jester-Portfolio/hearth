@@ -13,6 +13,14 @@ public final class RuntimeLease {
     public static final class Lease {
         private final Path path;private final byte[] content;private final Object key;private boolean cleaned;
         private Lease(Path path,byte[] content,Object key){this.path=path;this.content=content;this.key=key;}
+        /** Publish a cleanup intent without replacing an existing record. Both links survive a partial retirement. */
+        public void retire(Path destination)throws java.io.IOException{
+            if(cleaned)throw new java.io.IOException("RUNTIME_ALREADY_CLEANED");
+            if(!destination.getParent().equals(path.getParent())||Files.exists(destination,LinkOption.NOFOLLOW_LINKS))throw new java.io.IOException("RUNTIME_RETIRE_PATH");
+            var attributes=Files.readAttributes(path,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);
+            if(!attributes.isRegularFile()||!Objects.equals(key,attributes.fileKey())||!Arrays.equals(content,Files.readAllBytes(path)))throw new java.io.IOException("RUNTIME_MARKER_CHANGED");
+            Files.createLink(destination,path);Files.delete(path);cleaned=true;
+        }
         public void clean()throws java.io.IOException{
             if(cleaned)return;
             var attributes=Files.readAttributes(path,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);

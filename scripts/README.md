@@ -304,3 +304,5 @@ CPU 2개/nice 10, 기존 localhost/heap/RSS/600초·550초 작업·Paper 최대 
 `network_acceptance.py init|status|record|resume|rollback|seal`은 같은 검토 범위의 운영자 보고·증거 SHA·검증한 네트워크 롤백을 CAS 저널로 묶는다. 실제 시험/운영 승인을 대신하지 않으며 미실행/실패·pending·변경된 head는 신규 format3 완료 후보/기동을 차단한다. [절차](../infrastructure/network/network-acceptance.md)와 [검증 결과](../docs/network-acceptance-verification.md)를 따른다.
 
 `--enchants-final-phase hardening`은 105종의 새 스키마 로드·잘못된 설정의 원본 보존·worker journal 회전/순서를 한 격리 Paper에서 검사한다. Player/행동을 합성하지 않는다. [보완 검증](../docs/platform-hardening-verification.md)을 따른다.
+
+`verify_auraskills.py --followup`은 PASS cold source와 stageNativeEconomyRuntime fixture에서 메타데이터 peer PG8개·실제 ItemStack/개인 월드·사망 증거의 두 JVM을 검사한다. 다른 시험 프로필과 배타적이다. `--followup-db-evidence PASS_DB_PHASE_ROOT`는 fixture·모델/DB/DDL 바이트가 같고 해당8개/정상 정리가 확인된 DB 단계만 재사용한다. `--enchants-effects-final --enchants-final-phase followup-resume`은 통과한 후속 source의 원본/metadata 복원만 한 JVM으로 검사한다. 기존 CPU/RSS/600초·localhost·EULA·최대2 Paper/1 PG와 Player 합성 금지 경계를 유지한다. [검증](../docs/economy-followup-verification.md)을 따른다.

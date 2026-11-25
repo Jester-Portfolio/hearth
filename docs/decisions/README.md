@@ -41,6 +41,7 @@
 | [ADR-0035: 플랫폼 이력·월드 보관과 운영 진단](0035-platform-operations-and-retention.md) | 잔여 플랫폼 일괄 구현·운영 미적용 | E014 hot/cold·불변 ID·파일 worker·보류 관측·네트워크 후보 |
 | [ADR-0036: 네트워크 전체 snapshot·기동 바인딩](0036-network-snapshot-and-launch-binding.md) | 후속 구현·격리 복원/기동 PASS·운영 미적용 | 네 역할/전체 PG 동시 보존·외부 영수증·수용 초기화·literal env/역할 기동 |
 | [ADR-0037: 검토 범위에 연결된 수용 기록](0037-network-acceptance-dossier.md) | 후속 구현·운영 미적용 | scope/CAS 증거·짝이 맞는 롤백·format3 기동 차단·중단 재개 |
+| [ADR-0038: 실제 물품 거래와 비동기 native 수명주기](0038-metadata-peer-and-async-native-lifecycle.md) | 보완 구현·격리 검증·운영 미적용 | 슬롯 원본 견적·메타데이터 보존·사망 완료 증거/worker·거주 파일/언로드 |
 
 각 기록에는 다음 내용을 포함합니다.
 

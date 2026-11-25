@@ -1,0 +1,447 @@
+{
+  "date": "2026-11-25",
+  "base_git_commit": "279e091",
+  "outcome": "PASS",
+  "scope": "Five follow-up fixes plus metadata normalization, death lifecycle admission and death-trigger guards; capacity overflow personal HOLD, global life-phase entry and ordered death-before-housing drain",
+  "java_unique_tests": 60,
+  "java_cases": {
+    "PeerTradeTest": 11,
+    "NativeTransactionsTest": 15,
+    "PlatformTest": 17,
+    "DeathJournalTest": 4,
+    "UnloadBackoffTest": 1,
+    "RuntimeLeaseTest": 6,
+    "NativeDrainOrderTest": 3,
+    "NativeMenuRulesTest": 3
+  },
+  "java_note": "Affected suites passed, followed only by changed Peer/DeathJournal and RuntimeLease cases. Actual ItemStack comparison verified inside isolated Paper.",
+  "python_tests": 2,
+  "pg_checks": 8,
+  "paper_two_jvm_checks": 10,
+  "final_restore_jvm_checks": 4,
+  "artifact": {
+    "path": "/home/server/projects/hearth/build/libs/Hearth-0.1.0-SNAPSHOT.jar",
+    "sha256": "8151773530910cfd735af44e0462dd9c061bb517715382593e55633dbe0d837f"
+  },
+  "trials": {
+    "/home/server/hearth-tmp/hearth-native-economy-run.yl33hd5o": {
+      "outcome": "FAIL",
+      "failure": "RuntimeError: AURA_PROBE_FAILED_enchants-followup-prepare",
+      "duration_seconds": 27.807,
+      "cleanup_errors": [],
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/data/global/pg_control": "6ea29c4fdf9d712461e09d426b143bbca17efaf15f917579cec34ce7c6eec31f",
+        "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/server/plugins/Hearth/config.yml": "6f83d1129a861bea2dc7f4bc6929d32eb5f57acd5c6c9de193470c72d5b79eba",
+        "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "processes": {
+        "database": {
+          "pid": 3933839,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 27.058,
+          "shutdown_seconds": 0.113,
+          "max_sampled_rss_kib": 239208,
+          "observed_cpu_seconds": 2.58,
+          "min_sampled_host_available_kib": 12275284,
+          "sample_count": 277,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-followup-prepare": {
+          "pid": 3933928,
+          "exit_code": 0,
+          "ready_seconds": 20.597,
+          "duration_seconds": 24.327,
+          "shutdown_seconds": 1.215,
+          "max_sampled_rss_kib": 1327964,
+          "observed_cpu_seconds": 37.48,
+          "min_sampled_host_available_kib": 12274992,
+          "sample_count": 245,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "max_combined_rss_kib": 1567020
+    },
+    "/home/server/hearth-tmp/hearth-native-economy-run.3pe_3fam": {
+      "outcome": "FAIL",
+      "failure": "RuntimeError: AURA_PROBE_FAILED_enchants-followup-prepare",
+      "duration_seconds": 28.257,
+      "cleanup_errors": [],
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/data/global/pg_control": "6ea29c4fdf9d712461e09d426b143bbca17efaf15f917579cec34ce7c6eec31f",
+        "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/server/plugins/Hearth/config.yml": "6f83d1129a861bea2dc7f4bc6929d32eb5f57acd5c6c9de193470c72d5b79eba",
+        "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "processes": {
+        "database": {
+          "pid": 3934982,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 27.496,
+          "shutdown_seconds": 0.115,
+          "max_sampled_rss_kib": 234572,
+          "observed_cpu_seconds": 2.29,
+          "min_sampled_host_available_kib": 12302872,
+          "sample_count": 275,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-followup-prepare": {
+          "pid": 3935058,
+          "exit_code": 0,
+          "ready_seconds": 21.085,
+          "duration_seconds": 25.054,
+          "shutdown_seconds": 1.241,
+          "max_sampled_rss_kib": 1285460,
+          "observed_cpu_seconds": 38.76,
+          "min_sampled_host_available_kib": 12302580,
+          "sample_count": 246,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "max_combined_rss_kib": 1519908
+    },
+    "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_": {
+      "outcome": "PASS",
+      "failure": null,
+      "duration_seconds": 54.183,
+      "cleanup_errors": [],
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/data/global/pg_control": "6ea29c4fdf9d712461e09d426b143bbca17efaf15f917579cec34ce7c6eec31f",
+        "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/server/plugins/Hearth/config.yml": "6f83d1129a861bea2dc7f4bc6929d32eb5f57acd5c6c9de193470c72d5b79eba",
+        "/home/server/hearth-tmp/hearth-native-economy-run.8_vi6wty/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "processes": {
+        "database": {
+          "pid": 3935888,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 53.425,
+          "shutdown_seconds": 0.132,
+          "max_sampled_rss_kib": 234632,
+          "observed_cpu_seconds": 2.31,
+          "min_sampled_host_available_kib": 12132376,
+          "sample_count": 551,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-followup-prepare": {
+          "pid": 3935963,
+          "exit_code": 0,
+          "ready_seconds": 20.76,
+          "duration_seconds": 25.335,
+          "shutdown_seconds": 1.147,
+          "max_sampled_rss_kib": 1330400,
+          "observed_cpu_seconds": 38.95,
+          "min_sampled_host_available_kib": 12132376,
+          "sample_count": 262,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-followup-resume": {
+          "pid": 3936177,
+          "exit_code": 0,
+          "ready_seconds": 21.325,
+          "duration_seconds": 25.367,
+          "shutdown_seconds": 1.062,
+          "max_sampled_rss_kib": 1369932,
+          "observed_cpu_seconds": 39.3,
+          "min_sampled_host_available_kib": 12291984,
+          "sample_count": 256,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "max_combined_rss_kib": 1604312
+    },
+    "/home/server/hearth-tmp/hearth-native-economy-run.49n9fdqe": {
+      "outcome": "PASS",
+      "failure": null,
+      "duration_seconds": 27.324,
+      "cleanup_errors": [],
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/data/global/pg_control": "cb9535ed8b0131213ffad4943d540221f43869fa060684c350bea162594d7e56",
+        "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/server/plugins/Hearth/config.yml": "73950a9b49b6c4035d7116e7cbf577657bb1c444565672fdfc0c00f3da9b4818",
+        "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "processes": {
+        "database": {
+          "pid": 3936792,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 26.536,
+          "shutdown_seconds": 0.113,
+          "max_sampled_rss_kib": 232536,
+          "observed_cpu_seconds": 2.38,
+          "min_sampled_host_available_kib": 12283108,
+          "sample_count": 274,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-followup-resume": {
+          "pid": 3936874,
+          "exit_code": 0,
+          "ready_seconds": 19.871,
+          "duration_seconds": 24.078,
+          "shutdown_seconds": 1.19,
+          "max_sampled_rss_kib": 1385272,
+          "observed_cpu_seconds": 36.89,
+          "min_sampled_host_available_kib": 12283108,
+          "sample_count": 245,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "max_combined_rss_kib": 1617476
+    },
+    "/home/server/hearth-tmp/hearth-native-economy-run.syft100l": {
+      "outcome": "PASS",
+      "failure": null,
+      "duration_seconds": 28.586,
+      "cleanup_errors": [],
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/data/global/pg_control": "cb9535ed8b0131213ffad4943d540221f43869fa060684c350bea162594d7e56",
+        "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/server/plugins/Hearth/config.yml": "73950a9b49b6c4035d7116e7cbf577657bb1c444565672fdfc0c00f3da9b4818",
+        "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "processes": {
+        "database": {
+          "pid": 3939815,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 27.802,
+          "shutdown_seconds": 0.117,
+          "max_sampled_rss_kib": 231976,
+          "observed_cpu_seconds": 2.42,
+          "min_sampled_host_available_kib": 12100952,
+          "sample_count": 285,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-followup-resume": {
+          "pid": 3939893,
+          "exit_code": 0,
+          "ready_seconds": 20.816,
+          "duration_seconds": 25.309,
+          "shutdown_seconds": 1.179,
+          "max_sampled_rss_kib": 1435388,
+          "observed_cpu_seconds": 38.84,
+          "min_sampled_host_available_kib": 12100952,
+          "sample_count": 256,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "max_combined_rss_kib": 1667112
+    },
+    "/home/server/hearth-tmp/hearth-native-economy-run.11dix2q8": {
+      "outcome": "PASS",
+      "failure": null,
+      "duration_seconds": 28.678,
+      "cleanup_errors": [],
+      "source_hashes": {
+        "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/data/global/pg_control": "cb9535ed8b0131213ffad4943d540221f43869fa060684c350bea162594d7e56",
+        "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/server/plugins/Hearth/config.yml": "73950a9b49b6c4035d7116e7cbf577657bb1c444565672fdfc0c00f3da9b4818",
+        "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+      },
+      "limits": {
+        "cpu": 2,
+        "total_seconds": 600,
+        "work_seconds": 550,
+        "paper_heap_mib": 1536,
+        "paper_rss_stop_mib": 2560,
+        "combined_rss_stop_mib": 6144,
+        "host_available_min_mib": 6144,
+        "paper_starts_max": 2
+      },
+      "processes": {
+        "database": {
+          "pid": 3940858,
+          "exit_code": 0,
+          "ready_seconds": null,
+          "duration_seconds": 27.907,
+          "shutdown_seconds": 0.117,
+          "max_sampled_rss_kib": 229736,
+          "observed_cpu_seconds": 2.32,
+          "min_sampled_host_available_kib": 12244224,
+          "sample_count": 288,
+          "checks": [],
+          "timings": [],
+          "states": []
+        },
+        "paper-enchants-followup-resume": {
+          "pid": 3940940,
+          "exit_code": 0,
+          "ready_seconds": 21.135,
+          "duration_seconds": 25.436,
+          "shutdown_seconds": 1.202,
+          "max_sampled_rss_kib": 1395452,
+          "observed_cpu_seconds": 39.36,
+          "min_sampled_host_available_kib": 12244224,
+          "sample_count": 258,
+          "checks": [],
+          "timings": [],
+          "states": []
+        }
+      },
+      "max_combined_rss_kib": 1624880
+    }
+  },
+  "preserved_failures": {
+    "yl33hd5o": "fixture nonempty account initialization refused",
+    "3pe_3fam": "raw serialization bytes changed despite equivalent item; fixed frozen quote + semantic comparison"
+  },
+  "actual_client": "NOT_RUN",
+  "fake_player": "NOT_USED",
+  "operating_changes": "NONE",
+  "unverified": [
+    "Actual client GUI clicks and simultaneous live trades",
+    "Actual Player death/respawn/inventory/XP/drop flow",
+    "Sustained player load and operating deployment"
+  ],
+  "evidence": {
+    "/home/server/hearth-tmp/hearth-native-economy-run.yl33hd5o/aura-trial-result.json": "c8f52677041ce5b6f5dd5cb0a65f74f58cc69f0a16df3789f123cad485166570",
+    "/home/server/hearth-tmp/hearth-native-economy-run.yl33hd5o/database-console.log": "a10da9185b691ffb7fa947d02a1a6d38de89e2bb3958f644f38495f9487ec5ba",
+    "/home/server/hearth-tmp/hearth-native-economy-run.yl33hd5o/paper-enchants-followup-prepare-console.log": "2cdd52b95b6609807a922732a53cf00688ad1378bf4f1704ee20096e057892fe",
+    "/home/server/hearth-tmp/hearth-native-economy-run.yl33hd5o/command.json": "8d031c0e78f3543c3bfe6ee62e1d23174a1c233a2a3c80d8bd4e468bbe1dceb2",
+    "/home/server/hearth-tmp/hearth-native-economy-run.3pe_3fam/aura-trial-result.json": "7c90cae06a51daf657fe1e54367734d65cb047581e50198dd88c7d538c8a87d9",
+    "/home/server/hearth-tmp/hearth-native-economy-run.3pe_3fam/database-console.log": "4d88083fdaccd2cafb75fd15a8990f452f0d1d558d7c1f6d0c4c4aa3a5ff6db3",
+    "/home/server/hearth-tmp/hearth-native-economy-run.3pe_3fam/paper-enchants-followup-prepare-console.log": "ff882125621038ed0e44e51d1dfac53cdd642407bec5ff368d7f759e82644b63",
+    "/home/server/hearth-tmp/hearth-native-economy-run.3pe_3fam/command.json": "3d46fab5ec4b6074c26a80a11498a6043dfde9a3b26f0028093db5798166e84d",
+    "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/aura-trial-result.json": "b0257ee1d6704e1be66f632c7e021183adb96e7fd798eae7c934c019e19942b3",
+    "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/database-console.log": "2dc846d1728adf30cecaaf372459212d0b6e7f7655dab699566c57f4d428aeeb",
+    "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/paper-enchants-followup-prepare-console.log": "df465819b791a58d5a06b17541f07599f74c41617080bdec46c7f4df1fba9e04",
+    "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/paper-enchants-followup-resume-console.log": "1c5a6a9d8b1f58ba4fb7fe890ee5243c11e76fceb8442cfa5a0223326cb31dc2",
+    "/home/server/hearth-tmp/hearth-native-economy-run.480ogzg_/command.json": "0891ae3c745b39c15f867ea64e00f38a129813f227f9e113676bee00487b69de",
+    "/home/server/hearth-tmp/hearth-native-economy-run.49n9fdqe/aura-trial-result.json": "c28f4d93963b0a67c70859f4a427400ba1eea4c63e81ad8a3ea6d58a585e1235",
+    "/home/server/hearth-tmp/hearth-native-economy-run.49n9fdqe/database-console.log": "7be092601f2c8bd4408c50f00a8b0a577ad5c7b791ebfbc452c4922f8846821c",
+    "/home/server/hearth-tmp/hearth-native-economy-run.49n9fdqe/paper-enchants-followup-resume-console.log": "918d9522941e72c6023345ff1594d04345e0eb60b6a30015c60533e71e288c12",
+    "/home/server/hearth-tmp/hearth-native-economy-run.49n9fdqe/command.json": "9784a86a9529b91ebfe235996e0e34259501eadc51b861ba7ec5979c5aea1579",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-units.log": "843b1d9f7063de24bcefecc8341cf4c0048ef278258f6f7d640a0eb0f8c1014e",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-final-build.log": "73400fe51024a0efae61ae5f2638f140293659c3b285e224a6e2cba1e66d03b3",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-prepare-final.log": "777dcc82eba26dab643c5e8f3dd8cab3ea61aafd1523462161f3ad14971a97a3",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-jar-frozen.log": "dc2b4a74f9774ecd5353c6c5692adf78a4959634ca894df0e1eabc0b57419bda",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-normalization-final.log": "dc2b4a74f9774ecd5353c6c5692adf78a4959634ca894df0e1eabc0b57419bda",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-python.log": "b99b69dfad215699c7afbaf8da05bdab2ec4d50795a50d9caecbd61dab2faa54",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-compile.log": "5bc62b73e9bb31dbc5a3b924d4abf9e07468c95bfb2278bb09c8c0200760da95",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-compile2.log": "0c438b659d35f90a83d46be3cf37b834a6ba5481de74d45bdd34fcfac232ea1f",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/initial-unit-results/TEST-io.github.jesterportfolio.hearth.economy.PeerTradeTest.xml": "782e5b6ac313dfb41c41199c4b6e9a264b9f52656c03d213e4490678b1681fdf",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/initial-unit-results/TEST-io.github.jesterportfolio.hearth.survival.DeathJournalTest.xml": "c730dead61b8a478543f505b8fcc2f310bcc4904a4680563031dfcb245c73400",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/final-unit-results/TEST-io.github.jesterportfolio.hearth.administration.RuntimeLeaseTest.xml": "f7790a414811f99bf7a6746a92bb3506054ed94e3b47e5e12af9c7839eb96cd2",
+    "/home/server/projects/hearth/scripts/verify_auraskills.py": "7958ed3a1c6a07ddcb0b7508f229d31abd9cfa990788a0e8ae41616e766a7708",
+    "/home/server/projects/hearth/src/integrationTest/java/io/github/jesterportfolio/hearth/persistence/NativeEconomyDatabaseFixture.java": "cf51f5682495fee7004cbfc5249a8864eb3070a1c381ac08200431b8f7249154",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/administration/RuntimeLease.java": "47f57a7406e87e25fe6fb06f5a103c719af40ad68ad39273155507ae69229faa",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/economy/PeerTrade.java": "86e350c9034a6f5676e59d032cfd7ec66e2366d8cf1b92148518863794f167c2",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/SurvivalRuntime.java": "20ef539b03c09700453b1dba1fb00ace2eb098fb7172b206dbabc91ae7e58249",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/economy/NativeEconomyLedger.java": "110d52692f6e2c2ec81e3411199ea5e639385edf793dc5777daf3a0850ed9670",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/economy/NativePeerMenu.java": "f3236aed2d9e9e80ddf6fc502dbc20686752d90542d8c5e6ad5a041390e21da3",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/enchants/EnchantRuntime.java": "6081050dc330fd9eeade032ee611b169d26d418127f5cfc4a5bbe3947586710c",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/housing/HousingRuntime.java": "81e21f5b50acc0d116c0431be3700b76a792a6af1c2edb14a5bd8ebcdd157dd1",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/housing/HousingWorlds.java": "94cad10e3d244fcbb23d3bdc07469d870a1f64119bd416c92042837d96c79c44",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/platform/AutoSalePlanner.java": "5b8d294e695e17410796524b0416b996d0c07823c11a15b9cec10ddb079ff5ed",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/platform/PlatformRuntime.java": "96ede2d2458c7dad676221365cde3e25a526a07536386580eaaf8403c04d4116",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/rpg/DeathJournal.java": "2e347e9fcd5a23b985a5a1d1e5f5e86e39f476d3fe3a0c1329bdc180fdf074bc",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/rpg/RpgDeath.java": "a8315e4cc31e049ab4eecff3a365e6701571ec943b26d61608dfe9c17833f59b",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/rpg/RpgRuntime.java": "6b6e7aed4c1ddebc9d2c793640a768dfe3a1f118f461e4614bcde75282ccf547",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/verification/EnchantVerification.java": "94117d930756c643fb0a190187b3a2c747d3108bcce11cd51be4f24721232289",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/verification/HousingVerification.java": "f1f8a497d8f6e81a539f875394f06596a85c87a8082cc147b7edaae76911eef0",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/verification/RpgVerification.java": "6255b4b3b1822437a768c58047bc8f5c127c29f7cbeee26a2ca692d98281e628",
+    "/home/server/projects/hearth/src/test/java/io/github/jesterportfolio/hearth/administration/RuntimeLeaseTest.java": "9dba95264ff521d1c3829220e200b51d4a9ce2f13bec98d6df2e76b5af518be9",
+    "/home/server/projects/hearth/src/test/java/io/github/jesterportfolio/hearth/economy/PeerTradeTest.java": "cff17f8cbcbdd53335ac92baf3a6ff65478b838755d0bca0c837b61b2719a429",
+    "/home/server/projects/hearth/scripts/test_followup_profile.py": "c19d4938636656a5208c60bfbf9a80a9b0368fd6563ef9c14ecc503ce041fcfc",
+    "/home/server/projects/hearth/src/integrationTest/java/io/github/jesterportfolio/hearth/persistence/MetadataPeerDatabaseChecks.java": "f32c35f0263bacc71dabf1802236240f0724b78027594298c9e2c9f0fd111f15",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/economy/NativeItemExchange.java": "a95293a23f06cd8ab20de48fe49a51cda14767fe384d227f852049312402c803",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/housing/UnloadBackoff.java": "a01bd17a89c61f79de48704d7e0f91e05ded7dae8288cd4aea9a3fb597097ccf",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/verification/EconomyFollowupVerification.java": "21dd2cdb0eb01961621b37fbbf105aff9ccb29960f9d3d418e12932a87b0f2b7",
+    "/home/server/projects/hearth/src/test/java/io/github/jesterportfolio/hearth/survival/DeathJournalTest.java": "890d7cd4f26b413681f5d55e8d0a9a82179da27d8829d065404c41eeedfbd5d3",
+    "/home/server/projects/hearth/src/test/java/io/github/jesterportfolio/hearth/survival/housing/UnloadBackoffTest.java": "30d3fe53b42b1c9731c2654d522c0ad7e45ce8966c5096fc4f92b083c2095de6",
+    "/home/server/hearth-tmp/hearth-native-economy-run.syft100l/aura-trial-result.json": "6891cc432c3f8aaad9fe30cd48b5fe36f5341ec654024c8ade756af1f3a1ad27",
+    "/home/server/hearth-tmp/hearth-native-economy-run.syft100l/database-console.log": "360b2edb131df67f3ed1a97ad3cdbc17f8780ede7edf013469cf7f07ddc0b108",
+    "/home/server/hearth-tmp/hearth-native-economy-run.syft100l/paper-enchants-followup-resume-console.log": "7fce96d6478cdce003f97f645028b33f4b441500cb48a86c8cbe838f8c56637c",
+    "/home/server/hearth-tmp/hearth-native-economy-run.syft100l/command.json": "2044f54eeabb17af68ba2be8e53c400c5cd4ea17f107f38b16d54de0a9db4e84",
+    "/home/server/hearth-tmp/hearth-native-economy-run.11dix2q8/aura-trial-result.json": "d14e1ec9b40e6d54f579e57b209d5112b66a4865757171b57286e8e0903ba7d7",
+    "/home/server/hearth-tmp/hearth-native-economy-run.11dix2q8/database-console.log": "ea97daf06a7b42c44cc09b93c63ca05c366b801fc66bc4ecf41fcb519eec4c4b",
+    "/home/server/hearth-tmp/hearth-native-economy-run.11dix2q8/paper-enchants-followup-resume-console.log": "22558be581b5a2dca507f4f56ea84069a7aa8eeed1de79a327d0533d662e05b7",
+    "/home/server/hearth-tmp/hearth-native-economy-run.11dix2q8/command.json": "07f50dcd570163578cadb66391b73be2d94e9412da8902b39952f191fe08459a",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-drain-final.log": "240d1ba6879c8bdcd76066cfc89ce4b4adbe701132344662e014dc8326b64ece",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-overflow-final.log": "39f4f5afe07821d34c3750669f98e79eca26761dab6f4ff07a24367d6f3636f3",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-overflow-corrected.log": "dc2b4a74f9774ecd5353c6c5692adf78a4959634ca894df0e1eabc0b57419bda",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-life-gate-final.log": "dc2b4a74f9774ecd5353c6c5692adf78a4959634ca894df0e1eabc0b57419bda",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/final-unit-results/TEST-io.github.jesterportfolio.hearth.survival.economy.NativeDrainOrderTest.xml": "51467384722df9b38eeb2848869129df760cf18cb5c661fe02f7714724a675ac",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/misplaced-task-cache/relocation.json": "d17901427f4a957c920b7e63c537fdca66a10cc0bddf126314e3b907c854ba41",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/economy/NativeDrainOrder.java": "fa411bee8d704f57509cc8d0f1cb15a756cec849b4111959e9d24c980ee4404e",
+    "/home/server/projects/hearth/src/test/java/io/github/jesterportfolio/hearth/survival/economy/NativeDrainOrderTest.java": "8952dce0447361b83e3124f54f126cf2738df0eba88f8501adec2e6fcdfdaabc",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/followup-refusal-final.log": "240d1ba6879c8bdcd76066cfc89ce4b4adbe701132344662e014dc8326b64ece",
+    "/home/server/hearth-tmp/hearth-followup.fe2b9jtb/final-unit-results/TEST-io.github.jesterportfolio.hearth.survival.economy.NativeMenuRulesTest.xml": "59cbf5b1fcac6066bea6ae5fd79f9c186df3ec8cadff4844fd721037802935b7",
+    "/home/server/projects/hearth/src/main/java/io/github/jesterportfolio/hearth/survival/economy/NativeMenuRules.java": "cfa643a93232727195ef3e14a40d393a920dc9bb4ce8749bf81a008742785850",
+    "/home/server/projects/hearth/src/test/java/io/github/jesterportfolio/hearth/survival/economy/NativeMenuRulesTest.java": "45fe39db08d141a9e977b1055d32a16c031b55181ef66390d9fc85e5f2134141"
+  },
+  "final_paper_workspace": "/home/server/hearth-tmp/hearth-native-economy-run.11dix2q8",
+  "cache_path_correction": "Only directories created by the mistaken build invocation were relocated to owned hearth-tmp after birth-time/ownership verification; distribution files unchanged",
+  "post_paper_delta": "Known item-quote refusal GUI classification only; NativeMenuRules3 and compile passed, unchanged storage/API contracts did not repeat Paper",
+  "paper_artifact_sha256": "bff86d244b36b28d9a9f20b9d2440c39bb5658899d49582e347fd20ef8b65365"
+}

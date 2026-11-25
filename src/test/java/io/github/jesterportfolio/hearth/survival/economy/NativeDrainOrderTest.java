@@ -1,0 +1,7 @@
+package io.github.jesterportfolio.hearth.survival.economy;
+import org.junit.jupiter.api.Test;import java.util.concurrent.*;import java.util.concurrent.atomic.AtomicInteger;import static org.junit.jupiter.api.Assertions.*;
+class NativeDrainOrderTest{
+ @Test void housingCannotEvictWhileDeathPreimageOrFinalizationIsPending(){var death=new CompletableFuture<Void>();var kicked=new AtomicInteger();var result=NativeDrainOrder.beforeHousing(()->death,()->{kicked.incrementAndGet();return CompletableFuture.completedFuture(null);},Runnable::run);assertEquals(0,kicked.get());assertFalse(result.toCompletableFuture().isDone());death.complete(null);assertEquals(1,kicked.get());assertTrue(result.toCompletableFuture().isDone());}
+ @Test void deathFailureCannotTriggerHousingEffects(){var kicked=new AtomicInteger();var result=NativeDrainOrder.beforeHousing(()->CompletableFuture.failedFuture(new IllegalStateException("audit failure")),()->{kicked.incrementAndGet();return CompletableFuture.completedFuture(null);},Runnable::run);assertThrows(ExecutionException.class,()->result.toCompletableFuture().get());assertEquals(0,kicked.get());}
+ @Test void housingFailureIsPreservedWithoutAutomaticReplay(){var attempts=new AtomicInteger();var result=NativeDrainOrder.beforeHousing(()->CompletableFuture.completedFuture(null),()->{attempts.incrementAndGet();throw new IllegalStateException("unload failure");},Runnable::run);assertThrows(ExecutionException.class,()->result.toCompletableFuture().get());assertEquals(1,attempts.get());}
+}

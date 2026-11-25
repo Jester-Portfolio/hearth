@@ -6,6 +6,8 @@
 
 ## 프로젝트 목표·현재 단계
 
+[경제 거래·사망·거주 후속](economy-followup-verification.md)으로 실제 슬롯/메타데이터 거래, 사망 완료 정리·orphan HOLD와 비동기 파일/세션·리스폰 장벽, 거주 언로드 재시도·메타파일 worker, 자동 판매 순환을 구현했다. 상품-only 코드와 달랐던 책 거래 완료 설명도 바로잡았다. Java60·Python2·PG8개 및 두 Paper JVM10개·최종 복원1 JVM4개를 확인했다. 실제 Player 행동·장기 부하·운영 적용은 별도다.
+
 [플랫폼 보완 4개](platform-hardening-verification.md)로 format4의 중요 입력 자동 발견/기동·snapshot 대조, 임시 블록 기록 worker/회전·저장 후 설치, 효과별 설정 검증과 플레이어 캐시 정리를 수정했다. Python40·Java22개, 독립 JDK25와 격리 Paper/PG5개를 통과했다. 실제 Player·장기 부하·운영 적용은 미실행이다.
 
 [수용 기록·배포 연결](network-acceptance-verification.md)로 입력/JAR·설정/예산·기동 코드·경제 ID에 묶인 CAS 저널, 증거 보존/중단 재개, 같은 네트워크의 롤백 대조와 format3 Java/PG 기동 차단을 구현했다. Python37·Java6개 및 독립 JVM/Compose 구문 검사를 통과했다. 기존 실제 snapshot 연결은 확인했으며 새 검토 범위의 실제 클라이언트/부하/복원 실행/전체 릴리스 수용은 NOT_RUN으로 보존했다. 운영 미적용이다.

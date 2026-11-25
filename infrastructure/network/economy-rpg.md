@@ -56,3 +56,7 @@ Aura의 `blocked_worlds`/`disabled_worlds`에는 동적 개인 거주를 포함�
 E010은 추가 월드 UUID/seed·개인 PvP·Home·오브젝트 ACL/삭제 tombstone·액티브 쿨다운을 PG에 보존한다. 세대/CAS·발급 context·소유권을 확인한다. 사망은 `rpg-death-pending/<UUID>.pending`과 0600 `.before` 원본을 남기며, native 저장/확인 후 완료 표식을 정리한다. 중단 결과는 HOLD/수동 확인이며 고비용 무손실 자동 복구를 추가하지 않는다. 신규 사망 코드와 native world entity 저장 사이의 전원 차단까지 원자적이라고 보장하지 않는다.
 
 백업은 기존 `scripts/offline_backup.py`의 **정상 drain/정지한 Paper 전체 루트 + PG 전체 루트**를 같은 manifest로 묶는 절차를 사용한다. Paper 안의 Aura YAML·Hearth metadata/표식·WorldGuard·native 월드/플레이어 데이터를 모두 포함한다. Aura 폴더/PG 몇 행만 다른 시점에서 따로 섞지 않는다. 도구는 실행 중 월드 락/PG PID, symlink·변경 중인 원본을 거부하고 checksum을 확인한다. 이 배치에서 운영 백업/배포/서비스 재시작을 실행한 것은 아니다.
+
+## 사망 원본 저장·정리
+
+사망 원본/표식 I/O는 worker, 인벤토리·Aura·native save·세계 드랍은 owner 스레드로 분리한다. 커서/작업대 입력까지 원본 native 슬롯에 담을 수 없으면 전체 입력을 worker에 보존하고 개인 HOLD·퇴장으로 전환한다. 사망 취소를 반복 가능한 무적으로 사용하게 하지 않는다. 결과 공개 전 원본과 결과 저장을 확인하며 그동안 이동/거래/인벤토리와 리스폰 admission을 열지 않는다. 정리 의도 `.done`이 남으면 효과 재실행 없이 정리만 재개한다. 독립 `.before`와 불명/충돌 결과는 개인 HOLD다. 콘솔 `/hearthsurvivaladmin death-status`는 보호/보류 UUID를 조회하며, 이를 원본 재지급 명령으로 사용하지 않는다. [보완 검증](../../docs/economy-followup-verification.md)을 따른다.
