@@ -1,0 +1,178 @@
+{
+  "format": 1,
+  "date": "2026-11-25",
+  "outcome": "NOT_READY_FOR_ONAIR",
+  "workspace": "/home/server/hearth-tmp/hearth-onair-review.04p5jix5",
+  "baseline_commit": "de4a436",
+  "artifact": {
+    "path": "/home/server/projects/hearth/build/libs/Hearth-0.1.0-SNAPSHOT.jar",
+    "sha256": "8151773530910cfd735af44e0462dd9c061bb517715382593e55633dbe0d837f"
+  },
+  "changes": [
+    "Keep Java service stdin open without TTY so native drain/stop commands can be delivered before shutdown; PostgreSQL stdin remains closed."
+  ],
+  "java": {
+    "outcome": "PASS",
+    "tests": 1490,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 200
+  },
+  "python": {
+    "outcome": "PASS",
+    "unique_tests": 122,
+    "post_change_affected_tests": 33,
+    "post_change_note": "Subset of the same 122; no extra unique cases claimed."
+  },
+  "network_restore": {
+    "outcome": "PASS",
+    "workspace": "/home/server/hearth-tmp/hearth-network-run.8ocnjdok",
+    "checks": [
+      "owned_EULA_fixture_gate",
+      "clean_passed_source_aura-trial-result.json",
+      "clean_passed_source_network-result.json",
+      "pinned_actual_Velocity_artifact",
+      "four_roles_restore_together_and_acceptance_is_not_inherited",
+      "native_items_config_archive_and_resource_generations_are_included",
+      "actual_proxy_holds_exclusive_runtime_marker",
+      "live_proxy_snapshot_refuses_without_removing_its_marker",
+      "restored_normal_survival_platform_and_lobby_report_current_ready",
+      "actual_proxy_status_ping_without_Player_or_login",
+      "clean_proxy_shutdown_removes_only_its_own_marker",
+      "restored_accounts_archived_IDs_and_story_rows_preserve_original_values",
+      "original_sources_remain_unchanged",
+      "backup_snapshot_remains_verifiable_after_rehearsal"
+    ],
+    "duration_seconds": 99.84,
+    "combined_sampled_peak_rss_mib": 2628.04,
+    "processes": {
+      "proxy": {
+        "pid": 3954140,
+        "exit_code": 0,
+        "ready_seconds": 2.15,
+        "duration_seconds": 41.975,
+        "shutdown_seconds": 0.37,
+        "max_sampled_rss_kib": 174028,
+        "observed_cpu_seconds": 2.89,
+        "min_sampled_host_available_kib": 11226020,
+        "sample_count": 292,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "database": {
+        "pid": 3954176,
+        "exit_code": 0,
+        "ready_seconds": null,
+        "duration_seconds": 42.391,
+        "shutdown_seconds": 0.152,
+        "max_sampled_rss_kib": 230520,
+        "observed_cpu_seconds": 2.4,
+        "min_sampled_host_available_kib": 11226020,
+        "sample_count": 319,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-lobby": {
+        "pid": 3954252,
+        "exit_code": 0,
+        "ready_seconds": 24.456,
+        "duration_seconds": 40.027,
+        "shutdown_seconds": 0.56,
+        "max_sampled_rss_kib": 891464,
+        "observed_cpu_seconds": 22.35,
+        "min_sampled_host_available_kib": 11226020,
+        "sample_count": 293,
+        "checks": [],
+        "timings": [],
+        "states": []
+      },
+      "paper-economy": {
+        "pid": 3954253,
+        "exit_code": 0,
+        "ready_seconds": 32.263,
+        "duration_seconds": 39.334,
+        "shutdown_seconds": 1.186,
+        "max_sampled_rss_kib": 1397772,
+        "observed_cpu_seconds": 40.02,
+        "min_sampled_host_available_kib": 11226020,
+        "sample_count": 283,
+        "checks": [],
+        "timings": [],
+        "states": []
+      }
+    },
+    "source_hashes": {
+      "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/data/global/pg_control": "72a94f29fc42dcd62748e32bfec555db96742178586ab8332ba1d3d18a941608",
+      "/home/server/hearth-tmp/hearth-native-economy-run.w93tiz9k/server/plugins/Hearth/config.yml": "379d27b6d5da820a21c5a18052fca4a8adcf6f3253e66cb3f2f8bbb045a5a9df",
+      "/home/server/hearth-tmp/hearth-network-run.4jen__de/lobby/plugins/Hearth/config.yml": "c466f73ea7cdab211fc57cb4667c0207179e02bb0ba26a3ee9cc07319f80180d"
+    },
+    "limits": {
+      "cpu": 2,
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_starts_max": 2,
+      "proxy_starts_max": 1,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "combined_rss_stop_mib": 6144,
+      "proxy_heap_mib": 256,
+      "proxy_rss_stop_mib": 512
+    },
+    "cleanup_errors": []
+  },
+  "initial_source_rejection": {
+    "workspace": "/home/server/hearth-tmp/hearth-network-run.6yq41_ps",
+    "outcome": "FAIL",
+    "failure": "RuntimeError: native_items_config_archive_and_resource_generations_are_included",
+    "processes_started": 0,
+    "cleanup_errors": [],
+    "resolution": "Use the complete previously passed platform archive/resource fixture w93tiz9k instead of the narrower followup fixture; do not weaken the recovery assertions or alter sources."
+  },
+  "docker": {
+    "daemon_access": "BLOCKED",
+    "socket_error": "permission denied while trying to connect to the docker API at unix:///var/run/docker.sock",
+    "authorized_sudo_error": "sudo: a password is required",
+    "compose_syntax": {
+      "single_paper": "PASS",
+      "four_service_network": "PASS",
+      "console_configuration": "PASS",
+      "images": "fixture references only; not pull/build/launch evidence"
+    },
+    "rootless": "Not started: read-only preflight shows no delegated CPU controller; existing resource limits/configuration are preserved.",
+    "image_build": "NOT_RUN",
+    "container_start": "NOT_RUN",
+    "container_drain_restart_restore": "NOT_RUN",
+    "isolated_candidate": "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/docker-review-candidate/release.json",
+    "candidate_complete": false
+  },
+  "actual_client": "NOT_RUN",
+  "sustained_load": "NOT_RUN",
+  "public_ingress": "NOT_CONFIGURED; existing candidate is localhost/host-network only",
+  "production_changes": "NONE",
+  "onair_blockers": [
+    "No authorized Docker daemon access for the current execution account.",
+    "Real pinned Java25/PostgreSQL images and container native-library/permission/console/resource/restart/restore checks remain unexecuted.",
+    "Current-scope authenticated client and sustained load acceptance remain incomplete.",
+    "Production resource budgets, public entry path and scheduled/offsite backup policy are not selected; development/example policies are not operating values."
+  ],
+  "evidence": {
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/full-java-build.log": "9987e46b56294f2075fafd9641233be0914e787a23f886ca7004388804485232",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/full-python.log": "abddef7ccbeab4a3cb7cf756669264683d5e3b2b865c63b4e3814b946b3dae88",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/docker-console-regression.log": "b3f8793a5e42cc7bc11fdd5302ebdaf3cada80c92502bd062fc8f0ede9db9eea",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/network-full-stage.log": "425cc3ccf842ff359cfb45fcadfa26705f1a5d42be7cdab8403c35f9814f5ffa",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/network-full-recovery.log": "706c5c3dc8a89a67108b7e37f4f549a3da5d7c1727176572e07e9f30c65e18cc",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/network-recovery.log": "ad44a584e64187741e2f134959eaeb183a092610a5549d2e9aa16e22eb61a54a",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/java-summary.json": "0c5d282c7132bcfa39d252a10914725c73198fd99dfd092fd97e13799c277343",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/docker-preflight.json": "ea0131eb1e3d449fafe0e055586d62ed673121efc3a2e5f53fafd27d6286334f",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/single-compose.json": "979b1b162b1936bf3f8ce7d20c8f6eb28a813941a59b746dd43f24ca0e2aecc6",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/network-compose.json": "73bdf1d1f5c132977e625ee93cf846ad60aa0fecf084d0cef43173fc6b508ded",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/docker_daemon.log": "865580de498032587fbb5f8aa143097940fa95abf2f333ac33e2b94348923ca2",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/docker_authorized_sudo.log": "9b3a3b7a78f239c4473bb193476b1a860c91f1c2b4fab9c7639eceea414a60fb",
+    "/home/server/hearth-tmp/hearth-network-run.8ocnjdok/network-recovery-result.json": "2bd24c110de76ab576dfff9aba4e4256d93a76b4f66ca841ef9489389e48e209",
+    "/home/server/hearth-tmp/hearth-network-run.6yq41_ps/network-recovery-result.json": "07dc765db360f23389f7122d2cb307feacbfbbbc69775a46ec849347d98d4a23",
+    "/home/server/hearth-tmp/hearth-onair-review.04p5jix5/docker-review-candidate/release.json": "e4d83ec2c9e1f1aea3400f3d244b87543999f1113526a5960b8e104e8cb76f26"
+  }
+}

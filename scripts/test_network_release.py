@@ -17,6 +17,10 @@ class NetworkReleaseTest(unittest.TestCase):
   self.spec=dict(format=1,host_cpu=4,host_memory_mib=4096,services=services,backup=dict(interval_seconds=100,retain=3,offsite='reviewed-target',rpo_seconds=120,rto_seconds=600),acceptance=dict(client=False,load=False,restore=True,release_regression=False))
  def test_candidate_binds_files_budgets_and_keeps_unaccepted_status(self):
   out=self.root/'output';r=release.generate(self.spec,out);self.assertFalse(r['acceptance_complete']);self.assertTrue(release.inspect(out/'release.json')['unchanged']);self.assertNotIn('HEARTH_DB_PASSWORD=fixture',(out/'release.json').read_text());self.assertTrue((out/'backup-policy.json').is_file());c=json.loads((out/'compose.json').read_text());self.assertEqual('hearth-00000000000000000000000000000001',c['name']);self.assertEqual(4,len(c['services']));self.assertEqual('no',c['services']['economy']['restart'])
+  # Real deployments need a console for asynchronous drain before stopping Java.
+  for role in ('proxy','lobby','economy'):
+   self.assertTrue(c['services'][role]['stdin_open']);self.assertFalse(c['services'][role]['tty'])
+  self.assertNotIn('stdin_open',c['services']['postgres'])
  def test_overlapping_paths_and_budget_or_port_overcommit_refuse(self):
   for change in ('root','cpu','port'):
    s=copy.deepcopy(self.spec)

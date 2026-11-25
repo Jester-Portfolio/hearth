@@ -6,6 +6,8 @@
 
 ## 프로젝트 목표·현재 단계
 
+[온에어 재검토·Docker 사전 검사](docker-onair-readiness-verification.md)는 전체 Java1,490개·Python122개와 최종 JAR의 실제 네 역할 복원14개를 통과했다. Java 컨테이너의 drain 콘솔 입력 누락을 보완하고 관련 Python33개·두 Compose 구문을 확인했다. **정식 온에어는 보류**이며 Docker 소켓 접근/sudo가 차단돼 이미지·컨테이너 실행은 미실행이다. 현재 후보는 fixture 이미지·수용 incomplete이며 실제 클라이언트/지속 부하·운영값/공개 경로도 별도다. 운영 서비스는 변경하지 않았다.
+
 [경제 거래·사망·거주 후속](economy-followup-verification.md)으로 실제 슬롯/메타데이터 거래, 사망 완료 정리·orphan HOLD와 비동기 파일/세션·리스폰 장벽, 거주 언로드 재시도·메타파일 worker, 자동 판매 순환을 구현했다. 상품-only 코드와 달랐던 책 거래 완료 설명도 바로잡았다. Java60·Python2·PG8개 및 두 Paper JVM10개·최종 복원1 JVM4개를 확인했다. 실제 Player 행동·장기 부하·운영 적용은 별도다.
 
 [플랫폼 보완 4개](platform-hardening-verification.md)로 format4의 중요 입력 자동 발견/기동·snapshot 대조, 임시 블록 기록 worker/회전·저장 후 설치, 효과별 설정 검증과 플레이어 캐시 정리를 수정했다. Python40·Java22개, 독립 JDK25와 격리 Paper/PG5개를 통과했다. 실제 Player·장기 부하·운영 적용은 미실행이다.

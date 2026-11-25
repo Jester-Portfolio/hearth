@@ -236,6 +236,10 @@ def generate(spec, output, *, evidence=None):
             services[role]['environment'].update(HEARTH_OPERATING_APPROVAL='${HEARTH_NETWORK_APPROVAL:?separate operating approval required}',HEARTH_PG_PORT=str(s['port']),PGDATA='/data')
             launch_files=['network-postgres-entrypoint.sh','postgres-entrypoint.sh','runtime-env.sh','postgres.properties']
         else:
+            # The operator must be able to send drain/stop through the native console.
+            # A signal-only Docker stop cannot complete Hearth's asynchronous drain.
+            services[role]['stdin_open']=True
+            services[role]['tty']=False
             services[role]['entrypoint']=['/bin/sh','/review/network-entrypoint.sh']
             services[role]['environment'].update(HEARTH_HEAP_MIB=str(s['heap_mib']),HEARTH_CPUS=str(max(1,int(s['cpu']))))
             launch_files=['network-entrypoint.sh','runtime-env.sh','NetworkLaunchCheck.java',role+'.properties']
