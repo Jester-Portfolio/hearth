@@ -1,0 +1,61 @@
+{
+  "date": "2026-11-26",
+  "base_git_commit": "864ac26a715ecf1ceae02b6bb52a0a6281cc7242",
+  "scope": "WorldGuard connection-free storage I/O and dedicated Hearth PostgreSQL component",
+  "outcome": "CODE_AND_PAPER_PASS_OPERATING_PG_PENDING",
+  "artifact_sha256": "31b6c0c060caa8dbc1491443b6fa3895bbab2cef845ae9edff4f56d4ceeda2f1",
+  "unit": {
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "suite": "PostgresProgressStoreTest"
+  },
+  "database": {
+    "checks": 13,
+    "outcome": "PASS",
+    "evidence_root": "/home/server/hearth-tmp/hearth-native-economy-run.ghrwfctd",
+    "reused_only_passed_identical_database_phase": true
+  },
+  "paper": {
+    "outcome": "PASS",
+    "workspace": "/home/server/hearth-tmp/hearth-native-economy-run.1idr795o",
+    "prepare_checks": 29,
+    "resume_checks": 30,
+    "duration_seconds": 81.455,
+    "cleanup_errors": [],
+    "process_exit_codes": {
+      "database": 0,
+      "paper-rpg-prepare": 0,
+      "paper-rpg-resume": 0
+    },
+    "limits": {
+      "cpu": 2,
+      "total_seconds": 600,
+      "work_seconds": 550,
+      "paper_heap_mib": 1536,
+      "paper_rss_stop_mib": 2560,
+      "combined_rss_stop_mib": 6144,
+      "host_available_min_mib": 6144,
+      "paper_starts_max": 2
+    },
+    "original_source_hashes": {
+      "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/data/global/pg_control": "e1b4609f014c8607a99d53be0e3f265616f79f3308f03ea9444c90128ef1a22c",
+      "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/config.yml": "57c874d088c3f98727939a9cf282e424cc338901054c2c4eadccd8615f7215be",
+      "/home/server/hearth-tmp/hearth-native-economy-run.23izkoe2/server/plugins/Hearth/survival-worlds.properties": "16d64670a0997088229246f0001a9b807435cf746f77179d5b1d1d4118727b96"
+    }
+  },
+  "initial_paper_failure": {
+    "evidence_root": "/home/server/hearth-tmp/hearth-native-economy-run.ghrwfctd",
+    "cause": "Missing BetterHud JAR in the test invocation; original FAIL retained"
+  },
+  "postgres_component": {
+    "compose_cli": "PASS",
+    "immutable_local_image_id": "PASS",
+    "cpu_memory_hard_caps_selected": false,
+    "operating_image_build": "NOT_RUN_SUDO_AUTHENTICATION_REQUIRED",
+    "operating_service": "NOT_RUN"
+  },
+  "actual_client": false,
+  "sustained_load": false,
+  "host_credentials_or_sudoers_in_git": false
+}

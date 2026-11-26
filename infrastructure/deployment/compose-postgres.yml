@@ -1,0 +1,39 @@
+# Prepared Hearth-only PostgreSQL. Does not start Paper, migrate data, or modify Zabbix.
+name: ${HEARTH_PG_PROJECT:?unique project name required}
+services:
+  postgres:
+    image: ${HEARTH_PG_IMAGE:?reviewed immutable image required}
+    pull_policy: never
+    user: ${HEARTH_PG_UID:?existing PGDATA owner required}:${HEARTH_PG_GID:?existing PGDATA group required}
+    entrypoint: [/bin/sh, /review/postgres-entrypoint.sh]
+    network_mode: host
+    read_only: true
+    restart: "no"
+    stop_grace_period: 30s
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      PGDATA: /data
+      HEARTH_PG_PORT: ${HEARTH_PG_PORT:?unused localhost port required}
+      HEARTH_OPERATING_APPROVAL: ${HEARTH_OPERATING_APPROVAL:?separate approval required}
+    volumes:
+      - type: bind
+        source: ${HEARTH_PG_DATA:?existing prepared PGDATA required}
+        target: /data
+        bind: {create_host_path: false, selinux: Z}
+      - type: bind
+        source: ${HEARTH_PG_REVIEW:?reviewed entrypoint directory required}
+        target: /review
+        read_only: true
+        bind: {create_host_path: false, selinux: Z}
+    tmpfs:
+      - /run/hearth:rw,nosuid,nodev,noexec,size=16m,uid=${HEARTH_PG_UID},gid=${HEARTH_PG_GID},mode=0700
+    shm_size: 256m
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h /run/hearth -p "$${HEARTH_PG_PORT}" -U hearth_pg -d postgres -t 2']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+# No CPU/RAM/PID hard limits are selected here. Review measured whole-service
+# budgets before public operation; do not substitute idle Zabbix/test measurements.

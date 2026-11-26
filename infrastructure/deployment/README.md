@@ -66,3 +66,13 @@ python3 scripts/runtime_health.py --log /REVIEWED/SERVER/logs/latest.log \
 기존 2서비스 검토 후보와 별도로 [network_release.py 및 검토 양식](../network/platform-operations.md#네트워크-배포-후보)은 준비된 proxy/lobby/economy/postgres를 묶는다. 불변 원본/생성 파일·현대 인증 전달·이미지/예산·백업 정책을 검사하고 수용 미완료/별도 승인 없이는 Java 기동을 거부한다. Docker compose config만 격리 예제로 확인했으며 이미지 빌드/서비스 적용은 진행하지 않았다. format2 상태 보고의 `$.platform.*`와 controller_ready는 설정/월드/작업 보류도 반영한다. 실제 Zabbix 설치/수집·운영 백업 스케줄은 별도다.
 
 format2 네트워크 후보의 PG도 역할별 수용/검토 파일 SHA를 먼저 검사한다. runtime.env는 dotenv 보간 없이 검토한 원문으로 전달한다. 네 역할의 일관 보존/새 경로 복원과 수용 초기화는 [네트워크 복구](../network/network-recovery.md)를 따른다.
+
+## Hearth 전용 PG의 독립 구성
+
+[`compose-postgres.yml`](compose-postgres.yml)은 준비된 Hearth PG 하나만 실행한다. 기존 Zabbix의 컨테이너·데이터·계정·포트를 재사용하지 않으며, Paper/AI 기동이나 게임 데이터 이전을 수행하지 않는다. 기존 [`postgres-entrypoint.sh`](postgres-entrypoint.sh)의 비root·명시 승인·기존 PGDATA·주 버전·중복 기동 검사를 재사용한다. root filesystem은 읽기 전용이고 PG는 localhost에만 수신한다. 새로운 PGDATA 생성과 계정 준비는 명시 승인된 별도 초기화 작업이며 이 진입점이 자동으로 수행하지 않는다.
+
+[`Dockerfile.postgres`](Dockerfile.postgres)는 검토한 **Alpine PostgreSQL base digest**와 양수 UID/GID를 받아 `hearth_pg` 비특권 사용자를 만든다. 최종 이미지 ID/digest를 고정하며, 데이터와 UID/GID가 일치해야 한다. 기존 단일 소유자 [정지 백업](../backup/README.md)을 사용할 때는 Paper/PG 파일 소유권도 함께 맞춘다. 기존 데이터의 재귀 chown이나 다른 주 버전 데이터의 재사용을 자동화하지 않는다.
+
+전용 PG에도 관리자와 게임 접속 역할을 구분한다. 게임 역할은 해당 DB의 소유/마이그레이션 권한을 가지되 클러스터 슈퍼유저·역할 생성·복제 권한을 주지 않는 구성을 검토한다. `hearth_pg`와 local peer 인증을 사용하는 초기화 구성에 맞춰 상태 확인을 제공하며, `pg_isready`만으로 게임 계정의 실제 인증·DDL·거래 성공을 판정하지 않는다. 자격 증명은 저장소 밖의 접근 제한 파일로 관리한다.
+
+운영 경로·이미지·포트·비밀·자원 값은 실제 검토 파일로 전달한다. 이 구성은 CPU/RAM/PID hard limit을 임의 선정하지 않으며, 운영 부하와 전체 호스트 예산을 측정한 뒤 확정한다. `restart: no`는 기존 준비/수동 복구 경계를 유지한다. 정식 네트워크 공개·자동 재시작 정책·전체 백업/복원 수용은 별도 운영 단계다. 네트워크 전체 후보로 전환할 때는 같은 PGDATA를 두 서비스에서 동시에 열지 않는다.

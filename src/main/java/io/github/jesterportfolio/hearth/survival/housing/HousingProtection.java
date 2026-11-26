@@ -34,5 +34,5 @@ public final class HousingProtection {
   var area=new ProtectedCuboidRegion(id,lo,hi);area.setPriority(1001);area.setFlag(Flags.PASSTHROUGH,StateFlag.State.DENY);area.setOwners(owners);area.setMembers(members);if(pvpPolicy!=null)area.setFlag(Flags.PVP,pvpPolicy.apply(h.id())?StateFlag.State.ALLOW:StateFlag.State.DENY);m.addRegion(area);w.getWorldBorder().setCenter(0,0);w.getWorldBorder().setSize(h.width());return save(Set.of(m));
  }
  public void resource(World world,Location at){int radius=settings.resourceRadius();var area=region(world,"hearth_resource_spawn",at.getBlockX()-radius,world.getMinHeight(),at.getBlockZ()-radius,at.getBlockX()+radius,world.getMaxHeight()-1,at.getBlockZ()+radius,1000);environmental(area);}
- private CompletionStage<Void> save(Set<RegionManager> managers){return db.module("housing_wg_save",c->{for(var m:managers)m.save();return null;});}
+ private CompletionStage<Void> save(Set<RegionManager> managers){return db.file("housing_wg_save",()->{for(var m:managers)m.save();return null;});}
 }

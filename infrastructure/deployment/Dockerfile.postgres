@@ -1,0 +1,12 @@
+# Alpine PostgreSQL base must be supplied by its reviewed immutable digest.
+ARG POSTGRES_BASE
+FROM ${POSTGRES_BASE}
+USER root
+ARG HEARTH_UID=1000
+ARG HEARTH_GID=1000
+RUN set -eu; \
+    case "$HEARTH_UID:$HEARTH_GID" in *[!0-9:]*|0:*|*:0) exit 2;; esac; \
+    addgroup -g "$HEARTH_GID" hearth_pg; \
+    adduser -D -H -u "$HEARTH_UID" -G hearth_pg hearth_pg
+USER ${HEARTH_UID}:${HEARTH_GID}
+ENV HOME=/data

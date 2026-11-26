@@ -27,6 +27,7 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
     private final ServerProgressAccess access;
     private final HikariDataSource pool;
     private final ThreadPoolExecutor worker;
+    private final ThreadPoolExecutor fileWorker;
     private final Consumer<Failure> failures;
     private final boolean modulesOnly;
     private final AtomicBoolean closing = new AtomicBoolean();
@@ -60,12 +61,16 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
         var number = new AtomicInteger();
         worker = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(16),
                 task -> new Thread(task, "hearth-progress-db-" + number.incrementAndGet()), new ThreadPoolExecutor.AbortPolicy());
+        fileWorker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(16),
+                task -> new Thread(task, "hearth-progress-files"), new ThreadPoolExecutor.AbortPolicy());
     }
 
     /** 신뢰하는 내부 모듈도 기존 제한 큐·풀·종료 경계를 재사용합니다. 연결은 worker에서만 제공합니다. */
     @FunctionalInterface public interface SqlWork<T>{T run(java.sql.Connection connection) throws Exception;}
     public <T> CompletionStage<T> module(String operation,SqlWork<T> work){return submit(operation,null,()->{if(!modulesOnly)requireReady();try(var c=pool.getConnection()){return work.run(c);}});}
     public <T> CompletionStage<T> module(String operation,ServerProgressAccess.Context ctx,SqlWork<T> work){return submit(operation,ctx,()->{access.requireIssued(ctx);if(!modulesOnly)requireReady();try(var c=pool.getConnection()){return work.run(c);}});}
+    /** SQL 없이 수행하는 저장 작업. 독립된 유한 직렬 큐를 사용하며 closeAsync의 완료/실패 경계에 포함합니다. */
+    public <T> CompletionStage<T> file(String operation,Callable<T> work){return submit(fileWorker,operation,null,Objects.requireNonNull(work));}
     private static void checkpointKeys(String... values){for(String v:values)if(v==null||!v.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("Invalid checkpoint key");}
     @Override public CompletionStage<Optional<CheckpointStore.Saved>> checkpoint(ServerProgressAccess.Context ctx,String dungeon,String quest,String point){return submit("checkpoint_read",ctx,()->{
         access.requireIssued(ctx);requireReady();checkpointKeys(dungeon,quest,point);
@@ -449,12 +454,15 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
         if (!schemaReady.get()) throw new StorageFailure("schema", "SCHEMA_NOT_READY");
     }
     private <T> CompletionStage<T> submit(String operation, ServerProgressAccess.Context ctx, Callable<T> call) {
+        return submit(worker,operation,ctx,call);
+    }
+    private <T> CompletionStage<T> submit(ThreadPoolExecutor lane,String operation,ServerProgressAccess.Context ctx,Callable<T> call) {
         var result = new CompletableFuture<T>();
         if (closing.get()) { fail(result,operation,ctx,"CLOSED"); return result; }
         pending.add(result);
         result.whenComplete((v,e) -> pending.remove(result));
         try {
-            worker.execute(() -> {
+            lane.execute(() -> {
                 try { result.complete(call.call()); }
                 catch (Exception failure) {
                     String code = failure instanceof SQLException sql ? Objects.toString(sql.getSQLState(),"SQL_FAILURE")
@@ -463,7 +471,7 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
                     fail(result,operation,ctx,code);
                 }
             });
-        } catch (RejectedExecutionException rejected) { fail(result,operation,ctx,closing.get() ? "CLOSED" : "QUEUE_FULL"); }
+        } catch (RejectedExecutionException rejected) { fail(result,operation,ctx,closing.get() ? "CLOSED" : lane==fileWorker ? "FILE_QUEUE_FULL" : "QUEUE_FULL"); }
         return result;
     }
     private <T> void fail(CompletableFuture<T> result, String operation, ServerProgressAccess.Context ctx, String code) {
@@ -475,16 +483,23 @@ public final class PostgresProgressStore implements CheckpointStore, ProgressSto
     @Override public CompletionStage<Void> closeAsync() {
         if (closing.compareAndSet(false,true)) {
             worker.shutdown();
+            fileWorker.shutdown();
             new Thread(() -> {
                 try {
-                    if (!worker.awaitTermination(30,TimeUnit.SECONDS)) {
+                    long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(30);
+                    boolean databaseStopped=worker.awaitTermination(30,TimeUnit.SECONDS);
+                    boolean filesStopped=fileWorker.awaitTermination(Math.max(0,deadline-System.nanoTime()),TimeUnit.NANOSECONDS);
+                    if (!databaseStopped || !filesStopped) {
                         worker.shutdownNow();
+                        fileWorker.shutdownNow();
                         pending.forEach(f -> f.completeExceptionally(new StorageFailure("close","TIMEOUT")));
                         throw new StorageFailure("close","TIMEOUT");
                     }
                     pool.close();
                     closed.complete(null);
                 } catch (Exception failure) {
+                    worker.shutdownNow();fileWorker.shutdownNow();
+                    pending.forEach(f -> f.completeExceptionally(new StorageFailure("close","CLOSE_FAILURE")));
                     pool.close(); closed.completeExceptionally(new StorageFailure("close","CLOSE_FAILURE"));
                 }
             }, "hearth-progress-close").start();

@@ -29,6 +29,50 @@ final class PostgresProgressStoreTest {
         int previous=calls.get();assertEquals("CLOSED",failed(store.module("module_probe",connection->null)).code());assertEquals(previous,calls.get());
     }
 
+    @Test void fileSaveNeverConnectsAndDoesNotOccupyDatabaseWorkers() throws Exception {
+        var calls=new AtomicInteger();var entered=new CountDownLatch(1);var release=new CountDownLatch(1);
+        var order=new CopyOnWriteArrayList<Integer>();var threads=new CopyOnWriteArrayList<String>();
+        var store=PostgresProgressStore.forModules(new BrokenSource(calls::incrementAndGet),f->{});
+        try{
+            var first=store.file("housing_wg_save",()->{threads.add(Thread.currentThread().getName());entered.countDown();if(!release.await(10,TimeUnit.SECONDS))throw new IllegalStateException("FILE_FIXTURE_TIMEOUT");order.add(1);return null;});
+            assertTrue(entered.await(3,TimeUnit.SECONDS));
+            var second=store.file("rpg_objects_wg_save",()->{order.add(2);return null;});
+            assertEquals(0,calls.get(),"파일 저장은 연결 풀이 시작되지 않아도 실행되어야 합니다");
+            failed(store.module("independent_sql",c->null));
+            assertTrue(calls.get()>0,"파일 작업이 막혀 있어도 SQL 작업자가 실행되어야 합니다");
+            assertFalse(first.toCompletableFuture().isDone());assertFalse(second.toCompletableFuture().isDone());
+            release.countDown();first.toCompletableFuture().get(5,TimeUnit.SECONDS);second.toCompletableFuture().get(5,TimeUnit.SECONDS);
+            assertEquals(List.of(1,2),order);assertEquals(List.of("hearth-progress-files"),threads);
+        }finally{release.countDown();store.closeAsync().toCompletableFuture().get(10,TimeUnit.SECONDS);}
+    }
+
+    @Test void boundedFileQueueAndClosePreserveAcceptedWorkWithoutJdbc() throws Exception {
+        var calls=new AtomicInteger();var entered=new CountDownLatch(1);var release=new CountDownLatch(1);
+        var store=PostgresProgressStore.forModules(new BrokenSource(calls::incrementAndGet),f->{});
+        try{
+            var first=store.file("files_blocked",()->{entered.countDown();if(!release.await(10,TimeUnit.SECONDS))throw new IllegalStateException("FILE_FIXTURE_TIMEOUT");return null;});
+            assertTrue(entered.await(3,TimeUnit.SECONDS));
+            var accepted=new ArrayList<CompletableFuture<Integer>>();
+            for(int i=0;i<16;i++){int n=i;accepted.add(store.file("files_queued",()->n).toCompletableFuture());}
+            assertEquals("FILE_QUEUE_FULL",failed(store.file("files_overflow",()->null)).code());
+            var closed=store.closeAsync().toCompletableFuture();assertFalse(closed.isDone());
+            assertEquals("CLOSED",failed(store.file("files_after_close",()->null)).code());
+            release.countDown();first.toCompletableFuture().get(5,TimeUnit.SECONDS);closed.get(5,TimeUnit.SECONDS);
+            for(int i=0;i<accepted.size();i++)assertEquals(i,accepted.get(i).get(1,TimeUnit.SECONDS));
+            assertEquals(0,calls.get());
+        }finally{release.countDown();store.closeAsync().toCompletableFuture().get(10,TimeUnit.SECONDS);}
+    }
+
+    @Test void fileFailureKeepsPublicErrorSanitizedAndDoesNotConnect() throws Exception {
+        var calls=new AtomicInteger();var errors=new CopyOnWriteArrayList<PostgresProgressStore.Failure>();
+        var store=PostgresProgressStore.forModules(new BrokenSource(calls::incrementAndGet),errors::add);
+        try{
+            var error=failed(store.file("housing_wg_save",()->{throw new java.io.IOException("private-marker");}));
+            assertEquals("INVALID_STATE",error.code());assertFalse(error.getMessage().contains("private-marker"));assertNull(error.getCause());
+            assertEquals(1,errors.size());assertEquals("housing_wg_save",errors.getFirst().operation());assertEquals(0,calls.get());
+        }finally{store.closeAsync().toCompletableFuture().get(5,TimeUnit.SECONDS);}
+    }
+
     @Test void readOnlyModulePoolDoesNotMigrateOrAcceptForeignContexts() throws Exception {
         var calls=new AtomicInteger();var access=new ServerProgressAccess();var store=PostgresProgressStore.forReadOnlyModules(new BrokenSource(calls::incrementAndGet),access,f->{});
         try{assertEquals("MODULE_ONLY",failed(store.migrate()).code());assertEquals("ACCESS_DENIED",failed(store.module("inspect",context(new ServerProgressAccess()),c->null)).code());assertEquals(0,calls.get());}finally{store.closeAsync().toCompletableFuture().get(5,TimeUnit.SECONDS);}
