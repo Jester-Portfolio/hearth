@@ -1,0 +1,17 @@
+{
+  "outcome": "PASS",
+  "python_tests": 13,
+  "compose_config": "PASS",
+  "current_runtime_profile_match": "PASS",
+  "secrets_read": false,
+  "service_or_database_changes": false,
+  "real_client": false,
+  "workspace": "/home/server/hearth-tmp/hearth-pg-profile.hx9sl0y0",
+  "date": "2026-11-27",
+  "scope": "Non-secret dedicated PostgreSQL profile integrated with existing survival economy configuration, Compose and backup documentation",
+  "source_sha256": {
+    "infrastructure/deployment/hearth-postgres.json": "6991ddace32550225730012ae5f2998446d605e04174619862af2724a5e0e20e",
+    "scripts/project_database.py": "0002d0ea6ff45cf59bc806e74261f75f34d5cdb03adcc7f7e3e04f5f48a32b57",
+    "scripts/survival_config.py": "de19e78af09291213652686d908686da04dcb03acbbd0f37f8033f7b2983fb49"
+  }
+}

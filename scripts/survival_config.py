@@ -6,6 +6,9 @@ import os
 import re
 from pathlib import Path
 import uuid
+import project_database
+
+DATABASE_DEFAULTS={'db-host':'127.0.0.1','db-port':5432,'db-name':'hearth_economy','db-user':'hearth','password-environment':'HEARTH_DB_PASSWORD'}
 
 def configuration(group,allow_create=False,economy=None):
  group=str(uuid.UUID(str(group)))
@@ -45,11 +48,14 @@ def write(output,group,allow_create=False,economy=None):
  return output
 
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);p.add_argument('--group-id',default=None);p.add_argument('--allow-create',action='store_true');p.add_argument('--with-economy',action='store_true');p.add_argument('--economy-realm');p.add_argument('--allow-new-realm',action='store_true');p.add_argument('--content-file',default='survival-economy.properties');p.add_argument('--db-host',default='127.0.0.1');p.add_argument('--db-port',type=int,default=5432);p.add_argument('--db-name',default='hearth_economy');p.add_argument('--db-user',default='hearth');p.add_argument('--password-environment',default='HEARTH_DB_PASSWORD');a=p.parse_args()
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);p.add_argument('--group-id',default=None);p.add_argument('--allow-create',action='store_true');p.add_argument('--with-economy',action='store_true');p.add_argument('--economy-realm');p.add_argument('--allow-new-realm',action='store_true');p.add_argument('--content-file',default='survival-economy.properties');p.add_argument('--database-profile',type=Path);p.add_argument('--db-host');p.add_argument('--db-port',type=int);p.add_argument('--db-name');p.add_argument('--db-user');p.add_argument('--password-environment');a=p.parse_args()
  try:
-  if not a.with_economy and (a.allow_new_realm or a.economy_realm):raise ValueError('SURVIVAL_ECONOMY_REQUIRED')
+  if not a.with_economy and (a.allow_new_realm or a.economy_realm or a.database_profile):raise ValueError('SURVIVAL_ECONOMY_REQUIRED')
+  overrides={key:getattr(a,key.replace('-','_')) for key in DATABASE_DEFAULTS if getattr(a,key.replace('-','_')) is not None}
+  if a.database_profile and overrides:raise ValueError('SURVIVAL_DATABASE_PROFILE_OVERRIDES')
+  database=project_database.load(a.database_profile)['connection'] if a.database_profile else {**DATABASE_DEFAULTS,**overrides}
   economy=None
-  if a.with_economy:economy={'realm':a.economy_realm or str(uuid.uuid4()),'allow-new-realm':a.allow_new_realm,**{key:getattr(a,key.replace('-','_')) for key in ('content-file','db-host','db-port','db-name','db-user','password-environment')}}
+  if a.with_economy:economy={'realm':a.economy_realm or str(uuid.uuid4()),'allow-new-realm':a.allow_new_realm,'content-file':a.content_file,**database}
   write(a.output,a.group_id or uuid.uuid4(),a.allow_create,economy);print('SURVIVAL_CONFIG_PREPARED; operating_applied=false')
- except (ValueError,OSError):p.exit(2,'SURVIVAL_CONFIG_REFUSED\n')
+ except (ValueError,OSError,TypeError):p.exit(2,'SURVIVAL_CONFIG_REFUSED\n')
 if __name__=='__main__':main()

@@ -220,7 +220,9 @@ S5 후속 `--artifact-source`는 기존 `/tmp/hearth-s5-trial...` 또는 새 기
 
 ## 기존 경제의 일반 생존 연결
 
-`survival_config.py --with-economy`는 기존 새 파일 생성 규칙을 유지하면서 PG 연결/realm/content/env 이름을 명시한 YAML을 준비한다. 새 realm은 `--allow-new-realm`을 별도로 명시한다. [설정/예제/관리](../infrastructure/network/native-economy.md)를 따르며 운영에 적용하지 않는다.
+`survival_config.py --with-economy`는 기존 새 파일 생성 규칙을 유지하면서 PG 연결/realm/content/env 이름을 명시한 YAML을 준비한다. `--database-profile infrastructure/deployment/hearth-postgres.json`은 [현재 전용 PG 정본](../infrastructure/deployment/project-postgres.md)의 연결값을 사용하며 직접 DB 옵션과 혼용하면 거부한다. 새 realm은 `--allow-new-realm`을 별도로 명시한다. [설정/예제/관리](../infrastructure/network/native-economy.md)를 따르며 운영에 적용하지 않는다.
+
+`project_database.py --profile infrastructure/deployment/hearth-postgres.json [--output-env NEW_FILE]`은 비밀 없는 PG 프로필을 검사하고 선택적으로 새 0600 Compose 환경 파일을 준비한다. 비밀번호·운영 승인 표식을 읽거나 생성하지 않으며 서비스/DB를 실행하지 않는다. 관련 검사는 `test_project_database.py`, `test_survival_config.py`다.
 
 `verify_native_economy.py --workspace FRESH_ROOT --java JAVA --plugin FROZEN_JAR --prepared-worlds PASSED_SURVIVAL_ROOT --prepared-database PASSED_S4_11_ROOT --accept-eula`는 새 소유 `hearth-native-economy-run.*`와 정확한 `.hearth-native-economy-isolated` 표식(`Hearth native economy isolated v1` + 개행)을 요구한다. 기존 승인된 비활성 시험 세계/PG만 복사하고 E006 소유권/경합/실패 보존·기존 행 불변과 실제 Paper 두 JVM의 상인/코덱·PG 거래/생산/영수증/HOLD 복원을 함께 검사한다. 실물 Player를 만들지 않으며 제어 Port의 native 저장 호출은 모형이다.
 

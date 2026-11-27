@@ -1,0 +1,26 @@
+{
+  "format": 1,
+  "id": "hearth-economy-postgres",
+  "postgres-version": "18.7",
+  "connection": {
+    "db-host": "127.0.0.1",
+    "db-port": 5433,
+    "db-name": "hearth_economy",
+    "db-user": "hearth",
+    "password-environment": "HEARTH_DB_PASSWORD"
+  },
+  "deployment": {
+    "project": "hearth-project-db",
+    "image": "sha256:e07b803093205465c957b2f19dc152b40d542ccdb60d2272fc2e7eb468a07687",
+    "base-image": "postgres@sha256:339a86bf416979bb4d3d2e30a1f9e096e7302564faff4151b804cf53463059d5",
+    "uid": 1000,
+    "gid": 1000,
+    "service-root": "/home/hearth-services/postgres",
+    "data": "/home/hearth-services/postgres/data",
+    "review": "/home/hearth-services/postgres/review",
+    "password-file": "/home/hearth-services/postgres/secrets/app.password",
+    "backup-directory": "/home/hearth-services/postgres/backups",
+    "restart": "no",
+    "resource-limits-selected": false
+  }
+}

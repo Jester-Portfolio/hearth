@@ -1,6 +1,6 @@
 # 운영 검토용 구성
 
-이 디렉터리는 **미적용 후보**다. Docker 이미지 선택/빌드/실행, 운영 서비스·Zabbix·네트워크 적용을 승인하거나 완료한 기록이 아니다. 운영 예산·이미지 digest·포트·소유 UID/GID·보존 기간·RPO/RTO·AI 품질/성능 수용은 별도로 정한다. 시험의 자원 상한을 운영 기본값으로 복사하지 않는다.
+전체 게임 배포 구성은 **미적용 후보**다. Hearth 전용 PG만 별도 승인으로 실제 기동했으며 [프로젝트 PG 정본과 연결](project-postgres.md)을 따른다. 전체 Paper/프록시·Zabbix·공개 네트워크 적용을 승인하거나 완료한 기록은 아니다. 운영 예산·보존 기간·RPO/RTO·AI 품질/성능 수용은 별도로 정한다. 시험의 자원 상한을 운영 기본값으로 복사하지 않는다.
 
 ## 구성과 준비
 
@@ -68,6 +68,8 @@ python3 scripts/runtime_health.py --log /REVIEWED/SERVER/logs/latest.log \
 format2 네트워크 후보의 PG도 역할별 수용/검토 파일 SHA를 먼저 검사한다. runtime.env는 dotenv 보간 없이 검토한 원문으로 전달한다. 네 역할의 일관 보존/새 경로 복원과 수용 초기화는 [네트워크 복구](../network/network-recovery.md)를 따른다.
 
 ## Hearth 전용 PG의 독립 구성
+
+현재 전용 PG의 접속·고정 이미지·데이터/비밀 파일 경로는 [`hearth-postgres.json`](hearth-postgres.json)을 정본으로 사용한다. 기존 경제 설정 생성기·Compose·백업/네트워크 인계 연결은 [통합 안내](project-postgres.md)를 따른다. 비밀번호 값은 프로필에 포함하지 않는다.
 
 [`compose-postgres.yml`](compose-postgres.yml)은 준비된 Hearth PG 하나만 실행한다. 기존 Zabbix의 컨테이너·데이터·계정·포트를 재사용하지 않으며, Paper/AI 기동이나 게임 데이터 이전을 수행하지 않는다. 기존 [`postgres-entrypoint.sh`](postgres-entrypoint.sh)의 비root·명시 승인·기존 PGDATA·주 버전·중복 기동 검사를 재사용한다. root filesystem은 읽기 전용이고 PG는 localhost에만 수신한다. 새로운 PGDATA 생성과 계정 준비는 명시 승인된 별도 초기화 작업이며 이 진입점이 자동으로 수행하지 않는다.
 

@@ -18,6 +18,8 @@
 
 ## 새 설정 준비
 
+현재 프로젝트 전용 PG는 [통합 프로필](../deployment/project-postgres.md)을 사용한다. 아래 직접 입력 방식 대신 `--database-profile infrastructure/deployment/hearth-postgres.json`으로 같은 접속값을 가져올 수 있다. 이 경우 별도 `--db-*`/`--password-environment` 옵션은 함께 사용하지 않는다. 비밀번호는 기존 환경 변수로 주입한다.
+
 다음은 새 0600 YAML만 작성하며 서버/DB를 실행하거나 변경하지 않는다.
 
 ```sh
