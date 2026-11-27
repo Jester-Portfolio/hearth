@@ -1,0 +1,72 @@
+{
+  "date": "2026-11-27",
+  "outcome": "PREPARED_CLIENT_PENDING",
+  "preparation_root": "/home/server/hearth-tmp/hearth-client-preparation.pvfnkof1",
+  "prepared_template": "/home/server/hearth-tmp/hearth-native-economy-run.i6ljraof",
+  "artifact_sha256": "31b6c0c060caa8dbc1491443b6fa3895bbab2cef845ae9edff4f56d4ceeda2f1",
+  "support_sha256": "a97976221a0e5c9ffdbf5803d8ef14fa3e382c44a204c4822f9ade7f8978f5de",
+  "topology_smoke": {
+    "outcome": "PREPARED_SMOKE_PASS_CLIENT_NOT_RUN",
+    "checks": 14,
+    "duration_seconds": 45.096,
+    "cleanup_errors": [],
+    "process_exit_codes": {
+      "database": 0,
+      "proxy": 0,
+      "paper-lobby": 0,
+      "paper-economy-runtime": 0
+    }
+  },
+  "final_console_permission": {
+    "outcome": "PASS",
+    "workspace": "/home/server/hearth-tmp/hearth-native-economy-run.zxiiot9v",
+    "duration_seconds": 15.899,
+    "paper_starts": 1,
+    "database_or_proxy_started": false,
+    "cleanup_errors": []
+  },
+  "preserved_failure": {
+    "workspace": "/home/server/hearth-tmp/hearth-native-economy-run.hp9ty9zr",
+    "reason": "Fixture attempted setTime in fixed-time dimensions; FAIL/HOLD logs retained; fixed fixture only and retried in fresh workspace"
+  },
+  "roles": [
+    "Velocity",
+    "lobby Paper",
+    "survival economy Paper",
+    "isolated PostgreSQL",
+    "loopback resource-pack server"
+  ],
+  "enabled_modules": [
+    "native economy",
+    "housing",
+    "AuraSkills",
+    "combat/TPA",
+    "economy RPG",
+    "Hearth enchants",
+    "common platform",
+    "rule market agent without LLM"
+  ],
+  "profiles": "Existing story tester requested; exact identity unavailable in retained caches; no guessed whitelist admission",
+  "state": "STOPPED_READY_FOR_NEW_COPY",
+  "client_endpoints": {
+    "game": "127.0.0.1:25586",
+    "resource_pack": "http://127.0.0.1:25588/hearth-s4.zip"
+  },
+  "resource_pack_bytes": 4252142,
+  "limits": {
+    "total_seconds": 600,
+    "work_seconds": 550,
+    "cpu": 2,
+    "paper_heap_mib": 1536,
+    "paper_rss_stop_mib": 2560,
+    "combined_rss_stop_mib": 6144,
+    "host_available_min_mib": 6144,
+    "paper_starts_max": 2
+  },
+  "operating_services_changed": false,
+  "actual_client": false,
+  "external_laptop_access": false,
+  "client_resource_pack_applied": false,
+  "sustained_load": false,
+  "operating_docker_deployment": false
+}

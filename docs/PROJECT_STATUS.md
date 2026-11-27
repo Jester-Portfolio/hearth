@@ -6,6 +6,8 @@
 
 ## 프로젝트 목표·현재 단계
 
+[경제 멀티서버 실제 시험 준비](economy-network-playtest-preparation.md): 2026-11-27 새 격리 Velocity·로비/생존 경제 Paper·PG·팩 구성을 준비하고 실제 기동/환경/팩/저장 종료 14개 및 최종 보조 콘솔 한 JVM 검사를 통과했다. 현재 정상 종료한 템플릿이며, 노트북 설정·기존 정품 계정 확인 후 새 사본을 기동한다. 실제 인증 접속/전환·클릭/플레이·부하·운영 Docker 배포는 미수용이다.
+
 [WorldGuard 저장 I/O 분리](storage-io-and-dedicated-postgres-verification.md): 거주/오브젝트 보호 저장의 불필요한 JDBC 연결 획득을 제거하고 전용 유한 직렬 작업자와 기존 정상 종료 대기를 연결했다. 관련 단위 9개·실제 PG 13개·Paper 두 JVM 59개를 확인했다. 2026-11-27 Hearth 전용 PG 단독 Compose/비root 이미지의 실제 기동·E001–E014·재기동 후 접속/보존도 확인했다. [전용 PG 정본](../infrastructure/deployment/project-postgres.md)은 비밀 없는 접속·이미지·경로를 Git에 보존하며 기존 경제 설정 생성기·Compose·백업 안내와 연결했다. 정식 Paper/프록시 배포·지속 부하·온에어 수용과 구분한다.
 
 [온에어 재검토·Docker 사전 검사](docker-onair-readiness-verification.md)는 전체 Java1,490개·Python122개와 최종 JAR의 실제 네 역할 복원14개를 통과했다. Java 컨테이너의 drain 콘솔 입력 누락을 보완하고 관련 Python33개·두 Compose 구문을 확인했다. **정식 온에어는 보류**이며 당시 Docker 소켓 접근/sudo 차단으로 네 역할 이미지·컨테이너 실행은 미실행이었다. 이후 전용 PG 단독 실행 확인은 위 기록을 따른다. 게임 배포 후보는 fixture 이미지·수용 incomplete이며 실제 클라이언트/지속 부하·운영값/공개 경로도 별도다.
